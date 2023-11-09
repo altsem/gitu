@@ -8,7 +8,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Repository, Status};
+use git2::{Oid, Repository, Status};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -27,6 +27,7 @@ struct State {
 #[derive(Default, Clone, Debug)]
 struct Item {
     file: Option<String>,
+    oid: Option<Oid>,
     header: Option<String>,
     section: Option<Section>,
     status: Option<String>,
@@ -63,8 +64,9 @@ fn main() -> io::Result<()> {
 }
 
 fn create_status_items(repo: &Repository) -> Vec<Item> {
-    let statuses = repo.statuses(None).unwrap();
     let mut items = vec![];
+
+    let statuses = repo.statuses(None).unwrap();
 
     items.extend(create_status_section(
         &statuses,
@@ -94,6 +96,28 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
         },
         staged_entry_status,
     ));
+
+    let mut revwalk = repo.revwalk().unwrap();
+    revwalk.push_head().unwrap();
+
+    let recent_commits = revwalk
+        .take(5)
+        .map(|x| Item {
+            oid: Some(x.unwrap()),
+            ..Default::default()
+        })
+        .collect::<Vec<_>>();
+    if !items.is_empty() {
+        items.push(Item {
+            header: Some("Recent commits".to_string()),
+            section: Some(Section {
+                collapsed: false,
+                size: recent_commits.len(),
+            }),
+            ..Default::default()
+        });
+        items.extend(recent_commits);
+    }
 
     items
 }
@@ -156,6 +180,11 @@ fn ui(frame: &mut Frame, state: &State) {
         .flat_map(|(i, item)| {
             let mut text = if let Some(ref text) = item.header {
                 Line::styled(text, Style::new().fg(Color::Blue))
+            } else if let Item { oid: Some(oid), .. } = item {
+                Line::from(vec![Span::styled(
+                    hex::encode(oid.as_bytes()).as_str()[..8].to_string(),
+                    Style::new().fg(Color::DarkGray),
+                )])
             } else if let Item {
                 file: Some(file),
                 status,
@@ -173,7 +202,7 @@ fn ui(frame: &mut Frame, state: &State) {
             text.patch_style(
                 Style::new()
                     .bg(if state.selected == i {
-                        Color::DarkGray
+                        Color::Rgb(20, 60, 80)
                     } else {
                         Color::default()
                     })
