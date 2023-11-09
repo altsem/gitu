@@ -54,7 +54,7 @@ fn main() -> io::Result<()> {
     while !state.quit {
         terminal.draw(|frame| ui(frame, &state))?;
         handle_events(&mut state, &mut repo)?;
-        state.selected = state.selected.clamp(0, state.items.len() - 1);
+        state.selected = state.selected.clamp(0, state.items.len().saturating_sub(1));
     }
 
     disable_raw_mode()?;
