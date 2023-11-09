@@ -8,7 +8,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Repository, Status, StatusEntry};
+use git2::{Repository, Status};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -66,100 +66,88 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
     let statuses = repo.statuses(None).unwrap();
     let mut items = vec![];
 
-    let untracked = statuses
-        .into_iter()
-        .filter(|entry| entry.status().is_wt_new())
-        .map(|entry| Item {
-            file: entry.path().map(|value| value.to_string()),
-            ..Default::default()
-        })
-        .collect::<Vec<_>>();
+    items.extend(create_status_section(
+        &statuses,
+        "Untracked files",
+        Status::is_wt_new,
+        |_| None,
+    ));
 
-    if !untracked.is_empty() {
-        items.push(Item {
-            header: Some(format!("Untracked files ({})", untracked.len())),
-            section: Some(Section {
-                collapsed: false,
-                size: untracked.len(),
-            }),
-            ..Default::default()
-        });
-        items.extend(untracked);
-    }
+    items.extend(create_status_section(
+        &statuses,
+        "Unstaged changes",
+        Status::is_wt_modified,
+        unstaged_entry_status,
+    ));
 
-    let unstaged = statuses
-        .into_iter()
-        .filter(|entry| entry.status().is_wt_modified())
-        .map(|entry| Item {
-            file: entry.path().map(|value| value.to_string()),
-            status: Some(unstaged_entry_status(entry)),
-            section: Some(Section {
-                collapsed: true,
-                // TODO This would be for the diff. How big will it be?
-                size: 0,
-            }),
-            ..Default::default()
-        })
-        .collect::<Vec<_>>();
-
-    if !unstaged.is_empty() {
-        items.push(Item {
-            header: Some(format!("Unstaged changes ({})", unstaged.len())),
-            section: Some(Section {
-                collapsed: false,
-                size: unstaged.len(),
-            }),
-            ..Default::default()
-        });
-        items.extend(unstaged);
-    }
-
-    let staged = statuses
-        .into_iter()
-        .filter(|entry| {
-            entry.status().intersects(
+    items.extend(create_status_section(
+        &statuses,
+        "Staged changes",
+        |status| {
+            status.intersects(
                 Status::INDEX_NEW
                     | Status::INDEX_DELETED
                     | Status::INDEX_TYPECHANGE
-                    | Status::INDEX_RENAMED,
+                    | Status::INDEX_RENAMED
+                    | Status::INDEX_MODIFIED,
             )
-        })
-        .map(|entry| Item {
-            file: entry.path().map(|value| value.to_string()),
-            status: Some(staged_entry_status(entry)),
-            ..Default::default()
-        })
-        .collect::<Vec<_>>();
-
-    if !staged.is_empty() {
-        items.push(Item {
-            header: Some(format!("Staged changes ({})", staged.len())),
-            section: Some(Section {
-                collapsed: false,
-                size: staged.len(),
-            }),
-            ..Default::default()
-        });
-        items.extend(staged);
-    }
+        },
+        staged_entry_status,
+    ));
 
     items
 }
 
-fn unstaged_entry_status(entry: StatusEntry) -> String {
-    if entry.status().is_wt_modified() {
-        "modified".to_string()
-    } else {
-        format!("{:?}", entry.status())
+fn create_status_section(
+    statuses: &git2::Statuses<'_>,
+    header: &str,
+    predicate: impl Fn(&Status) -> bool,
+    entry_status: impl Fn(&Status) -> Option<String>,
+) -> Vec<Item> {
+    let items = statuses
+        .into_iter()
+        .filter(|entry| predicate(&entry.status()))
+        .map(|entry| Item {
+            file: entry.path().map(|value| value.to_string()),
+            status: entry_status(&entry.status()),
+            ..Default::default()
+        })
+        .collect::<Vec<_>>();
+
+    let mut result = vec![];
+
+    if !items.is_empty() {
+        result.push(Item {
+            header: Some(format!("{} ({})", header, items.len())),
+            section: Some(Section {
+                collapsed: false,
+                size: items.len(),
+            }),
+            ..Default::default()
+        });
+
+        result.extend(items);
     }
+
+    result
 }
 
-fn staged_entry_status(entry: StatusEntry) -> String {
-    if entry.status().is_index_new() {
-        "new file".to_string()
+fn unstaged_entry_status(status: &Status) -> Option<String> {
+    Some(if status.is_wt_modified() {
+        "modified".to_string()
     } else {
-        format!("{:?}", entry.status())
-    }
+        format!("{:?}", status)
+    })
+}
+
+fn staged_entry_status(status: &Status) -> Option<String> {
+    Some(if status.is_index_new() {
+        "new file".to_string()
+    } else if status.is_index_modified() {
+        "modified".to_string()
+    } else {
+        format!("{:?}", status)
+    })
 }
 
 fn ui(frame: &mut Frame, state: &State) {
