@@ -1,5 +1,7 @@
 use std::{
+    env::Args,
     io::{self, stdout},
+    iter,
     path::Path,
 };
 
@@ -8,7 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Oid, Repository, Status};
+use git2::{DiffDelta, DiffHunk, DiffLine, DiffOptions, Oid, Repository, Status};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -31,6 +33,7 @@ struct Item {
     header: Option<String>,
     section: Option<Section>,
     status: Option<String>,
+    diff_line: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -66,24 +69,22 @@ fn main() -> io::Result<()> {
 fn create_status_items(repo: &Repository) -> Vec<Item> {
     let mut items = vec![];
 
-    let statuses = repo.statuses(None).unwrap();
-
     items.extend(create_status_section(
-        &statuses,
+        &repo,
         "Untracked files",
         Status::is_wt_new,
         |_| None,
     ));
 
     items.extend(create_status_section(
-        &statuses,
+        &repo,
         "Unstaged changes",
         Status::is_wt_modified,
         unstaged_entry_status,
     ));
 
     items.extend(create_status_section(
-        &statuses,
+        &repo,
         "Staged changes",
         |status| {
             status.intersects(
@@ -123,12 +124,14 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
 }
 
 fn create_status_section(
-    statuses: &git2::Statuses<'_>,
+    repo: &git2::Repository,
     header: &str,
     predicate: impl Fn(&Status) -> bool,
     entry_status: impl Fn(&Status) -> Option<String>,
 ) -> Vec<Item> {
-    let items = statuses
+    let items = repo
+        .statuses(None)
+        .unwrap()
         .into_iter()
         .filter(|entry| predicate(&entry.status()))
         .map(|entry| Item {
@@ -138,22 +141,92 @@ fn create_status_section(
         })
         .collect::<Vec<_>>();
 
-    let mut result = vec![];
-
-    if !items.is_empty() {
-        result.push(Item {
-            header: Some(format!("{} ({})", header, items.len())),
-            section: Some(Section {
-                collapsed: false,
-                size: items.len(),
-            }),
-            ..Default::default()
-        });
-
-        result.extend(items);
+    if items.is_empty() {
+        return vec![];
     }
 
-    result
+    let items_count = items.len();
+
+    let mut section_items = items
+        .into_iter()
+        .rev()
+        .flat_map(|mut item| {
+            let file = item.file.clone().unwrap();
+
+            let mut diff_options = DiffOptions::new();
+            let opts = diff_options.pathspec(file);
+            let mut output = String::new();
+
+            let print_diff_line =
+                |_delta: DiffDelta, _hunk: Option<DiffHunk>, line: DiffLine| -> bool {
+                    output.push_str(&format!(
+                        "{}{}",
+                        match line.origin() {
+                            '+' | '-' | ' ' => line.origin().to_string(),
+                            _ => "".to_string(),
+                        },
+                        std::str::from_utf8(line.content()).unwrap()
+                    ));
+                    true
+                };
+
+            // TODO Pass in the diff deltas instead?
+            if false {
+                repo.diff_tree_to_index(
+                    Some(&repo.head().unwrap().peel_to_tree().unwrap()),
+                    None,
+                    Some(opts),
+                )
+                .unwrap()
+            } else {
+                repo.diff_index_to_workdir(None, Some(opts)).unwrap()
+            }
+            .print(git2::DiffFormat::Patch, print_diff_line)
+            .unwrap();
+
+            let diff_line_count = output.lines().count();
+            item.section = Some(Section {
+                collapsed: true,
+                size: diff_line_count,
+            });
+
+            output
+                .lines()
+                .rev()
+                .map(|line| Item {
+                    diff_line: Some(line.to_string()),
+                    ..Default::default()
+                })
+                .chain(iter::once(item))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    let section_items_count = section_items.len();
+    section_items.push(Item {
+        header: Some(format!("{} ({})", header, items_count)),
+        section: Some(Section {
+            collapsed: false,
+            size: section_items_count,
+        }),
+        ..Default::default()
+    });
+
+    section_items.reverse();
+
+    section_items
+}
+
+fn print_diff_line(_delta: DiffDelta, _hunk: Option<DiffHunk>, line: DiffLine) -> bool {
+    format!(
+        "{}{}",
+        match line.origin() {
+            '+' | '-' | ' ' => line.origin().to_string(),
+            _ => "".to_string(),
+        },
+        std::str::from_utf8(line.content()).unwrap()
+    );
+    true
 }
 
 fn unstaged_entry_status(status: &Status) -> Option<String> {
@@ -180,6 +253,12 @@ fn ui(frame: &mut Frame, state: &State) {
         .flat_map(|(i, item)| {
             let mut text = if let Some(ref text) = item.header {
                 Line::styled(text, Style::new().fg(Color::Blue))
+            } else if let Item {
+                diff_line: Some(diff),
+                ..
+            } = item
+            {
+                Line::raw(diff)
             } else if let Item { oid: Some(oid), .. } = item {
                 Line::from(vec![Span::styled(
                     hex::encode(oid.as_bytes()).as_str()[..8].to_string(),
