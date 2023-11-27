@@ -129,7 +129,10 @@ fn create_status_section<'a>(diff: &git2::Diff, header: &str) -> Vec<Item> {
                     .path()
                     .map(|value| value.to_str().unwrap().to_string()),
                 diff_hunk: Some(String::from_utf8(hunk.unwrap().header().to_owned()).unwrap()),
-                diff_line: Some(String::from_utf8(line.content().to_owned()).unwrap()),
+                diff_line: Some(
+                    line.origin().to_string()
+                        + &String::from_utf8(line.content().to_owned()).unwrap(),
+                ),
                 ..Default::default()
             });
             true
