@@ -2,6 +2,7 @@ use std::{
     collections::BTreeMap,
     io::{self, stdout},
     iter,
+    ops::Range,
     path::Path,
 };
 
@@ -10,7 +11,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Delta, Diff, DiffDelta, DiffHunk, DiffLine, Oid, Repository};
+use git2::{Delta, Diff, DiffDelta, DiffHunk, DiffLine, Oid, Patch, Repository};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -40,6 +41,8 @@ struct Item {
     section: Option<bool>,
 }
 
+// TODO Show repo state (repo.state())
+
 fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
@@ -67,7 +70,7 @@ fn main() -> io::Result<()> {
 fn create_status_items(repo: &Repository) -> Vec<Item> {
     let mut items = vec![];
 
-    // items.extend(create_status_section(&repo, None, "Untracked files"));
+    // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
         &repo.diff_index_to_workdir(None, None).unwrap(),
@@ -110,67 +113,70 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
 }
 
 fn create_status_section<'a>(diff: &git2::Diff, header: &str) -> Vec<Item> {
-    let deltas = diff.deltas();
-    let count = deltas.len();
-
-    if count == 0 {
-        return vec![];
-    }
-
     let mut items = vec![];
 
-    diff.foreach(
-        &mut |delta, i| true,
-        None,
-        None,
-        Some(&mut |delta, hunk, line| {
-            items.push(Item {
-                depth: 3,
-                file: delta
-                    // TODO May need to look at old_file too
-                    .new_file()
-                    .path()
-                    .map(|value| value.to_str().unwrap().to_string()),
-                diff_hunk: Some(String::from_utf8(hunk.unwrap().header().to_owned()).unwrap()),
-                diff_line: Some(
-                    line.origin().to_string()
-                        + &String::from_utf8(line.content().to_owned()).unwrap(),
-                ),
-                ..Default::default()
-            });
-            true
-        }),
-    )
-    .unwrap();
-
-    iter::once(Item {
+    items.push(Item {
         depth: 0,
         header: Some(header.to_string()),
         section: Some(false),
         ..Default::default()
-    })
-    .chain(
-        file_hunk_groups(items)
-            .into_iter()
-            .flat_map(|(file, hunks)| {
-                let section = Item {
-                    file: Some(file),
-                    section: Some(false),
-                    depth: 1,
+    });
+
+    // TODO files_changed, is this really correct?
+    let file_count = diff.stats().unwrap().files_changed();
+    for file_index in 0..file_count {
+        let patch = Patch::from_diff(diff, file_index).unwrap().unwrap();
+
+        let file_str = Some(
+            patch
+                .delta()
+                .new_file()
+                .path()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+
+        items.push(Item {
+            depth: 1,
+            section: Some(false),
+            file: file_str.clone(),
+            ..Default::default()
+        });
+
+        for hunk_index in 0..patch.num_hunks() {
+            let (hunk, line_count) = patch.hunk(hunk_index).unwrap();
+            let hunk_str = Some(String::from_utf8(hunk.header().to_owned()).unwrap());
+
+            items.push(Item {
+                depth: 2,
+                section: Some(false),
+                file: file_str.clone(),
+                diff_hunk: hunk_str.clone(),
+                ..Default::default()
+            });
+
+            for line_index in 3..line_count {
+                let line = patch.line_in_hunk(hunk_index, line_index).unwrap();
+                let line_str = Some(format!(
+                    "{} {}",
+                    line.origin(),
+                    String::from_utf8(line.content().to_owned()).unwrap()
+                ));
+
+                items.push(Item {
+                    depth: 3,
+                    file: file_str.clone(),
+                    diff_hunk: hunk_str.clone(),
+                    diff_line: line_str,
                     ..Default::default()
-                };
-                iter::once(section).chain(hunks.into_iter().flat_map(|(hunk, lines)| {
-                    iter::once(Item {
-                        section: Some(false),
-                        diff_hunk: Some(hunk),
-                        depth: 2,
-                        ..Default::default()
-                    })
-                    .chain(lines.into_iter())
-                }))
-            }),
-    )
-    .collect()
+                });
+            }
+        }
+    }
+
+    items
 }
 
 fn format_diff(diff: &git2::Diff<'_>) -> String {
