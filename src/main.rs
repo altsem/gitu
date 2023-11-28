@@ -10,7 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Delta, DiffDelta, DiffHunk, DiffLine, Oid, Repository};
+use git2::{Delta, Diff, DiffDelta, DiffHunk, DiffLine, Oid, Repository};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -92,12 +92,15 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
         .take(5)
         .map(|x| Item {
             oid: Some(x.unwrap()),
+            depth: 1,
             ..Default::default()
         })
         .collect::<Vec<_>>();
     if !items.is_empty() {
         items.push(Item {
             header: Some("Recent commits".to_string()),
+            depth: 0,
+            section: Some(false),
             ..Default::default()
         });
         items.extend(recent_commits);
@@ -288,6 +291,7 @@ fn handle_events(state: &mut State, repo: &mut Repository) -> io::Result<bool> {
                         if let Some(ref file) = state.items[state.selected].file {
                             let index = &mut repo.index().unwrap();
                             index.add_path(Path::new(&file)).unwrap();
+
                             index.write().unwrap();
                             state.items = create_status_items(repo);
                         }
