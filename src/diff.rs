@@ -1,42 +1,46 @@
 use std::{fmt::Display, ops::Range};
 
-use git2::{Diff, DiffHunk};
 use regex::Regex;
 
 #[derive(Debug, Clone)]
-pub struct Patch {
-    pub header: String,
-    pub hunks: Vec<Hunk>,
+pub struct Diff {
+    pub deltas: Vec<Delta>,
 }
 
-impl Display for Patch {
+impl Display for Diff {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.header)?;
-        for hunk in self.hunks.iter() {
-            f.write_str(&hunk.to_string())?;
+        for delta in self.deltas.iter() {
+            f.write_str(&delta.to_string())?;
         }
 
         Ok(())
     }
 }
 
-impl From<Diff<'_>> for Patch {
-    fn from(value: Diff<'_>) -> Self {
-        let mut header = String::new();
-        let mut hunks = vec![];
+impl From<git2::Diff<'_>> for Diff {
+    fn from(value: git2::Diff<'_>) -> Self {
+        let mut deltas = vec![];
 
         value
             .print(git2::DiffFormat::Patch, |_delta, maybe_hunk, line| {
-                use std::fmt::Write;
                 let string_line = String::from_utf8_lossy(line.content());
 
                 match line.origin() {
-                    'F' => header.write_str(&string_line).unwrap(),
+                    'F' => deltas.push(Delta {
+                        file_header: string_line.to_string(),
+                        hunks: vec![],
+                    }),
                     'H' => {
                         let hunk = maybe_hunk.unwrap();
-                        hunks.push(Hunk::new(hunk, String::new()))
+                        let delta = deltas.last_mut().unwrap();
+                        delta
+                            .hunks
+                            .push(Hunk::new(delta.file_header.clone(), hunk, String::new()))
                     }
-                    ' ' | '+' | '-' => hunks
+                    ' ' | '+' | '-' => deltas
+                        .last_mut()
+                        .unwrap()
+                        .hunks
                         .last_mut()
                         .unwrap()
                         .content
@@ -48,12 +52,30 @@ impl From<Diff<'_>> for Patch {
             })
             .unwrap();
 
-        Patch { header, hunks }
+        Diff { deltas }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Delta {
+    pub file_header: String,
+    pub hunks: Vec<Hunk>,
+}
+
+impl Display for Delta {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.file_header)?;
+        for hunk in self.hunks.iter() {
+            f.write_str(&hunk.to_string())?;
+        }
+
+        Ok(())
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Hunk {
+    pub file_header: String,
     pub old_start: u32,
     pub old_lines: u32,
     pub new_start: u32,
@@ -63,10 +85,11 @@ pub struct Hunk {
 }
 
 impl Hunk {
-    fn new(diff_hunk: DiffHunk<'_>, content: String) -> Self {
+    fn new(file_header: String, diff_hunk: git2::DiffHunk, content: String) -> Self {
         // TODO init once
-        let hunk_header_prefix_regex = Regex::new(r"@@ -\d+,\d+ \+\d+,\d+ @@ ").unwrap();
+        let hunk_header_prefix_regex = Regex::new(r"@@ -\d+,\d+ \+\d+,\d+ @@").unwrap();
         Self {
+            file_header,
             old_start: diff_hunk.old_start(),
             old_lines: diff_hunk.old_lines(),
             new_start: diff_hunk.new_start(),
@@ -80,12 +103,12 @@ impl Hunk {
 
     pub fn header(&self) -> String {
         format!(
-            "@@ -{},{} +{},{} @@ {}",
+            "@@ -{},{} +{},{} @@{}",
             self.old_start, self.old_lines, self.new_start, self.new_lines, self.header_suffix
         )
     }
 
-    pub fn select(&self, range: Range<usize>) -> Self {
+    pub fn select(&self, range: Range<usize>) -> Option<Self> {
         let modified_lines = self
             .content
             .split("\n")
@@ -113,17 +136,19 @@ impl Hunk {
             .filter(|line| line.starts_with("-"))
             .count();
 
-        Self {
+        if added == 0 && removed == 0 {
+            return None;
+        }
+
+        Some(Self {
             new_lines: self.old_lines + added as u32 - removed as u32,
             content: modified_lines.join("\n"),
             ..self.clone()
-        }
+        })
     }
 
-    pub fn has_diff(&self) -> bool {
-        self.content
-            .lines()
-            .any(|line| line.starts_with("+") || line.starts_with("-"))
+    pub fn format_patch(&self) -> String {
+        format!("{}{}{}", self.file_header, self.header(), self.content)
     }
 }
 
@@ -137,22 +162,34 @@ impl Display for Hunk {
 
 #[cfg(test)]
 mod tests {
-    use git2::Diff;
 
     #[test]
     fn format_diff_preserved() {
-        let buffer = include_str!("example2.patch");
-        let diff = Diff::from_buffer(buffer.as_bytes()).unwrap();
-        assert_eq!(buffer, super::Patch::from(diff).to_string());
+        let buffer = include_str!("example3.patch");
+        let diff = git2::Diff::from_buffer(buffer.as_bytes()).unwrap();
+        let result = super::Diff::from(diff).to_string();
+
+        let diff_diff = super::Diff::from(
+            git2::Diff::from_buffer(
+                &git2::Patch::from_buffers(buffer.as_bytes(), None, result.as_bytes(), None, None)
+                    .unwrap()
+                    .to_buf()
+                    .unwrap(),
+            )
+            .unwrap(),
+        );
+
+        println!("{}", diff_diff);
+        assert!(diff_diff.deltas.is_empty());
     }
 
     #[test]
     fn select_lines() {
         let buffer = include_str!("example2.patch");
-        let diff = Diff::from_buffer(buffer.as_bytes()).unwrap();
-        let patch = super::Patch::from(diff);
-        let hunk = patch.hunks.first().unwrap();
-        let result = hunk.select(4..7);
+        let diff = git2::Diff::from_buffer(buffer.as_bytes()).unwrap();
+        let patch = super::Diff::from(diff);
+        let hunk = patch.deltas[0].hunks.first().unwrap();
+        let result = hunk.select(4..7).unwrap();
 
         println!("Pre-select {}", hunk);
         println!("Post-select {}", result);
@@ -168,14 +205,11 @@ mod tests {
     #[test]
     fn select_nothing() {
         let buffer = include_str!("example2.patch");
-        let diff = Diff::from_buffer(buffer.as_bytes()).unwrap();
-        let patch = super::Patch::from(diff);
-        let hunk = patch.hunks.first().unwrap();
-        let result = hunk.select(0..1);
+        let diff = git2::Diff::from_buffer(buffer.as_bytes()).unwrap();
+        let patch = super::Diff::from(diff);
+        let hunk = patch.deltas[0].hunks.first().unwrap();
+        let result = hunk.select(0..0);
 
-        println!("Pre-select {}", hunk);
-        println!("Post-select {}", result);
-
-        assert!(!result.has_diff());
+        assert!(result.is_none());
     }
 }

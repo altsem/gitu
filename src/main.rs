@@ -1,4 +1,4 @@
-mod parsed_patch;
+mod diff;
 
 use std::{
     io::{self, stdout},
@@ -10,7 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Delta, Diff, Oid, Repository};
+use diff::{Delta, Hunk};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -32,12 +32,12 @@ struct State {
 struct Item {
     depth: usize,
     file: Option<String>,
-    oid: Option<Oid>,
+    oid: Option<git2::Oid>,
     header: Option<String>,
     status: Option<String>,
-    diff_hunk: Option<String>,
-    diff_line: Option<String>,
-    patch: Option<String>,
+    delta: Option<Delta>,
+    hunk: Option<Hunk>,
+    line: Option<String>,
     section: Option<bool>,
 }
 
@@ -47,7 +47,7 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let mut repo = Repository::open(".").unwrap();
+    let mut repo = git2::Repository::open(".").unwrap();
     let items = create_status_items(&repo);
 
     let mut state = State {
@@ -67,7 +67,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn create_status_items(repo: &Repository) -> Vec<Item> {
+fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
     let mut items = vec![];
 
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
@@ -114,7 +114,7 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
 fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
     let mut items = vec![];
 
-    let patch = parsed_patch::Patch::from(diff);
+    let diff = diff::Diff::from(diff);
 
     items.push(Item {
         depth: 0,
@@ -123,46 +123,50 @@ fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
         ..Default::default()
     });
 
-    if !patch.header.is_empty() {
+    for delta in diff.deltas {
         items.push(Item {
+            delta: Some(delta.clone()),
             depth: 1,
-            header: Some(patch.header),
-            ..Default::default()
-        });
-    }
-    for hunk in patch.hunks {
-        items.push(Item {
-            depth: 2,
-            header: Some(hunk.header()),
+            header: Some(delta.file_header),
             section: Some(false),
             ..Default::default()
         });
 
-        for line in hunk.content.lines() {
+        for hunk in delta.hunks {
             items.push(Item {
-                depth: 3,
-                diff_line: Some(line.to_string()),
+                hunk: Some(hunk.clone()),
+                depth: 2,
+                header: Some(hunk.header()),
+                section: Some(false),
                 ..Default::default()
             });
+
+            for line in hunk.content.lines() {
+                items.push(Item {
+                    depth: 3,
+                    line: Some(line.to_string()),
+                    ..Default::default()
+                });
+            }
         }
     }
 
     items
 }
 
-fn format_delta_status(delta: &Delta) -> &'_ str {
+fn format_delta_status(delta: &git2::Delta) -> &'_ str {
     match delta {
-        Delta::Unmodified => "unmodified",
-        Delta::Added => "added     ",
-        Delta::Deleted => "deleted   ",
-        Delta::Modified => "modified  ",
-        Delta::Renamed => "renamed   ",
-        Delta::Copied => "copied    ",
-        Delta::Ignored => "ignored   ",
-        Delta::Untracked => "untracked ",
-        Delta::Typechange => "typechange",
-        Delta::Unreadable => "unreadable",
-        Delta::Conflicted => "conflicted",
+        git2::Delta::Unmodified => "unmodified",
+        git2::Delta::Added => "added     ",
+        git2::Delta::Deleted => "deleted   ",
+        git2::Delta::Modified => "modified  ",
+        git2::Delta::Renamed => "renamed   ",
+        git2::Delta::Copied => "copied    ",
+        git2::Delta::Ignored => "ignored   ",
+        git2::Delta::Untracked => "untracked ",
+        git2::Delta::Typechange => "typechange",
+        git2::Delta::Unreadable => "unreadable",
+        git2::Delta::Conflicted => "conflicted",
     }
 }
 
@@ -173,14 +177,12 @@ fn ui(frame: &mut Frame, state: &State) {
             let mut text = if let Some(ref text) = item.header {
                 Line::styled(text, Style::new().fg(Color::Blue))
             } else if let Item {
-                diff_line: Some(diff),
-                ..
+                line: Some(diff), ..
             } = item
             {
                 Line::raw(diff)
             } else if let Item {
-                diff_hunk: Some(hunk),
-                ..
+                line: Some(hunk), ..
             } = item
             {
                 Line::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))
@@ -220,7 +222,7 @@ fn ui(frame: &mut Frame, state: &State) {
     frame.render_widget(Paragraph::new(Text::from(lines)), frame.size());
 }
 
-fn handle_events(state: &mut State, repo: &mut Repository) -> io::Result<bool> {
+fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<bool> {
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
             if key.kind == event::KeyEventKind::Press {
@@ -241,29 +243,26 @@ fn handle_events(state: &mut State, repo: &mut Repository) -> io::Result<bool> {
                     }
                     KeyCode::Char('s') => match state.items[state.selected] {
                         Item {
-                            patch: Some(ref patch),
+                            delta: Some(ref delta),
+                            ..
+                        } => {
+                            // let index = &mut repo.index().unwrap();
+                            // index.add_path(Path::new(&)).unwrap();
+
+                            // index.write().unwrap();
+                            // state.items = create_status_items(repo);
+                        }
+                        Item {
+                            hunk: Some(ref hunk),
                             ..
                         } => {
                             repo.apply(
-                                &Diff::from_buffer(patch.as_bytes())
+                                &git2::Diff::from_buffer(hunk.format_patch().as_bytes())
                                     .expect("Couldn't create patch from buffer"),
                                 git2::ApplyLocation::Index,
                                 None,
                             )
                             .expect("Couldn't apply patch");
-                            // disable_raw_mode()?;
-                            // stdout().execute(LeaveAlternateScreen)?;
-
-                            // panic!("{}", patch);
-                        }
-                        Item {
-                            file: Some(ref file),
-                            ..
-                        } => {
-                            let index = &mut repo.index().unwrap();
-                            index.add_path(Path::new(&file)).unwrap();
-
-                            index.write().unwrap();
                             state.items = create_status_items(repo);
                         }
                         _ => panic!("Couldn't stage"),

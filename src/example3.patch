@@ -1,0 +1,65 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 9b2c250..86f78e6 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -140,12 +140,6 @@ version = "0.4.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
+ 
+-[[package]]
+-name = "hex"
+-version = "0.4.3"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+-
+ [[package]]
+ name = "idna"
+ version = "0.4.0"
+@@ -262,11 +256,10 @@ dependencies = [
+ 
+ [[package]]
+ name = "magitler"
+-version = "0.1.0"
++version = "0.2.0"
+ dependencies = [
+  "crossterm",
+  "git2",
+- "hex",
+  "itertools 0.12.0",
+  "ratatui",
+  "regex",
+diff --git a/Cargo.toml b/Cargo.toml
+index 8ea9a68..84776d4 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "magitler"
+-version = "0.1.0"
++version = "0.2.0"
+ edition = "2021"
+ #test
+ # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+@@ -8,7 +8,6 @@ edition = "2021"
+ [dependencies]
+ crossterm = "0.27.0"
+ git2 = "0.18.1"
+-hex = "0.4.3"
+ itertools = "0.12.0"
+ ratatui = "0.24.0"
+ regex = "1.10.2"
+diff --git a/src/main.rs b/src/main.rs
+index 7049bb2..4891e6c 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -23,9 +23,7 @@ use ratatui::{
+ 
+ #[derive(Debug)]
+ struct State {
+-    quit: bool,
+-    selected: usize,
+-    items: Vec<Item>,
++    added_line: bool,
+ }
+ 
+ #[derive(Default, Clone, Debug)]
