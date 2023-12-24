@@ -11,6 +11,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use diff::{Delta, Hunk};
+use git2::ApplyOptions;
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -265,14 +266,39 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                             .expect("Couldn't apply patch");
                             state.items = create_status_items(repo);
                         }
+                        // TODO Stage lines
                         _ => panic!("Couldn't stage"),
                     },
                     KeyCode::Char('u') => {
-                        if let Some(ref file) = state.items[state.selected].file {
-                            let index = &mut repo.index().unwrap();
-                            index.remove_path(Path::new(&file)).unwrap();
-                            index.write().unwrap();
-                            state.items = create_status_items(repo);
+                        match state.items[state.selected] {
+                            Item {
+                                delta: Some(ref delta),
+                                ..
+                            } => {
+                                let index = &mut repo.index().unwrap();
+                                index.remove_path(Path::new(&delta.new_file)).unwrap();
+                                index.write().unwrap();
+                                state.items = create_status_items(repo);
+                            }
+                            Item {
+                                hunk: Some(ref hunk),
+                                ..
+                            } => {
+                                todo!()
+                                // let apply_options = ApplyOptions::new();
+                                // repo.apply(
+                                //     &git2::Diff::from_buffer(
+                                //         hunk.reverse().format_patch().as_bytes(),
+                                //     )
+                                //     .expect("Couldn't create patch from buffer"),
+                                //     git2::ApplyLocation::Index,
+                                //     None,
+                                // )
+                                // .expect("Couldn't reverse-apply patch");
+                                // state.items = create_status_items(repo);
+                            }
+                            // TODO Stage lines
+                            _ => panic!("Couldn't unstage"),
                         }
                     }
                     KeyCode::Tab => {
