@@ -123,11 +123,13 @@ fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
         ..Default::default()
     });
 
-    items.push(Item {
-        depth: 1,
-        header: Some(patch.header),
-        ..Default::default()
-    });
+    if !patch.header.is_empty() {
+        items.push(Item {
+            depth: 1,
+            header: Some(patch.header),
+            ..Default::default()
+        });
+    }
 
     for hunk in patch.hunks {
         items.push(Item {
