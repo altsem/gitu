@@ -246,11 +246,11 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                             delta: Some(ref delta),
                             ..
                         } => {
-                            // let index = &mut repo.index().unwrap();
-                            // index.add_path(Path::new(&)).unwrap();
+                            let index = &mut repo.index().unwrap();
+                            index.add_path(Path::new(&delta.new_file)).unwrap();
 
-                            // index.write().unwrap();
-                            // state.items = create_status_items(repo);
+                            index.write().unwrap();
+                            state.items = create_status_items(repo);
                         }
                         Item {
                             hunk: Some(ref hunk),

@@ -22,12 +22,14 @@ impl From<git2::Diff<'_>> for Diff {
         let mut deltas = vec![];
 
         value
-            .print(git2::DiffFormat::Patch, |_delta, maybe_hunk, line| {
-                let string_line = String::from_utf8_lossy(line.content());
+            .print(git2::DiffFormat::Patch, |git2_delta, maybe_hunk, line| {
+                let string_line = String::from_utf8_lossy(line.content()).to_string();
 
                 match line.origin() {
                     'F' => deltas.push(Delta {
-                        file_header: string_line.to_string(),
+                        old_file: diff_file_path(&git2_delta.old_file()),
+                        new_file: diff_file_path(&git2_delta.new_file()),
+                        file_header: string_line,
                         hunks: vec![],
                     }),
                     'H' => {
@@ -56,9 +58,15 @@ impl From<git2::Diff<'_>> for Diff {
     }
 }
 
+fn diff_file_path(old_file: &git2::DiffFile<'_>) -> String {
+    String::from_utf8_lossy(old_file.path_bytes().unwrap()).to_string()
+}
+
 #[derive(Debug, Clone)]
 pub struct Delta {
     pub file_header: String,
+    pub old_file: String,
+    pub new_file: String,
     pub hunks: Vec<Hunk>,
 }
 
