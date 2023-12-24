@@ -1,0 +1,15 @@
+diff --git a/src/main.rs b/src/main.rs
+index eda095d..ae4e951 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -124,8 +124,8 @@ fn create_status_section<'a>(diff: &git2::Diff, header: &str) -> Vec<Item> {
+ 
+     // TODO files_changed, is this really correct?
+     let file_count = diff.stats().unwrap().files_changed();
+-    for file_index in 0..file_count {
+-        let patch = Patch::from_diff(diff, file_index).unwrap().unwrap();
++    for file_index in (0..file_count).rev() {
++        let patch = Patch::from_diff(&diff, file_index).unwrap().unwrap();
+ 
+         let file_str = Some(
+             patch

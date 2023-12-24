@@ -1,8 +1,7 @@
+mod parsed_patch;
+
 use std::{
-    collections::BTreeMap,
     io::{self, stdout},
-    iter,
-    ops::Range,
     path::Path,
 };
 
@@ -11,7 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use git2::{Delta, Diff, DiffDelta, DiffHunk, DiffLine, Oid, Patch, Repository};
+use git2::{Delta, Diff, Oid, Repository};
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -38,6 +37,7 @@ struct Item {
     status: Option<String>,
     diff_hunk: Option<String>,
     diff_line: Option<String>,
+    patch: Option<String>,
     section: Option<bool>,
 }
 
@@ -73,18 +73,17 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        &repo.diff_index_to_workdir(None, None).unwrap(),
+        repo.diff_index_to_workdir(None, None).unwrap(),
         "Unstaged changes",
     ));
 
     items.extend(create_status_section(
-        &repo
-            .diff_tree_to_index(
-                Some(&repo.head().unwrap().peel_to_tree().unwrap()),
-                None,
-                None,
-            )
-            .unwrap(),
+        repo.diff_tree_to_index(
+            Some(&repo.head().unwrap().peel_to_tree().unwrap()),
+            None,
+            None,
+        )
+        .unwrap(),
         "Staged changes",
     ));
 
@@ -112,8 +111,10 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
     items
 }
 
-fn create_status_section<'a>(diff: &git2::Diff, header: &str) -> Vec<Item> {
+fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
     let mut items = vec![];
+
+    let patch = parsed_patch::Patch::from(diff);
 
     items.push(Item {
         depth: 0,
@@ -122,82 +123,30 @@ fn create_status_section<'a>(diff: &git2::Diff, header: &str) -> Vec<Item> {
         ..Default::default()
     });
 
-    // TODO files_changed, is this really correct?
-    let file_count = diff.stats().unwrap().files_changed();
-    for file_index in 0..file_count {
-        let patch = Patch::from_diff(diff, file_index).unwrap().unwrap();
+    items.push(Item {
+        depth: 1,
+        header: Some(patch.header),
+        ..Default::default()
+    });
 
-        let file_str = Some(
-            patch
-                .delta()
-                .new_file()
-                .path()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string(),
-        );
-
+    for hunk in patch.hunks {
         items.push(Item {
-            depth: 1,
+            depth: 2,
+            header: Some(hunk.header()),
             section: Some(false),
-            file: file_str.clone(),
             ..Default::default()
         });
 
-        for hunk_index in 0..patch.num_hunks() {
-            let (hunk, line_count) = patch.hunk(hunk_index).unwrap();
-            let hunk_str = Some(String::from_utf8(hunk.header().to_owned()).unwrap());
-
+        for line in hunk.content.lines() {
             items.push(Item {
-                depth: 2,
-                section: Some(false),
-                file: file_str.clone(),
-                diff_hunk: hunk_str.clone(),
+                depth: 3,
+                diff_line: Some(line.to_string()),
                 ..Default::default()
             });
-
-            for line_index in 3..line_count {
-                let line = patch.line_in_hunk(hunk_index, line_index).unwrap();
-                let line_str = Some(format!(
-                    "{} {}",
-                    line.origin(),
-                    String::from_utf8(line.content().to_owned()).unwrap()
-                ));
-
-                items.push(Item {
-                    depth: 3,
-                    file: file_str.clone(),
-                    diff_hunk: hunk_str.clone(),
-                    diff_line: line_str,
-                    ..Default::default()
-                });
-            }
         }
     }
 
     items
-}
-
-fn format_diff(diff: &git2::Diff<'_>) -> String {
-    let mut output = String::new();
-    diff.print(
-        git2::DiffFormat::Patch,
-        |_delta: DiffDelta, _hunk: Option<DiffHunk>, line: DiffLine| -> bool {
-            output.push_str(&format!(
-                "{}{}",
-                match line.origin() {
-                    '+' | '-' | ' ' => line.origin().to_string(),
-                    _ => "".to_string(),
-                },
-                std::str::from_utf8(line.content()).unwrap()
-            ));
-            true
-        },
-    )
-    .unwrap();
-
-    output
 }
 
 fn format_delta_status(delta: &Delta) -> &'_ str {
@@ -282,26 +231,46 @@ fn handle_events(state: &mut State, repo: &mut Repository) -> io::Result<bool> {
                     KeyCode::Char('q') => state.quit = true,
                     KeyCode::Char('j') => {
                         state.selected = collapsed_items_iter(&state.items)
-                            .find(|(i, item)| i > &state.selected && item.diff_line.is_none())
+                            .find(|(i, item)| i > &state.selected)
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
                     KeyCode::Char('k') => {
                         state.selected = collapsed_items_iter(&state.items)
-                            .filter(|(i, item)| i < &state.selected && item.diff_line.is_none())
+                            .filter(|(i, item)| i < &state.selected)
                             .last()
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
-                    KeyCode::Char('s') => {
-                        if let Some(ref file) = state.items[state.selected].file {
+                    KeyCode::Char('s') => match state.items[state.selected] {
+                        Item {
+                            patch: Some(ref patch),
+                            ..
+                        } => {
+                            repo.apply(
+                                &Diff::from_buffer(patch.as_bytes())
+                                    .expect("Couldn't create patch from buffer"),
+                                git2::ApplyLocation::Index,
+                                None,
+                            )
+                            .expect("Couldn't apply patch");
+                            // disable_raw_mode()?;
+                            // stdout().execute(LeaveAlternateScreen)?;
+
+                            // panic!("{}", patch);
+                        }
+                        Item {
+                            file: Some(ref file),
+                            ..
+                        } => {
                             let index = &mut repo.index().unwrap();
                             index.add_path(Path::new(&file)).unwrap();
 
                             index.write().unwrap();
                             state.items = create_status_items(repo);
                         }
-                    }
+                        _ => panic!("Couldn't stage"),
+                    },
                     KeyCode::Char('u') => {
                         if let Some(ref file) = state.items[state.selected].file {
                             let index = &mut repo.index().unwrap();
@@ -321,27 +290,6 @@ fn handle_events(state: &mut State, repo: &mut Repository) -> io::Result<bool> {
         }
     }
     Ok(false)
-}
-
-fn file_hunk_groups<'a>(items: Vec<Item>) -> BTreeMap<String, BTreeMap<String, Vec<Item>>> {
-    use itertools::Itertools;
-
-    items
-        .into_iter()
-        .group_by(|item| item.file.clone().unwrap())
-        .into_iter()
-        .map(|(file, file_items)| {
-            (
-                file,
-                file_items
-                    .into_iter()
-                    .group_by(|item| item.diff_hunk.clone().unwrap())
-                    .into_iter()
-                    .map(|(hunk, hunk_items)| (hunk, hunk_items.collect()))
-                    .collect(),
-            )
-        })
-        .collect()
 }
 
 fn collapsed_items_iter<'a>(items: &'a Vec<Item>) -> impl Iterator<Item = (usize, &'a Item)> {
