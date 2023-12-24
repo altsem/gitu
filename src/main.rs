@@ -130,7 +130,6 @@ fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
             ..Default::default()
         });
     }
-
     for hunk in patch.hunks {
         items.push(Item {
             depth: 2,
@@ -214,11 +213,7 @@ fn ui(frame: &mut Frame, state: &State) {
                 text.spans.push(Span::raw("…"))
             }
 
-            if item.header.is_some() {
-                vec![Line::raw(""), text]
-            } else {
-                vec![text]
-            }
+            vec![text]
         })
         .collect::<Vec<_>>();
 
