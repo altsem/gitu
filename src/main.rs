@@ -2,7 +2,7 @@ mod diff;
 
 use std::{
     io::{self, stdout},
-    path::Path,
+    path::Path, process::Command,
 };
 
 use crossterm::{
@@ -74,17 +74,14 @@ fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        repo.diff_index_to_workdir(None, None).unwrap(),
+        diff::Diff::parse(&String::from_utf8_lossy(&Command::new("git")
+        .arg("diff").output().unwrap().stdout)),
         "Unstaged changes",
     ));
 
     items.extend(create_status_section(
-        repo.diff_tree_to_index(
-            Some(&repo.head().unwrap().peel_to_tree().unwrap()),
-            None,
-            None,
-        )
-        .unwrap(),
+        diff::Diff::parse(&String::from_utf8_lossy(&Command::new("git")
+        .arg("diff").arg("--staged").output().unwrap().stdout)),
         "Staged changes",
     ));
 
@@ -112,10 +109,8 @@ fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
     items
 }
 
-fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
+fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
     let mut items = vec![];
-
-    let diff = diff::Diff::from(diff);
 
     items.push(Item {
         depth: 0,

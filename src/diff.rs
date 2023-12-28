@@ -1,6 +1,17 @@
-use std::{fmt::Display, ops::Range};
-
+use std::{fmt::Display, ops::Range, process::Command};
 use regex::Regex;
+
+const HUNK_REGEX: &str = r"@@ -\d+,\d+ \+\d+,\d+ @@";
+const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
+[^@].*
+--- a\/(?<old_file>\S+)
+\+\+\+ b\/(?<new_file>\S+)
+)(?<hunk>(:?[ @\-+].*
+)*)";
+
+const HUNKS_REGEX: &str = r"^@@ \-(?<old_start>\d+),(?<old_lines>\d+) \+(?<new_start>\d+),(?<new_lines>\d+) @@(?<header_suffix>.*
+)(?<content>(:?[ \-+].*
+)*)";
 
 #[derive(Debug, Clone)]
 pub struct Diff {
@@ -15,6 +26,45 @@ impl Display for Diff {
 
         Ok(())
     }
+}
+
+impl Diff {
+    pub fn parse(diff_str: &str) -> Self {
+        let deltas_regex = &Regex::new(DELTAS_REGEX).unwrap();
+        let hunks_regex = Regex::new(HUNKS_REGEX).unwrap();
+
+        Self {
+            deltas: deltas_regex.captures_iter(&diff_str).map(|cap| {
+                let header = group_as_string(&cap, "header");
+                let hunk = group_as_string(&cap, "hunk");
+
+                Delta {
+                    file_header: header.clone(),
+                    old_file: group_as_string(&cap, "old_file"),
+                    new_file: group_as_string(&cap, "new_file"),
+                    hunks: hunks_regex.captures_iter(&hunk)
+                        .map(|hunk_cap| {
+                            Hunk {
+                                file_header: header.clone(),
+                                old_start: group_as_u32(&hunk_cap, "old_start"),
+                                old_lines: group_as_u32(&hunk_cap, "old_lines"),
+                                new_start: group_as_u32(&hunk_cap, "new_start"),
+                                new_lines: group_as_u32(&hunk_cap, "new_lines"),
+                                header_suffix: group_as_string(&hunk_cap, "header_suffix"),
+                                content: group_as_string(&hunk_cap, "content")
+                             }})
+                        .collect::<Vec<_>>() }
+            }).collect::<Vec<_>>()
+        }
+    }
+}
+
+fn group_as_string(cap: &regex::Captures<'_>, group: &str) -> String {
+    cap.name(group).expect(&format!("{} group not matching", group)).as_str().to_string()
+}
+
+fn group_as_u32(cap: &regex::Captures<'_>, group: &str) -> u32 {
+    cap.name(group).expect(&format!("{} group not matching", group)).as_str().parse().expect(&format!("Couldn't parse {}", group))
 }
 
 impl From<git2::Diff<'_>> for Diff {
@@ -95,7 +145,7 @@ pub struct Hunk {
 impl Hunk {
     fn new(file_header: String, diff_hunk: git2::DiffHunk, content: String) -> Self {
         // TODO init once
-        let hunk_header_prefix_regex = Regex::new(r"@@ -\d+,\d+ \+\d+,\d+ @@").unwrap();
+        let hunk_header_prefix_regex = Regex::new(HUNK_REGEX).unwrap();
         Self {
             file_header,
             old_start: diff_hunk.old_start(),
@@ -170,6 +220,13 @@ impl Display for Hunk {
 
 #[cfg(test)]
 mod tests {
+    use super::Diff;
+
+
+    #[test]
+    fn diff() {
+        panic!("{:?}", Diff::get());
+    }
 
     #[test]
     fn format_diff_preserved() {
