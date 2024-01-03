@@ -3,9 +3,9 @@ use regex::Regex;
 
 const HUNK_REGEX: &str = r"@@ -\d+,\d+ \+\d+,\d+ @@";
 const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
-[^@].*
---- a\/(?<old_file>\S+)
-\+\+\+ b\/(?<new_file>\S+)
+([^@].*
+)*--- (:?a\/)?(?<old_file>\S+)
+\+\+\+ (:?b\/)?(?<new_file>\S+)
 )(?<hunk>(:?[ @\-+].*
 )*)";
 
@@ -211,3 +211,13 @@ mod tests {
     //     assert!(result.is_none());
     // }
 }
+
+// TODO Implement these in a test some day
+// diff --git a/spaghet b/spaghet
+// new file mode 100644
+// index 0000000..4932cd6
+// --- /dev/null
+// +++ b/spaghet
+// @@ -0,0 +1 @@
+// +LOL
+
