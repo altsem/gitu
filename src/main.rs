@@ -12,7 +12,7 @@ use crossterm::{
 };
 use diff::{Delta, Hunk};
 use ratatui::{
-    prelude::CrosstermBackend,
+    prelude::{CrosstermBackend, Backend},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::Paragraph,
@@ -56,7 +56,7 @@ fn main() -> io::Result<()> {
 
     while !state.quit {
         terminal.draw(|frame| ui(frame, &state))?;
-        handle_events(&mut state)?;
+        handle_events(&mut state, &mut terminal)?;
         state.selected = state.selected.clamp(0, state.items.len().saturating_sub(1));
     }
 
@@ -181,7 +181,7 @@ fn ui(frame: &mut Frame, state: &State) {
     frame.render_widget(Paragraph::new(Text::from(lines)), frame.size());
 }
 
-fn handle_events(state: &mut State) -> io::Result<bool> {
+fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<bool> {
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
             if key.kind == event::KeyEventKind::Press {
@@ -216,7 +216,7 @@ fn handle_events(state: &mut State) -> io::Result<bool> {
                             state.items = create_status_items();
                         }
                         // TODO Stage lines
-                        _ => panic!("Couldn't stage"),
+                        _ => panic!("Couldn't stage")
                     },
                     KeyCode::Char('u') => {
                         match state.items[state.selected] {
@@ -235,7 +235,27 @@ fn handle_events(state: &mut State) -> io::Result<bool> {
                                 state.items = create_status_items();
                             }
                             // TODO Stage lines
-                            _ => panic!("Couldn't unstage"),
+                            _ => panic!("Couldn't unstage")
+                        }
+                    }
+                    KeyCode::Enter => {
+                        match state.items[state.selected] {
+                            Item {
+                                delta: Some(ref delta),
+                                ..
+                            } => {
+                                crossterm::execute!(stdout(), EnterAlternateScreen)?;
+                                let mut editor = Command::new("hx")
+                                    .arg(&delta.new_file)
+                                    .spawn()?;
+                                editor.wait()?;
+                                crossterm::execute!(stdout(), LeaveAlternateScreen)?;
+                                crossterm::execute!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All))?;
+                                terminal.clear()?;
+                                state.items = create_status_items();
+                            }
+                            _ => ()
+                            
                         }
                     }
                     KeyCode::Tab => {
