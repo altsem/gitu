@@ -1,8 +1,8 @@
 mod diff;
 
 use std::{
-    io::{self, stdout},
-    path::Path, process::Command,
+    io::{self, stdout, Write},
+    path::Path, process::{Command, Stdio},
 };
 
 use crossterm::{
@@ -11,7 +11,6 @@ use crossterm::{
     ExecutableCommand,
 };
 use diff::{Delta, Hunk};
-use git2::ApplyOptions;
 use ratatui::{
     prelude::CrosstermBackend,
     style::{Color, Modifier, Style},
@@ -74,14 +73,12 @@ fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        diff::Diff::parse(&String::from_utf8_lossy(&Command::new("git")
-        .arg("diff").output().unwrap().stdout)),
+        diff::Diff::parse(&git(&["diff"])),
         "Unstaged changes",
     ));
 
     items.extend(create_status_section(
-        diff::Diff::parse(&String::from_utf8_lossy(&Command::new("git")
-        .arg("diff").arg("--staged").output().unwrap().stdout)),
+        diff::Diff::parse(&git(&["diff", "--staged"])),
         "Staged changes",
     ));
 
@@ -107,6 +104,16 @@ fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
     }
 
     items
+}
+
+fn git(args: &[&'static str]) -> String {
+    String::from_utf8(Command::new("git").args(args).output().expect("Couldn't execute 'git'").stdout).unwrap()
+}
+
+fn pipe_git(input: &[u8], args: &[&'static str]) -> String {
+    let mut git = Command::new("git").args(args).stdin(Stdio::piped()).spawn().expect("Error executing 'git'");
+    git.stdin.take().expect("No stdin for git process").write_all(input).expect("Error writing to git stdin");
+    String::from_utf8(git.wait_with_output().expect("Error writing git output").stdout).unwrap()
 }
 
 fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
@@ -148,22 +155,6 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
     }
 
     items
-}
-
-fn format_delta_status(delta: &git2::Delta) -> &'_ str {
-    match delta {
-        git2::Delta::Unmodified => "unmodified",
-        git2::Delta::Added => "added     ",
-        git2::Delta::Deleted => "deleted   ",
-        git2::Delta::Modified => "modified  ",
-        git2::Delta::Renamed => "renamed   ",
-        git2::Delta::Copied => "copied    ",
-        git2::Delta::Ignored => "ignored   ",
-        git2::Delta::Untracked => "untracked ",
-        git2::Delta::Typechange => "typechange",
-        git2::Delta::Unreadable => "unreadable",
-        git2::Delta::Conflicted => "conflicted",
-    }
 }
 
 fn ui(frame: &mut Frame, state: &State) {
@@ -252,13 +243,7 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                             hunk: Some(ref hunk),
                             ..
                         } => {
-                            repo.apply(
-                                &git2::Diff::from_buffer(hunk.format_patch().as_bytes())
-                                    .expect("Couldn't create patch from buffer"),
-                                git2::ApplyLocation::Index,
-                                None,
-                            )
-                            .expect("Couldn't apply patch");
+                            pipe_git(hunk.format_patch().as_bytes(), &["apply", "--cached"]);
                             state.items = create_status_items(repo);
                         }
                         // TODO Stage lines
@@ -279,18 +264,8 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                                 hunk: Some(ref hunk),
                                 ..
                             } => {
-                                todo!()
-                                // let apply_options = ApplyOptions::new();
-                                // repo.apply(
-                                //     &git2::Diff::from_buffer(
-                                //         hunk.reverse().format_patch().as_bytes(),
-                                //     )
-                                //     .expect("Couldn't create patch from buffer"),
-                                //     git2::ApplyLocation::Index,
-                                //     None,
-                                // )
-                                // .expect("Couldn't reverse-apply patch");
-                                // state.items = create_status_items(repo);
+                                pipe_git(hunk.format_patch().as_bytes(), &["apply", "--cached", "--reverse"]);
+                                state.items = create_status_items(repo);
                             }
                             // TODO Stage lines
                             _ => panic!("Couldn't unstage"),
