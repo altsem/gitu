@@ -2,7 +2,7 @@ mod diff;
 
 use std::{
     io::{self, stdout, Write},
-    path::Path, process::{Command, Stdio},
+    process::{Command, Stdio},
 };
 
 use crossterm::{
@@ -32,7 +32,6 @@ struct State {
 struct Item {
     depth: usize,
     file: Option<String>,
-    oid: Option<git2::Oid>,
     header: Option<String>,
     status: Option<String>,
     delta: Option<Delta>,
@@ -47,8 +46,7 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let mut repo = git2::Repository::open(".").unwrap();
-    let items = create_status_items(&repo);
+    let items = create_status_items();
 
     let mut state = State {
         quit: false,
@@ -58,7 +56,7 @@ fn main() -> io::Result<()> {
 
     while !state.quit {
         terminal.draw(|frame| ui(frame, &state))?;
-        handle_events(&mut state, &mut repo)?;
+        handle_events(&mut state)?;
         state.selected = state.selected.clamp(0, state.items.len().saturating_sub(1));
     }
 
@@ -67,7 +65,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
+fn create_status_items() -> Vec<Item> {
     let mut items = vec![];
 
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
@@ -82,31 +80,10 @@ fn create_status_items(repo: &git2::Repository) -> Vec<Item> {
         "Staged changes",
     ));
 
-    let mut revwalk = repo.revwalk().unwrap();
-    revwalk.push_head().unwrap();
-
-    let recent_commits = revwalk
-        .take(5)
-        .map(|x| Item {
-            oid: Some(x.unwrap()),
-            depth: 1,
-            ..Default::default()
-        })
-        .collect::<Vec<_>>();
-    if !items.is_empty() {
-        items.push(Item {
-            header: Some("Recent commits".to_string()),
-            depth: 0,
-            section: Some(false),
-            ..Default::default()
-        });
-        items.extend(recent_commits);
-    }
-
     items
 }
 
-fn git(args: &[&'static str]) -> String {
+fn git(args: &[&'_ str]) -> String {
     String::from_utf8(Command::new("git").args(args).output().expect("Couldn't execute 'git'").stdout).unwrap()
 }
 
@@ -173,11 +150,6 @@ fn ui(frame: &mut Frame, state: &State) {
             } = item
             {
                 Line::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))
-            } else if let Item { oid: Some(oid), .. } = item {
-                Line::from(vec![Span::styled(
-                    hex::encode(oid.as_bytes()).as_str()[..8].to_string(),
-                    Style::new(),
-                )])
             } else if let Item {
                 file: Some(file),
                 status,
@@ -209,7 +181,7 @@ fn ui(frame: &mut Frame, state: &State) {
     frame.render_widget(Paragraph::new(Text::from(lines)), frame.size());
 }
 
-fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<bool> {
+fn handle_events(state: &mut State) -> io::Result<bool> {
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
             if key.kind == event::KeyEventKind::Press {
@@ -217,13 +189,13 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                     KeyCode::Char('q') => state.quit = true,
                     KeyCode::Char('j') => {
                         state.selected = collapsed_items_iter(&state.items)
-                            .find(|(i, item)| i > &state.selected)
+                            .find(|(i, _item)| i > &state.selected)
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
                     KeyCode::Char('k') => {
                         state.selected = collapsed_items_iter(&state.items)
-                            .filter(|(i, item)| i < &state.selected)
+                            .filter(|(i, _item)| i < &state.selected)
                             .last()
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
@@ -233,18 +205,15 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                             delta: Some(ref delta),
                             ..
                         } => {
-                            let index = &mut repo.index().unwrap();
-                            index.add_path(Path::new(&delta.new_file)).unwrap();
-
-                            index.write().unwrap();
-                            state.items = create_status_items(repo);
+                            git(&["add", &delta.new_file]);
+                            state.items = create_status_items();
                         }
                         Item {
                             hunk: Some(ref hunk),
                             ..
                         } => {
                             pipe_git(hunk.format_patch().as_bytes(), &["apply", "--cached"]);
-                            state.items = create_status_items(repo);
+                            state.items = create_status_items();
                         }
                         // TODO Stage lines
                         _ => panic!("Couldn't stage"),
@@ -255,17 +224,15 @@ fn handle_events(state: &mut State, repo: &mut git2::Repository) -> io::Result<b
                                 delta: Some(ref delta),
                                 ..
                             } => {
-                                let index = &mut repo.index().unwrap();
-                                index.remove_path(Path::new(&delta.new_file)).unwrap();
-                                index.write().unwrap();
-                                state.items = create_status_items(repo);
+                                git(&["restore", "--staged", &delta.new_file]);
+                                state.items = create_status_items();
                             }
                             Item {
                                 hunk: Some(ref hunk),
                                 ..
                             } => {
                                 pipe_git(hunk.format_patch().as_bytes(), &["apply", "--cached", "--reverse"]);
-                                state.items = create_status_items(repo);
+                                state.items = create_status_items();
                             }
                             // TODO Stage lines
                             _ => panic!("Couldn't unstage"),
