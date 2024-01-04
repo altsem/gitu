@@ -213,7 +213,6 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             .unwrap_or(state.selected)
                     }
                     KeyCode::Char('s') => match state.items[state.selected] {
-                        // TODO Stage lines
                         Item {
                             hunk: Some(ref hunk),
                             ..
@@ -232,7 +231,6 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     },
                     KeyCode::Char('u') => {
                         match state.items[state.selected] {
-                            // TODO Stage lines
                             Item {
                                 hunk: Some(ref hunk),
                                 ..
