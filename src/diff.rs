@@ -34,7 +34,7 @@ impl Diff {
 
         Self {
             deltas: deltas_regex
-                .captures_iter(&diff_str)
+                .captures_iter(diff_str)
                 .map(|cap| {
                     let header = group_as_string(&cap, "header");
                     let hunk = group_as_string(&cap, "hunk");
@@ -64,17 +64,17 @@ impl Diff {
 
 fn group_as_string(cap: &regex::Captures<'_>, group: &str) -> String {
     cap.name(group)
-        .expect(&format!("{} group not matching", group))
+        .unwrap_or_else(|| panic!("{} group not matching", group))
         .as_str()
         .to_string()
 }
 
 fn group_as_u32(cap: &regex::Captures<'_>, group: &str) -> u32 {
     cap.name(group)
-        .expect(&format!("{} group not matching", group))
+        .unwrap_or_else(|| panic!("{} group not matching", group))
         .as_str()
         .parse()
-        .expect(&format!("Couldn't parse {}", group))
+        .unwrap_or_else(|_| panic!("Couldn't parse {}", group))
 }
 
 #[derive(Debug, Clone)]
@@ -118,15 +118,15 @@ impl Hunk {
     pub fn select(&self, range: Range<usize>) -> Option<Self> {
         let modified_lines = self
             .content
-            .split("\n")
+            .split('\n')
             .enumerate()
             .filter_map(|(i, line)| {
-                if range.contains(&i) || line.starts_with(" ") || line == "" {
+                if range.contains(&i) || line.starts_with(' ') || line.is_empty() {
                     Some(line.to_string())
-                } else if line.starts_with("+") {
+                } else if line.starts_with('+') {
                     None
-                } else if line.starts_with("-") {
-                    Some(line.replacen("-", " ", 1))
+                } else if line.starts_with('-') {
+                    Some(line.replacen('-', " ", 1))
                 } else {
                     panic!("Unexpected case: {}", line);
                 }
@@ -135,12 +135,12 @@ impl Hunk {
 
         let added = modified_lines
             .iter()
-            .filter(|line| line.starts_with("+"))
+            .filter(|line| line.starts_with('+'))
             .count();
 
         let removed = modified_lines
             .iter()
-            .filter(|line| line.starts_with("-"))
+            .filter(|line| line.starts_with('-'))
             .count();
 
         if added == 0 && removed == 0 {

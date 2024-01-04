@@ -3,7 +3,6 @@ mod diff;
 use std::{
     io::{self, stdout, Write},
     process::{Command, Stdio},
-    rc::Rc,
 };
 
 use crossterm::{
@@ -15,7 +14,7 @@ use diff::{Delta, Hunk};
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
+    text::{Line},
     widgets::Paragraph,
     Frame, Terminal,
 };
@@ -116,7 +115,7 @@ fn run(program: &str, args: &[&str]) -> String {
         Command::new(program)
             .args(args)
             .output()
-            .expect(&format!("Couldn't execute '{}'", program))
+            .unwrap_or_else(|_| panic!("Couldn't execute '{}'", program))
             .stdout,
     )
     .unwrap()
@@ -128,17 +127,17 @@ fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
-        .expect(&format!("Error executing '{}'", program));
+        .unwrap_or_else(|_| panic!("Error executing '{}'", program));
     command
         .stdin
         .take()
-        .expect(&format!("No stdin for {} process", program))
+        .unwrap_or_else(|| panic!("No stdin for {} process", program))
         .write_all(input)
-        .expect(&format!("Error writing to '{}' stdin", program));
+        .unwrap_or_else(|_| panic!("Error writing to '{}' stdin", program));
     String::from_utf8(
         command
             .wait_with_output()
-            .expect(&format!("Error writing {} output", program))
+            .unwrap_or_else(|_| panic!("Error writing {} output", program))
             .stdout,
     )
     .unwrap()
@@ -196,7 +195,6 @@ fn ui(frame: &mut Frame, state: &State) {
     let mut highlight_depth = None;
 
     let lines = collapsed_items_iter(&state.items)
-        .map(|(i, item)| (i, item))
         .flat_map(|(i, item)| {
             let mut lines = if let Some(ref text) = item.header {
                 vec![Line::styled(text, Style::new().fg(Color::Blue))]
@@ -223,7 +221,7 @@ fn ui(frame: &mut Frame, state: &State) {
                 match status {
                     Some(s) => vec![Line::styled(format!("{}   {}", s, file), Style::new())],
                     None => vec![Line::styled(
-                        format!("{}", file),
+                        file.to_string(),
                         Style::new().fg(Color::LightMagenta),
                     )],
                 }
@@ -377,7 +375,7 @@ fn open_subscreen<B: Backend>(
     Ok(())
 }
 
-fn collapsed_items_iter<'a>(items: &'a Vec<Item>) -> impl Iterator<Item = (usize, &'a Item)> {
+fn collapsed_items_iter(items: &Vec<Item>) -> impl Iterator<Item = (usize, &'_ Item)> {
     items
         .iter()
         .enumerate()
@@ -389,9 +387,9 @@ fn collapsed_items_iter<'a>(items: &'a Vec<Item>) -> impl Iterator<Item = (usize
             *collapse_depth = next
                 .section
                 .is_some_and(|collapsed| collapsed)
-                .then(|| next.depth);
+                .then_some(next.depth);
 
             Some(Some((i, next)))
         })
-        .filter_map(|e| e)
+        .flatten()
 }
