@@ -1,5 +1,5 @@
-use std::{fmt::Display, ops::Range};
 use regex::Regex;
+use std::{fmt::Display, ops::Range};
 
 const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
 ([^@].*
@@ -33,37 +33,48 @@ impl Diff {
         let hunks_regex = Regex::new(HUNKS_REGEX).unwrap();
 
         Self {
-            deltas: deltas_regex.captures_iter(&diff_str).map(|cap| {
-                let header = group_as_string(&cap, "header");
-                let hunk = group_as_string(&cap, "hunk");
+            deltas: deltas_regex
+                .captures_iter(&diff_str)
+                .map(|cap| {
+                    let header = group_as_string(&cap, "header");
+                    let hunk = group_as_string(&cap, "hunk");
 
-                Delta {
-                    file_header: header.clone(),
-                    old_file: group_as_string(&cap, "old_file"),
-                    new_file: group_as_string(&cap, "new_file"),
-                    hunks: hunks_regex.captures_iter(&hunk)
-                        .map(|hunk_cap| {
-                            Hunk {
+                    Delta {
+                        file_header: header.clone(),
+                        old_file: group_as_string(&cap, "old_file"),
+                        new_file: group_as_string(&cap, "new_file"),
+                        hunks: hunks_regex
+                            .captures_iter(&hunk)
+                            .map(|hunk_cap| Hunk {
                                 file_header: header.clone(),
                                 old_start: group_as_u32(&hunk_cap, "old_start"),
                                 old_lines: group_as_u32(&hunk_cap, "old_lines"),
                                 new_start: group_as_u32(&hunk_cap, "new_start"),
                                 new_lines: group_as_u32(&hunk_cap, "new_lines"),
                                 header_suffix: group_as_string(&hunk_cap, "header_suffix"),
-                                content: group_as_string(&hunk_cap, "content")
-                             }})
-                        .collect::<Vec<_>>() }
-            }).collect::<Vec<_>>()
+                                content: group_as_string(&hunk_cap, "content"),
+                            })
+                            .collect::<Vec<_>>(),
+                    }
+                })
+                .collect::<Vec<_>>(),
         }
     }
 }
 
 fn group_as_string(cap: &regex::Captures<'_>, group: &str) -> String {
-    cap.name(group).expect(&format!("{} group not matching", group)).as_str().to_string()
+    cap.name(group)
+        .expect(&format!("{} group not matching", group))
+        .as_str()
+        .to_string()
 }
 
 fn group_as_u32(cap: &regex::Captures<'_>, group: &str) -> u32 {
-    cap.name(group).expect(&format!("{} group not matching", group)).as_str().parse().expect(&format!("Couldn't parse {}", group))
+    cap.name(group)
+        .expect(&format!("{} group not matching", group))
+        .as_str()
+        .parse()
+        .expect(&format!("Couldn't parse {}", group))
 }
 
 #[derive(Debug, Clone)]
@@ -144,7 +155,12 @@ impl Hunk {
     }
 
     pub fn format_patch(&self) -> String {
-        format!("{}{}{}", strip_ansi_escapes::strip_str(&self.file_header), strip_ansi_escapes::strip_str(self.header()), strip_ansi_escapes::strip_str(&self.content))
+        format!(
+            "{}{}{}",
+            strip_ansi_escapes::strip_str(&self.file_header),
+            strip_ansi_escapes::strip_str(self.header()),
+            strip_ansi_escapes::strip_str(&self.content)
+        )
     }
 }
 

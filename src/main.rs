@@ -2,7 +2,8 @@ mod diff;
 
 use std::{
     io::{self, stdout, Write},
-    process::{Command, Stdio}, rc::Rc,
+    process::{Command, Stdio},
+    rc::Rc,
 };
 
 use crossterm::{
@@ -12,7 +13,7 @@ use crossterm::{
 };
 use diff::{Delta, Hunk};
 use ratatui::{
-    prelude::{CrosstermBackend, Backend},
+    prelude::{Backend, CrosstermBackend},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::Paragraph,
@@ -71,29 +72,76 @@ fn create_status_items() -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        diff::Diff::parse(&pipe(run("git", &["diff"]).as_bytes(), "delta", &["--color-only"])),
+        diff::Diff::parse(&pipe(
+            run("git", &["diff"]).as_bytes(),
+            "delta",
+            &["--color-only"],
+        )),
         "Unstaged changes",
     ));
 
     items.extend(create_status_section(
-        diff::Diff::parse(&pipe(run("git", &["diff", "--staged"]).as_bytes(), "delta", &["--color-only"])),
+        diff::Diff::parse(&pipe(
+            run("git", &["diff", "--staged"]).as_bytes(),
+            "delta",
+            &["--color-only"],
+        )),
         "Staged changes",
     ));
 
-    items.push(Item { header: Some("Recent commits".to_string()), section: Some(false), depth: 0, ..Default::default() });
-    run("git", &["log", "-n", "5", "--oneline", "--decorate", "--color"]).lines().for_each(|log_line| items.push(Item { depth: 1, line: Some(log_line.to_string()), ..Default::default() }));
+    items.push(Item {
+        header: Some("Recent commits".to_string()),
+        section: Some(false),
+        depth: 0,
+        ..Default::default()
+    });
+    run(
+        "git",
+        &["log", "-n", "5", "--oneline", "--decorate", "--color"],
+    )
+    .lines()
+    .for_each(|log_line| {
+        items.push(Item {
+            depth: 1,
+            line: Some(log_line.to_string()),
+            ..Default::default()
+        })
+    });
 
     items
 }
 
 fn run(program: &str, args: &[&str]) -> String {
-    String::from_utf8(Command::new(program).args(args).output().expect(&format!("Couldn't execute '{}'", program)).stdout).unwrap()
+    String::from_utf8(
+        Command::new(program)
+            .args(args)
+            .output()
+            .expect(&format!("Couldn't execute '{}'", program))
+            .stdout,
+    )
+    .unwrap()
 }
 
 fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
-    let mut command = Command::new(program).args(args).stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().expect(&format!("Error executing '{}'", program));
-    command.stdin.take().expect(&format!("No stdin for {} process", program)).write_all(input).expect(&format!("Error writing to '{}' stdin", program));
-    String::from_utf8(command.wait_with_output().expect(&format!("Error writing {} output", program)).stdout).unwrap()
+    let mut command = Command::new(program)
+        .args(args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect(&format!("Error executing '{}'", program));
+    command
+        .stdin
+        .take()
+        .expect(&format!("No stdin for {} process", program))
+        .write_all(input)
+        .expect(&format!("Error writing to '{}' stdin", program));
+    String::from_utf8(
+        command
+            .wait_with_output()
+            .expect(&format!("Error writing {} output", program))
+            .stdout,
+    )
+    .unwrap()
 }
 
 fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
@@ -112,7 +160,11 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
         items.push(Item {
             delta: Some(delta.clone()),
             depth: 1,
-            header: Some(if delta.old_file == delta.new_file { delta.new_file } else { format!("{} -> {}", delta.old_file, delta.new_file) }),
+            header: Some(if delta.old_file == delta.new_file {
+                delta.new_file
+            } else {
+                format!("{} -> {}", delta.old_file, delta.new_file)
+            }),
             section: Some(false),
             ..Default::default()
         });
@@ -158,7 +210,10 @@ fn ui(frame: &mut Frame, state: &State) {
                 line: Some(hunk), ..
             } = item
             {
-                vec![Line::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))]
+                vec![Line::styled(
+                    hunk,
+                    Style::new().add_modifier(Modifier::REVERSED),
+                )]
             } else if let Item {
                 file: Some(file),
                 status,
@@ -167,14 +222,21 @@ fn ui(frame: &mut Frame, state: &State) {
             {
                 match status {
                     Some(s) => vec![Line::styled(format!("{}   {}", s, file), Style::new())],
-                    None => vec![Line::styled(format!("{}", file), Style::new().fg(Color::LightMagenta))],
+                    None => vec![Line::styled(
+                        format!("{}", file),
+                        Style::new().fg(Color::LightMagenta),
+                    )],
                 }
             } else {
                 vec![Line::styled("".to_string(), Style::new())]
             };
 
             if item.section.is_some_and(|collapsed| collapsed) {
-                lines.last_mut().expect("No last line found").spans.push("…".into());
+                lines
+                    .last_mut()
+                    .expect("No last line found")
+                    .spans
+                    .push("…".into());
             }
 
             if state.selected == i {
@@ -183,14 +245,18 @@ fn ui(frame: &mut Frame, state: &State) {
                 highlight_depth = None;
             }
 
-            lines.last_mut().expect("Should be a line here").patch_style(if highlight_depth.is_some() {
-                Style::new().add_modifier(Modifier::BOLD)
-            } else {
-                Style::new().add_modifier(Modifier::DIM)
-            });
+            lines
+                .last_mut()
+                .expect("Should be a line here")
+                .patch_style(if highlight_depth.is_some() {
+                    Style::new().add_modifier(Modifier::BOLD)
+                } else {
+                    Style::new().add_modifier(Modifier::DIM)
+                });
 
             lines
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     frame.render_widget(Paragraph::new(lines), frame.size());
 }
@@ -219,7 +285,11 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             hunk: Some(ref hunk),
                             ..
                         } => {
-                            pipe(hunk.format_patch().as_bytes(), "git", &["apply", "--cached"]);
+                            pipe(
+                                hunk.format_patch().as_bytes(),
+                                "git",
+                                &["apply", "--cached"],
+                            );
                             state.items = create_status_items();
                         }
                         Item {
@@ -229,52 +299,55 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             run("git", &["add", &delta.new_file]);
                             state.items = create_status_items();
                         }
-                        _ => ()
+                        _ => (),
                     },
-                    KeyCode::Char('u') => {
-                        match state.items[state.selected] {
-                            Item {
-                                hunk: Some(ref hunk),
-                                ..
-                            } => {
-                                pipe(hunk.format_patch().as_bytes(), "git", &["apply", "--cached", "--reverse"]);
-                                state.items = create_status_items();
-                            }
-                            Item {
-                                delta: Some(ref delta),
-                                ..
-                            } => {
-                                run("git", &["restore", "--staged", &delta.new_file]);
-                                state.items = create_status_items();
-                            }
-                            _ => ()
+                    KeyCode::Char('u') => match state.items[state.selected] {
+                        Item {
+                            hunk: Some(ref hunk),
+                            ..
+                        } => {
+                            pipe(
+                                hunk.format_patch().as_bytes(),
+                                "git",
+                                &["apply", "--cached", "--reverse"],
+                            );
+                            state.items = create_status_items();
                         }
-                    }
+                        Item {
+                            delta: Some(ref delta),
+                            ..
+                        } => {
+                            run("git", &["restore", "--staged", &delta.new_file]);
+                            state.items = create_status_items();
+                        }
+                        _ => (),
+                    },
                     KeyCode::Char('c') => {
                         open_subscreen(terminal, Command::new("git").arg("commit"))?;
                         state.items = create_status_items();
                     }
-                    KeyCode::Enter => {
-                        match state.items[state.selected] {
-                            Item {
-                                delta: Some(ref delta),
-                                hunk: Some(ref hunk),
-                                ..
-                            } => {
-                                open_subscreen(terminal, Command::new("hx").arg(format!("{}:{}", &delta.new_file, hunk.new_start)))?;
-                                state.items = create_status_items();
-                            }
-                            Item {
-                                delta: Some(ref delta),
-                                ..
-                            } => {
-                                open_subscreen(terminal, Command::new("hx").arg(&delta.new_file))?;
-                                state.items = create_status_items();
-                            }
-                            _ => ()
-                            
+                    KeyCode::Enter => match state.items[state.selected] {
+                        Item {
+                            delta: Some(ref delta),
+                            hunk: Some(ref hunk),
+                            ..
+                        } => {
+                            open_subscreen(
+                                terminal,
+                                Command::new("hx")
+                                    .arg(format!("{}:{}", &delta.new_file, hunk.new_start)),
+                            )?;
+                            state.items = create_status_items();
                         }
-                    }
+                        Item {
+                            delta: Some(ref delta),
+                            ..
+                        } => {
+                            open_subscreen(terminal, Command::new("hx").arg(&delta.new_file))?;
+                            state.items = create_status_items();
+                        }
+                        _ => (),
+                    },
                     KeyCode::Tab => {
                         if let Some(ref mut collapsed) = state.items[state.selected].section {
                             *collapsed = !*collapsed;
@@ -288,13 +361,18 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     Ok(false)
 }
 
-fn open_subscreen<B: Backend>(terminal: &mut Terminal<B>, arg: &mut Command) -> Result<(), io::Error> {
+fn open_subscreen<B: Backend>(
+    terminal: &mut Terminal<B>,
+    arg: &mut Command,
+) -> Result<(), io::Error> {
     crossterm::execute!(stdout(), EnterAlternateScreen)?;
-    let mut editor = arg
-        .spawn()?;
+    let mut editor = arg.spawn()?;
     editor.wait()?;
     crossterm::execute!(stdout(), LeaveAlternateScreen)?;
-    crossterm::execute!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All))?;
+    crossterm::execute!(
+        stdout(),
+        crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
+    )?;
     terminal.clear()?;
     Ok(())
 }
