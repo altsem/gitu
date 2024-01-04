@@ -141,25 +141,24 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 }
 
 fn ui(frame: &mut Frame, state: &State) {
-    let mut output = Text::raw("");
     let mut highlight_depth = None;
 
-    collapsed_items_iter(&state.items)
+    let lines = collapsed_items_iter(&state.items)
         .map(|(i, item)| (i, item))
-        .for_each(|(i, item)| {
-            let mut item_text = if let Some(ref text) = item.header {
-                Text::styled(text, Style::new().fg(Color::Blue))
+        .flat_map(|(i, item)| {
+            let mut lines = if let Some(ref text) = item.header {
+                vec![Line::styled(text, Style::new().fg(Color::Blue))]
             } else if let Item {
                 line: Some(diff), ..
             } = item
             {
                 use ansi_to_tui::IntoText;
-                diff.into_text().expect("Couldn't read ansi codes")
+                diff.into_text().expect("Couldn't read ansi codes").lines
             } else if let Item {
                 line: Some(hunk), ..
             } = item
             {
-                Text::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))
+                vec![Line::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))]
             } else if let Item {
                 file: Some(file),
                 status,
@@ -167,15 +166,15 @@ fn ui(frame: &mut Frame, state: &State) {
             } = item
             {
                 match status {
-                    Some(s) => Text::styled(format!("{}   {}", s, file), Style::new()),
-                    None => Text::styled(format!("{}", file), Style::new().fg(Color::LightMagenta)),
+                    Some(s) => vec![Line::styled(format!("{}   {}", s, file), Style::new())],
+                    None => vec![Line::styled(format!("{}", file), Style::new().fg(Color::LightMagenta))],
                 }
             } else {
-                Text::styled("".to_string(), Style::new())
+                vec![Line::styled("".to_string(), Style::new())]
             };
 
             if item.section.is_some_and(|collapsed| collapsed) {
-                item_text.lines.last_mut().expect("No last line found").spans.push("…".into());
+                lines.last_mut().expect("No last line found").spans.push("…".into());
             }
 
             if state.selected == i {
@@ -184,16 +183,16 @@ fn ui(frame: &mut Frame, state: &State) {
                 highlight_depth = None;
             }
 
-            item_text.patch_style(if highlight_depth.is_some() {
+            lines.last_mut().expect("Should be a line here").patch_style(if highlight_depth.is_some() {
                 Style::new().add_modifier(Modifier::BOLD)
             } else {
                 Style::new().add_modifier(Modifier::DIM)
             });
 
-            output.extend(item_text);
-        });
+            lines
+        }).collect::<Vec<_>>();
 
-    frame.render_widget(Paragraph::new(output), frame.size());
+    frame.render_widget(Paragraph::new(lines), frame.size());
 }
 
 fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<bool> {
