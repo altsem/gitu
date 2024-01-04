@@ -2,7 +2,7 @@ mod diff;
 
 use std::{
     io::{self, stdout, Write},
-    process::{Command, Stdio},
+    process::{Command, Stdio}, rc::Rc,
 };
 
 use crossterm::{
@@ -71,26 +71,26 @@ fn create_status_items() -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        diff::Diff::parse(&git(&["diff"])),
+        diff::Diff::parse(&pipe(run("git", &["diff"]).as_bytes(), "delta", &["--color-only"])),
         "Unstaged changes",
     ));
 
     items.extend(create_status_section(
-        diff::Diff::parse(&git(&["diff", "--staged"])),
+        diff::Diff::parse(&pipe(run("git", &["diff", "--staged"]).as_bytes(), "delta", &["--color-only"])),
         "Staged changes",
     ));
 
     items
 }
 
-fn git(args: &[&'_ str]) -> String {
-    String::from_utf8(Command::new("git").args(args).output().expect("Couldn't execute 'git'").stdout).unwrap()
+fn run(program: &str, args: &[&str]) -> String {
+    String::from_utf8(Command::new(program).args(args).output().expect(&format!("Couldn't execute '{}'", program)).stdout).unwrap()
 }
 
-fn pipe_git(input: &[u8], args: &[&'static str]) -> String {
-    let mut git = Command::new("git").args(args).stdin(Stdio::piped()).spawn().expect("Error executing 'git'");
-    git.stdin.take().expect("No stdin for git process").write_all(input).expect("Error writing to git stdin");
-    String::from_utf8(git.wait_with_output().expect("Error writing git output").stdout).unwrap()
+fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
+    let mut command = Command::new(program).args(args).stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().expect(&format!("Error executing '{}'", program));
+    command.stdin.take().expect(&format!("No stdin for {} process", program)).write_all(input).expect(&format!("Error writing to '{}' stdin", program));
+    String::from_utf8(command.wait_with_output().expect(&format!("Error writing {} output", program)).stdout).unwrap()
 }
 
 fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
@@ -135,21 +135,24 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 }
 
 fn ui(frame: &mut Frame, state: &State) {
-    let lines = collapsed_items_iter(&state.items)
+    let mut output = Text::raw("");
+
+    collapsed_items_iter(&state.items)
         .map(|(i, item)| (i, item))
-        .flat_map(|(i, item)| {
-            let mut text = if let Some(ref text) = item.header {
-                Line::styled(text, Style::new().fg(Color::Blue))
+        .for_each(|(i, item)| {
+            let mut item_text = if let Some(ref text) = item.header {
+                Text::styled(text, Style::new().fg(Color::Blue))
             } else if let Item {
                 line: Some(diff), ..
             } = item
             {
-                Line::raw(diff)
+                use ansi_to_tui::IntoText;
+                diff.into_text().expect("Couldn't read ansi codes")
             } else if let Item {
                 line: Some(hunk), ..
             } = item
             {
-                Line::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))
+                Text::styled(hunk, Style::new().add_modifier(Modifier::REVERSED))
             } else if let Item {
                 file: Some(file),
                 status,
@@ -157,28 +160,28 @@ fn ui(frame: &mut Frame, state: &State) {
             } = item
             {
                 match status {
-                    Some(s) => Line::styled(format!("{}   {}", s, file), Style::new()),
-                    None => Line::styled(format!("{}", file), Style::new().fg(Color::LightMagenta)),
+                    Some(s) => Text::styled(format!("{}   {}", s, file), Style::new()),
+                    None => Text::styled(format!("{}", file), Style::new().fg(Color::LightMagenta)),
                 }
             } else {
-                Line::styled("".to_string(), Style::new())
+                Text::styled("".to_string(), Style::new())
             };
 
-            text.patch_style(if state.selected == i {
+
+            if item.section.is_some_and(|collapsed| collapsed) {
+                item_text.extend(["…"]);
+            }
+
+            item_text.patch_style(if state.selected == i {
                 Style::new().add_modifier(Modifier::BOLD)
             } else {
                 Style::new().add_modifier(Modifier::DIM)
             });
 
-            if item.section.is_some_and(|collapsed| collapsed) {
-                text.spans.push(Span::raw("…"))
-            }
+            output.extend(item_text);
+        });
 
-            vec![text]
-        })
-        .collect::<Vec<_>>();
-
-    frame.render_widget(Paragraph::new(Text::from(lines)), frame.size());
+    frame.render_widget(Paragraph::new(output), frame.size());
 }
 
 fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<bool> {
@@ -205,14 +208,14 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             delta: Some(ref delta),
                             ..
                         } => {
-                            git(&["add", &delta.new_file]);
+                            run("git", &["add", &delta.new_file]);
                             state.items = create_status_items();
                         }
                         Item {
                             hunk: Some(ref hunk),
                             ..
                         } => {
-                            pipe_git(hunk.format_patch().as_bytes(), &["apply", "--cached"]);
+                            pipe(hunk.format_patch().as_bytes(), "git", &["apply", "--cached"]);
                             state.items = create_status_items();
                         }
                         // TODO Stage lines
@@ -224,14 +227,14 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                                 delta: Some(ref delta),
                                 ..
                             } => {
-                                git(&["restore", "--staged", &delta.new_file]);
+                                run("git", &["restore", "--staged", &delta.new_file]);
                                 state.items = create_status_items();
                             }
                             Item {
                                 hunk: Some(ref hunk),
                                 ..
                             } => {
-                                pipe_git(hunk.format_patch().as_bytes(), &["apply", "--cached", "--reverse"]);
+                                pipe(hunk.format_patch().as_bytes(), "git", &["apply", "--cached", "--reverse"]);
                                 state.items = create_status_items();
                             }
                             // TODO Stage lines

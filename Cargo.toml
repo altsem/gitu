@@ -6,8 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ansi-to-tui = "3.1.0"
 crossterm = "0.27.0"
 hex = "0.4.3"
 itertools = "0.12.0"
 ratatui = "0.24.0"
 regex = "1.10.2"
+strip-ansi-escapes = "0.2.0"

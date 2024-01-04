@@ -5,11 +5,11 @@ const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
 ([^@].*
 )*--- (:?a\/)?(?<old_file>\S+)
 \+\+\+ (:?b\/)?(?<new_file>\S+)
-)(?<hunk>(:?[ @\-+].*
+)(?<hunk>(:?[ @\-+\u{1b}].*
 )*)";
 
 const HUNKS_REGEX: &str = r"@@ \-(?<old_start>\d+),(?<old_lines>\d+) \+(?<new_start>\d+),(?<new_lines>\d+) @@(?<header_suffix>.*
-)(?<content>(:?[ \-+].*
+)(?<content>(:?[ \-+\u{1b}].*
 )*)";
 
 #[derive(Debug, Clone)]
@@ -144,7 +144,7 @@ impl Hunk {
     }
 
     pub fn format_patch(&self) -> String {
-        format!("{}{}{}", self.file_header, self.header(), self.content)
+        format!("{}{}{}", strip_ansi_escapes::strip_str(&self.file_header), strip_ansi_escapes::strip_str(self.header()), strip_ansi_escapes::strip_str(&self.content))
     }
 }
 
