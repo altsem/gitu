@@ -247,20 +247,17 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             _ => panic!("Couldn't unstage")
                         }
                     }
+                    KeyCode::Char('c') => {
+                        open_subscreen(terminal, Command::new("git").arg("commit"))?;
+                        state.items = create_status_items();
+                    }
                     KeyCode::Enter => {
                         match state.items[state.selected] {
                             Item {
                                 delta: Some(ref delta),
                                 ..
                             } => {
-                                crossterm::execute!(stdout(), EnterAlternateScreen)?;
-                                let mut editor = Command::new("hx")
-                                    .arg(&delta.new_file)
-                                    .spawn()?;
-                                editor.wait()?;
-                                crossterm::execute!(stdout(), LeaveAlternateScreen)?;
-                                crossterm::execute!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All))?;
-                                terminal.clear()?;
+                                open_subscreen(terminal, Command::new("hx").arg(&delta.new_file))?;
                                 state.items = create_status_items();
                             }
                             _ => ()
@@ -278,6 +275,17 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         }
     }
     Ok(false)
+}
+
+fn open_subscreen<B: Backend>(terminal: &mut Terminal<B>, arg: &mut Command) -> Result<(), io::Error> {
+    crossterm::execute!(stdout(), EnterAlternateScreen)?;
+    let mut editor = arg
+        .spawn()?;
+    editor.wait()?;
+    crossterm::execute!(stdout(), LeaveAlternateScreen)?;
+    crossterm::execute!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All))?;
+    terminal.clear()?;
+    Ok(())
 }
 
 fn collapsed_items_iter<'a>(items: &'a Vec<Item>) -> impl Iterator<Item = (usize, &'a Item)> {
