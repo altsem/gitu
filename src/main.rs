@@ -136,6 +136,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 
 fn ui(frame: &mut Frame, state: &State) {
     let mut output = Text::raw("");
+    let mut highlight_depth = None;
 
     collapsed_items_iter(&state.items)
         .map(|(i, item)| (i, item))
@@ -167,12 +168,17 @@ fn ui(frame: &mut Frame, state: &State) {
                 Text::styled("".to_string(), Style::new())
             };
 
-
             if item.section.is_some_and(|collapsed| collapsed) {
                 item_text.extend(["…"]);
             }
 
-            item_text.patch_style(if state.selected == i {
+            if state.selected == i {
+                highlight_depth = Some(item.depth);
+            } else if highlight_depth.is_some_and(|hd| hd >= item.depth) {
+                highlight_depth = None;
+            }
+
+            item_text.patch_style(if highlight_depth.is_some() {
                 Style::new().add_modifier(Modifier::BOLD)
             } else {
                 Style::new().add_modifier(Modifier::DIM)
