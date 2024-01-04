@@ -104,6 +104,8 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
     });
 
     for delta in diff.deltas {
+        let hunk_delta = delta.clone();
+
         items.push(Item {
             delta: Some(delta.clone()),
             depth: 1,
@@ -114,6 +116,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 
         for hunk in delta.hunks {
             items.push(Item {
+                delta: Some(hunk_delta.clone()),
                 hunk: Some(hunk.clone()),
                 depth: 2,
                 header: Some(hunk.header()),
@@ -167,7 +170,7 @@ fn ui(frame: &mut Frame, state: &State) {
             } else {
                 Text::styled("".to_string(), Style::new())
             };
-
+// LOL
             if item.section.is_some_and(|collapsed| collapsed) {
                 item_text.extend(["…"]);
             }
@@ -198,25 +201,19 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     KeyCode::Char('q') => state.quit = true,
                     KeyCode::Char('j') => {
                         state.selected = collapsed_items_iter(&state.items)
-                            .find(|(i, _item)| i > &state.selected)
+                            .find(|(i, item)| i > &state.selected && item.line.is_none())
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
                     KeyCode::Char('k') => {
                         state.selected = collapsed_items_iter(&state.items)
-                            .filter(|(i, _item)| i < &state.selected)
+                            .filter(|(i, item)| i < &state.selected && item.line.is_none())
                             .last()
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
                     KeyCode::Char('s') => match state.items[state.selected] {
-                        Item {
-                            delta: Some(ref delta),
-                            ..
-                        } => {
-                            run("git", &["add", &delta.new_file]);
-                            state.items = create_status_items();
-                        }
+                        // TODO Stage lines
                         Item {
                             hunk: Some(ref hunk),
                             ..
@@ -224,18 +221,18 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             pipe(hunk.format_patch().as_bytes(), "git", &["apply", "--cached"]);
                             state.items = create_status_items();
                         }
-                        // TODO Stage lines
+                        Item {
+                            delta: Some(ref delta),
+                            ..
+                        } => {
+                            run("git", &["add", &delta.new_file]);
+                            state.items = create_status_items();
+                        }
                         _ => panic!("Couldn't stage")
                     },
                     KeyCode::Char('u') => {
                         match state.items[state.selected] {
-                            Item {
-                                delta: Some(ref delta),
-                                ..
-                            } => {
-                                run("git", &["restore", "--staged", &delta.new_file]);
-                                state.items = create_status_items();
-                            }
+                            // TODO Stage lines
                             Item {
                                 hunk: Some(ref hunk),
                                 ..
@@ -243,7 +240,13 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                                 pipe(hunk.format_patch().as_bytes(), "git", &["apply", "--cached", "--reverse"]);
                                 state.items = create_status_items();
                             }
-                            // TODO Stage lines
+                            Item {
+                                delta: Some(ref delta),
+                                ..
+                            } => {
+                                run("git", &["restore", "--staged", &delta.new_file]);
+                                state.items = create_status_items();
+                            }
                             _ => panic!("Couldn't unstage")
                         }
                     }
@@ -253,6 +256,14 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     }
                     KeyCode::Enter => {
                         match state.items[state.selected] {
+                            Item {
+                                delta: Some(ref delta),
+                                hunk: Some(ref hunk),
+                                ..
+                            } => {
+                                open_subscreen(terminal, Command::new("hx").arg(format!("{}:{}", &delta.new_file, hunk.new_start)))?;
+                                state.items = create_status_items();
+                            }
                             Item {
                                 delta: Some(ref delta),
                                 ..
