@@ -170,7 +170,7 @@ fn ui(frame: &mut Frame, state: &State) {
             } else {
                 Text::styled("".to_string(), Style::new())
             };
-// LOL
+
             if item.section.is_some_and(|collapsed| collapsed) {
                 item_text.extend(["…"]);
             }
@@ -227,7 +227,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             run("git", &["add", &delta.new_file]);
                             state.items = create_status_items();
                         }
-                        _ => panic!("Couldn't stage")
+                        _ => ()
                     },
                     KeyCode::Char('u') => {
                         match state.items[state.selected] {
@@ -245,7 +245,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                                 run("git", &["restore", "--staged", &delta.new_file]);
                                 state.items = create_status_items();
                             }
-                            _ => panic!("Couldn't unstage")
+                            _ => ()
                         }
                     }
                     KeyCode::Char('c') => {
