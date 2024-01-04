@@ -175,7 +175,7 @@ fn ui(frame: &mut Frame, state: &State) {
             };
 
             if item.section.is_some_and(|collapsed| collapsed) {
-                item_text.extend(["…"]);
+                item_text.lines.last_mut().expect("No last line found").spans.push("…".into());
             }
 
             if state.selected == i {
