@@ -80,6 +80,9 @@ fn create_status_items() -> Vec<Item> {
         "Staged changes",
     ));
 
+    items.push(Item { header: Some("Recent commits".to_string()), section: Some(false), depth: 0, ..Default::default() });
+    run("git", &["log", "-n", "5", "--oneline", "--decorate", "--color"]).lines().for_each(|log_line| items.push(Item { depth: 1, line: Some(log_line.to_string()), ..Default::default() }));
+
     items
 }
 
