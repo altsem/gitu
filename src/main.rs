@@ -109,7 +109,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
         items.push(Item {
             delta: Some(delta.clone()),
             depth: 1,
-            header: Some(delta.file_header),
+            header: Some(if delta.old_file == delta.new_file { delta.new_file } else { format!("{} -> {}", delta.old_file, delta.new_file) }),
             section: Some(false),
             ..Default::default()
         });
