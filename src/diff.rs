@@ -1,7 +1,6 @@
 use std::{fmt::Display, ops::Range};
 use regex::Regex;
 
-const HUNK_REGEX: &str = r"@@ -\d+,\d+ \+\d+,\d+ @@";
 const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
 ([^@].*
 )*--- (:?a\/)?(?<old_file>\S+)
