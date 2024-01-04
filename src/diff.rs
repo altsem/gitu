@@ -8,7 +8,7 @@ const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
 )(?<hunk>(:?[ @\-+].*
 )*)";
 
-const HUNKS_REGEX: &str = r"^@@ \-(?<old_start>\d+),(?<old_lines>\d+) \+(?<new_start>\d+),(?<new_lines>\d+) @@(?<header_suffix>.*
+const HUNKS_REGEX: &str = r"@@ \-(?<old_start>\d+),(?<old_lines>\d+) \+(?<new_start>\d+),(?<new_lines>\d+) @@(?<header_suffix>.*
 )(?<content>(:?[ \-+].*
 )*)";
 
@@ -160,6 +160,14 @@ impl Display for Hunk {
 mod tests {
     use super::Diff;
 
+    #[test]
+    fn parse_example4() {
+        let diff = Diff::parse(include_str!("example4.patch"));
+        assert_eq!(diff.deltas.len(), 2);
+        assert_eq!(diff.deltas[0].hunks.len(), 2);
+        assert_eq!(diff.deltas[1].hunks.len(), 2);
+    }
+
     // #[test]
     // fn format_diff_preserved() {
     //     let buffer = include_str!("example3.patch");
@@ -210,13 +218,3 @@ mod tests {
     //     assert!(result.is_none());
     // }
 }
-
-// TODO Implement these in a test some day
-// diff --git a/spaghet b/spaghet
-// new file mode 100644
-// index 0000000..4932cd6
-// --- /dev/null
-// +++ b/spaghet
-// @@ -0,0 +1 @@
-// +LOL
-
