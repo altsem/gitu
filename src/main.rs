@@ -2,8 +2,8 @@ mod diff;
 
 use std::{
     collections::HashSet,
-    io::{self, stdout, Write},
-    process::{Command, Stdio},
+    io::{self, stdout, Read, Write},
+    process::{Child, Command, Stdio},
 };
 
 use crossterm::{
@@ -26,7 +26,27 @@ struct State {
     selected: usize,
     items: Vec<Item>,
     collapsed: HashSet<Item>,
-    command_output: String,
+    command: Option<IssuedCommand>,
+}
+
+#[derive(Debug)]
+struct IssuedCommand {
+    args: String,
+    child: Child,
+    output: Vec<u8>,
+}
+
+impl IssuedCommand {
+    fn spawn(mut command: Command) -> Result<Option<IssuedCommand>, io::Error> {
+        command.stdout(Stdio::piped());
+        command.stderr(Stdio::piped());
+        let issued_command = Some(IssuedCommand {
+            args: format_command(&command),
+            child: command.spawn()?,
+            output: vec![],
+        });
+        Ok(issued_command)
+    }
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
@@ -52,7 +72,7 @@ fn main() -> io::Result<()> {
         selected: 0,
         items,
         collapsed: HashSet::new(),
-        command_output: "".to_string(),
+        command: None,
     };
 
     while !state.quit {
@@ -248,13 +268,47 @@ fn ui(frame: &mut Frame, state: &State) {
         })
         .collect::<Vec<_>>();
 
-    lines.extend(Text::from(state.command_output.clone()).lines);
+    if let Some(ref cmd) = state.command {
+        lines.extend(Text::from("\n".to_string() + &cmd.args.clone()).lines);
+        lines.extend(
+            Text::raw(
+                String::from_utf8(cmd.output.clone())
+                    .expect("Error turning command output to String"),
+            )
+            .lines,
+        );
+    }
 
     frame.render_widget(Paragraph::new(lines), frame.size());
 }
 
+fn format_command(cmd: &Command) -> String {
+    let command_display = format!(
+        "{} {}",
+        cmd.get_program().to_string_lossy(),
+        cmd.get_args()
+            .map(|arg| arg.to_string_lossy())
+            .collect::<String>()
+    );
+    command_display
+}
+
 fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<bool> {
     let selected = &state.items[state.selected];
+
+    if let Some(ref mut cmd) = state.command {
+        if let Some(_status) = cmd.child.try_wait().expect("Error awaiting child") {
+            if let Some(stderr) = cmd.child.stderr.as_mut() {
+                let mut buffer = [0; 256];
+
+                let read = stderr
+                    .read(&mut buffer)
+                    .expect("Error reading child stderr");
+
+                cmd.output.extend(&buffer[..read]);
+            }
+        };
+    }
 
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
@@ -321,13 +375,15 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         state.items = create_status_items();
                     }
                     KeyCode::Char('P') => {
-                        state.command_output = "$ git push\n".to_string();
-                        state.command_output += &run("git", &["push"]).1;
+                        let mut command = Command::new("git");
+                        command.arg("push");
+                        state.command = IssuedCommand::spawn(command)?;
                         state.items = create_status_items();
                     }
                     KeyCode::Char('p') => {
-                        state.command_output = "$ git pull\n".to_string();
-                        state.command_output += &run("git", &["pull"]).1;
+                        let mut command = Command::new("git");
+                        command.arg("pull");
+                        state.command = IssuedCommand::spawn(command)?;
                         state.items = create_status_items();
                     }
                     KeyCode::Enter => match selected {
