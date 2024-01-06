@@ -26,6 +26,7 @@ struct State {
     selected: usize,
     items: Vec<Item>,
     collapsed: HashSet<Item>,
+    command_output: String,
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
@@ -51,6 +52,7 @@ fn main() -> io::Result<()> {
         selected: 0,
         items,
         collapsed: HashSet::new(),
+        command_output: "".to_string(),
     };
 
     while !state.quit {
@@ -72,7 +74,7 @@ fn create_status_items() -> Vec<Item> {
     items.extend(create_status_section(
         "\nUnstaged changes",
         diff::Diff::parse(&pipe(
-            run("git", &["diff"]).as_bytes(),
+            run("git", &["diff"]).0.as_bytes(),
             "delta",
             &["--color-only"],
         )),
@@ -81,7 +83,7 @@ fn create_status_items() -> Vec<Item> {
     items.extend(create_status_section(
         "\nStaged changes",
         diff::Diff::parse(&pipe(
-            run("git", &["diff", "--staged"]).as_bytes(),
+            run("git", &["diff", "--staged"]).0.as_bytes(),
             "delta",
             &["--color-only"],
         )),
@@ -92,28 +94,25 @@ fn create_status_items() -> Vec<Item> {
         &run(
             "git",
             &["log", "-n", "5", "--oneline", "--decorate", "--color"],
-        ),
+        )
+        .0,
     ));
 
     items
 }
 
-fn run(program: &str, args: &[&str]) -> String {
+fn run(program: &str, args: &[&str]) -> (String, String) {
     let output = Command::new(program)
         .args(args)
         .output()
         .unwrap_or_else(|_| panic!("Couldn't execute '{}'", program));
 
-    if !output.stderr.is_empty() {
-        eprintln!(
-            "{}",
-            String::from_utf8(output.stderr)
-                .unwrap_or_else(|_| panic!("Couldn't read stderr of '{}'", program))
-        )
-    }
-
-    String::from_utf8(output.stdout)
-        .unwrap_or_else(|_| panic!("Couldn't read stdout of '{}'", program))
+    (
+        String::from_utf8(output.stdout)
+            .unwrap_or_else(|_| panic!("Couldn't read stdout of '{}'", program)),
+        String::from_utf8(output.stderr)
+            .unwrap_or_else(|_| panic!("Couldn't read stderr of '{}'", program)),
+    )
 }
 
 fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
@@ -211,7 +210,7 @@ fn create_log_section(header: &str, log: &String) -> Vec<Item> {
 fn ui(frame: &mut Frame, state: &State) {
     let mut highlight_depth = None;
 
-    let lines = collapsed_items_iter(&state.collapsed, &state.items)
+    let mut lines = collapsed_items_iter(&state.collapsed, &state.items)
         .flat_map(|(i, item)| {
             let mut text = if let Some(ref text) = item.header {
                 Text::styled(text, Style::new().fg(Color::Yellow))
@@ -248,6 +247,8 @@ fn ui(frame: &mut Frame, state: &State) {
             text
         })
         .collect::<Vec<_>>();
+
+    lines.extend(Text::from(state.command_output.clone()).lines);
 
     frame.render_widget(Paragraph::new(lines), frame.size());
 }
@@ -320,11 +321,13 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         state.items = create_status_items();
                     }
                     KeyCode::Char('P') => {
-                        run("git", &["push"]);
+                        state.command_output = "$ git push\n".to_string();
+                        state.command_output += &run("git", &["push"]).1;
                         state.items = create_status_items();
                     }
                     KeyCode::Char('p') => {
-                        run("git", &["pull"]);
+                        state.command_output = "$ git pull\n".to_string();
+                        state.command_output += &run("git", &["pull"]).1;
                         state.items = create_status_items();
                     }
                     KeyCode::Enter => match selected {
