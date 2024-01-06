@@ -145,12 +145,14 @@ fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
 fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
     let mut items = vec![];
 
-    items.push(Item {
-        header: Some(header.to_string()),
-        section: true,
-        depth: 0,
-        ..Default::default()
-    });
+    if !diff.deltas.is_empty() {
+        items.push(Item {
+            header: Some(format!("{} ({})", header.to_string(), diff.deltas.len())),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        });
+    }
 
     for delta in diff.deltas {
         let hunk_delta = delta.clone();
@@ -198,7 +200,7 @@ fn ui(frame: &mut Frame, state: &State) {
     let lines = collapsed_items_iter(&state.collapsed, &state.items)
         .flat_map(|(i, item)| {
             let mut lines = if let Some(ref text) = item.header {
-                vec![Line::styled(text, Style::new().fg(Color::Blue))]
+                vec![Line::styled(text, Style::new().fg(Color::Yellow))]
             } else if let Item {
                 line: Some(diff), ..
             } = item
