@@ -297,17 +297,15 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     let selected = &state.items[state.selected];
 
     if let Some(ref mut cmd) = state.command {
-        if let Some(_status) = cmd.child.try_wait().expect("Error awaiting child") {
-            if let Some(stderr) = cmd.child.stderr.as_mut() {
-                let mut buffer = [0; 256];
+        if let Some(stderr) = cmd.child.stderr.as_mut() {
+            let mut buffer = [0; 256];
 
-                let read = stderr
-                    .read(&mut buffer)
-                    .expect("Error reading child stderr");
+            let read = stderr
+                .read(&mut buffer)
+                .expect("Error reading child stderr");
 
-                cmd.output.extend(&buffer[..read]);
-            }
-        };
+            cmd.output.extend(&buffer[..read]);
+        }
     }
 
     if event::poll(std::time::Duration::from_millis(50))? {
@@ -416,6 +414,13 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
             }
         }
     }
+
+    if let Some(ref mut cmd) = state.command {
+        if let Some(_status) = cmd.child.try_wait().expect("Error awaiting child") {
+            state.items = create_status_items();
+        }
+    }
+
     Ok(false)
 }
 
