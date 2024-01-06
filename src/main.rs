@@ -173,8 +173,8 @@ fn main() -> io::Result<()> {
         terminal.draw(|frame| ui::ui(frame, &state))?;
     }
 
-    disable_raw_mode()?;
     stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
     Ok(())
 }
 
