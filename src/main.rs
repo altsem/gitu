@@ -15,7 +15,7 @@ use diff::{Delta, Hunk};
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
     style::{Color, Modifier, Style},
-    text::Line,
+    text::Text,
     widgets::Paragraph,
     Frame, Terminal,
 };
@@ -199,28 +199,20 @@ fn ui(frame: &mut Frame, state: &State) {
 
     let lines = collapsed_items_iter(&state.collapsed, &state.items)
         .flat_map(|(i, item)| {
-            let mut lines = if let Some(ref text) = item.header {
-                vec![Line::styled(text, Style::new().fg(Color::Yellow))]
-            } else if let Item {
-                line: Some(diff), ..
-            } = item
-            {
-                use ansi_to_tui::IntoText;
-                diff.into_text().expect("Couldn't read ansi codes").lines
+            let mut text = if let Some(ref text) = item.header {
+                Text::styled(text, Style::new().fg(Color::Yellow))
             } else if let Item {
                 line: Some(line), ..
             } = item
             {
-                vec![Line::styled(
-                    line,
-                    Style::new().add_modifier(Modifier::REVERSED),
-                )]
+                use ansi_to_tui::IntoText;
+                line.into_text().expect("Couldn't read ansi codes")
             } else {
-                vec![Line::styled("".to_string(), Style::new())]
+                panic!("Couldn't format item");
             };
 
             if state.collapsed.contains(&item) {
-                lines
+                text.lines
                     .last_mut()
                     .expect("No last line found")
                     .spans
@@ -233,16 +225,13 @@ fn ui(frame: &mut Frame, state: &State) {
                 highlight_depth = None;
             }
 
-            lines
-                .last_mut()
-                .expect("Should be a line here")
-                .patch_style(if highlight_depth.is_some() {
-                    Style::new().add_modifier(Modifier::BOLD)
-                } else {
-                    Style::new().add_modifier(Modifier::DIM)
-                });
+            text.patch_style(if highlight_depth.is_some() {
+                Style::new().add_modifier(Modifier::BOLD)
+            } else {
+                Style::new().add_modifier(Modifier::DIM)
+            });
 
-            lines
+            text
         })
         .collect::<Vec<_>>();
 
