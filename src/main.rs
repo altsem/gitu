@@ -75,7 +75,7 @@ fn create_status_items() -> Vec<Item> {
             "delta",
             &["--color-only"],
         )),
-        "Unstaged changes",
+        "\nUnstaged changes",
     ));
 
     items.extend(create_status_section(
@@ -84,11 +84,11 @@ fn create_status_items() -> Vec<Item> {
             "delta",
             &["--color-only"],
         )),
-        "Staged changes",
+        "\nStaged changes",
     ));
 
     items.push(Item {
-        header: Some("Recent commits".to_string()),
+        header: Some("\nRecent commits".to_string()),
         section: true,
         depth: 0,
         ..Default::default()
