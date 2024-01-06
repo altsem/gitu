@@ -1,6 +1,7 @@
 mod diff;
 
 use std::{
+    collections::HashSet,
     io::{self, stdout, Write},
     process::{Command, Stdio},
 };
@@ -14,21 +15,20 @@ use diff::{Delta, Hunk};
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
     style::{Color, Modifier, Style},
-    text::{Line},
+    text::Line,
     widgets::Paragraph,
     Frame, Terminal,
 };
-
-// TODO Keep collapsed state in set, fixes reloading repo state
 
 #[derive(Debug)]
 struct State {
     quit: bool,
     selected: usize,
     items: Vec<Item>,
+    collapsed: HashSet<Item>,
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 struct Item {
     depth: usize,
     file: Option<String>,
@@ -37,7 +37,7 @@ struct Item {
     delta: Option<Delta>,
     hunk: Option<Hunk>,
     line: Option<String>,
-    section: Option<bool>,
+    section: bool,
 }
 
 // TODO Show repo state (repo.state())
@@ -52,6 +52,7 @@ fn main() -> io::Result<()> {
         quit: false,
         selected: 0,
         items,
+        collapsed: HashSet::new(),
     };
 
     while !state.quit {
@@ -90,7 +91,7 @@ fn create_status_items() -> Vec<Item> {
 
     items.push(Item {
         header: Some("Recent commits".to_string()),
-        section: Some(false),
+        section: true,
         depth: 0,
         ..Default::default()
     });
@@ -149,7 +150,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
     items.push(Item {
         depth: 0,
         header: Some(header.to_string()),
-        section: Some(false),
+        section: true,
         ..Default::default()
     });
 
@@ -164,7 +165,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
             } else {
                 format!("{} -> {}", delta.old_file, delta.new_file)
             }),
-            section: Some(false),
+            section: true,
             ..Default::default()
         });
 
@@ -174,7 +175,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
                 hunk: Some(hunk.clone()),
                 depth: 2,
                 header: Some(hunk.header()),
-                section: Some(false),
+                section: true,
                 ..Default::default()
             });
 
@@ -194,7 +195,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 fn ui(frame: &mut Frame, state: &State) {
     let mut highlight_depth = None;
 
-    let lines = collapsed_items_iter(&state.items)
+    let lines = collapsed_items_iter(&state.collapsed, &state.items)
         .flat_map(|(i, item)| {
             let mut lines = if let Some(ref text) = item.header {
                 vec![Line::styled(text, Style::new().fg(Color::Blue))]
@@ -229,7 +230,7 @@ fn ui(frame: &mut Frame, state: &State) {
                 vec![Line::styled("".to_string(), Style::new())]
             };
 
-            if item.section.is_some_and(|collapsed| collapsed) {
+            if state.collapsed.contains(&item) {
                 lines
                     .last_mut()
                     .expect("No last line found")
@@ -260,25 +261,27 @@ fn ui(frame: &mut Frame, state: &State) {
 }
 
 fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<bool> {
+    let selected = &state.items[state.selected];
+
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
             if key.kind == event::KeyEventKind::Press {
                 match key.code {
                     KeyCode::Char('q') => state.quit = true,
                     KeyCode::Char('j') => {
-                        state.selected = collapsed_items_iter(&state.items)
+                        state.selected = collapsed_items_iter(&state.collapsed, &state.items)
                             .find(|(i, item)| i > &state.selected && item.line.is_none())
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
                     KeyCode::Char('k') => {
-                        state.selected = collapsed_items_iter(&state.items)
+                        state.selected = collapsed_items_iter(&state.collapsed, &state.items)
                             .filter(|(i, item)| i < &state.selected && item.line.is_none())
                             .last()
                             .map(|(i, _item)| i)
                             .unwrap_or(state.selected)
                     }
-                    KeyCode::Char('s') => match state.items[state.selected] {
+                    KeyCode::Char('s') => match selected {
                         Item {
                             hunk: Some(ref hunk),
                             ..
@@ -299,7 +302,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         }
                         _ => (),
                     },
-                    KeyCode::Char('u') => match state.items[state.selected] {
+                    KeyCode::Char('u') => match selected {
                         Item {
                             hunk: Some(ref hunk),
                             ..
@@ -324,7 +327,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         open_subscreen(terminal, Command::new("git").arg("commit"))?;
                         state.items = create_status_items();
                     }
-                    KeyCode::Enter => match state.items[state.selected] {
+                    KeyCode::Enter => match selected {
                         Item {
                             delta: Some(ref delta),
                             hunk: Some(ref hunk),
@@ -347,9 +350,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         _ => (),
                     },
                     KeyCode::Tab => {
-                        if let Some(ref mut collapsed) = state.items[state.selected].section {
-                            *collapsed = !*collapsed;
-                        };
+                        try_toggle(&mut state.collapsed, selected);
                     }
                     _ => (),
                 }
@@ -357,6 +358,16 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         }
     }
     Ok(false)
+}
+
+fn try_toggle(collapsed: &mut HashSet<Item>, selected: &Item) {
+    if selected.section {
+        if collapsed.contains(&selected) {
+            collapsed.remove(&selected);
+        } else {
+            collapsed.insert(selected.clone());
+        }
+    }
 }
 
 fn open_subscreen<B: Backend>(
@@ -375,7 +386,10 @@ fn open_subscreen<B: Backend>(
     Ok(())
 }
 
-fn collapsed_items_iter(items: &Vec<Item>) -> impl Iterator<Item = (usize, &'_ Item)> {
+fn collapsed_items_iter<'a>(
+    collapsed: &'a HashSet<Item>,
+    items: &'a Vec<Item>,
+) -> impl Iterator<Item = (usize, &'a Item)> {
     items
         .iter()
         .enumerate()
@@ -384,10 +398,11 @@ fn collapsed_items_iter(items: &Vec<Item>) -> impl Iterator<Item = (usize, &'_ I
                 return Some(None);
             }
 
-            *collapse_depth = next
-                .section
-                .is_some_and(|collapsed| collapsed)
-                .then_some(next.depth);
+            *collapse_depth = if next.section && collapsed.contains(next) {
+                Some(next.depth)
+            } else {
+                None
+            };
 
             Some(Some((i, next)))
         })

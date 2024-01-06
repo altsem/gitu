@@ -77,7 +77,7 @@ fn group_as_u32(cap: &regex::Captures<'_>, group: &str) -> u32 {
         .unwrap_or_else(|_| panic!("Couldn't parse {}", group))
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delta {
     pub file_header: String,
     pub old_file: String,
@@ -96,7 +96,7 @@ impl Display for Delta {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hunk {
     pub file_header: String,
     pub old_start: u32,
