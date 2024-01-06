@@ -1,6 +1,7 @@
 mod diff;
 mod git;
 mod process;
+mod ui;
 
 use std::{
     collections::HashSet,
@@ -16,10 +17,7 @@ use crossterm::{
 use diff::{Delta, Hunk};
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
-    style::{Color, Modifier, Style},
-    text::Text,
-    widgets::Paragraph,
-    Frame, Terminal,
+    Terminal,
 };
 
 #[derive(Debug)]
@@ -120,34 +118,34 @@ fn main() -> io::Result<()> {
     };
 
     while !state.quit {
-        terminal.draw(|frame| ui(frame, &state))?;
+        terminal.draw(|frame| ui::ui(frame, &state))?;
 
-        if let Some(ref mut cmd) = state.command {
-            if let Some(stderr) = cmd.child.stderr.as_mut() {
-                let mut buffer = [0; 256];
-
-                let read = stderr
-                    .read(&mut buffer)
-                    .expect("Error reading child stderr");
-
-                cmd.output.extend(&buffer[..read]);
-            }
-        }
-
-        handle_events(&mut state, &mut terminal)?;
-
-        if let Some(ref mut cmd) = state.command {
+        if let Some(cmd) = &mut state.command {
+            read_command_output_to_buffer(cmd);
             if let Some(_status) = cmd.child.try_wait().expect("Error awaiting child") {
                 state.items = create_status_items();
             }
         }
 
+        handle_events(&mut state, &mut terminal)?;
         state.selected = state.selected.clamp(0, state.items.len().saturating_sub(1));
     }
 
     disable_raw_mode()?;
     stdout().execute(LeaveAlternateScreen)?;
     Ok(())
+}
+
+fn read_command_output_to_buffer(cmd: &mut IssuedCommand) {
+    if let Some(stderr) = cmd.child.stderr.as_mut() {
+        let mut buffer = [0; 256];
+
+        let read = stderr
+            .read(&mut buffer)
+            .expect("Error reading child stderr");
+
+        cmd.output.extend(&buffer[..read]);
+    }
 }
 
 fn create_status_items() -> Vec<Item> {
@@ -166,7 +164,6 @@ fn create_status_items() -> Vec<Item> {
     ));
 
     items.extend(create_log_section("\nRecent commits", &git::log_recent()));
-
     items
 }
 
@@ -238,61 +235,6 @@ fn create_log_section(header: &str, log: &str) -> Vec<Item> {
         })
     });
     items
-}
-
-fn ui(frame: &mut Frame, state: &State) {
-    let mut highlight_depth = None;
-
-    let mut lines = collapsed_items_iter(&state.collapsed, &state.items)
-        .flat_map(|(i, item)| {
-            let mut text = if let Some(ref text) = item.header {
-                Text::styled(text, Style::new().fg(Color::Yellow))
-            } else if let Item {
-                line: Some(line), ..
-            } = item
-            {
-                use ansi_to_tui::IntoText;
-                line.into_text().expect("Couldn't read ansi codes")
-            } else {
-                panic!("Couldn't format item");
-            };
-
-            if state.collapsed.contains(&item) {
-                text.lines
-                    .last_mut()
-                    .expect("No last line found")
-                    .spans
-                    .push("…".into());
-            }
-
-            if state.selected == i {
-                highlight_depth = Some(item.depth);
-            } else if highlight_depth.is_some_and(|hd| hd >= item.depth) {
-                highlight_depth = None;
-            }
-
-            text.patch_style(if highlight_depth.is_some() {
-                Style::new()
-            } else {
-                Style::new().add_modifier(Modifier::DIM)
-            });
-
-            text
-        })
-        .collect::<Vec<_>>();
-
-    if let Some(ref cmd) = state.command {
-        lines.extend(Text::from("\n".to_string() + &cmd.args.clone()).lines);
-        lines.extend(
-            Text::raw(
-                String::from_utf8(cmd.output.clone())
-                    .expect("Error turning command output to String"),
-            )
-            .lines,
-        );
-    }
-
-    frame.render_widget(Paragraph::new(lines), frame.size());
 }
 
 fn format_command(cmd: &Command) -> String {
