@@ -70,41 +70,29 @@ fn create_status_items() -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
+        "\nUnstaged changes",
         diff::Diff::parse(&pipe(
             run("git", &["diff"]).as_bytes(),
             "delta",
             &["--color-only"],
         )),
-        "\nUnstaged changes",
     ));
 
     items.extend(create_status_section(
+        "\nStaged changes",
         diff::Diff::parse(&pipe(
             run("git", &["diff", "--staged"]).as_bytes(),
             "delta",
             &["--color-only"],
         )),
-        "\nStaged changes",
     ));
 
-    items.push(Item {
-        header: Some("\nRecent commits".to_string()),
-        section: true,
-        depth: 0,
-        ..Default::default()
-    });
-    run(
+    let log = &run(
         "git",
         &["log", "-n", "5", "--oneline", "--decorate", "--color"],
-    )
-    .lines()
-    .for_each(|log_line| {
-        items.push(Item {
-            depth: 1,
-            line: Some(log_line.to_string()),
-            ..Default::default()
-        })
-    });
+    );
+
+    items.extend(create_log_section("\nRecent commits", log));
 
     items
 }
@@ -142,7 +130,7 @@ fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
     .unwrap()
 }
 
-fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
+fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
     let mut items = vec![];
 
     if !diff.deltas.is_empty() {
@@ -191,6 +179,24 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
         }
     }
 
+    items
+}
+
+fn create_log_section(header: &str, log: &String) -> Vec<Item> {
+    let mut items = vec![];
+    items.push(Item {
+        header: Some(header.to_string()),
+        section: true,
+        depth: 0,
+        ..Default::default()
+    });
+    log.lines().for_each(|log_line| {
+        items.push(Item {
+            depth: 1,
+            line: Some(log_line.to_string()),
+            ..Default::default()
+        })
+    });
     items
 }
 
