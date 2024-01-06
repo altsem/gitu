@@ -1,8 +1,10 @@
 mod diff;
+mod git;
+mod process;
 
 use std::{
     collections::HashSet,
-    io::{self, stdout, Read, Write},
+    io::{self, stdout, Read},
     process::{Child, Command, Stdio},
 };
 
@@ -93,68 +95,17 @@ fn create_status_items() -> Vec<Item> {
 
     items.extend(create_status_section(
         "\nUnstaged changes",
-        diff::Diff::parse(&pipe(
-            run("git", &["diff"]).0.as_bytes(),
-            "delta",
-            &["--color-only"],
-        )),
+        diff::Diff::parse(&git::diff_unstaged()),
     ));
 
     items.extend(create_status_section(
         "\nStaged changes",
-        diff::Diff::parse(&pipe(
-            run("git", &["diff", "--staged"]).0.as_bytes(),
-            "delta",
-            &["--color-only"],
-        )),
+        diff::Diff::parse(&git::diff_staged()),
     ));
 
-    items.extend(create_log_section(
-        "\nRecent commits",
-        &run(
-            "git",
-            &["log", "-n", "5", "--oneline", "--decorate", "--color"],
-        )
-        .0,
-    ));
+    items.extend(create_log_section("\nRecent commits", &git::log_recent()));
 
     items
-}
-
-fn run(program: &str, args: &[&str]) -> (String, String) {
-    let output = Command::new(program)
-        .args(args)
-        .output()
-        .unwrap_or_else(|_| panic!("Couldn't execute '{}'", program));
-
-    (
-        String::from_utf8(output.stdout)
-            .unwrap_or_else(|_| panic!("Couldn't read stdout of '{}'", program)),
-        String::from_utf8(output.stderr)
-            .unwrap_or_else(|_| panic!("Couldn't read stderr of '{}'", program)),
-    )
-}
-
-fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
-    let mut command = Command::new(program)
-        .args(args)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap_or_else(|_| panic!("Error executing '{}'", program));
-    command
-        .stdin
-        .take()
-        .unwrap_or_else(|| panic!("No stdin for {} process", program))
-        .write_all(input)
-        .unwrap_or_else(|_| panic!("Error writing to '{}' stdin", program));
-    String::from_utf8(
-        command
-            .wait_with_output()
-            .unwrap_or_else(|_| panic!("Error writing {} output", program))
-            .stdout,
-    )
-    .unwrap()
 }
 
 fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
@@ -209,7 +160,7 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
     items
 }
 
-fn create_log_section(header: &str, log: &String) -> Vec<Item> {
+fn create_log_section(header: &str, log: &str) -> Vec<Item> {
     let mut items = vec![];
     items.push(Item {
         header: Some(header.to_string()),
@@ -313,99 +264,54 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
             if key.kind == event::KeyEventKind::Press {
                 match key.code {
                     KeyCode::Char('q') => state.quit = true,
-                    KeyCode::Char('j') => {
-                        state.selected = collapsed_items_iter(&state.collapsed, &state.items)
-                            .find(|(i, item)| i > &state.selected && item.line.is_none())
-                            .map(|(i, _item)| i)
-                            .unwrap_or(state.selected)
+                    KeyCode::Char('j') => select_next(state),
+                    KeyCode::Char('k') => select_previous(state),
+                    KeyCode::Char('s') => {
+                        match selected {
+                            Item { hunk: Some(h), .. } => git::stage_hunk(h),
+                            Item { delta: Some(d), .. } => git::stage_file(d),
+                            _ => (),
+                        }
+
+                        state.items = create_status_items();
                     }
-                    KeyCode::Char('k') => {
-                        state.selected = collapsed_items_iter(&state.collapsed, &state.items)
-                            .filter(|(i, item)| i < &state.selected && item.line.is_none())
-                            .last()
-                            .map(|(i, _item)| i)
-                            .unwrap_or(state.selected)
+                    KeyCode::Char('u') => {
+                        match selected {
+                            Item { hunk: Some(h), .. } => git::unstage_hunk(h),
+                            Item { delta: Some(d), .. } => git::unstage_file(d),
+                            _ => (),
+                        }
+
+                        state.items = create_status_items();
                     }
-                    KeyCode::Char('s') => match selected {
-                        Item {
-                            hunk: Some(ref hunk),
-                            ..
-                        } => {
-                            pipe(
-                                hunk.format_patch().as_bytes(),
-                                "git",
-                                &["apply", "--cached"],
-                            );
-                            state.items = create_status_items();
-                        }
-                        Item {
-                            delta: Some(ref delta),
-                            ..
-                        } => {
-                            run("git", &["add", &delta.new_file]);
-                            state.items = create_status_items();
-                        }
-                        _ => (),
-                    },
-                    KeyCode::Char('u') => match selected {
-                        Item {
-                            hunk: Some(ref hunk),
-                            ..
-                        } => {
-                            pipe(
-                                hunk.format_patch().as_bytes(),
-                                "git",
-                                &["apply", "--cached", "--reverse"],
-                            );
-                            state.items = create_status_items();
-                        }
-                        Item {
-                            delta: Some(ref delta),
-                            ..
-                        } => {
-                            run("git", &["restore", "--staged", &delta.new_file]);
-                            state.items = create_status_items();
-                        }
-                        _ => (),
-                    },
                     KeyCode::Char('c') => {
-                        open_subscreen(terminal, Command::new("git").arg("commit"))?;
+                        open_subscreen(terminal, git::commit_cmd())?;
                         state.items = create_status_items();
                     }
                     KeyCode::Char('P') => {
-                        let mut command = Command::new("git");
-                        command.arg("push");
-                        state.command = IssuedCommand::spawn(command)?;
+                        state.command = IssuedCommand::spawn(git::push_cmd())?;
                         state.items = create_status_items();
                     }
                     KeyCode::Char('p') => {
-                        let mut command = Command::new("git");
-                        command.arg("pull");
-                        state.command = IssuedCommand::spawn(command)?;
+                        state.command = IssuedCommand::spawn(git::pull_cmd())?;
                         state.items = create_status_items();
                     }
-                    KeyCode::Enter => match selected {
-                        Item {
-                            delta: Some(ref delta),
-                            hunk: Some(ref hunk),
-                            ..
-                        } => {
-                            open_subscreen(
-                                terminal,
-                                Command::new("hx")
-                                    .arg(format!("{}:{}", &delta.new_file, hunk.new_start)),
-                            )?;
-                            state.items = create_status_items();
+                    KeyCode::Enter => {
+                        match selected {
+                            Item {
+                                delta: Some(d),
+                                hunk: Some(h),
+                                ..
+                            } => {
+                                open_subscreen(terminal, editor_cmd(d, Some(h)))?;
+                            }
+                            Item { delta: Some(d), .. } => {
+                                open_subscreen(terminal, editor_cmd(d, None))?;
+                            }
+                            _ => (),
                         }
-                        Item {
-                            delta: Some(ref delta),
-                            ..
-                        } => {
-                            open_subscreen(terminal, Command::new("hx").arg(&delta.new_file))?;
-                            state.items = create_status_items();
-                        }
-                        _ => (),
-                    },
+                        state.items = create_status_items();
+                    }
                     KeyCode::Tab => {
                         try_toggle(&mut state.collapsed, selected);
                     }
@@ -424,6 +330,30 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     Ok(false)
 }
 
+fn select_next(state: &mut State) {
+    state.selected = collapsed_items_iter(&state.collapsed, &state.items)
+        .find(|(i, item)| i > &state.selected && item.line.is_none())
+        .map(|(i, _item)| i)
+        .unwrap_or(state.selected)
+}
+
+fn select_previous(state: &mut State) {
+    state.selected = collapsed_items_iter(&state.collapsed, &state.items)
+        .filter(|(i, item)| i < &state.selected && item.line.is_none())
+        .last()
+        .map(|(i, _item)| i)
+        .unwrap_or(state.selected)
+}
+
+fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
+    let mut cmd = Command::new("hx");
+    cmd.arg(match maybe_hunk {
+        Some(hunk) => format!("{}:{}", &delta.new_file, hunk.new_start),
+        None => delta.new_file.clone(),
+    });
+    cmd
+}
+
 fn try_toggle(collapsed: &mut HashSet<Item>, selected: &Item) {
     if selected.section {
         if collapsed.contains(&selected) {
@@ -436,10 +366,10 @@ fn try_toggle(collapsed: &mut HashSet<Item>, selected: &Item) {
 
 fn open_subscreen<B: Backend>(
     terminal: &mut Terminal<B>,
-    arg: &mut Command,
+    mut cmd: Command,
 ) -> Result<(), io::Error> {
     crossterm::execute!(stdout(), EnterAlternateScreen)?;
-    let mut editor = arg.spawn()?;
+    let mut editor = cmd.spawn()?;
     editor.wait()?;
     crossterm::execute!(stdout(), LeaveAlternateScreen)?;
     crossterm::execute!(
