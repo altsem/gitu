@@ -87,25 +87,33 @@ fn create_status_items() -> Vec<Item> {
         )),
     ));
 
-    let log = &run(
-        "git",
-        &["log", "-n", "5", "--oneline", "--decorate", "--color"],
-    );
-
-    items.extend(create_log_section("\nRecent commits", log));
+    items.extend(create_log_section(
+        "\nRecent commits",
+        &run(
+            "git",
+            &["log", "-n", "5", "--oneline", "--decorate", "--color"],
+        ),
+    ));
 
     items
 }
 
 fn run(program: &str, args: &[&str]) -> String {
-    String::from_utf8(
-        Command::new(program)
-            .args(args)
-            .output()
-            .unwrap_or_else(|_| panic!("Couldn't execute '{}'", program))
-            .stdout,
-    )
-    .unwrap()
+    let output = Command::new(program)
+        .args(args)
+        .output()
+        .unwrap_or_else(|_| panic!("Couldn't execute '{}'", program));
+
+    if !output.stderr.is_empty() {
+        eprintln!(
+            "{}",
+            String::from_utf8(output.stderr)
+                .unwrap_or_else(|_| panic!("Couldn't read stderr of '{}'", program))
+        )
+    }
+
+    String::from_utf8(output.stdout)
+        .unwrap_or_else(|_| panic!("Couldn't read stdout of '{}'", program))
 }
 
 fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
@@ -232,7 +240,7 @@ fn ui(frame: &mut Frame, state: &State) {
             }
 
             text.patch_style(if highlight_depth.is_some() {
-                Style::new().add_modifier(Modifier::BOLD)
+                Style::new()
             } else {
                 Style::new().add_modifier(Modifier::DIM)
             });
@@ -309,6 +317,14 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     },
                     KeyCode::Char('c') => {
                         open_subscreen(terminal, Command::new("git").arg("commit"))?;
+                        state.items = create_status_items();
+                    }
+                    KeyCode::Char('P') => {
+                        run("git", &["push"]);
+                        state.items = create_status_items();
+                    }
+                    KeyCode::Char('p') => {
+                        run("git", &["pull"]);
                         state.items = create_status_items();
                     }
                     KeyCode::Enter => match selected {
