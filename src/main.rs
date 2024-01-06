@@ -30,14 +30,12 @@ struct State {
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 struct Item {
-    depth: usize,
-    file: Option<String>,
     header: Option<String>,
-    status: Option<String>,
+    section: bool,
+    depth: usize,
     delta: Option<Delta>,
     hunk: Option<Hunk>,
     line: Option<String>,
-    section: bool,
 }
 
 // TODO Show repo state (repo.state())
@@ -148,9 +146,9 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
     let mut items = vec![];
 
     items.push(Item {
-        depth: 0,
         header: Some(header.to_string()),
         section: true,
+        depth: 0,
         ..Default::default()
     });
 
@@ -159,29 +157,31 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 
         items.push(Item {
             delta: Some(delta.clone()),
-            depth: 1,
             header: Some(if delta.old_file == delta.new_file {
                 delta.new_file
             } else {
                 format!("{} -> {}", delta.old_file, delta.new_file)
             }),
             section: true,
+            depth: 1,
             ..Default::default()
         });
 
         for hunk in delta.hunks {
             items.push(Item {
-                delta: Some(hunk_delta.clone()),
-                hunk: Some(hunk.clone()),
-                depth: 2,
                 header: Some(hunk.header()),
                 section: true,
+                depth: 2,
+                delta: Some(hunk_delta.clone()),
+                hunk: Some(hunk.clone()),
                 ..Default::default()
             });
 
             for line in hunk.content.lines() {
                 items.push(Item {
                     depth: 3,
+                    delta: Some(hunk_delta.clone()),
+                    hunk: Some(hunk.clone()),
                     line: Some(line.to_string()),
                     ..Default::default()
                 });
@@ -213,19 +213,6 @@ fn ui(frame: &mut Frame, state: &State) {
                     hunk,
                     Style::new().add_modifier(Modifier::REVERSED),
                 )]
-            } else if let Item {
-                file: Some(file),
-                status,
-                ..
-            } = item
-            {
-                match status {
-                    Some(s) => vec![Line::styled(format!("{}   {}", s, file), Style::new())],
-                    None => vec![Line::styled(
-                        file.to_string(),
-                        Style::new().fg(Color::LightMagenta),
-                    )],
-                }
             } else {
                 vec![Line::styled("".to_string(), Style::new())]
             };
