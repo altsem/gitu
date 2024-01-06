@@ -33,7 +33,6 @@ impl State {
     fn issue_command(&mut self, input: &[u8], command: Command) -> Result<(), io::Error> {
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
             self.command = IssuedCommand::spawn(input, command)?;
-            self.items = create_status_items();
         }
 
         Ok(())
@@ -162,14 +161,16 @@ fn main() -> io::Result<()> {
     while !state.quit {
         if let Some(cmd) = &mut state.command {
             cmd.read_command_output_to_buffer();
+
             if cmd.just_finished() {
                 state.items = create_status_items();
             }
         }
 
-        terminal.draw(|frame| ui::ui(frame, &state))?;
         handle_events(&mut state, &mut terminal)?;
         state.clamp_selected();
+
+        terminal.draw(|frame| ui::ui(frame, &state))?;
     }
 
     disable_raw_mode()?;
