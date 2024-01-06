@@ -108,6 +108,13 @@ pub struct Hunk {
 }
 
 impl Hunk {
+    pub fn display_header(&self) -> String {
+        format!(
+            "@@ -{},{} +{},{} @@",
+            self.old_start, self.old_lines, self.new_start, self.new_lines
+        )
+    }
+
     pub fn header(&self) -> String {
         format!(
             "@@ -{},{} +{},{} @@{}",
@@ -166,7 +173,7 @@ impl Hunk {
 
 impl Display for Hunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.header())?;
+        f.write_str(&self.display_header())?;
         f.write_str(&self.content)?;
         Ok(())
     }

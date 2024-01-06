@@ -171,7 +171,7 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
 
         for hunk in delta.hunks {
             items.push(Item {
-                header: Some(hunk.header()),
+                header: Some(hunk.display_header()),
                 section: true,
                 depth: 2,
                 delta: Some(hunk_delta.clone()),
@@ -208,11 +208,11 @@ fn ui(frame: &mut Frame, state: &State) {
                 use ansi_to_tui::IntoText;
                 diff.into_text().expect("Couldn't read ansi codes").lines
             } else if let Item {
-                line: Some(hunk), ..
+                line: Some(line), ..
             } = item
             {
                 vec![Line::styled(
-                    hunk,
+                    line,
                     Style::new().add_modifier(Modifier::REVERSED),
                 )]
             } else {
