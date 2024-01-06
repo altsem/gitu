@@ -67,3 +67,9 @@ pub(crate) fn pull_cmd() -> Command {
     cmd.arg("pull");
     cmd
 }
+
+pub(crate) fn fetch_all_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(&["fetch", "--all"]);
+    cmd
+}

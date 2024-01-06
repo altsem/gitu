@@ -288,6 +288,10 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     if let Event::Key(key) = event::read()? {
         if key.kind == event::KeyEventKind::Press {
             match key.code {
+                KeyCode::Char('f') => {
+                    state.issue_command(&[], git::fetch_all_cmd())?;
+                    state.items = create_status_items();
+                }
                 KeyCode::Char('g') => state.items = create_status_items(),
                 KeyCode::Char('q') => state.quit = true,
                 KeyCode::Char('j') => state.select_next(),
