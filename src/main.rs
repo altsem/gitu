@@ -5,7 +5,7 @@ mod ui;
 
 use std::{
     collections::HashSet,
-    io::{self, stdout, Read},
+    io::{self, stdout, Read, Write},
     process::{Child, Command, Stdio},
 };
 
@@ -30,9 +30,9 @@ struct State {
 }
 
 impl State {
-    fn issue_command(&mut self, command: Command) -> Result<(), io::Error> {
+    fn issue_command(&mut self, input: &[u8], command: Command) -> Result<(), io::Error> {
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
-            self.command = IssuedCommand::spawn(command)?;
+            self.command = IssuedCommand::spawn(input, command)?;
             self.items = create_status_items();
         }
 
@@ -80,12 +80,23 @@ struct IssuedCommand {
 }
 
 impl IssuedCommand {
-    fn spawn(mut command: Command) -> Result<Option<IssuedCommand>, io::Error> {
+    fn spawn(input: &[u8], mut command: Command) -> Result<Option<IssuedCommand>, io::Error> {
+        command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+
+        let mut child = command.spawn()?;
+
+        child
+            .stdin
+            .take()
+            .unwrap_or_else(|| panic!("No stdin for process"))
+            .write_all(input)
+            .unwrap_or_else(|_| panic!("Error writing to stdin"));
+
         let issued_command = Some(IssuedCommand {
             args: format_command(&command),
-            child: command.spawn()?,
+            child,
             output: vec![],
             finish_acked: false,
         });
@@ -281,19 +292,34 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                 KeyCode::Char('j') => state.select_next(),
                 KeyCode::Char('k') => state.select_previous(),
                 KeyCode::Char('s') => {
-                    stage(selected);
+                    match selected {
+                        Item { hunk: Some(h), .. } => state
+                            .issue_command(h.format_patch().as_bytes(), git::stage_patch_cmd())?,
+                        Item { delta: Some(d), .. } => {
+                            state.issue_command(&[], git::stage_file_cmd(d))?
+                        }
+                        _ => (),
+                    }
+
                     state.items = create_status_items();
                 }
                 KeyCode::Char('u') => {
-                    unstage(selected);
+                    match selected {
+                        Item { hunk: Some(h), .. } => state
+                            .issue_command(h.format_patch().as_bytes(), git::unstage_patch_cmd())?,
+                        Item { delta: Some(d), .. } => {
+                            state.issue_command(&[], git::unstage_file_cmd(d))?
+                        }
+                        _ => (),
+                    };
                     state.items = create_status_items();
                 }
                 KeyCode::Char('c') => {
                     open_subscreen(terminal, git::commit_cmd())?;
                     state.items = create_status_items();
                 }
-                KeyCode::Char('P') => state.issue_command(git::push_cmd())?,
-                KeyCode::Char('p') => state.issue_command(git::pull_cmd())?,
+                KeyCode::Char('P') => state.issue_command(&[], git::push_cmd())?,
+                KeyCode::Char('p') => state.issue_command(&[], git::pull_cmd())?,
                 KeyCode::Enter => {
                     open_editor(selected, terminal)?;
                     state.items = create_status_items();
@@ -305,22 +331,6 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     }
 
     Ok(())
-}
-
-fn stage(selected: &Item) {
-    match selected {
-        Item { hunk: Some(h), .. } => git::stage_hunk(h),
-        Item { delta: Some(d), .. } => git::stage_file(d),
-        _ => (),
-    }
-}
-
-fn unstage(selected: &Item) {
-    match selected {
-        Item { hunk: Some(h), .. } => git::unstage_hunk(h),
-        Item { delta: Some(d), .. } => git::unstage_file(d),
-        _ => (),
-    }
 }
 
 fn open_editor<B: Backend>(selected: &Item, terminal: &mut Terminal<B>) -> Result<(), io::Error> {

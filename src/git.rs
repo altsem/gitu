@@ -26,28 +26,28 @@ pub(crate) fn log_recent() -> String {
     .0
 }
 
-pub(crate) fn stage_file(delta: &diff::Delta) {
-    process::run("git", &["add", &delta.new_file]);
+pub(crate) fn stage_file_cmd(delta: &diff::Delta) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(&["add", &delta.new_file]);
+    cmd
 }
 
-pub(crate) fn stage_hunk(hunk: &diff::Hunk) {
-    process::pipe(
-        hunk.format_patch().as_bytes(),
-        "git",
-        &["apply", "--cached"],
-    );
+pub(crate) fn stage_patch_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(&["apply", "--cached"]);
+    cmd
 }
 
-pub(crate) fn unstage_file(delta: &diff::Delta) {
-    process::run("git", &["restore", "--staged", &delta.new_file]);
+pub(crate) fn unstage_file_cmd(delta: &diff::Delta) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(&["restore", "--staged", &delta.new_file]);
+    cmd
 }
 
-pub(crate) fn unstage_hunk(hunk: &diff::Hunk) {
-    process::pipe(
-        hunk.format_patch().as_bytes(),
-        "git",
-        &["apply", "--cached", "--reverse"],
-    );
+pub(crate) fn unstage_patch_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(&["apply", "--cached", "--reverse"]);
+    cmd
 }
 
 pub(crate) fn commit_cmd() -> Command {
