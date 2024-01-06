@@ -58,8 +58,8 @@ impl State {
         let selected = &self.items[self.selected];
 
         if selected.section {
-            if self.collapsed.contains(&selected) {
-                self.collapsed.remove(&selected);
+            if self.collapsed.contains(selected) {
+                self.collapsed.remove(selected);
             } else {
                 self.collapsed.insert(selected.clone());
             }
@@ -118,7 +118,7 @@ impl IssuedCommand {
         };
 
         self.finish_acked = true;
-        return true;
+        true
     }
 }
 
@@ -190,7 +190,7 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
 
     if !diff.deltas.is_empty() {
         items.push(Item {
-            header: Some(format!("{} ({})", header.to_string(), diff.deltas.len())),
+            header: Some(format!("{} ({})", header, diff.deltas.len())),
             section: true,
             depth: 0,
             ..Default::default()
@@ -323,7 +323,7 @@ fn unstage(selected: &Item) {
 }
 
 fn open_editor<B: Backend>(selected: &Item, terminal: &mut Terminal<B>) -> Result<(), io::Error> {
-    Ok(match selected {
+    match selected {
         Item {
             delta: Some(d),
             hunk: Some(h),
@@ -335,7 +335,8 @@ fn open_editor<B: Backend>(selected: &Item, terminal: &mut Terminal<B>) -> Resul
             open_subscreen(terminal, editor_cmd(d, None))?;
         }
         _ => (),
-    })
+    };
+    Ok(())
 }
 
 fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {

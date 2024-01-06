@@ -25,7 +25,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &State) {
                 panic!("Couldn't format item");
             };
 
-            if state.collapsed.contains(&item) {
+            if state.collapsed.contains(item) {
                 text.lines
                     .last_mut()
                     .expect("No last line found")
