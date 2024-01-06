@@ -65,6 +65,10 @@ impl State {
             }
         }
     }
+
+    fn clamp_selected(&mut self) {
+        self.selected = self.selected.clamp(0, self.items.len().saturating_sub(1))
+    }
 }
 
 #[derive(Debug)]
@@ -72,6 +76,7 @@ struct IssuedCommand {
     args: String,
     child: Child,
     output: Vec<u8>,
+    finish_acked: bool,
 }
 
 impl IssuedCommand {
@@ -82,12 +87,38 @@ impl IssuedCommand {
             args: format_command(&command),
             child: command.spawn()?,
             output: vec![],
+            finish_acked: false,
         });
         Ok(issued_command)
     }
 
+    fn read_command_output_to_buffer(&mut self) {
+        if let Some(stderr) = self.child.stderr.as_mut() {
+            let mut buffer = [0; 256];
+
+            let read = stderr
+                .read(&mut buffer)
+                .expect("Error reading child stderr");
+
+            self.output.extend(&buffer[..read]);
+        }
+    }
+
     fn is_running(&mut self) -> bool {
         !self.child.try_wait().is_ok_and(|status| status.is_some())
+    }
+
+    fn just_finished(&mut self) -> bool {
+        if self.finish_acked {
+            return false;
+        }
+
+        let Some(_status) = self.child.try_wait().expect("Error awaiting child") else {
+            return false;
+        };
+
+        self.finish_acked = true;
+        return true;
     }
 }
 
@@ -118,34 +149,21 @@ fn main() -> io::Result<()> {
     };
 
     while !state.quit {
-        terminal.draw(|frame| ui::ui(frame, &state))?;
-
         if let Some(cmd) = &mut state.command {
-            read_command_output_to_buffer(cmd);
-            if let Some(_status) = cmd.child.try_wait().expect("Error awaiting child") {
+            cmd.read_command_output_to_buffer();
+            if cmd.just_finished() {
                 state.items = create_status_items();
             }
         }
 
+        terminal.draw(|frame| ui::ui(frame, &state))?;
         handle_events(&mut state, &mut terminal)?;
-        state.selected = state.selected.clamp(0, state.items.len().saturating_sub(1));
+        state.clamp_selected();
     }
 
     disable_raw_mode()?;
     stdout().execute(LeaveAlternateScreen)?;
     Ok(())
-}
-
-fn read_command_output_to_buffer(cmd: &mut IssuedCommand) {
-    if let Some(stderr) = cmd.child.stderr.as_mut() {
-        let mut buffer = [0; 256];
-
-        let read = stderr
-            .read(&mut buffer)
-            .expect("Error reading child stderr");
-
-        cmd.output.extend(&buffer[..read]);
-    }
 }
 
 fn create_status_items() -> Vec<Item> {
