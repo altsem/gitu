@@ -207,7 +207,11 @@ fn main() -> io::Result<()> {
 
 fn create_show_items(reference: &str) -> Vec<Item> {
     let mut items = vec![];
-    items.extend(create_diff(diff::Diff::parse(&git::show(reference))));
+    items.push(Item {
+        display: Some((git::show_summary(reference), Style::new())),
+        ..Default::default()
+    });
+    items.extend(create_diff(diff::Diff::parse(&git::show(reference)), 0));
     items
 }
 
@@ -245,12 +249,12 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
         });
     }
 
-    items.extend(create_diff(diff));
+    items.extend(create_diff(diff, 1));
 
     items
 }
 
-fn create_diff(diff: diff::Diff) -> Vec<Item> {
+fn create_diff(diff: diff::Diff, depth: usize) -> Vec<Item> {
     let mut items = vec![];
 
     for delta in diff.deltas {
@@ -267,7 +271,7 @@ fn create_diff(diff: diff::Diff) -> Vec<Item> {
                 Style::new().fg(Color::Yellow),
             )),
             section: true,
-            depth: 1,
+            depth,
             ..Default::default()
         });
 
@@ -275,7 +279,7 @@ fn create_diff(diff: diff::Diff) -> Vec<Item> {
             items.push(Item {
                 display: Some((hunk.display_header(), Style::new().fg(Color::Yellow))),
                 section: true,
-                depth: 2,
+                depth: depth + 1,
                 delta: Some(hunk_delta.clone()),
                 hunk: Some(hunk.clone()),
                 ..Default::default()
@@ -284,7 +288,7 @@ fn create_diff(diff: diff::Diff) -> Vec<Item> {
             for line in hunk.content_lines() {
                 items.push(Item {
                     display: Some((line.colored, Style::new())),
-                    depth: 3,
+                    depth: depth + 2,
                     delta: Some(hunk_delta.clone()),
                     hunk: Some(hunk.clone()),
                     diff_line: Some(line.plain),
