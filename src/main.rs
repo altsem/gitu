@@ -433,6 +433,11 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
             state.screens.remove(&state.current_screen);
             state.current_screen = "status".to_string();
             state.quit = false;
+            state
+                .screens
+                .get_mut(&state.current_screen)
+                .unwrap()
+                .refresh_items();
         }
     }
 
