@@ -48,6 +48,10 @@ pub(crate) fn log_recent() -> String {
     .0
 }
 
+pub(crate) fn log() -> String {
+    process::run("git", &["log", "--oneline", "--decorate", "--color"]).0
+}
+
 pub(crate) fn stage_file_cmd(delta: &diff::Delta) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(&["add", &delta.new_file]);

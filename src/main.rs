@@ -309,6 +309,15 @@ fn create_log_section(header: &str, log: &str) -> Vec<Item> {
         depth: 0,
         ..Default::default()
     });
+
+    items.extend(create_log(log));
+
+    items
+}
+
+fn create_log(log: &str) -> Vec<Item> {
+    let mut items = vec![];
+
     log.lines().for_each(|log_line| {
         items.push(Item {
             display: Some((log_line.to_string(), Style::new())),
@@ -324,6 +333,7 @@ fn create_log_section(header: &str, log: &str) -> Vec<Item> {
             ..Default::default()
         })
     });
+
     items
 }
 
@@ -361,6 +371,21 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                 KeyCode::Char('q') => state.quit = true,
                 KeyCode::Char('j') => screen.select_next(),
                 KeyCode::Char('k') => screen.select_previous(),
+                KeyCode::Char('l') => {
+                    let refresh_items = Box::new(move || create_log(&git::log()));
+                    let items = refresh_items();
+
+                    new_screen = Some((
+                        "log",
+                        Screen {
+                            selected: 0,
+                            refresh_items,
+                            items,
+                            collapsed: HashSet::new(),
+                            command: None,
+                        },
+                    ))
+                }
                 KeyCode::Char('s') => {
                     match selected {
                         Item { hunk: Some(h), .. } => screen
@@ -429,6 +454,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     }
 
     if state.quit {
+        // TODO Include the "log", make some sort of screen stack, more intuitive
         if &state.current_screen != "status" {
             state.screens.remove(&state.current_screen);
             state.current_screen = "status".to_string();
