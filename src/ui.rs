@@ -1,7 +1,5 @@
 use super::collapsed_items_iter;
-use super::Item;
 use super::State;
-use ratatui::style::Color;
 use ratatui::style::Modifier;
 use ratatui::style::Style;
 use ratatui::text::Text;
@@ -13,16 +11,13 @@ pub(crate) fn ui(frame: &mut Frame, state: &State) {
 
     let mut lines = collapsed_items_iter(&state.collapsed, &state.items)
         .flat_map(|(i, item)| {
-            let mut text = if let Some(ref text) = item.header {
-                Text::styled(text, Style::new().fg(Color::Yellow))
-            } else if let Item {
-                line: Some(line), ..
-            } = item
-            {
+            let mut text = if let Some((ref text, style)) = item.display {
                 use ansi_to_tui::IntoText;
-                line.into_text().expect("Couldn't read ansi codes")
+                let mut text = text.into_text().expect("Couldn't read ansi codes");
+                text.patch_style(style);
+                text
             } else {
-                panic!("Couldn't format item");
+                Text::raw("")
             };
 
             if state.collapsed.contains(item) {

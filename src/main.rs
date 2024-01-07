@@ -17,6 +17,7 @@ use crossterm::{
 use diff::{Delta, Hunk};
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
+    style::{Color, Style},
     Terminal,
 };
 
@@ -40,14 +41,14 @@ impl State {
 
     fn select_next(&mut self) {
         self.selected = collapsed_items_iter(&self.collapsed, &self.items)
-            .find(|(i, item)| i > &self.selected && item.line.is_none())
+            .find(|(i, item)| i > &self.selected && item.diff_line.is_none())
             .map(|(i, _item)| i)
             .unwrap_or(self.selected)
     }
 
     fn select_previous(&mut self) {
         self.selected = collapsed_items_iter(&self.collapsed, &self.items)
-            .filter(|(i, item)| i < &self.selected && item.line.is_none())
+            .filter(|(i, item)| i < &self.selected && item.diff_line.is_none())
             .last()
             .map(|(i, _item)| i)
             .unwrap_or(self.selected)
@@ -134,12 +135,14 @@ impl IssuedCommand {
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 struct Item {
+    display: Option<(String, Style)>,
     header: Option<String>,
     section: bool,
     depth: usize,
     delta: Option<Delta>,
     hunk: Option<Hunk>,
-    line: Option<String>,
+    diff_line: Option<String>,
+    reference: Option<String>,
 }
 
 // TODO Show repo state (repo.state())
@@ -202,7 +205,10 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
 
     if !diff.deltas.is_empty() {
         items.push(Item {
-            header: Some(format!("{} ({})", header, diff.deltas.len())),
+            display: Some((
+                format!("{} ({})", header, diff.deltas.len()),
+                Style::new().fg(Color::Yellow),
+            )),
             section: true,
             depth: 0,
             ..Default::default()
@@ -214,11 +220,14 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
 
         items.push(Item {
             delta: Some(delta.clone()),
-            header: Some(if delta.old_file == delta.new_file {
-                delta.new_file
-            } else {
-                format!("{} -> {}", delta.old_file, delta.new_file)
-            }),
+            display: Some((
+                if delta.old_file == delta.new_file {
+                    delta.new_file
+                } else {
+                    format!("{} -> {}", delta.old_file, delta.new_file)
+                },
+                Style::new().fg(Color::Yellow),
+            )),
             section: true,
             depth: 1,
             ..Default::default()
@@ -226,7 +235,7 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
 
         for hunk in delta.hunks {
             items.push(Item {
-                header: Some(hunk.display_header()),
+                display: Some((hunk.display_header(), Style::new().fg(Color::Yellow))),
                 section: true,
                 depth: 2,
                 delta: Some(hunk_delta.clone()),
@@ -234,12 +243,13 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
                 ..Default::default()
             });
 
-            for line in hunk.content.lines() {
+            for line in hunk.content_lines() {
                 items.push(Item {
+                    display: Some((line.colored, Style::new())),
                     depth: 3,
                     delta: Some(hunk_delta.clone()),
                     hunk: Some(hunk.clone()),
-                    line: Some(line.to_string()),
+                    diff_line: Some(line.plain),
                     ..Default::default()
                 });
             }
@@ -252,15 +262,16 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
 fn create_log_section(header: &str, log: &str) -> Vec<Item> {
     let mut items = vec![];
     items.push(Item {
-        header: Some(header.to_string()),
+        display: Some((header.to_string(), Style::new().fg(Color::Yellow))),
         section: true,
         depth: 0,
         ..Default::default()
     });
     log.lines().for_each(|log_line| {
         items.push(Item {
+            display: Some((log_line.to_string(), Style::new())),
             depth: 1,
-            line: Some(log_line.to_string()),
+            reference: Some(log_line.to_string()),
             ..Default::default()
         })
     });
