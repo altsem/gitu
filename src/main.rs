@@ -4,7 +4,7 @@ mod process;
 mod ui;
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     io::{self, stdout, Read, Write},
     process::{Child, Command, Stdio},
 };
@@ -21,22 +21,37 @@ use ratatui::{
     Terminal,
 };
 
-#[derive(Debug)]
 struct State {
     quit: bool,
+    current_screen: String,
+    screens: HashMap<String, Screen>,
+}
+
+struct Screen {
     selected: usize,
+    refresh_items: fn() -> Vec<Item>,
     items: Vec<Item>,
     collapsed: HashSet<Item>,
     command: Option<IssuedCommand>,
 }
 
-impl State {
+impl Screen {
     fn issue_command(&mut self, input: &[u8], command: Command) -> Result<(), io::Error> {
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
             self.command = Some(IssuedCommand::spawn(input, command)?);
         }
 
         Ok(())
+    }
+
+    fn handle_command_output(&mut self) {
+        if let Some(cmd) = &mut self.command {
+            cmd.read_command_output_to_buffer();
+
+            if cmd.just_finished() {
+                self.items = (self.refresh_items)();
+            }
+        }
     }
 
     fn select_next(&mut self) {
@@ -68,6 +83,10 @@ impl State {
 
     fn clamp_selected(&mut self) {
         self.selected = self.selected.clamp(0, self.items.len().saturating_sub(1))
+    }
+
+    fn refresh_items(&mut self) {
+        self.items = (self.refresh_items)();
     }
 }
 
@@ -150,29 +169,35 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let items = create_status_items();
+    let mut screens = HashMap::new();
+    screens.insert(
+        "status".to_string(),
+        Screen {
+            selected: 0,
+            refresh_items: create_status_items,
+            items: create_status_items(),
+            collapsed: HashSet::new(),
+            command: None,
+        },
+    );
 
     let mut state = State {
         quit: false,
-        selected: 0,
-        items,
-        collapsed: HashSet::new(),
-        command: None,
+        current_screen: "status".to_string(),
+        screens,
     };
 
     while !state.quit {
-        if let Some(cmd) = &mut state.command {
-            cmd.read_command_output_to_buffer();
-
-            if cmd.just_finished() {
-                state.items = create_status_items();
-            }
+        if let Some(screen) = state.screens.get_mut(&state.current_screen) {
+            screen.handle_command_output();
         }
 
         handle_events(&mut state, &mut terminal)?;
-        state.clamp_selected();
 
-        terminal.draw(|frame| ui::ui(frame, &state))?;
+        if let Some(screen) = state.screens.get_mut(&state.current_screen) {
+            screen.clamp_selected();
+            terminal.draw(|frame| ui::ui(frame, screen))?;
+        }
     }
 
     stdout().execute(LeaveAlternateScreen)?;
@@ -300,48 +325,52 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         return Ok(());
     }
 
-    let selected = &state.items[state.selected];
+    let Some(screen) = state.screens.get_mut(&state.current_screen) else {
+        panic!("No screen");
+    };
+
+    let selected = &screen.items[screen.selected];
 
     if let Event::Key(key) = event::read()? {
         if key.kind == event::KeyEventKind::Press {
             match key.code {
                 KeyCode::Char('f') => {
-                    state.issue_command(&[], git::fetch_all_cmd())?;
-                    state.items = create_status_items();
+                    screen.issue_command(&[], git::fetch_all_cmd())?;
+                    screen.refresh_items();
                 }
-                KeyCode::Char('g') => state.items = create_status_items(),
+                KeyCode::Char('g') => screen.refresh_items(),
                 KeyCode::Char('q') => state.quit = true,
-                KeyCode::Char('j') => state.select_next(),
-                KeyCode::Char('k') => state.select_previous(),
+                KeyCode::Char('j') => screen.select_next(),
+                KeyCode::Char('k') => screen.select_previous(),
                 KeyCode::Char('s') => {
                     match selected {
-                        Item { hunk: Some(h), .. } => state
+                        Item { hunk: Some(h), .. } => screen
                             .issue_command(h.format_patch().as_bytes(), git::stage_patch_cmd())?,
                         Item { delta: Some(d), .. } => {
-                            state.issue_command(&[], git::stage_file_cmd(d))?
+                            screen.issue_command(&[], git::stage_file_cmd(d))?
                         }
                         _ => (),
                     }
 
-                    state.items = create_status_items();
+                    screen.refresh_items();
                 }
                 KeyCode::Char('u') => {
                     match selected {
-                        Item { hunk: Some(h), .. } => state
+                        Item { hunk: Some(h), .. } => screen
                             .issue_command(h.format_patch().as_bytes(), git::unstage_patch_cmd())?,
                         Item { delta: Some(d), .. } => {
-                            state.issue_command(&[], git::unstage_file_cmd(d))?
+                            screen.issue_command(&[], git::unstage_file_cmd(d))?
                         }
                         _ => (),
                     };
-                    state.items = create_status_items();
+                    screen.refresh_items();
                 }
                 KeyCode::Char('c') => {
                     open_subscreen(terminal, &[], git::commit_cmd())?;
-                    state.items = create_status_items();
+                    screen.refresh_items();
                 }
-                KeyCode::Char('P') => state.issue_command(&[], git::push_cmd())?,
-                KeyCode::Char('p') => state.issue_command(&[], git::pull_cmd())?,
+                KeyCode::Char('P') => screen.issue_command(&[], git::push_cmd())?,
+                KeyCode::Char('p') => screen.issue_command(&[], git::pull_cmd())?,
                 KeyCode::Enter => {
                     match selected {
                         Item {
@@ -362,9 +391,9 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         _ => (),
                     };
 
-                    state.items = create_status_items();
+                    screen.refresh_items();
                 }
-                KeyCode::Tab => state.toggle_section(),
+                KeyCode::Tab => screen.toggle_section(),
                 _ => (),
             }
         }
