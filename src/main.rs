@@ -29,7 +29,7 @@ struct State {
 
 struct Screen {
     selected: usize,
-    refresh_items: fn() -> Vec<Item>,
+    refresh_items: Box<dyn Fn() -> Vec<Item>>,
     items: Vec<Item>,
     collapsed: HashSet<Item>,
     command: Option<IssuedCommand>,
@@ -174,7 +174,7 @@ fn main() -> io::Result<()> {
         "status".to_string(),
         Screen {
             selected: 0,
-            refresh_items: create_status_items,
+            refresh_items: Box::new(create_status_items),
             items: create_status_items(),
             collapsed: HashSet::new(),
             command: None,
@@ -203,6 +203,12 @@ fn main() -> io::Result<()> {
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
+}
+
+fn create_show_items(reference: &str) -> Vec<Item> {
+    let mut items = vec![];
+    items.extend(create_diff(diff::Diff::parse(&git::show(reference))));
+    items
 }
 
 fn create_status_items() -> Vec<Item> {
@@ -238,6 +244,14 @@ fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
             ..Default::default()
         });
     }
+
+    items.extend(create_diff(diff));
+
+    items
+}
+
+fn create_diff(diff: diff::Diff) -> Vec<Item> {
+    let mut items = vec![];
 
     for delta in diff.deltas {
         let hunk_delta = delta.clone();
@@ -330,6 +344,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     };
 
     let selected = &screen.items[screen.selected];
+    let mut new_screen = None;
 
     if let Event::Key(key) = event::read()? {
         if key.kind == event::KeyEventKind::Press {
@@ -386,7 +401,17 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         Item {
                             reference: Some(r), ..
                         } => {
-                            open_subscreen(terminal, &[], git::show_cmd(r))?;
+                            let reference = r.clone();
+                            new_screen = Some((
+                                "show",
+                                Screen {
+                                    selected: 0,
+                                    refresh_items: Box::new(move || create_show_items(&reference)),
+                                    items: create_show_items(r),
+                                    collapsed: HashSet::new(),
+                                    command: None,
+                                },
+                            ));
                         }
                         _ => (),
                     };
@@ -399,6 +424,18 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         }
     }
 
+    if state.quit {
+        if &state.current_screen != "status" {
+            state.screens.remove(&state.current_screen);
+            state.current_screen = "status".to_string();
+            state.quit = false;
+        }
+    }
+
+    if let Some((name, screen)) = new_screen {
+        state.screens.insert(name.to_string(), screen);
+        state.current_screen = name.to_string();
+    }
     Ok(())
 }
 
