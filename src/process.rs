@@ -17,7 +17,7 @@ pub(crate) fn run(program: &str, args: &[&str]) -> (String, String) {
     )
 }
 
-pub(crate) fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
+pub(crate) fn pipe(input: &[u8], program: &str, args: &[&str]) -> (String, String) {
     let mut command = Command::new(program)
         .args(args)
         .stdin(Stdio::piped())
@@ -30,11 +30,12 @@ pub(crate) fn pipe(input: &[u8], program: &str, args: &[&str]) -> String {
         .unwrap_or_else(|| panic!("No stdin for {} process", program))
         .write_all(input)
         .unwrap_or_else(|_| panic!("Error writing to '{}' stdin", program));
-    String::from_utf8(
-        command
-            .wait_with_output()
-            .unwrap_or_else(|_| panic!("Error writing {} output", program))
-            .stdout,
+    let output = command
+        .wait_with_output()
+        .unwrap_or_else(|_| panic!("Error writing {} output", program));
+
+    (
+        String::from_utf8(output.stdout).unwrap(),
+        String::from_utf8(output.stderr).unwrap(),
     )
-    .unwrap()
 }

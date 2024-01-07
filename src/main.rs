@@ -33,7 +33,7 @@ struct State {
 impl State {
     fn issue_command(&mut self, input: &[u8], command: Command) -> Result<(), io::Error> {
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
-            self.command = IssuedCommand::spawn(input, command)?;
+            self.command = Some(IssuedCommand::spawn(input, command)?);
         }
 
         Ok(())
@@ -80,7 +80,7 @@ struct IssuedCommand {
 }
 
 impl IssuedCommand {
-    fn spawn(input: &[u8], mut command: Command) -> Result<Option<IssuedCommand>, io::Error> {
+    fn spawn(input: &[u8], mut command: Command) -> Result<IssuedCommand, io::Error> {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
@@ -94,12 +94,12 @@ impl IssuedCommand {
             .write_all(input)
             .unwrap_or_else(|_| panic!("Error writing to stdin"));
 
-        let issued_command = Some(IssuedCommand {
+        let issued_command = IssuedCommand {
             args: format_command(&command),
             child,
             output: vec![],
             finish_acked: false,
-        });
+        };
         Ok(issued_command)
     }
 
@@ -136,7 +136,6 @@ impl IssuedCommand {
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 struct Item {
     display: Option<(String, Style)>,
-    header: Option<String>,
     section: bool,
     depth: usize,
     delta: Option<Delta>,
@@ -271,7 +270,14 @@ fn create_log_section(header: &str, log: &str) -> Vec<Item> {
         items.push(Item {
             display: Some((log_line.to_string(), Style::new())),
             depth: 1,
-            reference: Some(log_line.to_string()),
+            reference: Some(
+                strip_ansi_escapes::strip_str(log_line)
+                    .to_string()
+                    .split_whitespace()
+                    .next()
+                    .expect("Error extracting ref")
+                    .to_string(),
+            ),
             ..Default::default()
         })
     });
@@ -331,13 +337,31 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     state.items = create_status_items();
                 }
                 KeyCode::Char('c') => {
-                    open_subscreen(terminal, git::commit_cmd())?;
+                    open_subscreen(terminal, &[], git::commit_cmd())?;
                     state.items = create_status_items();
                 }
                 KeyCode::Char('P') => state.issue_command(&[], git::push_cmd())?,
                 KeyCode::Char('p') => state.issue_command(&[], git::pull_cmd())?,
                 KeyCode::Enter => {
-                    open_editor(selected, terminal)?;
+                    match selected {
+                        Item {
+                            delta: Some(d),
+                            hunk: Some(h),
+                            ..
+                        } => {
+                            open_subscreen(terminal, &[], editor_cmd(d, Some(h)))?;
+                        }
+                        Item { delta: Some(d), .. } => {
+                            open_subscreen(terminal, &[], editor_cmd(d, None))?;
+                        }
+                        Item {
+                            reference: Some(r), ..
+                        } => {
+                            open_subscreen(terminal, &[], git::show_cmd(r))?;
+                        }
+                        _ => (),
+                    };
+
                     state.items = create_status_items();
                 }
                 KeyCode::Tab => state.toggle_section(),
@@ -346,23 +370,6 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         }
     }
 
-    Ok(())
-}
-
-fn open_editor<B: Backend>(selected: &Item, terminal: &mut Terminal<B>) -> Result<(), io::Error> {
-    match selected {
-        Item {
-            delta: Some(d),
-            hunk: Some(h),
-            ..
-        } => {
-            open_subscreen(terminal, editor_cmd(d, Some(h)))?;
-        }
-        Item { delta: Some(d), .. } => {
-            open_subscreen(terminal, editor_cmd(d, None))?;
-        }
-        _ => (),
-    };
     Ok(())
 }
 
@@ -377,17 +384,27 @@ fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
 
 fn open_subscreen<B: Backend>(
     terminal: &mut Terminal<B>,
+    input: &[u8],
     mut cmd: Command,
 ) -> Result<(), io::Error> {
     crossterm::execute!(stdout(), EnterAlternateScreen)?;
-    let mut editor = cmd.spawn()?;
-    editor.wait()?;
+
+    cmd.stdin(Stdio::piped());
+    let mut cmd = cmd.spawn()?;
+    cmd.stdin
+        .take()
+        .expect("Error taking stdin")
+        .write_all(input)?;
+
+    cmd.wait()?;
+
     crossterm::execute!(stdout(), LeaveAlternateScreen)?;
     crossterm::execute!(
         stdout(),
         crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
     )?;
     terminal.clear()?;
+
     Ok(())
 }
 

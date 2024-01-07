@@ -8,6 +8,7 @@ pub(crate) fn diff_unstaged() -> String {
         "delta",
         &["--color-only"],
     )
+    .0
 }
 
 pub(crate) fn diff_staged() -> String {
@@ -16,6 +17,7 @@ pub(crate) fn diff_staged() -> String {
         "delta",
         &["--color-only"],
     )
+    .0
 }
 
 pub(crate) fn log_recent() -> String {
@@ -71,5 +73,11 @@ pub(crate) fn pull_cmd() -> Command {
 pub(crate) fn fetch_all_cmd() -> Command {
     let mut cmd = Command::new("git");
     cmd.args(&["fetch", "--all"]);
+    cmd
+}
+
+pub(crate) fn show_cmd(reference: &str) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(&["show", reference]);
     cmd
 }
