@@ -1,4 +1,4 @@
-use crate::Screen;
+use crate::screen::Screen;
 
 use super::collapsed_items_iter;
 use ratatui::style::Modifier;

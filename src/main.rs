@@ -1,6 +1,7 @@
 mod diff;
 mod git;
 mod process;
+mod screen;
 mod ui;
 
 use std::{
@@ -20,74 +21,12 @@ use ratatui::{
     style::{Color, Style},
     Terminal,
 };
+use screen::Screen;
 
 struct State {
     quit: bool,
     current_screen: String,
     screens: HashMap<String, Screen>,
-}
-
-struct Screen {
-    selected: usize,
-    refresh_items: Box<dyn Fn() -> Vec<Item>>,
-    items: Vec<Item>,
-    collapsed: HashSet<Item>,
-    command: Option<IssuedCommand>,
-}
-
-impl Screen {
-    fn issue_command(&mut self, input: &[u8], command: Command) -> Result<(), io::Error> {
-        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
-            self.command = Some(IssuedCommand::spawn(input, command)?);
-        }
-
-        Ok(())
-    }
-
-    fn handle_command_output(&mut self) {
-        if let Some(cmd) = &mut self.command {
-            cmd.read_command_output_to_buffer();
-
-            if cmd.just_finished() {
-                self.items = (self.refresh_items)();
-            }
-        }
-    }
-
-    fn select_next(&mut self) {
-        self.selected = collapsed_items_iter(&self.collapsed, &self.items)
-            .find(|(i, item)| i > &self.selected && item.diff_line.is_none())
-            .map(|(i, _item)| i)
-            .unwrap_or(self.selected)
-    }
-
-    fn select_previous(&mut self) {
-        self.selected = collapsed_items_iter(&self.collapsed, &self.items)
-            .filter(|(i, item)| i < &self.selected && item.diff_line.is_none())
-            .last()
-            .map(|(i, _item)| i)
-            .unwrap_or(self.selected)
-    }
-
-    fn toggle_section(&mut self) {
-        let selected = &self.items[self.selected];
-
-        if selected.section {
-            if self.collapsed.contains(selected) {
-                self.collapsed.remove(selected);
-            } else {
-                self.collapsed.insert(selected.clone());
-            }
-        }
-    }
-
-    fn clamp_selected(&mut self) {
-        self.selected = self.selected.clamp(0, self.items.len().saturating_sub(1))
-    }
-
-    fn refresh_items(&mut self) {
-        self.items = (self.refresh_items)();
-    }
 }
 
 #[derive(Debug)]
