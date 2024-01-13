@@ -161,16 +161,16 @@ fn create_status_items() -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        "Unstaged changes",
+        "\nUnstaged changes",
         diff::Diff::parse(&git::diff_unstaged()),
     ));
 
     items.extend(create_status_section(
-        "Staged changes",
+        "\nStaged changes",
         diff::Diff::parse(&git::diff_staged()),
     ));
 
-    items.extend(create_log_section("Recent commits", &git::log_recent()));
+    items.extend(create_log_section("\nRecent commits", &git::log_recent()));
     items
 }
 
@@ -326,16 +326,17 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                 KeyCode::Char('j') => {
                     screen.select_next();
 
-                    let last = 1 + screen.scroll_end();
-                    let end = crossterm::terminal::size()?.1 - 1;
-                    if last as u16 > end + screen.scroll {
-                        screen.scroll = last as u16 - end;
+                    let last = screen.scroll_end();
+                    let end_line = crossterm::terminal::size()?.1 - 1;
+                    if last as u16 > end_line + screen.scroll {
+                        screen.scroll = last as u16 - end_line;
                     }
                 }
                 KeyCode::Char('k') => {
                     screen.select_previous();
-                    if (screen.cursor as u16) < screen.scroll {
-                        screen.scroll = screen.cursor as u16;
+                    let start_line = screen.scroll_start() as u16;
+                    if start_line < screen.scroll {
+                        screen.scroll = start_line;
                     }
                 }
                 KeyCode::Char('l') => {
