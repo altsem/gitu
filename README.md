@@ -1,10 +1,9 @@
 # gitu
 An editor-agnostic git TUI heavily inspired by Magit.
-Although massively short on features, strives to be as close to Magit as practially possible.
 
 ## Dependencies
 Requires `git` and `delta` to be on your PATH.
-`delta` is used for colorizing diff output.
+`delta` is used for formatting diff output.
 
 ## Install
 ### Using Cargo
