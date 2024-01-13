@@ -283,7 +283,8 @@ fn format_command(cmd: &Command) -> String {
         cmd.get_program().to_string_lossy(),
         cmd.get_args()
             .map(|arg| arg.to_string_lossy())
-            .collect::<String>()
+            .collect::<Vec<_>>()
+            .join(" ")
     );
     command_display
 }
