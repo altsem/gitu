@@ -2,18 +2,16 @@ use std::process::Command;
 
 use crate::{diff, process};
 
+const COLOR_CMD: &[&str] = &["delta", "--color-only"];
+
 pub(crate) fn diff_unstaged() -> String {
-    process::pipe(
-        process::run(&["git", "diff"]).0.as_bytes(),
-        &["delta", "--color-only"],
-    )
-    .0
+    process::pipe(process::run(&["git", "diff"]).0.as_bytes(), COLOR_CMD).0
 }
 
 pub(crate) fn show(reference: &str) -> String {
     process::pipe(
         process::run(&["git", "show", reference]).0.as_bytes(),
-        &["delta", "--color-only"],
+        COLOR_CMD,
     )
     .0
 }
@@ -23,7 +21,7 @@ pub(crate) fn show_summary(reference: &str) -> String {
         process::run(&["git", "show", "--summary", reference])
             .0
             .as_bytes(),
-        &["delta", "--color-only"],
+        COLOR_CMD,
     )
     .0
 }
@@ -31,7 +29,7 @@ pub(crate) fn show_summary(reference: &str) -> String {
 pub(crate) fn diff_staged() -> String {
     process::pipe(
         process::run(&["git", "diff", "--staged"]).0.as_bytes(),
-        &["delta", "--color-only"],
+        COLOR_CMD,
     )
     .0
 }
