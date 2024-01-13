@@ -102,6 +102,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
+name = "gitu"
+version = "0.1.0"
+dependencies = [
+ "ansi-to-tui",
+ "crossterm",
+ "hex",
+ "itertools",
+ "ratatui",
+ "regex",
+ "strip-ansi-escapes",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -167,19 +180,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2994eeba8ed550fd9b47a0b38f0242bc3344e496483c6180b69139cc2fa5d1d7"
 dependencies = [
  "hashbrown",
-]
-
-[[package]]
-name = "magitler"
-version = "0.1.0"
-dependencies = [
- "ansi-to-tui",
- "crossterm",
- "hex",
- "itertools",
- "ratatui",
- "regex",
- "strip-ansi-escapes",
 ]
 
 [[package]]
