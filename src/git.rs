@@ -4,52 +4,53 @@ use crate::{diff, process};
 
 pub(crate) fn diff_unstaged() -> String {
     process::pipe(
-        process::run("git", &["diff"]).0.as_bytes(),
-        "delta",
-        &["--color-only"],
+        process::run(&["git", "diff"]).0.as_bytes(),
+        &["delta", "--color-only"],
     )
     .0
 }
 
 pub(crate) fn show(reference: &str) -> String {
     process::pipe(
-        process::run("git", &["show", reference]).0.as_bytes(),
-        "delta",
-        &["--color-only"],
+        process::run(&["git", "show", reference]).0.as_bytes(),
+        &["delta", "--color-only"],
     )
     .0
 }
 
 pub(crate) fn show_summary(reference: &str) -> String {
     process::pipe(
-        process::run("git", &["show", "--summary", reference])
+        process::run(&["git", "show", "--summary", reference])
             .0
             .as_bytes(),
-        "delta",
-        &["--color-only"],
+        &["delta", "--color-only"],
     )
     .0
 }
 
 pub(crate) fn diff_staged() -> String {
     process::pipe(
-        process::run("git", &["diff", "--staged"]).0.as_bytes(),
-        "delta",
-        &["--color-only"],
+        process::run(&["git", "diff", "--staged"]).0.as_bytes(),
+        &["delta", "--color-only"],
     )
     .0
 }
 
 pub(crate) fn log_recent() -> String {
-    process::run(
+    process::run(&[
         "git",
-        &["log", "-n", "5", "--oneline", "--decorate", "--color"],
-    )
+        "log",
+        "-n",
+        "5",
+        "--oneline",
+        "--decorate",
+        "--color",
+    ])
     .0
 }
 
 pub(crate) fn log() -> String {
-    process::run("git", &["log", "--oneline", "--decorate", "--color"]).0
+    process::run(&["git", "log", "--oneline", "--decorate", "--color"]).0
 }
 
 pub(crate) fn stage_file_cmd(delta: &diff::Delta) -> Command {
