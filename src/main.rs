@@ -305,11 +305,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     match event::read()? {
         Event::Resize(w, h) => screen.size = (w, h),
         Event::Key(key) => {
-            if key.modifiers == KeyModifiers::CONTROL && key.kind == KeyEventKind::Press {
-                match key.code {
-                    _ => (),
-                }
-            } else if key.kind == KeyEventKind::Press {
+            if key.kind == KeyEventKind::Press {
                 match (key.modifiers, key.code) {
                     // Generic
                     (KeyModifiers::NONE, KeyCode::Char('q')) => state.quit = true,
