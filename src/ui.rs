@@ -2,6 +2,7 @@ use crate::screen::Screen;
 
 use ratatui::style::Modifier;
 use ratatui::style::Style;
+use ratatui::text::Span;
 use ratatui::text::Text;
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
@@ -15,6 +16,13 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
             let mut text = if let Some((ref text, style)) = item.display {
                 use ansi_to_tui::IntoText;
                 let mut text = text.into_text().expect("Couldn't read ansi codes");
+                for line in text.lines.iter_mut() {
+                    let padding = (screen.size.0 as usize).saturating_sub(line.width());
+                    line.spans.push(Span::styled(
+                        " ".repeat(padding),
+                        line.spans.first().unwrap().style,
+                    ));
+                }
                 text.patch_style(style);
                 text
             } else {
