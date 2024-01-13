@@ -437,11 +437,19 @@ fn goto_log_screen(screens: &mut Vec<Screen>) -> Result<(), io::Error> {
 }
 
 fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
-    let mut cmd = Command::new("hx");
-    cmd.arg(match maybe_hunk {
-        Some(hunk) => format!("{}:{}", &delta.new_file, hunk.new_start),
-        None => delta.new_file.clone(),
-    });
+    let editor = std::env::var("EDITOR").expect("EDITOR not set");
+    let mut cmd = Command::new(editor.clone());
+    let args = match maybe_hunk {
+        Some(hunk) => match editor.as_str() {
+            "vi" | "vim" | "nvim" | "nano" => {
+                vec![format!("+{}", hunk.new_start), delta.new_file.clone()]
+            }
+            _ => vec![format!("{}:{}", &delta.new_file, hunk.new_start)],
+        },
+        None => vec![delta.new_file.clone()],
+    };
+
+    cmd.args(args);
     cmd
 }
 
