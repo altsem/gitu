@@ -33,14 +33,18 @@ struct State {
 fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let mut screens = vec![];
 
-    screens.push(screen::status::create(terminal::size()?));
+    run_app(Terminal::new(CrosstermBackend::new(stdout()))?)?;
 
+    stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
+    Ok(())
+}
+
+fn run_app(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
     let mut state = State {
         quit: false,
-        screens,
+        screens: vec![screen::status::create(terminal::size()?)],
     };
 
     while !state.quit {
@@ -51,13 +55,11 @@ fn main() -> io::Result<()> {
         handle_events(&mut state, &mut terminal)?;
 
         if let Some(screen) = state.screens.last_mut() {
-            screen.clamp_selected();
+            screen.clamp_cursor();
             terminal.draw(|frame| ui::ui(frame, screen))?;
         }
     }
 
-    stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
     Ok(())
 }
 

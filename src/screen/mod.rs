@@ -128,7 +128,7 @@ impl Screen {
         }
     }
 
-    pub(crate) fn clamp_selected(&mut self) {
+    pub(crate) fn clamp_cursor(&mut self) {
         self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1))
     }
 
