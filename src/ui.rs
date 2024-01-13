@@ -1,5 +1,4 @@
 use crate::screen::Screen;
-
 use ratatui::style::Modifier;
 use ratatui::style::Style;
 use ratatui::text::Span;

@@ -1,6 +1,5 @@
-use std::process::Command;
-
 use crate::{diff, process};
+use std::process::Command;
 
 const COLOR_CMD: &[&str] = &["delta", "--color-only"];
 
@@ -96,11 +95,5 @@ pub(crate) fn pull_cmd() -> Command {
 pub(crate) fn fetch_all_cmd() -> Command {
     let mut cmd = Command::new("git");
     cmd.args(&["fetch", "--all"]);
-    cmd
-}
-
-pub(crate) fn show_cmd(reference: &str) -> Command {
-    let mut cmd = Command::new("git");
-    cmd.args(&["show", reference]);
     cmd
 }

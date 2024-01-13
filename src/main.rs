@@ -1,107 +1,34 @@
+mod command;
 mod diff;
 mod git;
+mod items;
 mod process;
 mod screen;
 mod ui;
 
-use std::{
-    collections::HashSet,
-    io::{self, stdout, Read, Write},
-    process::{Child, Command, Stdio},
-};
-
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    },
     ExecutableCommand,
 };
 use diff::{Delta, Hunk};
+use items::Item;
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
-    style::{Color, Style},
     Terminal,
 };
 use screen::Screen;
+use std::{
+    io::{self, stdout},
+    process::{Command, Stdio},
+};
 
 struct State {
     quit: bool,
     screens: Vec<Screen>,
 }
-
-#[derive(Debug)]
-struct IssuedCommand {
-    args: String,
-    child: Child,
-    output: Vec<u8>,
-    finish_acked: bool,
-}
-
-impl IssuedCommand {
-    fn spawn(input: &[u8], mut command: Command) -> Result<IssuedCommand, io::Error> {
-        command.stdin(Stdio::piped());
-        command.stdout(Stdio::piped());
-        command.stderr(Stdio::piped());
-
-        let mut child = command.spawn()?;
-
-        child
-            .stdin
-            .take()
-            .unwrap_or_else(|| panic!("No stdin for process"))
-            .write_all(input)
-            .unwrap_or_else(|_| panic!("Error writing to stdin"));
-
-        let issued_command = IssuedCommand {
-            args: format_command(&command),
-            child,
-            output: vec![],
-            finish_acked: false,
-        };
-        Ok(issued_command)
-    }
-
-    fn read_command_output_to_buffer(&mut self) {
-        if let Some(stderr) = self.child.stderr.as_mut() {
-            let mut buffer = [0; 256];
-
-            let read = stderr
-                .read(&mut buffer)
-                .expect("Error reading child stderr");
-
-            self.output.extend(&buffer[..read]);
-        }
-    }
-
-    fn is_running(&mut self) -> bool {
-        !self.child.try_wait().is_ok_and(|status| status.is_some())
-    }
-
-    fn just_finished(&mut self) -> bool {
-        if self.finish_acked {
-            return false;
-        }
-
-        let Some(_status) = self.child.try_wait().expect("Error awaiting child") else {
-            return false;
-        };
-
-        self.finish_acked = true;
-        true
-    }
-}
-
-#[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
-struct Item {
-    display: Option<(String, Style)>,
-    section: bool,
-    depth: usize,
-    delta: Option<Delta>,
-    hunk: Option<Hunk>,
-    diff_line: Option<String>,
-    reference: Option<String>,
-}
-
-// TODO Show repo state (repo.state())
 
 fn main() -> io::Result<()> {
     enable_raw_mode()?;
@@ -109,16 +36,7 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     let mut screens = vec![];
 
-    screens.push(Screen {
-        name: "status",
-        cursor: 0,
-        scroll: 0,
-        size: crossterm::terminal::size()?,
-        refresh_items: Box::new(create_status_items),
-        items: create_status_items(),
-        collapsed: HashSet::new(),
-        command: None,
-    });
+    screens.push(screen::status::create(terminal::size()?));
 
     let mut state = State {
         quit: false,
@@ -141,150 +59,6 @@ fn main() -> io::Result<()> {
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
-}
-
-fn create_show_items(reference: &str) -> Vec<Item> {
-    let mut items = vec![];
-    items.push(Item {
-        display: Some((git::show_summary(reference), Style::new())),
-        ..Default::default()
-    });
-    items.extend(create_diff(diff::Diff::parse(&git::show(reference)), 0));
-    items
-}
-
-fn create_status_items() -> Vec<Item> {
-    let mut items = vec![];
-
-    // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
-
-    items.extend(create_status_section(
-        "\nUnstaged changes",
-        diff::Diff::parse(&git::diff_unstaged()),
-    ));
-
-    items.extend(create_status_section(
-        "\nStaged changes",
-        diff::Diff::parse(&git::diff_staged()),
-    ));
-
-    items.extend(create_log_section("\nRecent commits", &git::log_recent()));
-    items
-}
-
-fn create_status_section<'a>(header: &str, diff: diff::Diff) -> Vec<Item> {
-    let mut items = vec![];
-
-    if !diff.deltas.is_empty() {
-        items.push(Item {
-            display: Some((
-                format!("{} ({})", header, diff.deltas.len()),
-                Style::new().fg(Color::Yellow),
-            )),
-            section: true,
-            depth: 0,
-            ..Default::default()
-        });
-    }
-
-    items.extend(create_diff(diff, 1));
-
-    items
-}
-
-fn create_diff(diff: diff::Diff, depth: usize) -> Vec<Item> {
-    let mut items = vec![];
-
-    for delta in diff.deltas {
-        let hunk_delta = delta.clone();
-
-        items.push(Item {
-            delta: Some(delta.clone()),
-            display: Some((
-                if delta.old_file == delta.new_file {
-                    delta.new_file
-                } else {
-                    format!("{} -> {}", delta.old_file, delta.new_file)
-                },
-                Style::new().fg(Color::Yellow),
-            )),
-            section: true,
-            depth,
-            ..Default::default()
-        });
-
-        for hunk in delta.hunks {
-            items.push(Item {
-                display: Some((hunk.display_header(), Style::new().fg(Color::Yellow))),
-                section: true,
-                depth: depth + 1,
-                delta: Some(hunk_delta.clone()),
-                hunk: Some(hunk.clone()),
-                ..Default::default()
-            });
-
-            for line in hunk.content_lines() {
-                items.push(Item {
-                    display: Some((line.colored, Style::new())),
-                    depth: depth + 2,
-                    delta: Some(hunk_delta.clone()),
-                    hunk: Some(hunk.clone()),
-                    diff_line: Some(line.plain),
-                    ..Default::default()
-                });
-            }
-        }
-    }
-
-    items
-}
-
-fn create_log_section(header: &str, log: &str) -> Vec<Item> {
-    let mut items = vec![];
-    items.push(Item {
-        display: Some((header.to_string(), Style::new().fg(Color::Yellow))),
-        section: true,
-        depth: 0,
-        ..Default::default()
-    });
-
-    items.extend(create_log(log));
-
-    items
-}
-
-fn create_log(log: &str) -> Vec<Item> {
-    let mut items = vec![];
-
-    log.lines().for_each(|log_line| {
-        items.push(Item {
-            display: Some((log_line.to_string(), Style::new())),
-            depth: 1,
-            reference: Some(
-                strip_ansi_escapes::strip_str(log_line)
-                    .to_string()
-                    .split_whitespace()
-                    .next()
-                    .expect("Error extracting ref")
-                    .to_string(),
-            ),
-            ..Default::default()
-        })
-    });
-
-    items
-}
-
-fn format_command(cmd: &Command) -> String {
-    let command_display = format!(
-        "{} {}",
-        cmd.get_program().to_string_lossy(),
-        cmd.get_args()
-            .map(|arg| arg.to_string_lossy())
-            .collect::<Vec<_>>()
-            .join(" ")
-    );
-    command_display
 }
 
 fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<()> {
@@ -336,8 +110,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         Item {
                             reference: Some(r), ..
                         } => {
-                            let reference = r.to_string();
-                            goto_show_screen(&mut state.screens, reference)?;
+                            goto_show_screen(r.clone(), &mut state.screens)?;
                         }
                         _ => (),
                     },
@@ -403,36 +176,14 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     Ok(())
 }
 
-fn goto_show_screen(screens: &mut Vec<Screen>, reference: String) -> Result<(), io::Error> {
-    let r = reference.clone();
-
-    screens.push(Screen {
-        name: "show",
-        cursor: 0,
-        scroll: 0,
-        size: crossterm::terminal::size()?,
-        refresh_items: Box::new(move || create_show_items(&r)),
-        items: create_show_items(&reference),
-        collapsed: HashSet::new(),
-        command: None,
-    });
-
+fn goto_show_screen(reference: String, screens: &mut Vec<Screen>) -> Result<(), io::Error> {
+    screens.push(screen::show::create(terminal::size()?, reference));
     Ok(())
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) -> Result<(), io::Error> {
     screens.drain(1..);
-    screens.push(Screen {
-        name: "log",
-        cursor: 0,
-        scroll: 0,
-        size: crossterm::terminal::size()?,
-        refresh_items: Box::new(move || create_log(&git::log())),
-        items: create_log(&git::log()),
-        collapsed: HashSet::new(),
-        command: None,
-    });
-
+    screens.push(screen::log::create(terminal::size()?));
     Ok(())
 }
 
@@ -453,7 +204,7 @@ fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
     cmd
 }
 
-fn open_subscreen<B: Backend>(
+pub(crate) fn open_subscreen<B: Backend>(
     terminal: &mut Terminal<B>,
     input: &[u8],
     mut cmd: Command,
@@ -462,6 +213,8 @@ fn open_subscreen<B: Backend>(
 
     cmd.stdin(Stdio::piped());
     let mut cmd = cmd.spawn()?;
+
+    use std::io::Write;
     cmd.stdin
         .take()
         .expect("Error taking stdin")

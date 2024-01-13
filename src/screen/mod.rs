@@ -1,11 +1,14 @@
-use super::IssuedCommand;
 use super::Item;
+use crate::command::IssuedCommand;
 use std::collections::HashSet;
 use std::io;
 use std::process::Command;
 
+pub(crate) mod log;
+pub(crate) mod show;
+pub(crate) mod status;
+
 pub(crate) struct Screen {
-    pub(crate) name: &'static str,
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
@@ -65,7 +68,7 @@ impl Screen {
             .last()
             .unwrap();
 
-        let end_line = self.size.1 - 1;
+        let end_line = self.size.1.saturating_sub(1);
         if last as u16 > end_line + self.scroll {
             self.scroll = last as u16 - end_line;
         }
