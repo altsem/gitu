@@ -1,11 +1,11 @@
 use regex::Regex;
 use std::fmt::Display;
 
-const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
+const DELTAS_REGEX: &str = r"(?<header>diff --git a\/(?<old_file>\S+) b\/(?<new_file>\S+)
 ([^@].*
-)*--- (:?a\/)?(?<old_file>\S+)
-\+\+\+ (:?b\/)?(?<new_file>\S+)
-)(?<hunk>(:?[ @\-+\u{1b}].*
+)*(:?--- .*
+\+\+\+ .*
+)?)(?<hunk>(:?[ @\-+\u{1b}].*
 )*)";
 
 const HUNKS_REGEX: &str = r"@@ \-(?<old_start>\d+),(?<old_lines>\d+) \+(?<new_start>\d+),(?<new_lines>\d+) @@(?<header_suffix>.*
@@ -155,5 +155,12 @@ mod tests {
         assert_eq!(diff.deltas.len(), 2);
         assert_eq!(diff.deltas[0].hunks.len(), 2);
         assert_eq!(diff.deltas[1].hunks.len(), 2);
+    }
+
+    #[test]
+    fn parse_example_empty_file() {
+        let diff = Diff::parse(include_str!("example_empty_file.patch"));
+        assert_eq!(diff.deltas.len(), 1);
+        assert_eq!(diff.deltas[0].hunks.len(), 0);
     }
 }

@@ -15,6 +15,7 @@ pub(crate) struct Item {
     pub(crate) hunk: Option<Hunk>,
     pub(crate) diff_line: Option<String>,
     pub(crate) reference: Option<String>,
+    pub(crate) untracked_file: Option<String>,
 }
 
 pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {

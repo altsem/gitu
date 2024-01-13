@@ -1,6 +1,10 @@
 use crate::{diff, process};
 use std::process::Command;
 
+pub(crate) fn list_untracked() -> String {
+    process::run(&["git", "ls-files", "--others", "--exclude-standard"]).0
+}
+
 pub(crate) fn diff_unstaged() -> String {
     process::run(&["git", "diff"]).0
 }
@@ -34,9 +38,9 @@ pub(crate) fn log() -> String {
     process::run(&["git", "log", "--oneline", "--decorate", "--color"]).0
 }
 
-pub(crate) fn stage_file_cmd(delta: &diff::Delta) -> Command {
+pub(crate) fn stage_file_cmd(file: &str) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args(&["add", &delta.new_file]);
+    cmd.args(&["add", &file]);
     cmd
 }
 

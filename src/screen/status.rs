@@ -20,11 +20,35 @@ pub(crate) fn create(size: (u16, u16)) -> Screen {
 
 pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
+    let untracked = git::list_untracked()
+        .lines()
+        .map(|untracked| Item {
+            display: Some((untracked.to_string(), Style::new().fg(Color::Red))),
+            depth: 1,
+            untracked_file: Some(untracked.to_string()),
+            ..Default::default()
+        })
+        .collect::<Vec<_>>();
 
-    create_status_section_items(
+    if untracked.is_empty() {
+        None
+    } else {
+        Some(Item {
+            display: Some((
+                "\nUntracked files".to_string(),
+                Style::new().fg(Color::Yellow),
+            )),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        })
+    }
+    .into_iter()
+    .chain(untracked)
+    .chain(create_status_section_items(
         "\nUnstaged changes",
         diff::Diff::parse(&git::diff_unstaged()),
-    )
+    ))
     .chain(create_status_section_items(
         "\nStaged changes",
         diff::Diff::parse(&git::diff_staged()),

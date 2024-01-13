@@ -13,7 +13,7 @@ use crossterm::{
     },
     ExecutableCommand,
 };
-use diff::{Delta, Hunk};
+use diff::Hunk;
 use items::Item;
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
@@ -105,11 +105,11 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             hunk: Some(h),
                             ..
                         } => {
-                            open_subscreen(terminal, &[], editor_cmd(d, Some(h)))?;
+                            open_subscreen(terminal, &[], editor_cmd(&d.new_file, Some(h)))?;
                             screen.refresh_items();
                         }
                         Item { delta: Some(d), .. } => {
-                            open_subscreen(terminal, &[], editor_cmd(d, None))?;
+                            open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
                             screen.refresh_items();
                         }
                         Item {
@@ -117,6 +117,14 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         } => {
                             goto_show_screen(r.clone(), &mut state.screens)?;
                         }
+                        Item {
+                            untracked_file: Some(f),
+                            ..
+                        } => {
+                            open_subscreen(terminal, &[], editor_cmd(f, None))?;
+                            screen.refresh_items();
+                        }
+
                         _ => (),
                     },
 
@@ -132,8 +140,12 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                                 git::stage_patch_cmd(),
                             )?,
                             Item { delta: Some(d), .. } => {
-                                screen.issue_command(&[], git::stage_file_cmd(d))?
+                                screen.issue_command(&[], git::stage_file_cmd(&d.new_file))?
                             }
+                            Item {
+                                untracked_file: Some(f),
+                                ..
+                            } => screen.issue_command(&[], git::stage_file_cmd(f))?,
                             _ => (),
                         }
 
@@ -192,17 +204,17 @@ fn goto_log_screen(screens: &mut Vec<Screen>) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
+fn editor_cmd(delta: &str, maybe_hunk: Option<&Hunk>) -> Command {
     let editor = std::env::var("EDITOR").expect("EDITOR not set");
     let mut cmd = Command::new(editor.clone());
     let args = match maybe_hunk {
         Some(hunk) => match editor.as_str() {
             "vi" | "vim" | "nvim" | "nano" => {
-                vec![format!("+{}", hunk.new_start), delta.new_file.clone()]
+                vec![format!("+{}", hunk.new_start), delta.to_string()]
             }
-            _ => vec![format!("{}:{}", &delta.new_file, hunk.new_start)],
+            _ => vec![format!("{}:{}", delta, hunk.new_start)],
         },
-        None => vec![delta.new_file.clone()],
+        None => vec![delta.to_string()],
     };
 
     cmd.args(args);
