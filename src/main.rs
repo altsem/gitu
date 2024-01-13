@@ -402,7 +402,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         open_subscreen(terminal, &[], git::commit_cmd())?;
                         screen.refresh_items();
                     }
-                    (KeyModifiers::NONE, KeyCode::Char('P')) => {
+                    (KeyModifiers::SHIFT, KeyCode::Char('P')) => {
                         screen.issue_command(&[], git::push_cmd())?
                     }
                     (KeyModifiers::NONE, KeyCode::Char('p')) => {
