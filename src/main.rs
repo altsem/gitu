@@ -11,7 +11,7 @@ use std::{
 };
 
 use crossterm::{
-    event::{self, Event, KeyCode},
+    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
@@ -112,7 +112,8 @@ fn main() -> io::Result<()> {
     screens.insert(
         "status".to_string(),
         Screen {
-            selected: 0,
+            cursor: 0,
+            scroll: 0,
             refresh_items: Box::new(create_status_items),
             items: create_status_items(),
             collapsed: HashSet::new(),
@@ -160,16 +161,16 @@ fn create_status_items() -> Vec<Item> {
     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
 
     items.extend(create_status_section(
-        "\nUnstaged changes",
+        "Unstaged changes",
         diff::Diff::parse(&git::diff_unstaged()),
     ));
 
     items.extend(create_status_section(
-        "\nStaged changes",
+        "Staged changes",
         diff::Diff::parse(&git::diff_staged()),
     ));
 
-    items.extend(create_log_section("\nRecent commits", &git::log_recent()));
+    items.extend(create_log_section("Recent commits", &git::log_recent()));
     items
 }
 
@@ -296,11 +297,24 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         panic!("No screen");
     };
 
-    let selected = &screen.items[screen.selected];
+    let selected = &screen.items[screen.cursor];
     let mut new_screen = None;
 
     if let Event::Key(key) = event::read()? {
-        if key.kind == event::KeyEventKind::Press {
+        if key.modifiers == KeyModifiers::CONTROL && key.kind == KeyEventKind::Press {
+            let half_screen = crossterm::terminal::size()?.1 / 2;
+
+            match key.code {
+                KeyCode::Char('u') => {
+                    screen.scroll = screen.scroll.saturating_sub(half_screen);
+                }
+                KeyCode::Char('d') => {
+                    screen.scroll = (screen.scroll + half_screen)
+                        .min(screen.collapsed_items_iter().count() as u16);
+                }
+                _ => (),
+            }
+        } else if key.kind == KeyEventKind::Press {
             match key.code {
                 KeyCode::Char('f') => {
                     screen.issue_command(&[], git::fetch_all_cmd())?;
@@ -308,8 +322,21 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                 }
                 KeyCode::Char('g') => screen.refresh_items(),
                 KeyCode::Char('q') => state.quit = true,
-                KeyCode::Char('j') => screen.select_next(),
-                KeyCode::Char('k') => screen.select_previous(),
+                KeyCode::Char('j') => {
+                    screen.select_next();
+
+                    let last = 1 + screen.scroll_end();
+                    let end = crossterm::terminal::size()?.1 - 1;
+                    if last as u16 > end + screen.scroll {
+                        screen.scroll = last as u16 - end;
+                    }
+                }
+                KeyCode::Char('k') => {
+                    screen.select_previous();
+                    if (screen.cursor as u16) < screen.scroll {
+                        screen.scroll = screen.cursor as u16;
+                    }
+                }
                 KeyCode::Char('l') => {
                     let refresh_items = Box::new(move || create_log(&git::log()));
                     let items = refresh_items();
@@ -317,7 +344,8 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     new_screen = Some((
                         "log",
                         Screen {
-                            selected: 0,
+                            cursor: 0,
+                            scroll: 0,
                             refresh_items,
                             items,
                             collapsed: HashSet::new(),
@@ -373,7 +401,8 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             new_screen = Some((
                                 "show",
                                 Screen {
-                                    selected: 0,
+                                    cursor: 0,
+                                    scroll: 0,
                                     refresh_items: Box::new(move || create_show_items(&reference)),
                                     items: create_show_items(r),
                                     collapsed: HashSet::new(),
@@ -446,27 +475,4 @@ fn open_subscreen<B: Backend>(
     terminal.clear()?;
 
     Ok(())
-}
-
-fn collapsed_items_iter<'a>(
-    collapsed: &'a HashSet<Item>,
-    items: &'a Vec<Item>,
-) -> impl Iterator<Item = (usize, &'a Item)> {
-    items
-        .iter()
-        .enumerate()
-        .scan(None, |collapse_depth, (i, next)| {
-            if collapse_depth.is_some_and(|depth| depth < next.depth) {
-                return Some(None);
-            }
-
-            *collapse_depth = if next.section && collapsed.contains(next) {
-                Some(next.depth)
-            } else {
-                None
-            };
-
-            Some(Some((i, next)))
-        })
-        .flatten()
 }

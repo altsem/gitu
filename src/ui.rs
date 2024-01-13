@@ -1,6 +1,5 @@
 use crate::screen::Screen;
 
-use super::collapsed_items_iter;
 use ratatui::style::Modifier;
 use ratatui::style::Style;
 use ratatui::text::Text;
@@ -10,7 +9,8 @@ use ratatui::Frame;
 pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
     let mut highlight_depth = None;
 
-    let mut lines = collapsed_items_iter(&screen.collapsed, &screen.items)
+    let mut lines = screen
+        .collapsed_items_iter()
         .flat_map(|(i, item)| {
             let mut text = if let Some((ref text, style)) = item.display {
                 use ansi_to_tui::IntoText;
@@ -29,7 +29,7 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                     .push("…".into());
             }
 
-            if screen.selected == i {
+            if screen.cursor == i {
                 highlight_depth = Some(item.depth);
             } else if highlight_depth.is_some_and(|hd| hd >= item.depth) {
                 highlight_depth = None;
@@ -56,5 +56,8 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
         );
     }
 
-    frame.render_widget(Paragraph::new(lines), frame.size());
+    frame.render_widget(
+        Paragraph::new(lines).scroll((screen.scroll, 0)),
+        frame.size(),
+    );
 }
