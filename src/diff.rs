@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::{fmt::Display, ops::Range};
+use std::fmt::Display;
 
 const DELTAS_REGEX: &str = r"(?<header>diff --git a\/\S+ b\/\S+
 ([^@].*
@@ -120,45 +120,6 @@ impl Hunk {
             "@@ -{},{} +{},{} @@{}",
             self.old_start, self.old_lines, self.new_start, self.new_lines, self.header_suffix
         )
-    }
-
-    pub fn select(&self, range: Range<usize>) -> Option<Self> {
-        let modified_lines = self
-            .content
-            .split('\n')
-            .enumerate()
-            .filter_map(|(i, line)| {
-                if range.contains(&i) || line.starts_with(' ') || line.is_empty() {
-                    Some(line.to_string())
-                } else if line.starts_with('+') {
-                    None
-                } else if line.starts_with('-') {
-                    Some(line.replacen('-', " ", 1))
-                } else {
-                    panic!("Unexpected case: {}", line);
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let added = modified_lines
-            .iter()
-            .filter(|line| line.starts_with('+'))
-            .count();
-
-        let removed = modified_lines
-            .iter()
-            .filter(|line| line.starts_with('-'))
-            .count();
-
-        if added == 0 && removed == 0 {
-            return None;
-        }
-
-        Some(Self {
-            new_lines: self.old_lines + added as u32 - removed as u32,
-            content: modified_lines.join("\n"),
-            ..self.clone()
-        })
     }
 
     pub fn format_patch(&self) -> String {
