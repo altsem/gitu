@@ -5,6 +5,7 @@ use std::io;
 use std::process::Command;
 
 pub(crate) struct Screen {
+    pub(crate) name: &'static str,
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),

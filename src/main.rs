@@ -5,7 +5,7 @@ mod screen;
 mod ui;
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     io::{self, stdout, Read, Write},
     process::{Child, Command, Stdio},
 };
@@ -25,8 +25,7 @@ use screen::Screen;
 
 struct State {
     quit: bool,
-    current_screen: String,
-    screens: HashMap<String, Screen>,
+    screens: Vec<Screen>,
 }
 
 #[derive(Debug)]
@@ -108,34 +107,32 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let mut screens = HashMap::new();
-    screens.insert(
-        "status".to_string(),
-        Screen {
-            cursor: 0,
-            scroll: 0,
-            size: crossterm::terminal::size()?,
-            refresh_items: Box::new(create_status_items),
-            items: create_status_items(),
-            collapsed: HashSet::new(),
-            command: None,
-        },
-    );
+    let mut screens = vec![];
+
+    screens.push(Screen {
+        name: "status",
+        cursor: 0,
+        scroll: 0,
+        size: crossterm::terminal::size()?,
+        refresh_items: Box::new(create_status_items),
+        items: create_status_items(),
+        collapsed: HashSet::new(),
+        command: None,
+    });
 
     let mut state = State {
         quit: false,
-        current_screen: "status".to_string(),
         screens,
     };
 
     while !state.quit {
-        if let Some(screen) = state.screens.get_mut(&state.current_screen) {
+        if let Some(screen) = state.screens.last_mut() {
             screen.handle_command_output();
         }
 
         handle_events(&mut state, &mut terminal)?;
 
-        if let Some(screen) = state.screens.get_mut(&state.current_screen) {
+        if let Some(screen) = state.screens.last_mut() {
             screen.clamp_selected();
             terminal.draw(|frame| ui::ui(frame, screen))?;
         }
@@ -295,12 +292,11 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         return Ok(());
     }
 
-    let Some(screen) = state.screens.get_mut(&state.current_screen) else {
+    let Some(screen) = state.screens.last_mut() else {
         panic!("No screen");
     };
 
     let selected = &screen.items[screen.cursor];
-    let mut new_screen = None;
 
     match event::read()? {
         Event::Resize(w, h) => screen.size = (w, h),
@@ -321,45 +317,30 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
 
                     // Listing / showing
                     (KeyModifiers::NONE, KeyCode::Char('l')) => {
-                        new_screen = Some(create_log_screen()?)
+                        goto_log_screen(&mut state.screens)?
                     }
-                    (KeyModifiers::NONE, KeyCode::Enter) => {
-                        let new_screen: &mut Option<(&str, Screen)> = &mut new_screen;
-                        match selected {
-                            Item {
-                                delta: Some(d),
-                                hunk: Some(h),
-                                ..
-                            } => {
-                                open_subscreen(terminal, &[], editor_cmd(d, Some(h)))?;
-                            }
-                            Item { delta: Some(d), .. } => {
-                                open_subscreen(terminal, &[], editor_cmd(d, None))?;
-                            }
-                            Item {
-                                reference: Some(r), ..
-                            } => {
-                                let reference = r.clone();
-                                *new_screen = Some((
-                                    "show",
-                                    Screen {
-                                        cursor: 0,
-                                        scroll: 0,
-                                        size: crossterm::terminal::size()?,
-                                        refresh_items: Box::new(move || {
-                                            create_show_items(&reference)
-                                        }),
-                                        items: create_show_items(r),
-                                        collapsed: HashSet::new(),
-                                        command: None,
-                                    },
-                                ));
-                            }
-                            _ => (),
-                        }
 
-                        screen.refresh_items();
-                    }
+                    (KeyModifiers::NONE, KeyCode::Enter) => match selected {
+                        Item {
+                            delta: Some(d),
+                            hunk: Some(h),
+                            ..
+                        } => {
+                            open_subscreen(terminal, &[], editor_cmd(d, Some(h)))?;
+                            screen.refresh_items();
+                        }
+                        Item { delta: Some(d), .. } => {
+                            open_subscreen(terminal, &[], editor_cmd(d, None))?;
+                            screen.refresh_items();
+                        }
+                        Item {
+                            reference: Some(r), ..
+                        } => {
+                            let reference = r.to_string();
+                            goto_show_screen(&mut state.screens, reference)?;
+                        }
+                        _ => (),
+                    },
 
                     // Commands
                     (KeyModifiers::NONE, KeyCode::Char('f')) => {
@@ -412,39 +393,47 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     }
 
     if state.quit {
-        // TODO Include the "log", make some sort of screen stack, more intuitive
-        if &state.current_screen != "status" {
-            state.screens.remove(&state.current_screen);
-            state.current_screen = "status".to_string();
+        state.screens.pop();
+        if let Some(screen) = state.screens.last_mut() {
             state.quit = false;
-            state
-                .screens
-                .get_mut(&state.current_screen)
-                .unwrap()
-                .refresh_items();
+            screen.refresh_items();
         }
     }
 
-    if let Some((name, screen)) = new_screen {
-        state.screens.insert(name.to_string(), screen);
-        state.current_screen = name.to_string();
-    }
     Ok(())
 }
 
-fn create_log_screen() -> Result<(&'static str, Screen), io::Error> {
-    Ok((
-        "log",
-        Screen {
-            cursor: 0,
-            scroll: 0,
-            size: crossterm::terminal::size()?,
-            refresh_items: Box::new(move || create_log(&git::log())),
-            items: create_log(&git::log()),
-            collapsed: HashSet::new(),
-            command: None,
-        },
-    ))
+fn goto_show_screen(screens: &mut Vec<Screen>, reference: String) -> Result<(), io::Error> {
+    let r = reference.clone();
+
+    screens.push(Screen {
+        name: "show",
+        cursor: 0,
+        scroll: 0,
+        size: crossterm::terminal::size()?,
+        refresh_items: Box::new(move || create_show_items(&r)),
+        items: create_show_items(&reference),
+        collapsed: HashSet::new(),
+        command: None,
+    });
+
+    Ok(())
+}
+
+fn goto_log_screen(screens: &mut Vec<Screen>) -> Result<(), io::Error> {
+    screens.drain(1..);
+    screens.push(Screen {
+        name: "log",
+        cursor: 0,
+        scroll: 0,
+        size: crossterm::terminal::size()?,
+        refresh_items: Box::new(move || create_log(&git::log())),
+        items: create_log(&git::log()),
+        collapsed: HashSet::new(),
+        command: None,
+    });
+
+    Ok(())
 }
 
 fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
