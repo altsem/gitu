@@ -196,60 +196,10 @@ mod tests {
     use super::Diff;
 
     #[test]
-    fn parse_example4() {
-        let diff = Diff::parse(include_str!("example4.patch"));
+    fn parse_example() {
+        let diff = Diff::parse(include_str!("example.patch"));
         assert_eq!(diff.deltas.len(), 2);
         assert_eq!(diff.deltas[0].hunks.len(), 2);
         assert_eq!(diff.deltas[1].hunks.len(), 2);
     }
-
-    // #[test]
-    // fn format_diff_preserved() {
-    //     let buffer = include_str!("example3.patch");
-    //     let diff = git2::Diff::from_buffer(buffer.as_bytes()).unwrap();
-    //     let result = super::Diff::from(diff).to_string();
-
-    //     let diff_diff = super::Diff::from(
-    //         git2::Diff::from_buffer(
-    //             &git2::Patch::from_buffers(buffer.as_bytes(), None, result.as_bytes(), None, None)
-    //                 .unwrap()
-    //                 .to_buf()
-    //                 .unwrap(),
-    //         )
-    //         .unwrap(),
-    //     );
-
-    //     println!("{}", diff_diff);
-    //     assert!(diff_diff.deltas.is_empty());
-    // }
-
-    // #[test]
-    // fn select_lines() {
-    //     let buffer = include_str!("example2.patch");
-    //     let diff = git2::Diff::from_buffer(buffer.as_bytes()).unwrap();
-    //     let patch = super::Diff::from(diff);
-    //     let hunk = patch.deltas[0].hunks.first().unwrap();
-    //     let result = hunk.select(4..7).unwrap();
-
-    //     println!("Pre-select {}", hunk);
-    //     println!("Post-select {}", result);
-
-    //     assert!(result.content.lines().nth(3).unwrap().starts_with(" "));
-    //     assert!(result.content.lines().nth(4).unwrap().starts_with("-"));
-    //     assert!(result.content.lines().nth(5).unwrap().starts_with("+"));
-    //     assert!(result.content.lines().nth(6).unwrap().starts_with("+"));
-    //     assert!(result.content.lines().nth(7).unwrap().starts_with(" "));
-    //     assert_eq!(9, result.new_lines);
-    // }
-
-    // #[test]
-    // fn select_nothing() {
-    //     let buffer = include_str!("example2.patch");
-    //     let diff = git2::Diff::from_buffer(buffer.as_bytes()).unwrap();
-    //     let patch = super::Diff::from(diff);
-    //     let hunk = patch.deltas[0].hunks.first().unwrap();
-    //     let result = hunk.select(0..0);
-
-    //     assert!(result.is_none());
-    // }
 }

@@ -1,270 +1,57 @@
+diff --git a/src/diff.rs b/src/diff.rs
+index 3757767..0aeba60 100644
+--- a/src/diff.rs
++++ b/src/diff.rs
+@@ -37,13 +37,12 @@ impl Diff {
+             deltas: deltas_regex.captures_iter(&diff_str).map(|cap| {
+                 let header = group_as_string(&cap, "header");
+                 let hunk = group_as_string(&cap, "hunk");
++            dbg!("DELTA");
+-                Delta {
+-                    file_header: header.clone(),
+-                    old_file: group_as_string(&cap, "old_file"),
+-                    new_file: group_as_string(&cap, "new_file"),
+-                    hunks: hunks_regex.captures_iter(&hunk)
++                let hunks = hunks_regex.captures_iter(&hunk)
+                         .map(|hunk_cap| {
++            dbg!("HUNK");
++
+                             Hunk {
+                                 file_header: header.clone(),
+                                 old_start: group_as_u32(&hunk_cap, "old_start"),
+@@ -53,7 +52,13 @@ impl Diff {
+                                 header_suffix: group_as_string(&hunk_cap, "header_suffix"),
+                                 content: group_as_string(&hunk_cap, "content")
+                              }})
+-                        .collect::<Vec<_>>() }
++                        .collect::<Vec<_>>();
++
++                Delta {
++                    file_header: header.clone(),
++                    old_file: group_as_string(&cap, "old_file"),
++                    new_file: group_as_string(&cap, "new_file"),
++                    hunks }
+             }).collect::<Vec<_>>()
+         }
+     }
 diff --git a/src/main.rs b/src/main.rs
-index eda095d..2417f40 100644
+index 6f7d006..d22ee32 100644
 --- a/src/main.rs
 +++ b/src/main.rs
-@@ -4,6 +4,7 @@ use std::{
-     iter,
-     ops::Range,
-     path::Path,
-+    sync::Arc,
- };
- 
- use crossterm::{
-@@ -38,6 +39,7 @@ struct Item {
-     status: Option<String>,
-     diff_hunk: Option<String>,
-     diff_line: Option<String>,
-+    patch: Option<String>,
-     section: Option<bool>,
- }
- 
-@@ -73,18 +75,17 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
-     // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
- 
-     items.extend(create_status_section(
--        &repo.diff_index_to_workdir(None, None).unwrap(),
-+        repo.diff_index_to_workdir(None, None).unwrap(),
-         "Unstaged changes",
-     ));
- 
-     items.extend(create_status_section(
--        &repo
--            .diff_tree_to_index(
--                Some(&repo.head().unwrap().peel_to_tree().unwrap()),
--                None,
--                None,
--            )
--            .unwrap(),
-+        repo.diff_tree_to_index(
-+            Some(&repo.head().unwrap().peel_to_tree().unwrap()),
-+            None,
-+            None,
-+        )
-+        .unwrap(),
-         "Staged changes",
-     ));
- 
-@@ -112,70 +113,129 @@ fn create_status_items(repo: &Repository) -> Vec<Item> {
+@@ -83,6 +83,8 @@ fn create_status_items() -> Vec<Item> {
      items
  }
- 
--fn create_status_section<'a>(diff: &git2::Diff, header: &str) -> Vec<Item> {
-+fn create_status_section<'a>(diff: git2::Diff, header: &str) -> Vec<Item> {
-     let mut items = vec![];
- 
--    items.push(Item {
--        depth: 0,
--        header: Some(header.to_string()),
--        section: Some(false),
--        ..Default::default()
--    });
-+    // TODO This seems to give functional patches
-+    // disable_raw_mode().unwrap();
-+    // stdout().execute(LeaveAlternateScreen).unwrap();
++// test
 +
-+    // diff.print(git2::DiffFormat::Patch, |delta, hunk, line| {
-+    //     use std::io::Write;
-+    //     if !['F', 'H', 'B'].contains(&line.origin()) {
-+    //         print!("{}", line.origin());
-+    //     }
-+    //     std::io::stdout().write(line.content()).unwrap();
-+    //     true
-+    // })
-+    // .unwrap();
-+
-+    // panic!("");
- 
-     // TODO files_changed, is this really correct?
-     let file_count = diff.stats().unwrap().files_changed();
--    for file_index in 0..file_count {
--        let patch = Patch::from_diff(diff, file_index).unwrap().unwrap();
-+    for file_index in (0..file_count).rev() {
-+        let patch = Patch::from_diff(&diff, file_index).unwrap().unwrap();
- 
--        let file_str = Some(
--            patch
--                .delta()
--                .new_file()
--                .path()
--                .unwrap()
--                .to_str()
--                .unwrap()
--                .to_string(),
--        );
-+        let old_file_str = patch
-+            .delta()
-+            .old_file()
-+            .path()
-+            .unwrap()
-+            .to_str()
-+            .unwrap()
-+            .to_string();
- 
--        items.push(Item {
--            depth: 1,
--            section: Some(false),
--            file: file_str.clone(),
--            ..Default::default()
--        });
-+        let new_file_str = patch
-+            .delta()
-+            .new_file()
-+            .path()
-+            .unwrap()
-+            .to_str()
-+            .unwrap()
-+            .to_string();
- 
--        for hunk_index in 0..patch.num_hunks() {
-+        let mut file_patch_lines = vec![];
-+
-+        for hunk_index in (0..patch.num_hunks()).rev() {
-             let (hunk, line_count) = patch.hunk(hunk_index).unwrap();
--            let hunk_str = Some(String::from_utf8(hunk.header().to_owned()).unwrap());
-+            let hunk_str = String::from_utf8(hunk.header().to_owned())
-+                .unwrap()
-+                .trim_end()
-+                .to_string();
- 
--            items.push(Item {
--                depth: 2,
--                section: Some(false),
--                file: file_str.clone(),
--                diff_hunk: hunk_str.clone(),
--                ..Default::default()
--            });
-+            let mut hunk_patch_lines = vec![];
- 
--            for line_index in 3..line_count {
-+            for line_index in (0..line_count).rev() {
-                 let line = patch.line_in_hunk(hunk_index, line_index).unwrap();
--                let line_str = Some(format!(
--                    "{} {}",
-+                let line_str = format!(
-+                    "{}{}",
-                     line.origin(),
--                    String::from_utf8(line.content().to_owned()).unwrap()
--                ));
-+                    String::from_utf8(line.content().to_owned())
-+                        .unwrap()
-+                        .trim_end()
-+                );
-+
-+                let line_patch_lines = [
-+                    "--- a/".to_owned() + &old_file_str.clone(),
-+                    "+++ b/".to_owned() + &new_file_str.clone(),
-+                    hunk_str.clone(),
-+                    line_str.clone(),
-+                ];
-+                hunk_patch_lines.push(line_str.clone());
-+                file_patch_lines.push(line_str.clone());
- 
-                 items.push(Item {
-                     depth: 3,
--                    file: file_str.clone(),
--                    diff_hunk: hunk_str.clone(),
--                    diff_line: line_str,
-+                    diff_hunk: Some(hunk_str.clone()),
-+                    diff_line: Some(line_str),
-+                    patch: Some(hunk_patch_lines.join("\n")),
-                     ..Default::default()
-                 });
-             }
-+
-+            hunk_patch_lines.push(hunk_str.clone());
-+            hunk_patch_lines.push("+++ b/".to_owned() + &new_file_str.clone());
-+            hunk_patch_lines.push("--- a/".to_owned() + &old_file_str.clone());
-+            // hunk_patch_lines.reverse();
-+
-+            file_patch_lines.push(hunk_str.clone());
-+
-+            items.push(Item {
-+                depth: 2,
-+                section: Some(false),
-+                diff_hunk: Some(hunk_str.clone()),
-+                patch: Some(hunk_patch_lines.join("\n")),
-+                ..Default::default()
-+            });
-         }
-+
-+        file_patch_lines.push("+++ b/".to_owned() + &new_file_str.clone());
-+        file_patch_lines.push("--- a/".to_owned() + &old_file_str.clone());
-+        file_patch_lines.reverse();
-+
-+        items.push(Item {
-+            depth: 1,
-+            section: Some(false),
-+            file: Some(new_file_str.clone()),
-+            patch: Some(file_patch_lines.join("\n")),
-+            ..Default::default()
-+        });
-     }
- 
-+    disable_raw_mode().unwrap();
-+    stdout().execute(LeaveAlternateScreen).unwrap();
-+    println!("{}", items.get(42).unwrap().patch.as_ref().unwrap());
-+    panic!();
-+
-+    items.push(Item {
-+        depth: 0,
-+        header: Some(header.to_string()),
-+        section: Some(false),
-+        ..Default::default()
-+    });
-+
-+    items.reverse();
+ fn git(args: &[&'_ str]) -> String {
+     String::from_utf8(Command::new("git").args(args).output().expect("Couldn't execute 'git'").stdout).unwrap()
+ }
+@@ -134,6 +136,8 @@ fn create_status_section<'a>(diff: diff::Diff, header: &str) -> Vec<Item> {
      items
  }
- 
-@@ -282,26 +342,46 @@ fn handle_events(state: &mut State, repo: &mut Repository) -> io::Result<bool> {
-                     KeyCode::Char('q') => state.quit = true,
-                     KeyCode::Char('j') => {
-                         state.selected = collapsed_items_iter(&state.items)
--                            .find(|(i, item)| i > &state.selected && item.diff_line.is_none())
-+                            .find(|(i, item)| i > &state.selected)
-                             .map(|(i, _item)| i)
-                             .unwrap_or(state.selected)
-                     }
-                     KeyCode::Char('k') => {
-                         state.selected = collapsed_items_iter(&state.items)
--                            .filter(|(i, item)| i < &state.selected && item.diff_line.is_none())
-+                            .filter(|(i, item)| i < &state.selected)
-                             .last()
-                             .map(|(i, _item)| i)
-                             .unwrap_or(state.selected)
-                     }
--                    KeyCode::Char('s') => {
--                        if let Some(ref file) = state.items[state.selected].file {
-+                    KeyCode::Char('s') => match state.items[state.selected] {
-+                        Item {
-+                            patch: Some(ref patch),
-+                            ..
-+                        } => {
-+                            repo.apply(
-+                                &Diff::from_buffer(patch.as_bytes())
-+                                    .expect("Couldn't create patch from buffer"),
-+                                git2::ApplyLocation::Index,
-+                                None,
-+                            )
-+                            .expect("Couldn't apply patch");
-+                            // disable_raw_mode()?;
-+                            // stdout().execute(LeaveAlternateScreen)?;
++// Another
 +
-+                            // panic!("{}", patch);
-+                        }
-+                        Item {
-+                            file: Some(ref file),
-+                            ..
-+                        } => {
-                             let index = &mut repo.index().unwrap();
-                             index.add_path(Path::new(&file)).unwrap();
- 
-                             index.write().unwrap();
-                             state.items = create_status_items(repo);
-                         }
--                    }
-+                        _ => panic!("Couldn't stage"),
-+                    },
-                     KeyCode::Char('u') => {
-                         if let Some(ref file) = state.items[state.selected].file {
-                             let index = &mut repo.index().unwrap();
+ fn ui(frame: &mut Frame, state: &State) {
+     let lines = collapsed_items_iter(&state.items)
+         .map(|(i, item)| (i, item))
+
