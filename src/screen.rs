@@ -7,6 +7,7 @@ use std::process::Command;
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
+    pub(crate) size: (u16, u16),
     pub(crate) refresh_items: Box<dyn Fn() -> Vec<Item>>,
     pub(crate) items: Vec<Item>,
     pub(crate) collapsed: HashSet<Item>,
@@ -37,7 +38,13 @@ impl Screen {
     }
 
     pub(crate) fn select_next(&mut self) {
-        self.cursor = self.find_next()
+        self.cursor = self.find_next();
+
+        let last = self.scroll_end();
+        let end_line = self.size.1 - 1;
+        if last as u16 > end_line + self.scroll {
+            self.scroll = last as u16 - end_line;
+        }
     }
 
     pub(crate) fn find_next(&mut self) -> usize {
@@ -53,7 +60,22 @@ impl Screen {
             .filter(|(i, item)| i < &self.cursor && item.diff_line.is_none())
             .last()
             .map(|(i, _item)| i)
-            .unwrap_or(self.cursor)
+            .unwrap_or(self.cursor);
+
+        let start_line = self.scroll_start() as u16;
+        if start_line < self.scroll {
+            self.scroll = start_line;
+        }
+    }
+
+    pub(crate) fn scroll_half_page_up(&mut self) {
+        let half_screen = self.size.1 / 2;
+        self.scroll = self.scroll.saturating_sub(half_screen);
+    }
+
+    pub(crate) fn scroll_half_page_down(&mut self) {
+        let half_screen = self.size.1 / 2;
+        self.scroll = (self.scroll + half_screen).min(self.collapsed_items_iter().count() as u16);
     }
 
     pub(crate) fn scroll_start(&self) -> usize {

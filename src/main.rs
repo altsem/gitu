@@ -114,6 +114,7 @@ fn main() -> io::Result<()> {
         Screen {
             cursor: 0,
             scroll: 0,
+            size: crossterm::terminal::size()?,
             refresh_items: Box::new(create_status_items),
             items: create_status_items(),
             collapsed: HashSet::new(),
@@ -301,126 +302,117 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
     let selected = &screen.items[screen.cursor];
     let mut new_screen = None;
 
-    if let Event::Key(key) = event::read()? {
-        if key.modifiers == KeyModifiers::CONTROL && key.kind == KeyEventKind::Press {
-            let half_screen = crossterm::terminal::size()?.1 / 2;
+    match event::read()? {
+        Event::Resize(w, h) => screen.size = (w, h),
+        Event::Key(key) => {
+            if key.modifiers == KeyModifiers::CONTROL && key.kind == KeyEventKind::Press {
+                match key.code {
+                    _ => (),
+                }
+            } else if key.kind == KeyEventKind::Press {
+                match (key.modifiers, key.code) {
+                    // Generic
+                    (KeyModifiers::NONE, KeyCode::Char('q')) => state.quit = true,
+                    (KeyModifiers::NONE, KeyCode::Char('g')) => screen.refresh_items(),
 
-            match key.code {
-                KeyCode::Char('u') => {
-                    screen.scroll = screen.scroll.saturating_sub(half_screen);
-                }
-                KeyCode::Char('d') => {
-                    screen.scroll = (screen.scroll + half_screen)
-                        .min(screen.collapsed_items_iter().count() as u16);
-                }
-                _ => (),
-            }
-        } else if key.kind == KeyEventKind::Press {
-            match key.code {
-                KeyCode::Char('f') => {
-                    screen.issue_command(&[], git::fetch_all_cmd())?;
-                    screen.refresh_items();
-                }
-                KeyCode::Char('g') => screen.refresh_items(),
-                KeyCode::Char('q') => state.quit = true,
-                KeyCode::Char('j') => {
-                    screen.select_next();
+                    // Navigation
+                    (KeyModifiers::NONE, KeyCode::Tab) => screen.toggle_section(),
+                    (KeyModifiers::NONE, KeyCode::Char('k')) => screen.select_previous(),
+                    (KeyModifiers::NONE, KeyCode::Char('j')) => screen.select_next(),
 
-                    let last = screen.scroll_end();
-                    let end_line = crossterm::terminal::size()?.1 - 1;
-                    if last as u16 > end_line + screen.scroll {
-                        screen.scroll = last as u16 - end_line;
+                    (KeyModifiers::CONTROL, KeyCode::Char('u')) => screen.scroll_half_page_up(),
+                    (KeyModifiers::CONTROL, KeyCode::Char('d')) => screen.scroll_half_page_down(),
+
+                    // Listing / showing
+                    (KeyModifiers::NONE, KeyCode::Char('l')) => {
+                        new_screen = Some(create_log_screen()?)
                     }
-                }
-                KeyCode::Char('k') => {
-                    screen.select_previous();
-                    let start_line = screen.scroll_start() as u16;
-                    if start_line < screen.scroll {
-                        screen.scroll = start_line;
+                    (KeyModifiers::NONE, KeyCode::Enter) => {
+                        let new_screen: &mut Option<(&str, Screen)> = &mut new_screen;
+                        match selected {
+                            Item {
+                                delta: Some(d),
+                                hunk: Some(h),
+                                ..
+                            } => {
+                                open_subscreen(terminal, &[], editor_cmd(d, Some(h)))?;
+                            }
+                            Item { delta: Some(d), .. } => {
+                                open_subscreen(terminal, &[], editor_cmd(d, None))?;
+                            }
+                            Item {
+                                reference: Some(r), ..
+                            } => {
+                                let reference = r.clone();
+                                *new_screen = Some((
+                                    "show",
+                                    Screen {
+                                        cursor: 0,
+                                        scroll: 0,
+                                        size: crossterm::terminal::size()?,
+                                        refresh_items: Box::new(move || {
+                                            create_show_items(&reference)
+                                        }),
+                                        items: create_show_items(r),
+                                        collapsed: HashSet::new(),
+                                        command: None,
+                                    },
+                                ));
+                            }
+                            _ => (),
+                        }
+
+                        screen.refresh_items();
                     }
-                }
-                KeyCode::Char('l') => {
-                    let refresh_items = Box::new(move || create_log(&git::log()));
-                    let items = refresh_items();
 
-                    new_screen = Some((
-                        "log",
-                        Screen {
-                            cursor: 0,
-                            scroll: 0,
-                            refresh_items,
-                            items,
-                            collapsed: HashSet::new(),
-                            command: None,
-                        },
-                    ))
-                }
-                KeyCode::Char('s') => {
-                    match selected {
-                        Item { hunk: Some(h), .. } => screen
-                            .issue_command(h.format_patch().as_bytes(), git::stage_patch_cmd())?,
-                        Item { delta: Some(d), .. } => {
-                            screen.issue_command(&[], git::stage_file_cmd(d))?
-                        }
-                        _ => (),
+                    // Commands
+                    (KeyModifiers::NONE, KeyCode::Char('f')) => {
+                        screen.issue_command(&[], git::fetch_all_cmd())?;
+                        screen.refresh_items();
                     }
+                    (KeyModifiers::NONE, KeyCode::Char('s')) => {
+                        match selected {
+                            Item { hunk: Some(h), .. } => screen.issue_command(
+                                h.format_patch().as_bytes(),
+                                git::stage_patch_cmd(),
+                            )?,
+                            Item { delta: Some(d), .. } => {
+                                screen.issue_command(&[], git::stage_file_cmd(d))?
+                            }
+                            _ => (),
+                        }
 
-                    screen.refresh_items();
-                }
-                KeyCode::Char('u') => {
-                    match selected {
-                        Item { hunk: Some(h), .. } => screen
-                            .issue_command(h.format_patch().as_bytes(), git::unstage_patch_cmd())?,
-                        Item { delta: Some(d), .. } => {
-                            screen.issue_command(&[], git::unstage_file_cmd(d))?
+                        screen.refresh_items();
+                    }
+                    (KeyModifiers::NONE, KeyCode::Char('u')) => {
+                        match selected {
+                            Item { hunk: Some(h), .. } => screen.issue_command(
+                                h.format_patch().as_bytes(),
+                                git::unstage_patch_cmd(),
+                            )?,
+                            Item { delta: Some(d), .. } => {
+                                screen.issue_command(&[], git::unstage_file_cmd(d))?
+                            }
+                            _ => (),
                         }
-                        _ => (),
-                    };
-                    screen.refresh_items();
-                }
-                KeyCode::Char('c') => {
-                    open_subscreen(terminal, &[], git::commit_cmd())?;
-                    screen.refresh_items();
-                }
-                KeyCode::Char('P') => screen.issue_command(&[], git::push_cmd())?,
-                KeyCode::Char('p') => screen.issue_command(&[], git::pull_cmd())?,
-                KeyCode::Enter => {
-                    match selected {
-                        Item {
-                            delta: Some(d),
-                            hunk: Some(h),
-                            ..
-                        } => {
-                            open_subscreen(terminal, &[], editor_cmd(d, Some(h)))?;
-                        }
-                        Item { delta: Some(d), .. } => {
-                            open_subscreen(terminal, &[], editor_cmd(d, None))?;
-                        }
-                        Item {
-                            reference: Some(r), ..
-                        } => {
-                            let reference = r.clone();
-                            new_screen = Some((
-                                "show",
-                                Screen {
-                                    cursor: 0,
-                                    scroll: 0,
-                                    refresh_items: Box::new(move || create_show_items(&reference)),
-                                    items: create_show_items(r),
-                                    collapsed: HashSet::new(),
-                                    command: None,
-                                },
-                            ));
-                        }
-                        _ => (),
-                    };
 
-                    screen.refresh_items();
+                        screen.refresh_items();
+                    }
+                    (KeyModifiers::NONE, KeyCode::Char('c')) => {
+                        open_subscreen(terminal, &[], git::commit_cmd())?;
+                        screen.refresh_items();
+                    }
+                    (KeyModifiers::NONE, KeyCode::Char('P')) => {
+                        screen.issue_command(&[], git::push_cmd())?
+                    }
+                    (KeyModifiers::NONE, KeyCode::Char('p')) => {
+                        screen.issue_command(&[], git::pull_cmd())?
+                    }
+                    _ => (),
                 }
-                KeyCode::Tab => screen.toggle_section(),
-                _ => (),
             }
         }
+        _ => (),
     }
 
     if state.quit {
@@ -442,6 +434,21 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         state.current_screen = name.to_string();
     }
     Ok(())
+}
+
+fn create_log_screen() -> Result<(&'static str, Screen), io::Error> {
+    Ok((
+        "log",
+        Screen {
+            cursor: 0,
+            scroll: 0,
+            size: crossterm::terminal::size()?,
+            refresh_items: Box::new(move || create_log(&git::log())),
+            items: create_log(&git::log()),
+            collapsed: HashSet::new(),
+            command: None,
+        },
+    ))
 }
 
 fn editor_cmd(delta: &Delta, maybe_hunk: Option<&Hunk>) -> Command {
