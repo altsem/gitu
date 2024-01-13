@@ -49,6 +49,7 @@ fn run_app(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), i
 
     while !state.quit {
         if let Some(screen) = state.screens.last_mut() {
+            terminal.draw(|frame| ui::ui(frame, screen))?;
             screen.handle_command_output();
         }
 
@@ -56,7 +57,6 @@ fn run_app(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), i
 
         if let Some(screen) = state.screens.last_mut() {
             screen.clamp_cursor();
-            terminal.draw(|frame| ui::ui(frame, screen))?;
         }
     }
 
