@@ -104,7 +104,7 @@ pub struct Hunk {
     pub new_start: u32,
     pub new_lines: u32,
     header_suffix: String,
-    content: String,
+    pub content: String,
 }
 
 impl Hunk {
@@ -129,13 +129,6 @@ impl Hunk {
             strip_ansi_escapes::strip_str(self.header()),
             strip_ansi_escapes::strip_str(&self.content)
         )
-    }
-
-    pub fn content_lines<'a>(&'a self) -> Box<dyn Iterator<Item = DiffLine> + 'a> {
-        Box::new(self.content.lines().map(|line| DiffLine {
-            plain: strip_ansi_escapes::strip_str(line),
-            colored: line.to_string(),
-        }))
     }
 }
 

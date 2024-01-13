@@ -31,29 +31,32 @@ struct State {
 }
 
 fn main() -> io::Result<()> {
+    let mut state = State {
+        quit: false,
+        screens: vec![screen::status::create(terminal::size()?)],
+    };
+
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
 
-    run_app(Terminal::new(CrosstermBackend::new(stdout()))?)?;
+    run_app(&mut state, Terminal::new(CrosstermBackend::new(stdout()))?)?;
 
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
 
-fn run_app(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
-    let mut state = State {
-        quit: false,
-        screens: vec![screen::status::create(terminal::size()?)],
-    };
-
+fn run_app(
+    state: &mut State,
+    mut terminal: Terminal<CrosstermBackend<io::Stdout>>,
+) -> Result<(), io::Error> {
     while !state.quit {
         if let Some(screen) = state.screens.last_mut() {
             terminal.draw(|frame| ui::ui(frame, screen))?;
             screen.handle_command_output();
         }
 
-        handle_events(&mut state, &mut terminal)?;
+        handle_events(state, &mut terminal)?;
 
         if let Some(screen) = state.screens.last_mut() {
             screen.clamp_cursor();

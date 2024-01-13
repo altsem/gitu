@@ -1,4 +1,5 @@
 use crate::diff;
+use crate::process;
 use diff::Delta;
 use diff::Hunk;
 use ratatui::style::Color;
@@ -28,7 +29,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
                 } else {
                     format!("{} -> {}", delta.old_file, delta.new_file)
                 },
-                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Magenta),
             )),
             section: true,
             depth,
@@ -45,25 +46,34 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
 
 fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iterator<Item = Item> {
     iter::once(Item {
-        display: Some((hunk.display_header(), Style::new().fg(Color::Yellow))),
+        display: Some((hunk.display_header(), Style::new().fg(Color::Blue))),
         section: true,
         depth: depth + 1,
         delta: Some(hunk_delta.clone()),
         hunk: Some(hunk.clone()),
         ..Default::default()
     })
-    .chain(
-        hunk.content_lines()
-            .map(|line| Item {
-                display: Some((line.colored, Style::new())),
-                depth: depth + 2,
-                delta: Some(hunk_delta.clone()),
-                hunk: Some(hunk.clone()),
-                diff_line: Some(line.plain),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>(),
-    )
+    .chain([{
+        let content = &format!("{}\n{}", hunk.header(), hunk.content);
+        Item {
+            display: Some((
+                process::pipe(
+                    content.as_bytes(),
+                    &[
+                        "delta",
+                        &format!("-w {}", crossterm::terminal::size().unwrap().0),
+                    ],
+                )
+                .0,
+                Style::new(),
+            )),
+            depth: depth + 2,
+            delta: Some(hunk_delta.clone()),
+            hunk: Some(hunk.clone()),
+            diff_line: Some("TODO".to_string()),
+            ..Default::default()
+        }
+    }])
 }
 
 pub(crate) fn create_log_items(log: String) -> impl Iterator<Item = Item> {

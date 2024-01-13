@@ -50,8 +50,8 @@ impl Screen {
     fn scroll_fit_start(&mut self) {
         let start_line = self
             .collapsed_lines_items_iter()
-            .find(|(_line, i, _item)| i == &self.cursor)
-            .map(|(line, _i, _item)| line)
+            .find(|(_line, i, _item, _lc)| i == &self.cursor)
+            .map(|(line, _i, _item, _lc)| line)
             .unwrap() as u16;
 
         if start_line < self.scroll {
@@ -60,11 +60,11 @@ impl Screen {
     }
 
     fn scroll_fit_end(&mut self) {
-        let last = 2 + self
+        let last = 1 + self
             .collapsed_lines_items_iter()
-            .skip_while(|(_line, i, _item)| i < &self.cursor)
-            .take_while(|(_line, i, item)| i == &self.cursor || item.diff_line.is_some())
-            .map(|(line, _i, _item)| line)
+            .skip_while(|(_line, i, _item, _lc)| i < &self.cursor)
+            .take_while(|(_line, i, item, _lc)| i == &self.cursor || item.diff_line.is_some())
+            .map(|(line, _i, _item, lc)| line + lc)
             .last()
             .unwrap();
 
@@ -99,20 +99,28 @@ impl Screen {
 
     pub(crate) fn scroll_half_page_down(&mut self) {
         let half_screen = self.size.1 / 2;
-        self.scroll = (self.scroll + half_screen).min(self.collapsed_items_iter().count() as u16);
+        self.scroll = (self.scroll + half_screen).min(
+            // FIXME Why doesn't this work?
+            self.collapsed_lines_items_iter()
+                .map(|(line, _i, _item, lc)| line + lc)
+                .last()
+                .unwrap_or(0) as u16,
+        );
     }
 
-    fn collapsed_lines_items_iter(&self) -> impl Iterator<Item = (usize, usize, &Item)> {
+    fn collapsed_lines_items_iter(&self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
         self.collapsed_items_iter().scan(0, |lines, (i, item)| {
             let line = *lines;
 
-            *lines += item
+            let lc = item
                 .display
                 .as_ref()
                 .map(|item| item.0.lines().count())
                 .unwrap_or(1);
 
-            Some((line, i, item))
+            *lines += lc;
+
+            Some((line, i, item, lc))
         })
     }
 
@@ -136,7 +144,7 @@ impl Screen {
         self.items = (self.refresh_items)();
     }
 
-    pub(crate) fn collapsed_items_iter<'a>(&'a self) -> impl Iterator<Item = (usize, &'a Item)> {
+    pub(crate) fn collapsed_items_iter(&self) -> impl Iterator<Item = (usize, &Item)> {
         self.items
             .iter()
             .enumerate()
