@@ -11,20 +11,20 @@ Clone the repo and run:
 `cargo install --path .`
 
 ## Hotkeys (WIP)
-- q - Quit
-- g - Refresh items
-- TAB - Toggle section
+q - Quit
+g - Refresh items
+TAB - Toggle section
 
-- j/k - Move down/up
-- C-d/C-u - Scroll half-page down/up
+j/k - Move down/up
+C-d/C-u - Scroll half-page down/up
 
-- l - Go to log screen
+l - Go to log screen
 
-- s - Stage / Apply
-- u - Unstage / Apply in reverse
+s - Stage / Apply
+u - Unstage / Apply in reverse
 
-- c - git commit
-- f - git fetch --all
+c - git commit
+f - git fetch --all
 
 ## Features
 - [ ] Staging / Unstaging (and apply / reverse)
