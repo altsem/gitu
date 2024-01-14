@@ -41,7 +41,7 @@ impl StatusFile {
 
 lazy_static::lazy_static! {
     static ref BRANCH_REGEX: Regex = Regex::new(
-        r"^## (?<local>.*)\.\.\.(?<remote>.*) \[ahead (?<ahead_count>\d)\]$",
+        r"^## (?<local>\S+)\.\.\.(?<remote>\S+)(?: \[ahead (?<ahead_count>\d)\])?$",
     ).unwrap();
     static ref FILE_REGEX: Regex = Regex::new(r"^(?<code>..) (?:(?<orig_path>.*) -> )?(?<path>.*)$").unwrap();
 }
@@ -57,7 +57,10 @@ impl Status {
             if let Some(cap) = BRANCH_REGEX.captures(line) {
                 local = cap.name("local").unwrap().as_str().to_string();
                 remote = cap.name("remote").unwrap().as_str().to_string();
-                ahead_behind_count = cap.name("ahead_count").unwrap().as_str().parse().unwrap();
+                ahead_behind_count = cap
+                    .name("ahead_count")
+                    .map(|str| str.as_str().parse().unwrap())
+                    .unwrap_or(0);
             } else if let Some(cap) = FILE_REGEX.captures(line) {
                 let code = cap.name("code").unwrap().as_str();
                 let chars = &mut code.chars();
@@ -91,7 +94,7 @@ mod tests {
     #[test]
     fn parse_simple() {
         let input = r#"
-## master...origin/master [ahead 1]
+## master...origin/master
  M src/git.rs
  R foo -> bar
 ?? spaghet
@@ -104,7 +107,7 @@ mod tests {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
                     remote: "origin/master".to_string(),
-                    ahead_behind_count: 1
+                    ahead_behind_count: 0
                 },
                 files: vec![
                     StatusFile {
@@ -123,6 +126,26 @@ mod tests {
                         path: "spaghet".to_string()
                     },
                 ]
+            }
+        );
+    }
+
+    #[test]
+    fn parse_ahead() {
+        let input = r#"
+## master...origin/master [ahead 1]
+"#
+        .trim();
+
+        assert_eq!(
+            Status::parse(input),
+            Status {
+                branch_status: BranchStatus {
+                    local: "master".to_string(),
+                    remote: "origin/master".to_string(),
+                    ahead_behind_count: 1
+                },
+                files: vec![]
             }
         );
     }

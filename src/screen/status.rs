@@ -2,6 +2,7 @@ use super::Screen;
 use crate::{
     diff, git,
     items::{self, Item},
+    status::BranchStatus,
     theme,
 };
 use ratatui::style::{Color, Style};
@@ -53,15 +54,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
         .collect::<Vec<_>>();
 
     iter::once(Item {
-        display: Some((
-            format!(
-                "On branch {}\nYour branch is ahead of '{}' by {} commit.",
-                status.branch_status.local,
-                status.branch_status.remote,
-                status.branch_status.ahead_behind_count
-            ),
-            Style::new(),
-        )),
+        display: Some((format_branch_status(&status.branch_status), Style::new())),
         ..Default::default()
     })
     .chain(if untracked.is_empty() {
@@ -106,6 +99,25 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
         "\nRecent commits",
         git::log_recent(),
     ))
+}
+
+fn format_branch_status(status: &BranchStatus) -> String {
+    if status.ahead_behind_count == 0 {
+        format!(
+            "On branch {}\nYour branch is up to date with '{}'.",
+            status.local, status.remote
+        )
+    } else if status.ahead_behind_count > 0 {
+        format!(
+            "On branch {}\nYour branch is ahead of '{}' by {} commit.",
+            status.local, status.remote, status.ahead_behind_count
+        )
+    } else {
+        format!(
+            "On branch {}\nYour branch is behind '{}' by {} commit.",
+            status.local, status.remote, -status.ahead_behind_count
+        )
+    }
 }
 
 fn create_status_section_items<'a>(header: &str, diff: diff::Diff) -> impl Iterator<Item = Item> {
