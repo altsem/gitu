@@ -6,18 +6,10 @@ use crate::{
     theme,
 };
 use ratatui::style::{Color, Style};
-use std::{collections::HashSet, iter};
+use std::iter;
 
 pub(crate) fn create(size: (u16, u16)) -> Screen {
-    Screen {
-        cursor: 3,
-        scroll: 0,
-        size,
-        refresh_items: Box::new(|| create_status_items().collect()),
-        items: create_status_items().collect(),
-        collapsed: HashSet::new(),
-        command: None,
-    }
+    Screen::new(size, Box::new(|| create_status_items().collect()))
 }
 
 pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {

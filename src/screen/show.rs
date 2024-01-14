@@ -4,19 +4,14 @@ use crate::{
     items::{self, Item},
 };
 use ratatui::style::Style;
-use std::{collections::HashSet, iter};
+use std::iter;
 
 pub(crate) fn create(size: (u16, u16), args: Vec<String>) -> Screen {
     let args_clone = args.clone();
-    Screen {
-        cursor: 0,
-        scroll: 0,
+    Screen::new(
         size,
-        refresh_items: Box::new(move || create_show_items(args_clone.clone()).collect()),
-        items: create_show_items(args).collect(),
-        collapsed: HashSet::new(),
-        command: None,
-    }
+        Box::new(move || create_show_items(args_clone.clone()).collect()),
+    )
 }
 
 fn create_show_items(args: Vec<String>) -> impl Iterator<Item = Item> {

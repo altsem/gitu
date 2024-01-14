@@ -12,13 +12,27 @@ pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
-    pub(crate) refresh_items: Box<dyn Fn() -> Vec<Item>>,
+    refresh_items: Box<dyn Fn() -> Vec<Item>>,
     pub(crate) items: Vec<Item>,
     pub(crate) collapsed: HashSet<Item>,
     pub(crate) command: Option<IssuedCommand>,
 }
 
 impl Screen {
+    pub(crate) fn new(size: (u16, u16), refresh_items: Box<dyn Fn() -> Vec<Item>>) -> Self {
+        let items = refresh_items();
+
+        Self {
+            cursor: 0,
+            scroll: 0,
+            size,
+            refresh_items,
+            items,
+            collapsed: HashSet::new(),
+            command: None,
+        }
+    }
+
     pub(crate) fn issue_command(
         &mut self,
         input: &[u8],
