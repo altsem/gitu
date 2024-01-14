@@ -38,6 +38,29 @@ struct State {
     terminal: Terminal,
 }
 
+enum Action {
+    Show,
+    Edit,
+    Stage,
+    Unstage,
+}
+
+// TODO Find good names for these
+enum Action2 {
+    Quit,
+    Refresh,
+    ToggleSection,
+    SelectPrevious,
+    SelectNext,
+    HalfPageUp,
+    HalfPageDown,
+    Log,
+    Fetch,
+    Commit,
+    Push,
+    Pull,
+}
+
 fn main() -> io::Result<()> {
     let mut state = create_initial_state(cli::Cli::parse())?;
 
@@ -103,122 +126,97 @@ fn handle_events(state: &mut State) -> io::Result<()> {
             if key.kind == KeyEventKind::Press {
                 screen.clear_finished_command();
 
-                match (key.modifiers, key.code) {
-                    // Generic
-                    (KeyModifiers::NONE, KeyCode::Char('q')) => state.quit = true,
-                    (KeyModifiers::NONE, KeyCode::Char('g')) => screen.refresh_items(),
+                let maybe_act = screen.get_selected_item().act.as_ref();
 
-                    // Navigation
-                    (KeyModifiers::NONE, KeyCode::Tab) => screen.toggle_section(),
-                    (KeyModifiers::NONE, KeyCode::Char('k')) => screen.select_previous(),
-                    (KeyModifiers::NONE, KeyCode::Char('j')) => screen.select_next(),
-
-                    (KeyModifiers::CONTROL, KeyCode::Char('u')) => screen.scroll_half_page_up(),
-                    (KeyModifiers::CONTROL, KeyCode::Char('d')) => screen.scroll_half_page_down(),
-
-                    // Listing / showing
-                    (KeyModifiers::NONE, KeyCode::Char('l')) => {
-                        goto_log_screen(&mut state.screens)?
-                    }
-
-                    // Commands
-                    (KeyModifiers::NONE, KeyCode::Char('f')) => {
-                        screen.issue_command(&[], git::fetch_all_cmd())?;
-                        screen.refresh_items();
-                    }
-
-                    // Actionables
-                    (KeyModifiers::NONE, KeyCode::Enter) => {
-                        if let Some(act) = &screen.get_selected_item().act {
-                            match act {
-                                Act::Ref(r) => goto_show_screen(r.clone(), &mut state.screens)?,
-                                Act::Untracked(f) => {
-                                    open_subscreen(&mut state.terminal, &[], editor_cmd(f, None))?;
-                                    screen.refresh_items();
-                                }
-                                Act::Delta(d) => {
-                                    let terminal: &mut Terminal = &mut state.terminal;
-                                    open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
-                                    screen.refresh_items();
-                                }
-                                Act::Hunk(h) => {
-                                    open_subscreen(
-                                        &mut state.terminal,
-                                        &[],
-                                        editor_cmd(&h.new_file, Some(&h)),
-                                    )?;
-                                    screen.refresh_items();
-                                }
-                                Act::DiffLine(_) => {
-                                    todo!()
-                                }
+                if let Some((act, action)) = find_binding(maybe_act, key) {
+                    match action {
+                        Action::Show => match act {
+                            Act::Ref(r) => {
+                                goto_show_screen(r.clone(), &mut state.screens)?;
                             }
-                        }
-                    }
-
-                    (KeyModifiers::NONE, KeyCode::Char('s')) => {
-                        if let Some(act) = &screen.get_selected_item().act {
-                            match act {
-                                Act::Ref(_) => {
-                                    todo!()
-                                }
-                                Act::Untracked(f) => {
-                                    screen.issue_command(&[], git::stage_file_cmd(f))?;
-                                }
-                                Act::Delta(d) => {
-                                    screen.issue_command(&[], git::stage_file_cmd(&d.new_file))?
-                                }
-                                Act::Hunk(h) => {
-                                    screen.issue_command(
-                                        h.format_patch().as_bytes(),
-                                        git::stage_patch_cmd(),
-                                    )?;
-                                }
-                                Act::DiffLine(_) => {
-                                    todo!()
-                                }
+                            Act::Untracked(_) => todo!(),
+                            Act::Delta(_) => todo!(),
+                            Act::Hunk(_) => todo!(),
+                            Act::DiffLine(_) => todo!(),
+                        },
+                        Action::Edit => match act {
+                            Act::Ref(_) => todo!(),
+                            Act::Untracked(f) => {
+                                open_subscreen(&mut state.terminal, &[], editor_cmd(f, None))?;
+                                screen.refresh_items();
                             }
-                        }
-
-                        screen.refresh_items();
-                    }
-                    (KeyModifiers::NONE, KeyCode::Char('u')) => {
-                        if let Some(act) = &screen.get_selected_item().act {
-                            match act {
-                                Act::Ref(_) => {
-                                    todo!()
-                                }
-                                Act::Untracked(_) => {
-                                    todo!()
-                                }
-                                Act::Delta(d) => {
-                                    screen.issue_command(&[], git::unstage_file_cmd(d))?
-                                }
-                                Act::Hunk(h) => {
-                                    screen.issue_command(
-                                        h.format_patch().as_bytes(),
-                                        git::unstage_patch_cmd(),
-                                    )?;
-                                }
-                                Act::DiffLine(_) => {
-                                    todo!()
-                                }
+                            Act::Delta(d) => {
+                                let terminal: &mut Terminal = &mut state.terminal;
+                                open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
+                                screen.refresh_items();
                             }
+                            Act::Hunk(h) => {
+                                open_subscreen(
+                                    &mut state.terminal,
+                                    &[],
+                                    editor_cmd(&h.new_file, Some(h)),
+                                )?;
+                                screen.refresh_items();
+                            }
+                            Act::DiffLine(_) => todo!(),
+                        },
+                        Action::Stage => match act {
+                            Act::Ref(_) => todo!(),
+                            Act::Untracked(u) => {
+                                screen.issue_command(&[], git::stage_file_cmd(u))?;
+                                screen.refresh_items();
+                            }
+                            Act::Delta(d) => {
+                                screen.issue_command(&[], git::stage_file_cmd(&d.new_file))?;
+                                screen.refresh_items();
+                            }
+                            Act::Hunk(h) => {
+                                screen.issue_command(
+                                    h.format_patch().as_bytes(),
+                                    git::stage_patch_cmd(),
+                                )?;
+                                screen.refresh_items();
+                            }
+                            Act::DiffLine(_) => todo!(),
+                        },
+                        Action::Unstage => match act {
+                            Act::Ref(_) => todo!(),
+                            Act::Untracked(_) => todo!(),
+                            Act::Delta(d) => {
+                                screen.issue_command(&[], git::unstage_file_cmd(d))?;
+                                screen.refresh_items();
+                            }
+                            Act::Hunk(h) => {
+                                screen.issue_command(
+                                    h.format_patch().as_bytes(),
+                                    git::unstage_patch_cmd(),
+                                )?;
+                                screen.refresh_items();
+                            }
+                            Act::DiffLine(_) => todo!(),
+                        },
+                    }
+                } else if let Some(action2) = action2_of_key_event(key) {
+                    match action2 {
+                        Action2::Quit => state.quit = true,
+                        Action2::Refresh => screen.refresh_items(),
+                        Action2::ToggleSection => screen.toggle_section(),
+                        Action2::SelectPrevious => screen.select_previous(),
+                        Action2::SelectNext => screen.select_next(),
+                        Action2::HalfPageUp => screen.scroll_half_page_up(),
+                        Action2::HalfPageDown => screen.scroll_half_page_down(),
+                        Action2::Log => goto_log_screen(&mut state.screens)?,
+                        Action2::Fetch => {
+                            screen.issue_command(&[], git::fetch_all_cmd())?;
+                            screen.refresh_items();
                         }
-
-                        screen.refresh_items();
+                        Action2::Commit => {
+                            open_subscreen(&mut state.terminal, &[], git::commit_cmd())?;
+                            screen.refresh_items();
+                        }
+                        Action2::Push => screen.issue_command(&[], git::push_cmd())?,
+                        Action2::Pull => screen.issue_command(&[], git::pull_cmd())?,
                     }
-                    (KeyModifiers::NONE, KeyCode::Char('c')) => {
-                        open_subscreen(&mut state.terminal, &[], git::commit_cmd())?;
-                        screen.refresh_items();
-                    }
-                    (KeyModifiers::SHIFT, KeyCode::Char('P')) => {
-                        screen.issue_command(&[], git::push_cmd())?
-                    }
-                    (KeyModifiers::NONE, KeyCode::Char('p')) => {
-                        screen.issue_command(&[], git::pull_cmd())?
-                    }
-                    _ => (),
                 }
             }
         }
@@ -234,6 +232,70 @@ fn handle_events(state: &mut State) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn action2_of_key_event(key: event::KeyEvent) -> Option<Action2> {
+    match (key.modifiers, key.code) {
+        // Generic
+        (KeyModifiers::NONE, KeyCode::Char('q')) => Some(Action2::Quit),
+        (KeyModifiers::NONE, KeyCode::Char('g')) => Some(Action2::Refresh),
+
+        // Navigation
+        (KeyModifiers::NONE, KeyCode::Tab) => Some(Action2::ToggleSection),
+        (KeyModifiers::NONE, KeyCode::Char('k')) => Some(Action2::SelectPrevious),
+        (KeyModifiers::NONE, KeyCode::Char('j')) => Some(Action2::SelectNext),
+
+        (KeyModifiers::CONTROL, KeyCode::Char('u')) => Some(Action2::HalfPageUp),
+        (KeyModifiers::CONTROL, KeyCode::Char('d')) => Some(Action2::HalfPageDown),
+
+        // Listing / showing
+        (KeyModifiers::NONE, KeyCode::Char('l')) => Some(Action2::Log),
+
+        // Commands
+        (KeyModifiers::NONE, KeyCode::Char('f')) => Some(Action2::Fetch),
+        (KeyModifiers::NONE, KeyCode::Char('c')) => Some(Action2::Commit),
+        (KeyModifiers::SHIFT, KeyCode::Char('P')) => Some(Action2::Push),
+        (KeyModifiers::NONE, KeyCode::Char('p')) => Some(Action2::Pull),
+
+        _ => None,
+    }
+}
+
+fn find_binding(maybe_act: Option<&Act>, key: event::KeyEvent) -> Option<(&Act, Action)> {
+    let Some(act) = maybe_act else {
+        return None;
+    };
+
+    act_bindings(&act)
+        .into_iter()
+        .find(|&(modifiers, k, _, _)| modifiers == key.modifiers && k == key.code)
+        .map(|(_, _, act, action)| (act, action))
+}
+
+fn act_bindings(act: &Act) -> Vec<(KeyModifiers, KeyCode, &Act, Action)> {
+    const ENTER: KeyCode = KeyCode::Enter;
+    const S: KeyCode = KeyCode::Char('s');
+    const U: KeyCode = KeyCode::Char('u');
+    const NO_MOD: KeyModifiers = KeyModifiers::NONE;
+
+    match act {
+        Act::Ref(r) => vec![(NO_MOD, ENTER, act, Action::Show)],
+        Act::Untracked(u) => vec![
+            (NO_MOD, ENTER, act, Action::Edit),
+            (NO_MOD, S, act, Action::Stage),
+        ],
+        Act::Delta(d) => vec![
+            (NO_MOD, ENTER, act, Action::Edit),
+            (NO_MOD, S, act, Action::Stage),
+            (NO_MOD, U, act, Action::Unstage),
+        ],
+        Act::Hunk(h) => vec![
+            (NO_MOD, ENTER, act, Action::Edit),
+            (NO_MOD, S, act, Action::Stage),
+            (NO_MOD, U, act, Action::Unstage),
+        ],
+        Act::DiffLine(_) => todo!(),
+    }
 }
 
 fn goto_show_screen(reference: String, screens: &mut Vec<Screen>) -> Result<(), io::Error> {
