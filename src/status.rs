@@ -41,7 +41,7 @@ impl StatusFile {
 
 lazy_static::lazy_static! {
     static ref BRANCH_REGEX: Regex = Regex::new(
-        r"^## (?<local>\S+)\.\.\.(?<remote>\S+)(?: \[ahead (?<ahead_count>\d)\])?$",
+        r"^## (?<local>\S+)\.\.\.(?<remote>\S+)(?: \[(:?ahead (?<ahead_count>\d+)|behind (?<behind_count>\d+))\])?$",
     ).unwrap();
     static ref FILE_REGEX: Regex = Regex::new(r"^(?<code>..) (?:(?<orig_path>.*) -> )?(?<path>.*)$").unwrap();
 }
@@ -60,6 +60,9 @@ impl Status {
                 ahead_behind_count = cap
                     .name("ahead_count")
                     .map(|str| str.as_str().parse().unwrap())
+                    .or(cap
+                        .name("behind_count")
+                        .map(|str| -str.as_str().parse::<i32>().unwrap()))
                     .unwrap_or(0);
             } else if let Some(cap) = FILE_REGEX.captures(line) {
                 let code = cap.name("code").unwrap().as_str();
@@ -144,6 +147,26 @@ mod tests {
                     local: "master".to_string(),
                     remote: "origin/master".to_string(),
                     ahead_behind_count: 1
+                },
+                files: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn parse_behind() {
+        let input = r#"
+## master...origin/master [behind 1]
+"#
+        .trim();
+
+        assert_eq!(
+            Status::parse(input),
+            Status {
+                branch_status: BranchStatus {
+                    local: "master".to_string(),
+                    remote: "origin/master".to_string(),
+                    ahead_behind_count: -1
                 },
                 files: vec![]
             }
