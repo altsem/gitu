@@ -15,13 +15,6 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
             let mut text = if let Some((ref text, style)) = item.display {
                 use ansi_to_tui::IntoText;
                 let mut text = text.into_text().expect("Couldn't read ansi codes");
-                for line in text.lines.iter_mut() {
-                    let padding = (screen.size.0 as usize).saturating_sub(line.width());
-                    line.spans.push(Span::styled(
-                        " ".repeat(padding),
-                        line.spans.first().unwrap().style,
-                    ));
-                }
                 text.patch_style(style);
                 text
             } else {
@@ -34,6 +27,14 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                     .expect("No last line found")
                     .spans
                     .push("…".into());
+            }
+
+            for line in text.lines.iter_mut() {
+                let padding = (screen.size.0 as usize).saturating_sub(line.width());
+                line.spans.push(Span::styled(
+                    " ".repeat(padding),
+                    line.spans.first().unwrap().style,
+                ));
             }
 
             if screen.cursor == i {
