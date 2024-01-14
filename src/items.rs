@@ -11,21 +11,25 @@ pub(crate) struct Item {
     pub(crate) display: Option<(String, Style)>,
     pub(crate) section: bool,
     pub(crate) depth: usize,
-    pub(crate) delta: Option<Delta>,
-    pub(crate) hunk: Option<Hunk>,
-    pub(crate) diff_line: Option<String>,
-    pub(crate) reference: Option<String>,
-    pub(crate) untracked_file: Option<String>,
     pub(crate) unselectable: bool,
+    pub(crate) act: Option<Act>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) enum Act {
+    Ref(String),
+    Untracked(String),
+    Delta(Delta),
+    Hunk(Hunk),
+    DiffLine(String),
 }
 
 pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {
     diff.deltas.into_iter().flat_map(move |delta| {
         iter::once(Item {
-            delta: Some(delta.clone()),
             display: Some((
                 if delta.old_file == delta.new_file {
-                    delta.new_file
+                    delta.new_file.clone()
                 } else {
                     format!("{} -> {}", delta.old_file, delta.new_file)
                 },
@@ -33,6 +37,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
             )),
             section: true,
             depth,
+            act: Some(Act::Delta(delta.clone())),
             ..Default::default()
         })
         .chain(
@@ -52,7 +57,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
         )),
         section: true,
         depth: depth + 1,
-        hunk: Some(hunk.clone()),
+        act: Some(Act::Hunk(hunk.clone())),
         ..Default::default()
     })
     .chain([{
@@ -60,7 +65,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
             display: Some((format_diff_hunk(hunk), Style::new())),
             unselectable: true,
             depth: depth + 2,
-            diff_line: Some("TODO".to_string()),
+            act: None,
             ..Default::default()
         }
     }])
@@ -86,14 +91,14 @@ pub(crate) fn create_log_items(log: String) -> impl Iterator<Item = Item> {
     log.leak().lines().map(|log_line| Item {
         display: Some((log_line.to_string(), Style::new())),
         depth: 1,
-        reference: Some(
+        act: Some(Act::Ref(
             strip_ansi_escapes::strip_str(log_line)
                 .to_string()
                 .split_whitespace()
                 .next()
                 .expect("Error extracting ref")
                 .to_string(),
-        ),
+        )),
         ..Default::default()
     })
 }

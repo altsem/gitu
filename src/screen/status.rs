@@ -25,7 +25,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
                 Style::new().fg(theme::CURRENT_THEME.unstaged_file),
             )),
             depth: 1,
-            untracked_file: Some(file.path.clone()),
+            act: Some(items::Act::Untracked(file.path.clone())),
             ..Default::default()
         })
         .collect::<Vec<_>>();
@@ -40,7 +40,6 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
                 Style::new().fg(theme::CURRENT_THEME.unmerged_file),
             )),
             depth: 1,
-            untracked_file: Some(file.path.clone()),
             ..Default::default()
         })
         .collect::<Vec<_>>();

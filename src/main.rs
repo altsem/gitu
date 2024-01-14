@@ -18,7 +18,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use diff::Hunk;
-use items::Item;
+use items::{Act, Item};
 use ratatui::{
     prelude::{Backend, CrosstermBackend},
     Terminal,
@@ -125,64 +125,88 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         goto_log_screen(&mut state.screens)?
                     }
 
-                    (KeyModifiers::NONE, KeyCode::Enter) => match screen.get_selected_item() {
-                        Item { hunk: Some(h), .. } => {
-                            open_subscreen(terminal, &[], editor_cmd(&h.new_file, Some(h)))?;
-                            screen.refresh_items();
-                        }
-                        Item { delta: Some(d), .. } => {
-                            open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
-                            screen.refresh_items();
-                        }
-                        Item {
-                            reference: Some(r), ..
-                        } => {
-                            goto_show_screen(r.clone(), &mut state.screens)?;
-                        }
-                        Item {
-                            untracked_file: Some(f),
-                            ..
-                        } => {
-                            open_subscreen(terminal, &[], editor_cmd(f, None))?;
-                            screen.refresh_items();
-                        }
-
-                        _ => (),
-                    },
-
                     // Commands
                     (KeyModifiers::NONE, KeyCode::Char('f')) => {
                         screen.issue_command(&[], git::fetch_all_cmd())?;
                         screen.refresh_items();
                     }
-                    (KeyModifiers::NONE, KeyCode::Char('s')) => {
-                        match screen.get_selected_item() {
-                            Item { hunk: Some(h), .. } => screen.issue_command(
-                                h.format_patch().as_bytes(),
-                                git::stage_patch_cmd(),
-                            )?,
-                            Item { delta: Some(d), .. } => {
-                                screen.issue_command(&[], git::stage_file_cmd(&d.new_file))?
+
+                    // Actionables
+                    (KeyModifiers::NONE, KeyCode::Enter) => {
+                        if let Some(act) = &screen.get_selected_item().act {
+                            match act {
+                                Act::Ref(r) => goto_show_screen(r.clone(), &mut state.screens)?,
+                                Act::Untracked(f) => {
+                                    open_subscreen(terminal, &[], editor_cmd(f, None))?;
+                                    screen.refresh_items();
+                                }
+                                Act::Delta(d) => {
+                                    open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
+                                    screen.refresh_items();
+                                }
+                                Act::Hunk(h) => {
+                                    open_subscreen(
+                                        terminal,
+                                        &[],
+                                        editor_cmd(&h.new_file, Some(&h)),
+                                    )?;
+                                    screen.refresh_items();
+                                }
+                                Act::DiffLine(_) => {
+                                    todo!()
+                                }
                             }
-                            Item {
-                                untracked_file: Some(f),
-                                ..
-                            } => screen.issue_command(&[], git::stage_file_cmd(f))?,
-                            _ => (),
+                        }
+                    }
+
+                    (KeyModifiers::NONE, KeyCode::Char('s')) => {
+                        if let Some(act) = &screen.get_selected_item().act {
+                            match act {
+                                Act::Ref(_) => {
+                                    todo!()
+                                }
+                                Act::Untracked(f) => {
+                                    screen.issue_command(&[], git::stage_file_cmd(f))?;
+                                }
+                                Act::Delta(d) => {
+                                    screen.issue_command(&[], git::stage_file_cmd(&d.new_file))?
+                                }
+                                Act::Hunk(h) => {
+                                    screen.issue_command(
+                                        h.format_patch().as_bytes(),
+                                        git::stage_patch_cmd(),
+                                    )?;
+                                }
+                                Act::DiffLine(_) => {
+                                    todo!()
+                                }
+                            }
                         }
 
                         screen.refresh_items();
                     }
                     (KeyModifiers::NONE, KeyCode::Char('u')) => {
-                        match screen.get_selected_item() {
-                            Item { hunk: Some(h), .. } => screen.issue_command(
-                                h.format_patch().as_bytes(),
-                                git::unstage_patch_cmd(),
-                            )?,
-                            Item { delta: Some(d), .. } => {
-                                screen.issue_command(&[], git::unstage_file_cmd(d))?
+                        if let Some(act) = &screen.get_selected_item().act {
+                            match act {
+                                Act::Ref(_) => {
+                                    todo!()
+                                }
+                                Act::Untracked(_) => {
+                                    todo!()
+                                }
+                                Act::Delta(d) => {
+                                    screen.issue_command(&[], git::unstage_file_cmd(d))?
+                                }
+                                Act::Hunk(h) => {
+                                    screen.issue_command(
+                                        h.format_patch().as_bytes(),
+                                        git::unstage_patch_cmd(),
+                                    )?;
+                                }
+                                Act::DiffLine(_) => {
+                                    todo!()
+                                }
                             }
-                            _ => (),
                         }
 
                         screen.refresh_items();
