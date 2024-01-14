@@ -77,7 +77,7 @@ impl Screen {
 
     pub(crate) fn find_next(&mut self) -> usize {
         self.collapsed_items_iter()
-            .find(|(i, item)| i > &self.cursor && item.diff_line.is_none())
+            .find(|(i, item)| i > &self.cursor && !item.unselectable)
             .map(|(i, _item)| i)
             .unwrap_or(self.cursor)
     }
@@ -85,7 +85,7 @@ impl Screen {
     pub(crate) fn select_previous(&mut self) {
         self.cursor = self
             .collapsed_items_iter()
-            .filter(|(i, item)| i < &self.cursor && item.diff_line.is_none())
+            .filter(|(i, item)| i < &self.cursor && !item.unselectable)
             .last()
             .map(|(i, _item)| i)
             .unwrap_or(self.cursor);

@@ -10,7 +10,7 @@ use std::{collections::HashSet, iter};
 
 pub(crate) fn create(size: (u16, u16)) -> Screen {
     Screen {
-        cursor: 0,
+        cursor: 3,
         scroll: 0,
         size,
         refresh_items: Box::new(|| create_status_items().collect()),

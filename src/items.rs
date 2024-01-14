@@ -16,6 +16,7 @@ pub(crate) struct Item {
     pub(crate) diff_line: Option<String>,
     pub(crate) reference: Option<String>,
     pub(crate) untracked_file: Option<String>,
+    pub(crate) unselectable: bool,
 }
 
 pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {
@@ -60,6 +61,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iter
     .chain([{
         Item {
             display: Some((format_diff_hunk(hunk), Style::new())),
+            unselectable: true,
             depth: depth + 2,
             delta: Some(hunk_delta.clone()),
             hunk: Some(hunk.clone()),
