@@ -12,10 +12,10 @@ pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
-    refresh_items: Box<dyn Fn() -> Vec<Item>>,
-    pub(crate) items: Vec<Item>,
-    pub(crate) collapsed: HashSet<Item>,
     pub(crate) command: Option<IssuedCommand>,
+    refresh_items: Box<dyn Fn() -> Vec<Item>>,
+    items: Vec<Item>,
+    collapsed: HashSet<Item>,
 }
 
 impl Screen {
@@ -26,10 +26,10 @@ impl Screen {
             cursor: 0,
             scroll: 0,
             size,
+            command: None,
             refresh_items,
             items,
             collapsed: HashSet::new(),
-            command: None,
         }
     }
 
@@ -177,5 +177,13 @@ impl Screen {
                 Some(Some((i, next)))
             })
             .flatten()
+    }
+
+    pub(crate) fn is_collapsed(&self, item: &Item) -> bool {
+        self.collapsed.contains(item)
+    }
+
+    pub(crate) fn get_selected_item(&self) -> &Item {
+        &self.items[self.cursor]
     }
 }

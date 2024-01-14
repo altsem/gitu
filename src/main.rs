@@ -101,7 +101,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         panic!("No screen");
     };
 
-    let selected = &screen.items[screen.cursor];
+    let selected = screen.get_selected_item();
 
     match event::read()? {
         Event::Resize(w, h) => screen.size = (w, h),

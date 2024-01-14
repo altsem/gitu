@@ -20,7 +20,7 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                 Text::raw("")
             };
 
-            if screen.collapsed.contains(item) {
+            if screen.is_collapsed(item) {
                 text.lines
                     .last_mut()
                     .expect("No last line found")
