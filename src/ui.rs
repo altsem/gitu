@@ -1,6 +1,5 @@
 use crate::screen::Screen;
-use ratatui::style::Modifier;
-use ratatui::style::Style;
+use crate::theme;
 use ratatui::text::Span;
 use ratatui::text::Text;
 use ratatui::widgets::Paragraph;
@@ -43,17 +42,19 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                 highlight_depth = None;
             }
 
-            text.patch_style(if highlight_depth.is_some() {
-                if screen.cursor == i {
-                    Style::new()
-                        .bg(ratatui::style::Color::LightYellow)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::new().bg(ratatui::style::Color::LightGreen)
+            if highlight_depth.is_some() {
+                for line in &mut text.lines {
+                    for span in &mut line.spans {
+                        if span.style.bg.is_none() {
+                            span.style.bg = Some(if screen.cursor == i {
+                                theme::HIGHLIGHT
+                            } else {
+                                theme::DIM_HIGHLIGHT
+                            })
+                        }
+                    }
                 }
-            } else {
-                Style::new()
-            });
+            }
 
             text
         })

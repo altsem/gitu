@@ -1,8 +1,8 @@
 use crate::diff;
 use crate::process;
+use crate::theme;
 use diff::Delta;
 use diff::Hunk;
-use ratatui::style::Color;
 use ratatui::style::Style;
 use std::iter;
 
@@ -30,7 +30,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
                 } else {
                     format!("{} -> {}", delta.old_file, delta.new_file)
                 },
-                Style::new().fg(Color::Magenta),
+                Style::new().fg(theme::FILE),
             )),
             section: true,
             depth,
@@ -47,7 +47,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
 
 fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iterator<Item = Item> {
     iter::once(Item {
-        display: Some((hunk.display_header(), Style::new().fg(Color::Blue))),
+        display: Some((hunk.display_header(), Style::new().fg(theme::HUNK_HEADER))),
         section: true,
         depth: depth + 1,
         delta: Some(hunk_delta.clone()),

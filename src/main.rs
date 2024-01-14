@@ -5,6 +5,7 @@ mod git;
 mod items;
 mod process;
 mod screen;
+mod theme;
 mod ui;
 
 use clap::Parser;

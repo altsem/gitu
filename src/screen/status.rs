@@ -2,6 +2,7 @@ use super::Screen;
 use crate::{
     diff, git,
     items::{self, Item},
+    theme,
 };
 use ratatui::style::{Color, Style};
 use std::{collections::HashSet, iter};
@@ -23,7 +24,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
     let untracked = git::list_untracked()
         .lines()
         .map(|untracked| Item {
-            display: Some((untracked.to_string(), Style::new().fg(Color::Red))),
+            display: Some((untracked.to_string(), Style::new().fg(theme::UNSTAGED_FILE))),
             depth: 1,
             untracked_file: Some(untracked.to_string()),
             ..Default::default()
@@ -36,7 +37,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
         Some(Item {
             display: Some((
                 "\nUntracked files".to_string(),
-                Style::new().fg(Color::Yellow),
+                Style::new().fg(theme::SECTION),
             )),
             section: true,
             depth: 0,
@@ -66,7 +67,7 @@ fn create_status_section_items<'a>(header: &str, diff: diff::Diff) -> impl Itera
         Some(Item {
             display: Some((
                 format!("{} ({})", header, diff.deltas.len()),
-                Style::new().fg(Color::Yellow),
+                Style::new().fg(theme::SECTION),
             )),
             section: true,
             depth: 0,
