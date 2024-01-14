@@ -263,7 +263,7 @@ pub(crate) fn open_subscreen<B: Backend>(
     cmd.wait()?;
 
     terminal.hide_cursor()?;
-    terminal.swap_buffers();
+    terminal.clear()?;
 
     Ok(())
 }
