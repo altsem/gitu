@@ -92,7 +92,7 @@ fn run_app(
 }
 
 fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<()> {
-    if !event::poll(std::time::Duration::from_millis(50))? {
+    if !event::poll(std::time::Duration::MAX)? {
         return Ok(());
     }
 
