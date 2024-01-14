@@ -67,7 +67,11 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
 
     if let Some(ref cmd) = screen.command {
         let output_lines = Text::styled(
-            format!("$ {}", cmd.args),
+            format!(
+                "$ {}{}",
+                cmd.args,
+                if cmd.finish_acked { "" } else { "..." }
+            ),
             Style::new().fg(theme::CURRENT_THEME.command),
         )
         .lines
