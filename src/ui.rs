@@ -44,9 +44,15 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
             }
 
             text.patch_style(if highlight_depth.is_some() {
-                Style::new()
+                if screen.cursor == i {
+                    Style::new()
+                        .bg(ratatui::style::Color::LightYellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::new().bg(ratatui::style::Color::LightGreen)
+                }
             } else {
-                Style::new().add_modifier(Modifier::DIM)
+                Style::new()
             });
 
             text
