@@ -20,20 +20,51 @@ pub(crate) fn create(size: (u16, u16)) -> Screen {
 }
 
 pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
-    let untracked = git::list_untracked()
-        .lines()
-        .map(|untracked| Item {
+    let status = git::status();
+
+    let untracked = status
+        .files
+        .iter()
+        .filter(|file| file.is_untracked())
+        .map(|file| Item {
             display: Some((
-                untracked.to_string(),
+                file.path.clone(),
                 Style::new().fg(theme::CURRENT_THEME.unstaged_file),
             )),
             depth: 1,
-            untracked_file: Some(untracked.to_string()),
+            untracked_file: Some(file.path.clone()),
             ..Default::default()
         })
         .collect::<Vec<_>>();
 
-    if untracked.is_empty() {
+    let unmerged = status
+        .files
+        .iter()
+        .filter(|file| file.is_unmerged())
+        .map(|file| Item {
+            display: Some((
+                file.path.clone(),
+                Style::new().fg(theme::CURRENT_THEME.unmerged_file),
+            )),
+            depth: 1,
+            untracked_file: Some(file.path.clone()),
+            ..Default::default()
+        })
+        .collect::<Vec<_>>();
+
+    iter::once(Item {
+        display: Some((
+            format!(
+                "On branch {}\nYour branch is ahead of '{}' by {} commit.",
+                status.branch_status.local,
+                status.branch_status.remote,
+                status.branch_status.ahead_behind_count
+            ),
+            Style::new(),
+        )),
+        ..Default::default()
+    })
+    .chain(if untracked.is_empty() {
         None
     } else {
         Some(Item {
@@ -45,8 +76,23 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
             depth: 0,
             ..Default::default()
         })
-    }
-    .into_iter()
+    })
+    .chain(
+        if unmerged.is_empty() {
+            None
+        } else {
+            Some(Item {
+                display: Some((
+                    "\nUnmerged".to_string(),
+                    Style::new().fg(theme::CURRENT_THEME.section),
+                )),
+                section: true,
+                depth: 0,
+                ..Default::default()
+            })
+        }
+        .into_iter(),
+    )
     .chain(untracked)
     .chain(create_status_section_items(
         "\nUnstaged changes",

@@ -1,8 +1,8 @@
-use crate::{diff, process};
+use crate::{diff, process, status::Status};
 use std::process::Command;
 
-pub(crate) fn list_untracked() -> String {
-    process::run(&["git", "ls-files", "--others", "--exclude-standard"]).0
+pub(crate) fn status() -> Status {
+    Status::parse(&process::run(&["git", "status", "--porcelain", "--branch"]).0)
 }
 
 pub(crate) fn diff_unstaged() -> String {

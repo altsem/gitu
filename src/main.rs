@@ -5,6 +5,7 @@ mod git;
 mod items;
 mod process;
 mod screen;
+mod status;
 mod theme;
 mod ui;
 
