@@ -41,10 +41,13 @@ struct State {
 fn main() -> io::Result<()> {
     let mut state = create_initial_state(cli::Cli::parse(), terminal::size()?);
 
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    terminal.hide_cursor()?;
+
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
 
-    run_app(&mut state, Terminal::new(CrosstermBackend::new(stdout()))?)?;
+    run_app(&mut state, terminal)?;
 
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
@@ -248,8 +251,6 @@ pub(crate) fn open_subscreen<B: Backend>(
     input: &[u8],
     mut cmd: Command,
 ) -> Result<(), io::Error> {
-    crossterm::execute!(stdout(), EnterAlternateScreen)?;
-
     cmd.stdin(Stdio::piped());
     let mut cmd = cmd.spawn()?;
 
@@ -261,12 +262,8 @@ pub(crate) fn open_subscreen<B: Backend>(
 
     cmd.wait()?;
 
-    crossterm::execute!(stdout(), LeaveAlternateScreen)?;
-    crossterm::execute!(
-        stdout(),
-        crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
-    )?;
-    terminal.clear()?;
+    terminal.hide_cursor()?;
+    terminal.swap_buffers();
 
     Ok(())
 }
