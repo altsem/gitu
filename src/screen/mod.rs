@@ -60,10 +60,11 @@ impl Screen {
     }
 
     fn scroll_fit_end(&mut self) {
+        let depth = self.items[self.cursor].depth;
         let last = 1 + self
             .collapsed_lines_items_iter()
             .skip_while(|(_line, i, _item, _lc)| i < &self.cursor)
-            .take_while(|(_line, i, item, _lc)| i == &self.cursor || item.diff_line.is_some())
+            .take_while(|(_line, i, item, _lc)| i == &self.cursor || depth < item.depth)
             .map(|(line, _i, _item, lc)| line + lc)
             .last()
             .unwrap();
