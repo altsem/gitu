@@ -55,19 +55,8 @@ fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iter
         ..Default::default()
     })
     .chain([{
-        let content = &format!("{}\n{}", hunk.header(), hunk.content);
         Item {
-            display: Some((
-                process::pipe(
-                    content.as_bytes(),
-                    &[
-                        "delta",
-                        &format!("-w {}", crossterm::terminal::size().unwrap().0),
-                    ],
-                )
-                .0,
-                Style::new(),
-            )),
+            display: Some((format_diff_hunk(hunk), Style::new())),
             depth: depth + 2,
             delta: Some(hunk_delta.clone()),
             hunk: Some(hunk.clone()),
@@ -75,6 +64,22 @@ fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iter
             ..Default::default()
         }
     }])
+}
+
+fn format_diff_hunk(hunk: &Hunk) -> String {
+    if *crate::USE_DELTA {
+        let content = format!("{}\n{}", hunk.header(), hunk.content);
+        process::pipe(
+            content.as_bytes(),
+            &[
+                "delta",
+                &format!("-w {}", crossterm::terminal::size().unwrap().0),
+            ],
+        )
+        .0
+    } else {
+        hunk.content.clone()
+    }
 }
 
 pub(crate) fn create_log_items(log: String) -> impl Iterator<Item = Item> {

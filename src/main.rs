@@ -28,6 +28,10 @@ use std::{
     process::{Command, Stdio},
 };
 
+lazy_static::lazy_static! {
+    static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
+}
+
 struct State {
     quit: bool,
     screens: Vec<Screen>,
