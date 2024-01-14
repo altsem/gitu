@@ -77,8 +77,8 @@ fn run_app(
 ) -> Result<(), io::Error> {
     while !state.quit {
         if let Some(screen) = state.screens.last_mut() {
-            terminal.draw(|frame| ui::ui(frame, screen))?;
             screen.handle_command_output();
+            terminal.draw(|frame| ui::ui(frame, screen))?;
         }
 
         handle_events(state, &mut terminal)?;
