@@ -20,7 +20,6 @@ pub(crate) fn create(size: (u16, u16)) -> Screen {
 }
 
 pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
-    // TODO items.extend(create_status_section(&repo, None, "Untracked files"));
     let untracked = git::list_untracked()
         .lines()
         .map(|untracked| Item {
