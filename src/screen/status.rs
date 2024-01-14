@@ -23,7 +23,10 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
     let untracked = git::list_untracked()
         .lines()
         .map(|untracked| Item {
-            display: Some((untracked.to_string(), Style::new().fg(theme::UNSTAGED_FILE))),
+            display: Some((
+                untracked.to_string(),
+                Style::new().fg(theme::CURRENT_THEME.unstaged_file),
+            )),
             depth: 1,
             untracked_file: Some(untracked.to_string()),
             ..Default::default()
@@ -36,7 +39,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
         Some(Item {
             display: Some((
                 "\nUntracked files".to_string(),
-                Style::new().fg(theme::SECTION),
+                Style::new().fg(theme::CURRENT_THEME.section),
             )),
             section: true,
             depth: 0,
@@ -66,7 +69,7 @@ fn create_status_section_items<'a>(header: &str, diff: diff::Diff) -> impl Itera
         Some(Item {
             display: Some((
                 format!("{} ({})", header, diff.deltas.len()),
-                Style::new().fg(theme::SECTION),
+                Style::new().fg(theme::CURRENT_THEME.section),
             )),
             section: true,
             depth: 0,

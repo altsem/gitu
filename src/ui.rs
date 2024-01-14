@@ -47,9 +47,9 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                     for span in &mut line.spans {
                         if span.style.bg.is_none() {
                             span.style.bg = Some(if screen.cursor == i {
-                                theme::HIGHLIGHT
+                                theme::CURRENT_THEME.highlight
                             } else {
-                                theme::DIM_HIGHLIGHT
+                                theme::CURRENT_THEME.dim_highlight
                             })
                         }
                     }

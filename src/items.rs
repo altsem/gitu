@@ -30,7 +30,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
                 } else {
                     format!("{} -> {}", delta.old_file, delta.new_file)
                 },
-                Style::new().fg(theme::FILE),
+                Style::new().fg(theme::CURRENT_THEME.file),
             )),
             section: true,
             depth,
@@ -47,7 +47,10 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
 
 fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iterator<Item = Item> {
     iter::once(Item {
-        display: Some((hunk.display_header(), Style::new().fg(theme::HUNK_HEADER))),
+        display: Some((
+            hunk.display_header(),
+            Style::new().fg(theme::CURRENT_THEME.hunk_header),
+        )),
         section: true,
         depth: depth + 1,
         delta: Some(hunk_delta.clone()),
