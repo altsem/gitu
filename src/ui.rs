@@ -1,5 +1,3 @@
-use std::iter;
-
 use crate::screen::Screen;
 use crate::theme;
 use ratatui::prelude::*;
@@ -13,7 +11,7 @@ use ratatui::Frame;
 pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
     let mut highlight_depth = None;
 
-    let mut lines = screen
+    let lines = screen
         .collapsed_items_iter()
         .flat_map(|(i, item)| {
             let mut text = if let Some((ref text, style)) = item.display {
