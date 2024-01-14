@@ -172,4 +172,28 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn parse_diverge() {
+        let input = r#"
+## master...origin/master [ahead 1, behind 1]
+"#
+        .trim();
+
+        // On branch master
+        // Your branch and 'origin/master' have diverged,
+        // and have 1 and 1 different commits each, respectively.
+
+        assert_eq!(
+            Status::parse(input),
+            Status {
+                branch_status: BranchStatus {
+                    local: "master".to_string(),
+                    remote: "origin/master".to_string(),
+                    ahead_behind_count: -1
+                },
+                files: vec![]
+            }
+        );
+    }
 }
