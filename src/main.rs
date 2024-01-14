@@ -25,7 +25,7 @@ use ratatui::{
 };
 use screen::Screen;
 use std::{
-    io::{self, stdout},
+    io::{self, stderr},
     process::{Command, Stdio},
 };
 
@@ -41,15 +41,15 @@ struct State {
 fn main() -> io::Result<()> {
     let mut state = create_initial_state(cli::Cli::parse(), terminal::size()?);
 
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stderr()))?;
     terminal.hide_cursor()?;
 
     enable_raw_mode()?;
-    stdout().execute(EnterAlternateScreen)?;
+    stderr().execute(EnterAlternateScreen)?;
 
     run_app(&mut state, terminal)?;
 
-    stdout().execute(LeaveAlternateScreen)?;
+    stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
@@ -73,7 +73,7 @@ fn create_initial_state(args: cli::Cli, size: (u16, u16)) -> State {
 
 fn run_app(
     state: &mut State,
-    mut terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    mut terminal: Terminal<CrosstermBackend<io::Stderr>>,
 ) -> Result<(), io::Error> {
     while !state.quit {
         if let Some(screen) = state.screens.last_mut() {
