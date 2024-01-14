@@ -126,12 +126,8 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                     }
 
                     (KeyModifiers::NONE, KeyCode::Enter) => match screen.get_selected_item() {
-                        Item {
-                            delta: Some(d),
-                            hunk: Some(h),
-                            ..
-                        } => {
-                            open_subscreen(terminal, &[], editor_cmd(&d.new_file, Some(h)))?;
+                        Item { hunk: Some(h), .. } => {
+                            open_subscreen(terminal, &[], editor_cmd(&h.new_file, Some(h)))?;
                             screen.refresh_items();
                         }
                         Item { delta: Some(d), .. } => {

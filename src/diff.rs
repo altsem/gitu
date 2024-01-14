@@ -47,6 +47,8 @@ impl Diff {
                             .captures_iter(&hunk)
                             .map(|hunk_cap| Hunk {
                                 file_header: header.clone(),
+                                old_file: group_as_string(&cap, "old_file"),
+                                new_file: group_as_string(&cap, "new_file"),
                                 old_start: group_as_u32(&hunk_cap, "old_start"),
                                 old_lines: group_as_u32(&hunk_cap, "old_lines"),
                                 new_start: group_as_u32(&hunk_cap, "new_start"),
@@ -99,6 +101,8 @@ impl Display for Delta {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hunk {
     pub file_header: String,
+    pub old_file: String,
+    pub new_file: String,
     pub old_start: u32,
     pub old_lines: u32,
     pub new_start: u32,

@@ -21,8 +21,6 @@ pub(crate) struct Item {
 
 pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {
     diff.deltas.into_iter().flat_map(move |delta| {
-        let hunk_delta = delta.clone();
-
         iter::once(Item {
             delta: Some(delta.clone()),
             display: Some((
@@ -41,12 +39,12 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
             delta
                 .hunks
                 .into_iter()
-                .flat_map(move |hunk| create_hunk_items(&hunk, depth, &hunk_delta)),
+                .flat_map(move |hunk| create_hunk_items(&hunk, depth)),
         )
     })
 }
 
-fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iterator<Item = Item> {
+fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     iter::once(Item {
         display: Some((
             hunk.display_header(),
@@ -54,7 +52,6 @@ fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iter
         )),
         section: true,
         depth: depth + 1,
-        delta: Some(hunk_delta.clone()),
         hunk: Some(hunk.clone()),
         ..Default::default()
     })
@@ -63,8 +60,6 @@ fn create_hunk_items(hunk: &Hunk, depth: usize, hunk_delta: &Delta) -> impl Iter
             display: Some((format_diff_hunk(hunk), Style::new())),
             unselectable: true,
             depth: depth + 2,
-            delta: Some(hunk_delta.clone()),
-            hunk: Some(hunk.clone()),
             diff_line: Some("TODO".to_string()),
             ..Default::default()
         }
