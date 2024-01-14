@@ -1,5 +1,5 @@
 # gitu
-An editor-agnostic git TUI heavily inspired by Magit.
+A git TUI heavily inspired by Magit.
 
 ## Dependencies
 Requires `git` and `delta` to be on your PATH.
