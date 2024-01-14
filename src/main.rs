@@ -19,15 +19,14 @@ use crossterm::{
 };
 use diff::Hunk;
 use items::{Act, Item};
-use ratatui::{
-    prelude::{Backend, CrosstermBackend},
-    Terminal,
-};
+use ratatui::prelude::CrosstermBackend;
 use screen::Screen;
 use std::{
-    io::{self, stderr},
+    io::{self, stderr, Stderr},
     process::{Command, Stdio},
 };
+
+type Terminal = ratatui::Terminal<CrosstermBackend<Stderr>>;
 
 lazy_static::lazy_static! {
     static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
@@ -36,52 +35,49 @@ lazy_static::lazy_static! {
 struct State {
     quit: bool,
     screens: Vec<Screen>,
+    terminal: Terminal,
 }
 
 fn main() -> io::Result<()> {
-    let mut state = create_initial_state(cli::Cli::parse(), terminal::size()?);
+    let mut state = create_initial_state(cli::Cli::parse())?;
 
-    let mut terminal = Terminal::new(CrosstermBackend::new(stderr()))?;
-    terminal.hide_cursor()?;
+    state.terminal.hide_cursor()?;
 
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run_app(&mut state, terminal)?;
+    run_app(&mut state)?;
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
 
-fn create_initial_state(args: cli::Cli, size: (u16, u16)) -> State {
-    match args.command {
-        Some(cli::Commands::Show { git_show_args }) => State {
-            quit: false,
-            screens: vec![screen::show::create(size, git_show_args)],
-        },
-        Some(cli::Commands::Log { git_log_args }) => State {
-            quit: false,
-            screens: vec![screen::log::create(size, git_log_args)],
-        },
-        None => State {
-            quit: false,
-            screens: vec![screen::status::create(size)],
-        },
-    }
+fn create_initial_state(args: cli::Cli) -> io::Result<State> {
+    let size = terminal::size()?;
+    let screens = match args.command {
+        Some(cli::Commands::Show { git_show_args }) => {
+            vec![screen::show::create(size, git_show_args)]
+        }
+        Some(cli::Commands::Log { git_log_args }) => vec![screen::log::create(size, git_log_args)],
+        None => vec![screen::status::create(size)],
+    };
+
+    Ok(State {
+        quit: false,
+        screens,
+        terminal: Terminal::new(CrosstermBackend::new(stderr()))?,
+    })
 }
 
-fn run_app(
-    state: &mut State,
-    mut terminal: Terminal<CrosstermBackend<io::Stderr>>,
-) -> Result<(), io::Error> {
+fn run_app(state: &mut State) -> Result<(), io::Error> {
     while !state.quit {
         if let Some(screen) = state.screens.last_mut() {
-            terminal.draw(|frame| ui::ui(frame, screen))?;
+            state.terminal.draw(|frame| ui::ui(frame, screen))?;
             screen.handle_command_output();
         }
 
-        handle_events(state, &mut terminal)?;
+        handle_events(state)?;
 
         if let Some(screen) = state.screens.last_mut() {
             screen.clamp_cursor();
@@ -91,7 +87,7 @@ fn run_app(
     Ok(())
 }
 
-fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> io::Result<()> {
+fn handle_events(state: &mut State) -> io::Result<()> {
     // TODO Won't need to poll all the time if command outputs were handled async
     if !event::poll(std::time::Duration::from_millis(100))? {
         return Ok(());
@@ -137,16 +133,17 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                             match act {
                                 Act::Ref(r) => goto_show_screen(r.clone(), &mut state.screens)?,
                                 Act::Untracked(f) => {
-                                    open_subscreen(terminal, &[], editor_cmd(f, None))?;
+                                    open_subscreen(&mut state.terminal, &[], editor_cmd(f, None))?;
                                     screen.refresh_items();
                                 }
                                 Act::Delta(d) => {
+                                    let terminal: &mut Terminal = &mut state.terminal;
                                     open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
                                     screen.refresh_items();
                                 }
                                 Act::Hunk(h) => {
                                     open_subscreen(
-                                        terminal,
+                                        &mut state.terminal,
                                         &[],
                                         editor_cmd(&h.new_file, Some(&h)),
                                     )?;
@@ -212,7 +209,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         screen.refresh_items();
                     }
                     (KeyModifiers::NONE, KeyCode::Char('c')) => {
-                        open_subscreen(terminal, &[], git::commit_cmd())?;
+                        open_subscreen(&mut state.terminal, &[], git::commit_cmd())?;
                         screen.refresh_items();
                     }
                     (KeyModifiers::SHIFT, KeyCode::Char('P')) => {
@@ -267,8 +264,8 @@ fn editor_cmd(delta: &str, maybe_hunk: Option<&Hunk>) -> Command {
     cmd
 }
 
-pub(crate) fn open_subscreen<B: Backend>(
-    terminal: &mut Terminal<B>,
+pub(crate) fn open_subscreen(
+    terminal: &mut Terminal,
     input: &[u8],
     mut cmd: Command,
 ) -> Result<(), io::Error> {
