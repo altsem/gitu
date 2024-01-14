@@ -101,12 +101,12 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
         panic!("No screen");
     };
 
-    let selected = screen.get_selected_item();
-
     match event::read()? {
         Event::Resize(w, h) => screen.size = (w, h),
         Event::Key(key) => {
             if key.kind == KeyEventKind::Press {
+                screen.clear_finished_command();
+
                 match (key.modifiers, key.code) {
                     // Generic
                     (KeyModifiers::NONE, KeyCode::Char('q')) => state.quit = true,
@@ -125,7 +125,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         goto_log_screen(&mut state.screens)?
                     }
 
-                    (KeyModifiers::NONE, KeyCode::Enter) => match selected {
+                    (KeyModifiers::NONE, KeyCode::Enter) => match screen.get_selected_item() {
                         Item {
                             delta: Some(d),
                             hunk: Some(h),
@@ -160,7 +160,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         screen.refresh_items();
                     }
                     (KeyModifiers::NONE, KeyCode::Char('s')) => {
-                        match selected {
+                        match screen.get_selected_item() {
                             Item { hunk: Some(h), .. } => screen.issue_command(
                                 h.format_patch().as_bytes(),
                                 git::stage_patch_cmd(),
@@ -178,7 +178,7 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
                         screen.refresh_items();
                     }
                     (KeyModifiers::NONE, KeyCode::Char('u')) => {
-                        match selected {
+                        match screen.get_selected_item() {
                             Item { hunk: Some(h), .. } => screen.issue_command(
                                 h.format_patch().as_bytes(),
                                 git::unstage_patch_cmd(),

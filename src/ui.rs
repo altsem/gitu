@@ -1,7 +1,12 @@
+use std::iter;
+
 use crate::screen::Screen;
 use crate::theme;
+use ratatui::prelude::*;
 use ratatui::text::Span;
 use ratatui::text::Text;
+use ratatui::widgets::Block;
+use ratatui::widgets::Borders;
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
@@ -61,18 +66,45 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
         .collect::<Vec<_>>();
 
     if let Some(ref cmd) = screen.command {
-        lines.extend(Text::from("\n".to_string() + &cmd.args.clone()).lines);
-        lines.extend(
+        let output_lines = Text::styled(
+            format!("$ {}", cmd.args),
+            Style::new().fg(theme::CURRENT_THEME.command),
+        )
+        .lines
+        .into_iter()
+        .chain(
             Text::raw(
                 String::from_utf8(cmd.output.clone())
                     .expect("Error turning command output to String"),
             )
             .lines,
+        )
+        .collect::<Vec<Line>>();
+
+        let layout = Layout::new(
+            Direction::Vertical,
+            [
+                Constraint::Min(1),
+                Constraint::Length(output_lines.len() as u16 + 1),
+            ],
+        )
+        .split(frame.size());
+
+        frame.render_widget(Paragraph::new(lines).scroll((screen.scroll, 0)), layout[0]);
+
+        frame.render_widget(
+            Paragraph::new(output_lines).block(
+                Block::new()
+                    .borders(Borders::TOP)
+                    .border_style(Style::new().fg(theme::CURRENT_THEME.highlight))
+                    .border_type(ratatui::widgets::BorderType::Plain),
+            ),
+            layout[1],
+        );
+    } else {
+        frame.render_widget(
+            Paragraph::new(lines).scroll((screen.scroll, 0)),
+            frame.size(),
         );
     }
-
-    frame.render_widget(
-        Paragraph::new(lines).scroll((screen.scroll, 0)),
-        frame.size(),
-    );
 }

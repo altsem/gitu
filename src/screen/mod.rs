@@ -45,6 +45,14 @@ impl Screen {
         Ok(())
     }
 
+    pub(crate) fn clear_finished_command(&mut self) {
+        if let Some(ref mut command) = self.command {
+            if !command.is_running() {
+                self.command = None
+            }
+        }
+    }
+
     pub(crate) fn handle_command_output(&mut self) {
         if let Some(cmd) = &mut self.command {
             cmd.read_command_output_to_buffer();
