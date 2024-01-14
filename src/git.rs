@@ -9,12 +9,12 @@ pub(crate) fn diff_unstaged() -> String {
     process::run(&["git", "diff"]).0
 }
 
-pub(crate) fn show(reference: &str) -> String {
-    process::run(&["git", "show", reference]).0
+pub(crate) fn show(args: &[&str]) -> String {
+    process::run(&[&["git", "show"], args].concat()).0
 }
 
-pub(crate) fn show_summary(reference: &str) -> String {
-    process::run(&["git", "show", "--summary", reference]).0
+pub(crate) fn show_summary(args: &[&str]) -> String {
+    process::run(&[&["git", "show", "--summary"], args].concat()).0
 }
 
 pub(crate) fn diff_staged() -> String {
@@ -34,8 +34,8 @@ pub(crate) fn log_recent() -> String {
     .0
 }
 
-pub(crate) fn log() -> String {
-    process::run(&["git", "log", "--oneline", "--decorate", "--color"]).0
+pub(crate) fn log(args: &[&str]) -> String {
+    process::run(&[&["git", "log", "--oneline", "--decorate", "--color"], args].concat()).0
 }
 
 pub(crate) fn stage_file_cmd(file: &str) -> Command {

@@ -1,3 +1,4 @@
+mod cli;
 mod command;
 mod diff;
 mod git;
@@ -6,6 +7,7 @@ mod process;
 mod screen;
 mod ui;
 
+use clap::Parser;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     terminal::{
@@ -31,10 +33,7 @@ struct State {
 }
 
 fn main() -> io::Result<()> {
-    let mut state = State {
-        quit: false,
-        screens: vec![screen::status::create(terminal::size()?)],
-    };
+    let mut state = create_initial_state(cli::Cli::parse(), terminal::size()?);
 
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
@@ -44,6 +43,23 @@ fn main() -> io::Result<()> {
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
+}
+
+fn create_initial_state(args: cli::Cli, size: (u16, u16)) -> State {
+    match args.command {
+        Some(cli::Commands::Show { git_show_args }) => State {
+            quit: false,
+            screens: vec![screen::show::create(size, git_show_args)],
+        },
+        Some(cli::Commands::Log { git_log_args }) => State {
+            quit: false,
+            screens: vec![screen::log::create(size, git_log_args)],
+        },
+        None => State {
+            quit: false,
+            screens: vec![screen::status::create(size)],
+        },
+    }
 }
 
 fn run_app(
@@ -194,13 +210,13 @@ fn handle_events<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> i
 }
 
 fn goto_show_screen(reference: String, screens: &mut Vec<Screen>) -> Result<(), io::Error> {
-    screens.push(screen::show::create(terminal::size()?, reference));
+    screens.push(screen::show::create(terminal::size()?, vec![reference]));
     Ok(())
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) -> Result<(), io::Error> {
     screens.drain(1..);
-    screens.push(screen::log::create(terminal::size()?));
+    screens.push(screen::log::create(terminal::size()?, vec![]));
     Ok(())
 }
 
