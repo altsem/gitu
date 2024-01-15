@@ -12,11 +12,11 @@ pub(crate) struct Item {
     pub(crate) section: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
-    pub(crate) act: Option<Act>,
+    pub(crate) act: Option<Actionable>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum Act {
+pub(crate) enum Actionable {
     Ref(String),
     Untracked(String),
     Delta(Delta),
@@ -37,7 +37,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
             )),
             section: true,
             depth,
-            act: Some(Act::Delta(delta.clone())),
+            act: Some(Actionable::Delta(delta.clone())),
             ..Default::default()
         })
         .chain(
@@ -57,7 +57,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
         )),
         section: true,
         depth: depth + 1,
-        act: Some(Act::Hunk(hunk.clone())),
+        act: Some(Actionable::Hunk(hunk.clone())),
         ..Default::default()
     })
     .chain([{
@@ -91,7 +91,7 @@ pub(crate) fn create_log_items(log: String) -> impl Iterator<Item = Item> {
     log.leak().lines().map(|log_line| Item {
         display: Some((log_line.to_string(), Style::new())),
         depth: 1,
-        act: Some(Act::Ref(
+        act: Some(Actionable::Ref(
             strip_ansi_escapes::strip_str(log_line)
                 .to_string()
                 .split_whitespace()

@@ -18,7 +18,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use diff::Hunk;
-use items::{Act, Item};
+use items::{Actionable, Item};
 use ratatui::prelude::CrosstermBackend;
 use screen::Screen;
 use std::{
@@ -131,26 +131,26 @@ fn handle_events(state: &mut State) -> io::Result<()> {
                 if let Some((act, action)) = find_binding(maybe_act, key) {
                     match action {
                         Action::Show => match act {
-                            Act::Ref(r) => {
+                            Actionable::Ref(r) => {
                                 goto_show_screen(r.clone(), &mut state.screens)?;
                             }
-                            Act::Untracked(_) => todo!(),
-                            Act::Delta(_) => todo!(),
-                            Act::Hunk(_) => todo!(),
-                            Act::DiffLine(_) => todo!(),
+                            Actionable::Untracked(_) => todo!(),
+                            Actionable::Delta(_) => todo!(),
+                            Actionable::Hunk(_) => todo!(),
+                            Actionable::DiffLine(_) => todo!(),
                         },
                         Action::Edit => match act {
-                            Act::Ref(_) => todo!(),
-                            Act::Untracked(f) => {
+                            Actionable::Ref(_) => todo!(),
+                            Actionable::Untracked(f) => {
                                 open_subscreen(&mut state.terminal, &[], editor_cmd(f, None))?;
                                 screen.refresh_items();
                             }
-                            Act::Delta(d) => {
+                            Actionable::Delta(d) => {
                                 let terminal: &mut Terminal = &mut state.terminal;
                                 open_subscreen(terminal, &[], editor_cmd(&d.new_file, None))?;
                                 screen.refresh_items();
                             }
-                            Act::Hunk(h) => {
+                            Actionable::Hunk(h) => {
                                 open_subscreen(
                                     &mut state.terminal,
                                     &[],
@@ -158,42 +158,42 @@ fn handle_events(state: &mut State) -> io::Result<()> {
                                 )?;
                                 screen.refresh_items();
                             }
-                            Act::DiffLine(_) => todo!(),
+                            Actionable::DiffLine(_) => todo!(),
                         },
                         Action::Stage => match act {
-                            Act::Ref(_) => todo!(),
-                            Act::Untracked(u) => {
+                            Actionable::Ref(_) => todo!(),
+                            Actionable::Untracked(u) => {
                                 screen.issue_command(&[], git::stage_file_cmd(u))?;
                                 screen.refresh_items();
                             }
-                            Act::Delta(d) => {
+                            Actionable::Delta(d) => {
                                 screen.issue_command(&[], git::stage_file_cmd(&d.new_file))?;
                                 screen.refresh_items();
                             }
-                            Act::Hunk(h) => {
+                            Actionable::Hunk(h) => {
                                 screen.issue_command(
                                     h.format_patch().as_bytes(),
                                     git::stage_patch_cmd(),
                                 )?;
                                 screen.refresh_items();
                             }
-                            Act::DiffLine(_) => todo!(),
+                            Actionable::DiffLine(_) => todo!(),
                         },
                         Action::Unstage => match act {
-                            Act::Ref(_) => todo!(),
-                            Act::Untracked(_) => todo!(),
-                            Act::Delta(d) => {
+                            Actionable::Ref(_) => todo!(),
+                            Actionable::Untracked(_) => todo!(),
+                            Actionable::Delta(d) => {
                                 screen.issue_command(&[], git::unstage_file_cmd(d))?;
                                 screen.refresh_items();
                             }
-                            Act::Hunk(h) => {
+                            Actionable::Hunk(h) => {
                                 screen.issue_command(
                                     h.format_patch().as_bytes(),
                                     git::unstage_patch_cmd(),
                                 )?;
                                 screen.refresh_items();
                             }
-                            Act::DiffLine(_) => todo!(),
+                            Actionable::DiffLine(_) => todo!(),
                         },
                     }
                 } else if let Some(action2) = action2_of_key_event(key) {
@@ -261,7 +261,10 @@ fn action2_of_key_event(key: event::KeyEvent) -> Option<Action2> {
     }
 }
 
-fn find_binding(maybe_act: Option<&Act>, key: event::KeyEvent) -> Option<(&Act, Action)> {
+fn find_binding(
+    maybe_act: Option<&Actionable>,
+    key: event::KeyEvent,
+) -> Option<(&Actionable, Action)> {
     let Some(act) = maybe_act else {
         return None;
     };
@@ -272,29 +275,29 @@ fn find_binding(maybe_act: Option<&Act>, key: event::KeyEvent) -> Option<(&Act, 
         .map(|(_, _, act, action)| (act, action))
 }
 
-fn act_bindings(act: &Act) -> Vec<(KeyModifiers, KeyCode, &Act, Action)> {
+fn act_bindings(act: &Actionable) -> Vec<(KeyModifiers, KeyCode, &Actionable, Action)> {
     const ENTER: KeyCode = KeyCode::Enter;
     const S: KeyCode = KeyCode::Char('s');
     const U: KeyCode = KeyCode::Char('u');
     const NO_MOD: KeyModifiers = KeyModifiers::NONE;
 
     match act {
-        Act::Ref(r) => vec![(NO_MOD, ENTER, act, Action::Show)],
-        Act::Untracked(u) => vec![
+        Actionable::Ref(r) => vec![(NO_MOD, ENTER, act, Action::Show)],
+        Actionable::Untracked(u) => vec![
             (NO_MOD, ENTER, act, Action::Edit),
             (NO_MOD, S, act, Action::Stage),
         ],
-        Act::Delta(d) => vec![
-            (NO_MOD, ENTER, act, Action::Edit),
-            (NO_MOD, S, act, Action::Stage),
-            (NO_MOD, U, act, Action::Unstage),
-        ],
-        Act::Hunk(h) => vec![
+        Actionable::Delta(d) => vec![
             (NO_MOD, ENTER, act, Action::Edit),
             (NO_MOD, S, act, Action::Stage),
             (NO_MOD, U, act, Action::Unstage),
         ],
-        Act::DiffLine(_) => todo!(),
+        Actionable::Hunk(h) => vec![
+            (NO_MOD, ENTER, act, Action::Edit),
+            (NO_MOD, S, act, Action::Stage),
+            (NO_MOD, U, act, Action::Unstage),
+        ],
+        Actionable::DiffLine(_) => todo!(),
     }
 }
 
