@@ -10,7 +10,8 @@ pub(crate) struct Status {
 pub(crate) struct BranchStatus {
     pub local: String,
     pub remote: String,
-    pub ahead_behind_count: i32,
+    pub ahead: u32,
+    pub behind: u32,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -41,7 +42,7 @@ impl StatusFile {
 
 lazy_static::lazy_static! {
     static ref BRANCH_REGEX: Regex = Regex::new(
-        r"^## (?<local>\S+)\.\.\.(?<remote>\S+)(?: \[(:?ahead (?<ahead_count>\d+)|behind (?<behind_count>\d+))\])?$",
+        r"^## (?<local>\S+)\.\.\.(?<remote>\S+)(?: \[(:?ahead (?<ahead>\d+))?(:?, )?(:?behind (?<behind>\d+))?\])?$",
     ).unwrap();
     static ref FILE_REGEX: Regex = Regex::new(r"^(?<code>..) (?:(?<orig_path>.*) -> )?(?<path>.*)$").unwrap();
 }
@@ -50,19 +51,21 @@ impl Status {
     pub fn parse(input: &str) -> Self {
         let mut local = "".to_string();
         let mut remote = "".to_string();
-        let mut ahead_behind_count = 0;
+        let mut ahead = 0;
+        let mut behind = 0;
         let mut files = vec![];
 
         for line in input.lines() {
             if let Some(cap) = BRANCH_REGEX.captures(line) {
                 local = cap.name("local").unwrap().as_str().to_string();
                 remote = cap.name("remote").unwrap().as_str().to_string();
-                ahead_behind_count = cap
-                    .name("ahead_count")
+                ahead = cap
+                    .name("ahead")
                     .map(|str| str.as_str().parse().unwrap())
-                    .or(cap
-                        .name("behind_count")
-                        .map(|str| -str.as_str().parse::<i32>().unwrap()))
+                    .unwrap_or(0);
+                behind = cap
+                    .name("behind")
+                    .map(|str| str.as_str().parse().unwrap())
                     .unwrap_or(0);
             } else if let Some(cap) = FILE_REGEX.captures(line) {
                 let code = cap.name("code").unwrap().as_str();
@@ -83,7 +86,8 @@ impl Status {
             branch_status: BranchStatus {
                 local,
                 remote,
-                ahead_behind_count,
+                ahead,
+                behind,
             },
             files,
         }
@@ -110,7 +114,8 @@ mod tests {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
                     remote: "origin/master".to_string(),
-                    ahead_behind_count: 0
+                    ahead: 0,
+                    behind: 0
                 },
                 files: vec![
                     StatusFile {
@@ -146,7 +151,8 @@ mod tests {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
                     remote: "origin/master".to_string(),
-                    ahead_behind_count: 1
+                    ahead: 1,
+                    behind: 0
                 },
                 files: vec![]
             }
@@ -166,7 +172,8 @@ mod tests {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
                     remote: "origin/master".to_string(),
-                    ahead_behind_count: -1
+                    ahead: 0,
+                    behind: 1
                 },
                 files: vec![]
             }
@@ -180,17 +187,14 @@ mod tests {
 "#
         .trim();
 
-        // On branch master
-        // Your branch and 'origin/master' have diverged,
-        // and have 1 and 1 different commits each, respectively.
-
         assert_eq!(
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
                     remote: "origin/master".to_string(),
-                    ahead_behind_count: -1
+                    ahead: 1,
+                    behind: 1
                 },
                 files: vec![]
             }

@@ -93,21 +93,23 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
 }
 
 fn format_branch_status(status: &BranchStatus) -> String {
-    if status.ahead_behind_count == 0 {
+    if status.ahead == 0 && status.behind == 0 {
         format!(
             "On branch {}\nYour branch is up to date with '{}'.",
             status.local, status.remote
         )
-    } else if status.ahead_behind_count > 0 {
+    } else if status.ahead > 0 && status.behind == 0 {
         format!(
             "On branch {}\nYour branch is ahead of '{}' by {} commit.",
-            status.local, status.remote, status.ahead_behind_count
+            status.local, status.remote, status.ahead
         )
-    } else {
+    } else if status.ahead == 0 && status.behind > 0 {
         format!(
             "On branch {}\nYour branch is behind '{}' by {} commit.",
-            status.local, status.remote, -status.ahead_behind_count
+            status.local, status.remote, status.behind
         )
+    } else {
+        format!("On branch {}\nYour branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", status.local, status.remote, status.ahead, status.behind)
     }
 }
 
