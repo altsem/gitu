@@ -73,13 +73,18 @@ impl Screen {
     fn scroll_fit_start(&mut self) {
         let start_line = self
             .collapsed_lines_items_iter()
-            .find(|(_line, i, _item, _lc)| i == &self.cursor)
+            .find(|(_line, i, item, _lc)| self.selected_or_direct_ancestor(item, i))
             .map(|(line, _i, _item, _lc)| line)
             .unwrap() as u16;
 
         if start_line < self.scroll {
             self.scroll = start_line;
         }
+    }
+
+    fn selected_or_direct_ancestor(&self, item: &Item, i: &usize) -> bool {
+        let levels_above = self.get_selected_item().depth.saturating_sub(item.depth);
+        i == &(self.cursor - levels_above)
     }
 
     fn scroll_fit_end(&mut self) {
