@@ -24,11 +24,11 @@ use keybinds::{Op, TargetOp};
 use ratatui::prelude::CrosstermBackend;
 use screen::Screen;
 use std::{
-    io::{self, stderr, Stderr},
+    io::{self, stderr, BufWriter, Stderr},
     process::{Command, Stdio},
 };
 
-type Terminal = ratatui::Terminal<CrosstermBackend<Stderr>>;
+type Terminal = ratatui::Terminal<CrosstermBackend<BufWriter<Stderr>>>;
 
 lazy_static::lazy_static! {
     static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
@@ -74,7 +74,7 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     Ok(State {
         quit: false,
         screens,
-        terminal: Terminal::new(CrosstermBackend::new(stderr()))?,
+        terminal: Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?,
     })
 }
 
