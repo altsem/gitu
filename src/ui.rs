@@ -9,7 +9,7 @@ use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
 pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
-    let lines = main_ui_lines(screen);
+    let main_ui = Paragraph::new(main_ui_lines(screen)).scroll((screen.scroll, 0));
 
     if let Some(ref cmd) = screen.command {
         let output_lines = format_command(cmd);
@@ -23,13 +23,10 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
         )
         .split(frame.size());
 
-        frame.render_widget(Paragraph::new(lines).scroll((screen.scroll, 0)), layout[0]);
+        frame.render_widget(main_ui, layout[0]);
         frame.render_widget(command_popup(output_lines), layout[1]);
     } else {
-        frame.render_widget(
-            Paragraph::new(lines).scroll((screen.scroll, 0)),
-            frame.size(),
-        );
+        frame.render_widget(main_ui, frame.size());
     }
 }
 
