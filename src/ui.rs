@@ -32,7 +32,7 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
             }
 
             let key_hint = if screen.cursor == i {
-                item.key_hint.as_ref().map(|hint| format!("{} ", hint))
+                item.key_hint.as_ref().map(|hint| format!(" {} ", hint))
             } else {
                 None
             };
@@ -53,7 +53,12 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
             if screen.cursor == i {
                 if let Some(hint) = key_hint {
                     if let Some(line) = text.lines.first_mut() {
-                        line.spans.push(Span::styled(hint, Style::new()));
+                        line.spans.push(Span::styled(
+                            hint,
+                            Style::new()
+                                .fg(theme::CURRENT_THEME.command)
+                                .bg(Color::Reset),
+                        ));
                     }
                 }
             }

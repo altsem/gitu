@@ -167,7 +167,7 @@ fn handle_op(state: &mut State, key: event::KeyEvent) -> Result<(), io::Error> {
 }
 
 pub fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
-    [TargetOp::ShowOrEdit, TargetOp::Stage, TargetOp::Unstage]
+    [TargetOp::Show, TargetOp::Stage, TargetOp::Unstage]
         .into_iter()
         .filter_map(|target_op| {
             if function_by_target_op(target, target_op).is_some() {
@@ -184,7 +184,7 @@ pub fn function_by_target_op(
     target_op: TargetOp,
 ) -> Option<Box<dyn FnMut(&mut State)>> {
     match (target, target_op) {
-        (TargetData::Ref(r), TargetOp::ShowOrEdit) => {
+        (TargetData::Ref(r), TargetOp::Show) => {
             let reference = r.clone();
             Some(Box::new(move |state| {
                 goto_show_screen(&reference, &mut state.screens);
@@ -192,7 +192,7 @@ pub fn function_by_target_op(
         }
         (TargetData::Ref(_), TargetOp::Stage) => None,
         (TargetData::Ref(_), TargetOp::Unstage) => None,
-        (TargetData::Untracked(u), TargetOp::ShowOrEdit) => {
+        (TargetData::Untracked(u), TargetOp::Show) => {
             let untracked = u.clone();
             Some(Box::new(move |state| {
                 open_subscreen(&mut state.terminal, &[], editor_cmd(&untracked, None))
@@ -211,7 +211,7 @@ pub fn function_by_target_op(
             }))
         }
         (TargetData::Untracked(_), TargetOp::Unstage) => None,
-        (TargetData::Delta(d), TargetOp::ShowOrEdit) => {
+        (TargetData::Delta(d), TargetOp::Show) => {
             let delta = d.clone();
             Some(Box::new(move |state| {
                 let terminal: &mut Terminal = &mut state.terminal;
@@ -240,7 +240,7 @@ pub fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::Hunk(h), TargetOp::ShowOrEdit) => {
+        (TargetData::Hunk(h), TargetOp::Show) => {
             let hunk = h.clone();
             Some(Box::new(move |state| {
                 open_subscreen(
@@ -272,7 +272,7 @@ pub fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::DiffLine(_), TargetOp::ShowOrEdit) => None,
+        (TargetData::DiffLine(_), TargetOp::Show) => None,
         (TargetData::DiffLine(_), TargetOp::Stage) => None,
         (TargetData::DiffLine(_), TargetOp::Unstage) => None,
     }

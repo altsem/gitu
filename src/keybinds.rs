@@ -23,7 +23,7 @@ pub(crate) const KEYBINDS: &[(KeyModifiers, KeyCode, Op)] = &[
     (Mods::SHIFT, Char('P'), Push),
     (Mods::NONE, Char('p'), Pull),
     // Target actions
-    (Mods::NONE, Enter, Target(ShowOrEdit)),
+    (Mods::NONE, Enter, Target(Show)),
     (Mods::NONE, Char('s'), Target(Stage)),
     (Mods::NONE, Char('u'), Target(Unstage)),
 ];
@@ -47,7 +47,7 @@ pub(crate) enum Op {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TargetOp {
-    ShowOrEdit,
+    Show,
     Stage,
     Unstage,
 }
