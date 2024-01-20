@@ -14,7 +14,7 @@ pub(crate) fn show(args: &[&str]) -> String {
 }
 
 pub(crate) fn show_summary(args: &[&str]) -> String {
-    process::run(&[&["git", "show", "--summary"], args].concat()).0
+    process::run(&[&["git", "show", "--summary", "--decorate", "--color"], args].concat()).0
 }
 
 pub(crate) fn diff_staged() -> String {
