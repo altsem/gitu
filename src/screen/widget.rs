@@ -6,7 +6,7 @@ use ratatui::widgets::Widget;
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        main_ui_lines(&self)
+        main_ui_lines(self)
             .skip(self.scroll as usize)
             .take(area.height as usize)
             .enumerate()

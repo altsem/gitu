@@ -31,7 +31,7 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
     }
 }
 
-fn format_command<'a, 'b>(cmd: &'a crate::command::IssuedCommand) -> Vec<Line<'b>> {
+fn format_command<'b>(cmd: &crate::command::IssuedCommand) -> Vec<Line<'b>> {
     Text::styled(
         format!(
             "$ {}{}",

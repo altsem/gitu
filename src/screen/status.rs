@@ -74,8 +74,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
                 depth: 0,
                 ..Default::default()
             })
-        }
-        .into_iter(),
+        },
     )
     .chain(untracked)
     .chain(create_status_section_items(
