@@ -7,6 +7,7 @@ use std::process::Command;
 pub(crate) mod log;
 pub(crate) mod show;
 pub(crate) mod status;
+pub(crate) mod widget;
 
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
