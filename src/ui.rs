@@ -31,12 +31,31 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                     .push("…".into());
             }
 
+            let key_hint = if screen.cursor == i {
+                item.key_hint.as_ref().map(|hint| format!("{} ", hint))
+            } else {
+                None
+            };
+
+            let hint_len = key_hint.as_ref().map(|hint| hint.len()).unwrap_or(0);
+
             for line in text.lines.iter_mut() {
-                let padding = (screen.size.0 as usize).saturating_sub(line.width());
+                let padding = (screen.size.0 as usize)
+                    .saturating_sub(hint_len)
+                    .saturating_sub(line.width());
+
                 line.spans.push(Span::styled(
                     " ".repeat(padding),
                     line.spans.first().unwrap().style,
                 ));
+            }
+
+            if screen.cursor == i {
+                if let Some(hint) = key_hint {
+                    if let Some(line) = text.lines.first_mut() {
+                        line.spans.push(Span::styled(hint, Style::new()));
+                    }
+                }
             }
 
             if screen.cursor == i {

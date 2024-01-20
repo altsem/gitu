@@ -1,4 +1,7 @@
 use crate::diff;
+use crate::keybinds;
+use crate::keybinds::Op;
+use crate::list_target_ops;
 use crate::process;
 use crate::theme;
 use diff::Delta;
@@ -12,11 +15,12 @@ pub(crate) struct Item {
     pub(crate) section: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
-    pub(crate) act: Option<Actionable>,
+    pub(crate) key_hint: Option<String>,
+    pub(crate) target_data: Option<TargetData>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum Actionable {
+pub(crate) enum TargetData {
     Ref(String),
     Untracked(String),
     Delta(Delta),
@@ -26,6 +30,8 @@ pub(crate) enum Actionable {
 
 pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {
     diff.deltas.into_iter().flat_map(move |delta| {
+        let target_data = TargetData::Delta(delta.clone());
+
         iter::once(Item {
             display: Some((
                 if delta.old_file == delta.new_file {
@@ -37,7 +43,8 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
             )),
             section: true,
             depth,
-            act: Some(Actionable::Delta(delta.clone())),
+            key_hint: Some(key_hint(&target_data)),
+            target_data: Some(target_data),
             ..Default::default()
         })
         .chain(
@@ -50,6 +57,8 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
 }
 
 fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
+    let target_data = TargetData::Hunk(hunk.clone());
+
     iter::once(Item {
         display: Some((
             hunk.display_header(),
@@ -57,7 +66,8 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
         )),
         section: true,
         depth: depth + 1,
-        act: Some(Actionable::Hunk(hunk.clone())),
+        key_hint: Some(key_hint(&target_data)),
+        target_data: Some(target_data),
         ..Default::default()
     })
     .chain([{
@@ -65,10 +75,21 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
             display: Some((format_diff_hunk(hunk), Style::new())),
             unselectable: true,
             depth: depth + 2,
-            act: None,
+            target_data: None,
             ..Default::default()
         }
     }])
+}
+
+fn key_hint(target_data: &TargetData) -> String {
+    list_target_ops(target_data)
+        .into_iter()
+        .filter_map(|target_op| {
+            keybinds::display_key(Op::Target(target_op))
+                .map(|key| format!("{:?}: {}", target_op, key))
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn format_diff_hunk(hunk: &Hunk) -> String {
@@ -88,17 +109,22 @@ fn format_diff_hunk(hunk: &Hunk) -> String {
 }
 
 pub(crate) fn create_log_items(log: String) -> impl Iterator<Item = Item> {
-    log.leak().lines().map(|log_line| Item {
-        display: Some((log_line.to_string(), Style::new())),
-        depth: 1,
-        act: Some(Actionable::Ref(
+    log.leak().lines().map(|log_line| {
+        let target_data = TargetData::Ref(
             strip_ansi_escapes::strip_str(log_line)
                 .to_string()
                 .split_whitespace()
                 .next()
                 .expect("Error extracting ref")
                 .to_string(),
-        )),
-        ..Default::default()
+        );
+
+        Item {
+            display: Some((log_line.to_string(), Style::new())),
+            depth: 1,
+            key_hint: Some(key_hint(&target_data)),
+            target_data: Some(target_data),
+            ..Default::default()
+        }
     })
 }

@@ -25,7 +25,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
                 Style::new().fg(theme::CURRENT_THEME.unstaged_file),
             )),
             depth: 1,
-            act: Some(items::Actionable::Untracked(file.path.clone())),
+            target_data: Some(items::TargetData::Untracked(file.path.clone())),
             ..Default::default()
         })
         .collect::<Vec<_>>();
