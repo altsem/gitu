@@ -136,11 +136,6 @@ impl Hunk {
     }
 }
 
-pub struct DiffLine {
-    pub plain: String,
-    pub colored: String,
-}
-
 impl Display for Hunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.display_header())?;

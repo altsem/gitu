@@ -166,9 +166,8 @@ fn handle_op(state: &mut State, key: event::KeyEvent) -> Result<(), io::Error> {
     Ok(())
 }
 
-pub fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
-    [TargetOp::Show, TargetOp::Stage, TargetOp::Unstage]
-        .into_iter()
+pub(crate) fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
+    TargetOp::list_all()
         .filter_map(|target_op| {
             if function_by_target_op(target, target_op).is_some() {
                 Some(target_op)
@@ -179,7 +178,7 @@ pub fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
         .collect()
 }
 
-pub fn function_by_target_op(
+pub(crate) fn function_by_target_op(
     target: &TargetData,
     target_op: TargetOp,
 ) -> Option<Box<dyn FnMut(&mut State)>> {
@@ -272,9 +271,6 @@ pub fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::DiffLine(_), TargetOp::Show) => None,
-        (TargetData::DiffLine(_), TargetOp::Stage) => None,
-        (TargetData::DiffLine(_), TargetOp::Unstage) => None,
     }
 }
 

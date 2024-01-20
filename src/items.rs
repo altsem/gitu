@@ -25,7 +25,6 @@ pub(crate) enum TargetData {
     Untracked(String),
     Delta(Delta),
     Hunk(Hunk),
-    DiffLine(String),
 }
 
 pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {

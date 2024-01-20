@@ -52,6 +52,12 @@ pub(crate) enum TargetOp {
     Unstage,
 }
 
+impl TargetOp {
+    pub(crate) fn list_all() -> impl Iterator<Item = TargetOp> {
+        [TargetOp::Show, TargetOp::Stage, TargetOp::Unstage].into_iter()
+    }
+}
+
 pub(crate) fn op_of_key_event(key: event::KeyEvent) -> Option<Op> {
     KEYBINDS
         .iter()
