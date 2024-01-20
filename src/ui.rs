@@ -9,9 +9,34 @@ use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
 pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
+    let lines = main_ui_lines(screen);
+
+    if let Some(ref cmd) = screen.command {
+        let output_lines = format_command(cmd);
+
+        let layout = Layout::new(
+            Direction::Vertical,
+            [
+                Constraint::Min(1),
+                Constraint::Length(output_lines.len() as u16 + 1),
+            ],
+        )
+        .split(frame.size());
+
+        frame.render_widget(Paragraph::new(lines).scroll((screen.scroll, 0)), layout[0]);
+        frame.render_widget(command_popup(output_lines), layout[1]);
+    } else {
+        frame.render_widget(
+            Paragraph::new(lines).scroll((screen.scroll, 0)),
+            frame.size(),
+        );
+    }
+}
+
+fn main_ui_lines(screen: &Screen) -> Vec<Line> {
     let mut highlight_depth = None;
 
-    let lines = screen
+    screen
         .collapsed_items_iter()
         .flat_map(|(i, item)| {
             let mut text = if let Some((ref text, style)) = item.display {
@@ -57,7 +82,7 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
                             hint,
                             Style::new()
                                 .fg(theme::CURRENT_THEME.command)
-                                .bg(Color::Reset),
+                                .bg(theme::CURRENT_THEME.dim_highlight),
                         ));
                     }
                 }
@@ -85,52 +110,34 @@ pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
 
             text
         })
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+}
 
-    if let Some(ref cmd) = screen.command {
-        let output_lines = Text::styled(
-            format!(
-                "$ {}{}",
-                cmd.args,
-                if cmd.finish_acked { "" } else { "..." }
-            ),
-            Style::new().fg(theme::CURRENT_THEME.command),
+fn format_command(cmd: &crate::command::IssuedCommand) -> Vec<Line> {
+    Text::styled(
+        format!(
+            "$ {}{}",
+            cmd.args,
+            if cmd.finish_acked { "" } else { "..." }
+        ),
+        Style::new().fg(theme::CURRENT_THEME.command),
+    )
+    .lines
+    .into_iter()
+    .chain(
+        Text::raw(
+            String::from_utf8(cmd.output.clone()).expect("Error turning command output to String"),
         )
-        .lines
-        .into_iter()
-        .chain(
-            Text::raw(
-                String::from_utf8(cmd.output.clone())
-                    .expect("Error turning command output to String"),
-            )
-            .lines,
-        )
-        .collect::<Vec<Line>>();
+        .lines,
+    )
+    .collect::<Vec<Line>>()
+}
 
-        let layout = Layout::new(
-            Direction::Vertical,
-            [
-                Constraint::Min(1),
-                Constraint::Length(output_lines.len() as u16 + 1),
-            ],
-        )
-        .split(frame.size());
-
-        frame.render_widget(Paragraph::new(lines).scroll((screen.scroll, 0)), layout[0]);
-
-        frame.render_widget(
-            Paragraph::new(output_lines).block(
-                Block::new()
-                    .borders(Borders::TOP)
-                    .border_style(Style::new().fg(theme::CURRENT_THEME.highlight))
-                    .border_type(ratatui::widgets::BorderType::Plain),
-            ),
-            layout[1],
-        );
-    } else {
-        frame.render_widget(
-            Paragraph::new(lines).scroll((screen.scroll, 0)),
-            frame.size(),
-        );
-    }
+fn command_popup(output_lines: Vec<Line>) -> Paragraph {
+    Paragraph::new(output_lines).block(
+        Block::new()
+            .borders(Borders::TOP)
+            .border_style(Style::new().fg(theme::CURRENT_THEME.highlight))
+            .border_type(ratatui::widgets::BorderType::Plain),
+    )
 }

@@ -64,14 +64,14 @@ pub(crate) fn display_key(op: Op) -> Option<String> {
         .iter()
         .find(|&(_, _, bound_op)| bound_op == &op)
         .map(|(modifiers, code, _)| match code {
-            KeyCode::Enter => "RET".to_string(),
+            KeyCode::Enter => "ret".to_string(),
             KeyCode::Left => "←".to_string(),
             KeyCode::Right => "→".to_string(),
             KeyCode::Up => "↑".to_string(),
             KeyCode::Down => "↓".to_string(),
-            KeyCode::Tab => "TAB".to_string(),
-            KeyCode::Delete => "DEL".to_string(),
-            KeyCode::Insert => "INS".to_string(),
+            KeyCode::Tab => "tab".to_string(),
+            KeyCode::Delete => "del".to_string(),
+            KeyCode::Insert => "ins".to_string(),
             KeyCode::F(n) => format!("F{}", n),
             KeyCode::Char(c) => if modifiers.contains(KeyModifiers::SHIFT) {
                 c.to_ascii_uppercase()
@@ -79,7 +79,7 @@ pub(crate) fn display_key(op: Op) -> Option<String> {
                 *c
             }
             .to_string(),
-            KeyCode::Esc => "ESC".to_string(),
+            KeyCode::Esc => "esc".to_string(),
             _ => "???".to_string(),
         })
 }

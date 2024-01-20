@@ -86,10 +86,10 @@ fn key_hint(target_data: &TargetData) -> String {
         .into_iter()
         .filter_map(|target_op| {
             keybinds::display_key(Op::Target(target_op))
-                .map(|key| format!("{:?}: {}", target_op, key))
+                .map(|key| format!("{} {:?}", key, target_op))
         })
         .collect::<Vec<_>>()
-        .join(", ")
+        .join("  ")
 }
 
 fn format_diff_hunk(hunk: &Hunk) -> String {
