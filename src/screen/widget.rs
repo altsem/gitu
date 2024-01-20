@@ -29,31 +29,15 @@ fn main_ui_lines(screen: &Screen) -> impl Iterator<Item = Line> {
             Some((i, item, highlight_depth.is_some()))
         })
         .flat_map(|(i, item, should_highlight)| {
-            let mut text = if let Some((ref text, style)) = item.display {
-                use ansi_to_tui::IntoText;
-                let mut text = text.into_text().expect("Couldn't read ansi codes");
-                text.patch_style(style);
-                text
-            } else {
-                Text::raw("")
-            };
+            let mut text = get_display_text(item);
 
             if screen.is_collapsed(item) {
-                text.lines
-                    .last_mut()
-                    .expect("No last line found")
-                    .spans
-                    .push("…".into());
+                if let Some(last_line) = text.lines.last_mut() {
+                    last_line.spans.push("…".into());
+                }
             }
 
-            for line in text.lines.iter_mut() {
-                let padding = (screen.size.0 as usize).saturating_sub(line.width());
-
-                line.spans.push(Span::styled(
-                    " ".repeat(padding),
-                    line.spans.first().unwrap().style,
-                ));
-            }
+            extend_bg_to_line_end(&mut text, screen);
 
             if should_highlight {
                 highlight_section(&mut text, screen, i);
@@ -61,6 +45,28 @@ fn main_ui_lines(screen: &Screen) -> impl Iterator<Item = Line> {
 
             text
         })
+}
+
+fn get_display_text(item: &crate::items::Item) -> Text<'_> {
+    if let Some((ref text, style)) = item.display {
+        use ansi_to_tui::IntoText;
+        let mut text = text.into_text().expect("Couldn't read ansi codes");
+        text.patch_style(style);
+        text
+    } else {
+        Text::raw("")
+    }
+}
+
+fn extend_bg_to_line_end(text: &mut Text<'_>, screen: &Screen) {
+    for line in text.lines.iter_mut() {
+        let padding = (screen.size.0 as usize).saturating_sub(line.width());
+
+        line.spans.push(Span::styled(
+            " ".repeat(padding),
+            line.spans.first().unwrap().style,
+        ));
+    }
 }
 
 fn highlight_section(text: &mut Text<'_>, screen: &Screen, i: usize) {
