@@ -182,16 +182,14 @@ pub(crate) fn function_by_target_op(
     target: &TargetData,
     target_op: TargetOp,
 ) -> Option<Box<dyn FnMut(&mut State)>> {
-    match (target, target_op) {
-        (TargetData::Ref(r), TargetOp::Show) => {
+    match (target_op, target) {
+        (TargetOp::Show, TargetData::Ref(r)) => {
             let reference = r.clone();
             Some(Box::new(move |state| {
                 goto_show_screen(&reference, &mut state.screens);
             }))
         }
-        (TargetData::Ref(_), TargetOp::Stage) => None,
-        (TargetData::Ref(_), TargetOp::Unstage) => None,
-        (TargetData::Untracked(u), TargetOp::Show) => {
+        (TargetOp::Show, TargetData::Untracked(u)) => {
             let untracked = u.clone();
             Some(Box::new(move |state| {
                 open_subscreen(&mut state.terminal, &[], editor_cmd(&untracked, None))
@@ -199,18 +197,7 @@ pub(crate) fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::Untracked(u), TargetOp::Stage) => {
-            let untracked = u.clone();
-            Some(Box::new(move |state| {
-                state
-                    .screen_mut()
-                    .issue_command(&[], git::stage_file_cmd(&untracked))
-                    .expect("Error staging file");
-                state.screen_mut().refresh_items();
-            }))
-        }
-        (TargetData::Untracked(_), TargetOp::Unstage) => None,
-        (TargetData::Delta(d), TargetOp::Show) => {
+        (TargetOp::Show, TargetData::Delta(d)) => {
             let delta = d.clone();
             Some(Box::new(move |state| {
                 let terminal: &mut Terminal = &mut state.terminal;
@@ -219,27 +206,7 @@ pub(crate) fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::Delta(d), TargetOp::Stage) => {
-            let delta = d.clone();
-            Some(Box::new(move |state| {
-                state
-                    .screen_mut()
-                    .issue_command(&[], git::stage_file_cmd(&delta.new_file))
-                    .expect("Error staging file");
-                state.screen_mut().refresh_items();
-            }))
-        }
-        (TargetData::Delta(d), TargetOp::Unstage) => {
-            let delta = d.clone();
-            Some(Box::new(move |state| {
-                state
-                    .screen_mut()
-                    .issue_command(&[], git::unstage_file_cmd(&delta))
-                    .expect("Error unstaging file");
-                state.screen_mut().refresh_items();
-            }))
-        }
-        (TargetData::Hunk(h), TargetOp::Show) => {
+        (TargetOp::Show, TargetData::Hunk(h)) => {
             let hunk = h.clone();
             Some(Box::new(move |state| {
                 open_subscreen(
@@ -251,7 +218,28 @@ pub(crate) fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::Hunk(h), TargetOp::Stage) => {
+        (TargetOp::Stage, TargetData::Ref(_)) => None,
+        (TargetOp::Stage, TargetData::Untracked(u)) => {
+            let untracked = u.clone();
+            Some(Box::new(move |state| {
+                state
+                    .screen_mut()
+                    .issue_command(&[], git::stage_file_cmd(&untracked))
+                    .expect("Error staging file");
+                state.screen_mut().refresh_items();
+            }))
+        }
+        (TargetOp::Stage, TargetData::Delta(d)) => {
+            let delta = d.clone();
+            Some(Box::new(move |state| {
+                state
+                    .screen_mut()
+                    .issue_command(&[], git::stage_file_cmd(&delta.new_file))
+                    .expect("Error staging file");
+                state.screen_mut().refresh_items();
+            }))
+        }
+        (TargetOp::Stage, TargetData::Hunk(h)) => {
             let hunk = h.clone();
             Some(Box::new(move |state| {
                 state
@@ -261,7 +249,19 @@ pub(crate) fn function_by_target_op(
                 state.screen_mut().refresh_items();
             }))
         }
-        (TargetData::Hunk(h), TargetOp::Unstage) => {
+        (TargetOp::Unstage, TargetData::Ref(_)) => None,
+        (TargetOp::Unstage, TargetData::Untracked(_)) => None,
+        (TargetOp::Unstage, TargetData::Delta(d)) => {
+            let delta = d.clone();
+            Some(Box::new(move |state| {
+                state
+                    .screen_mut()
+                    .issue_command(&[], git::unstage_file_cmd(&delta))
+                    .expect("Error unstaging file");
+                state.screen_mut().refresh_items();
+            }))
+        }
+        (TargetOp::Unstage, TargetData::Hunk(h)) => {
             let hunk = h.clone();
             Some(Box::new(move |state| {
                 state
@@ -269,6 +269,30 @@ pub(crate) fn function_by_target_op(
                     .issue_command(hunk.format_patch().as_bytes(), git::unstage_patch_cmd())
                     .expect("Error unstaging hunk");
                 state.screen_mut().refresh_items();
+            }))
+        }
+        (TargetOp::CopyToClipboard, TargetData::Ref(r)) => {
+            let reference = r.clone();
+            Some(Box::new(move |_state| {
+                cli_clipboard::set_contents(reference.clone()).expect("Couldn't write to clipboard")
+            }))
+        }
+        (TargetOp::CopyToClipboard, TargetData::Untracked(u)) => {
+            let untracked = u.clone();
+            Some(Box::new(move |_state| {
+                cli_clipboard::set_contents(untracked.clone()).expect("Couldn't write to clipboard")
+            }))
+        }
+        (TargetOp::CopyToClipboard, TargetData::Delta(d)) => {
+            let file = d.new_file.clone();
+            Some(Box::new(move |_state| {
+                cli_clipboard::set_contents(file.clone()).expect("Couldn't write to clipboard")
+            }))
+        }
+        (TargetOp::CopyToClipboard, TargetData::Hunk(h)) => {
+            let patch = h.format_patch();
+            Some(Box::new(move |_state| {
+                cli_clipboard::set_contents(patch.clone()).expect("Couldn't write to clipboard")
             }))
         }
     }

@@ -26,6 +26,7 @@ pub(crate) const KEYBINDS: &[(KeyModifiers, KeyCode, Op)] = &[
     (Mods::NONE, Enter, Target(Show)),
     (Mods::NONE, Char('s'), Target(Stage)),
     (Mods::NONE, Char('u'), Target(Unstage)),
+    (Mods::NONE, Char('y'), Target(CopyToClipboard)),
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -50,6 +51,7 @@ pub(crate) enum TargetOp {
     Show,
     Stage,
     Unstage,
+    CopyToClipboard,
 }
 
 impl TargetOp {
