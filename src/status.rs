@@ -47,7 +47,7 @@ impl StatusFile {
 
 impl Status {
     pub fn parse(input: &str) -> Self {
-        let mut local = String::new();
+        let mut local = None;
         let mut remote = None;
         let mut ahead = 0;
         let mut behind = 0;
@@ -58,7 +58,7 @@ impl Status {
                 Rule::branch_status => {
                     for pair in line.into_inner() {
                         match pair.as_rule() {
-                            Rule::local => local = pair.as_str().to_string(),
+                            Rule::local => local = Some(pair.as_str().to_string()),
                             Rule::remote => remote = Some(pair.as_str().to_string()),
                             Rule::ahead => ahead = pair.as_str().parse().unwrap(),
                             Rule::behind => behind = pair.as_str().parse().unwrap(),
@@ -67,26 +67,25 @@ impl Status {
                     }
                 }
                 Rule::file_status => {
-                    let mut status_code = ['_', '_'];
-                    let mut path = "".to_string();
+                    let mut status_code = None;
+                    let mut path = None;
                     let mut new_path = None;
 
                     for pair in line.into_inner() {
                         match pair.as_rule() {
                             Rule::code => {
                                 let mut chars = pair.as_str().chars();
-                                status_code[0] = chars.next().unwrap();
-                                status_code[1] = chars.next().unwrap();
+                                status_code = Some([chars.next().unwrap(), chars.next().unwrap()]);
                             }
-                            Rule::file => path = pair.as_str().to_string(),
+                            Rule::file => path = Some(pair.as_str().to_string()),
                             Rule::new_file => new_path = Some(pair.as_str().to_string()),
                             rule => panic!("No rule {:?}", rule),
                         }
                     }
 
                     files.push(StatusFile {
-                        status_code,
-                        path,
+                        status_code: status_code.expect("Error parsing status_code"),
+                        path: path.expect("Error parsing path"),
                         new_path,
                     });
                 }
@@ -96,7 +95,7 @@ impl Status {
 
         Status {
             branch_status: BranchStatus {
-                local,
+                local: local.expect("Error parsing local"),
                 remote,
                 ahead,
                 behind,
