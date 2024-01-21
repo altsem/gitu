@@ -76,7 +76,7 @@ impl Diff {
                                 }
 
                                 hunks.push(Hunk {
-                                    file_header: "".to_string(),
+                                    file_header: file_header.clone().unwrap(),
                                     old_file: old_file.clone().unwrap(),
                                     new_file: new_file.clone().unwrap(),
                                     old_start: old_range.unwrap().0,
