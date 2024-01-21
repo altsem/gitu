@@ -61,21 +61,19 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
             ..Default::default()
         })
     })
-    .chain(
-        if unmerged.is_empty() {
-            None
-        } else {
-            Some(Item {
-                display: Some((
-                    "\nUnmerged".to_string(),
-                    Style::new().fg(theme::CURRENT_THEME.section),
-                )),
-                section: true,
-                depth: 0,
-                ..Default::default()
-            })
-        },
-    )
+    .chain(if unmerged.is_empty() {
+        None
+    } else {
+        Some(Item {
+            display: Some((
+                "\nUnmerged".to_string(),
+                Style::new().fg(theme::CURRENT_THEME.section),
+            )),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        })
+    })
     .chain(untracked)
     .chain(create_status_section_items(
         "\nUnstaged changes",
@@ -92,23 +90,27 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
 }
 
 fn format_branch_status(status: &BranchStatus) -> String {
+    let Some(ref remote) = status.remote else {
+        return format!("On branch {}.", status.local);
+    };
+
     if status.ahead == 0 && status.behind == 0 {
         format!(
             "On branch {}\nYour branch is up to date with '{}'.",
-            status.local, status.remote
+            status.local, remote
         )
     } else if status.ahead > 0 && status.behind == 0 {
         format!(
             "On branch {}\nYour branch is ahead of '{}' by {} commit.",
-            status.local, status.remote, status.ahead
+            status.local, remote, status.ahead
         )
     } else if status.ahead == 0 && status.behind > 0 {
         format!(
             "On branch {}\nYour branch is behind '{}' by {} commit.",
-            status.local, status.remote, status.behind
+            status.local, remote, status.behind
         )
     } else {
-        format!("On branch {}\nYour branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", status.local, status.remote, status.ahead, status.behind)
+        format!("On branch {}\nYour branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", status.local, remote, status.ahead, status.behind)
     }
 }
 

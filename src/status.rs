@@ -1,4 +1,5 @@
-use regex::Regex;
+use pest::Parser;
+use pest_derive::Parser;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Status {
@@ -6,10 +7,14 @@ pub(crate) struct Status {
     pub files: Vec<StatusFile>,
 }
 
+#[derive(Parser)]
+#[grammar = "status.pest"] // relative to src
+struct StatusParser;
+
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct BranchStatus {
     pub local: String,
-    pub remote: String,
+    pub remote: Option<String>,
     pub ahead: u32,
     pub behind: u32,
 }
@@ -17,8 +22,8 @@ pub(crate) struct BranchStatus {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusFile {
     pub status_code: [char; 2],
-    pub orig_path: Option<String>,
     pub path: String,
+    pub new_path: Option<String>,
 }
 
 impl StatusFile {
@@ -40,49 +45,56 @@ impl StatusFile {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref BRANCH_REGEX: Regex = Regex::new(
-        r"^## (?<local>\S+)\.\.\.(?<remote>\S+)(?: \[(:?ahead (?<ahead>\d+))?(:?, )?(:?behind (?<behind>\d+))?\])?$",
-    ).unwrap();
-    static ref FILE_REGEX: Regex = Regex::new(r"^(?<code>..) (?:(?<orig_path>.*) -> )?(?<path>.*)$").unwrap();
-}
-
 impl Status {
     pub fn parse(input: &str) -> Self {
-        let mut local = "".to_string();
-        let mut remote = "".to_string();
+        let mut local = String::new();
+        let mut remote = None;
         let mut ahead = 0;
         let mut behind = 0;
         let mut files = vec![];
 
-        for line in input.lines() {
-            if let Some(cap) = BRANCH_REGEX.captures(line) {
-                local = cap.name("local").unwrap().as_str().to_string();
-                remote = cap.name("remote").unwrap().as_str().to_string();
-                ahead = cap
-                    .name("ahead")
-                    .map(|str| str.as_str().parse().unwrap())
-                    .unwrap_or(0);
-                behind = cap
-                    .name("behind")
-                    .map(|str| str.as_str().parse().unwrap())
-                    .unwrap_or(0);
-            } else if let Some(cap) = FILE_REGEX.captures(line) {
-                let code = cap.name("code").unwrap().as_str();
-                let chars = &mut code.chars();
-                let status_code = [chars.next().unwrap(), chars.next().unwrap()];
+        for line in StatusParser::parse(Rule::lines, input).expect("Error parsing status") {
+            match line.as_rule() {
+                Rule::branch_status => {
+                    for pair in line.into_inner() {
+                        match pair.as_rule() {
+                            Rule::local => local = pair.as_str().to_string(),
+                            Rule::remote => remote = Some(pair.as_str().to_string()),
+                            Rule::ahead => ahead = pair.as_str().parse().unwrap(),
+                            Rule::behind => behind = pair.as_str().parse().unwrap(),
+                            rule => panic!("No rule {:?}", rule),
+                        }
+                    }
+                }
+                Rule::file_status => {
+                    let mut status_code = ['_', '_'];
+                    let mut path = "".to_string();
+                    let mut new_path = None;
 
-                files.push(StatusFile {
-                    status_code,
-                    orig_path: cap.name("orig_path").map(|str| str.as_str().to_string()),
-                    path: cap.name("path").unwrap().as_str().to_string(),
-                });
-            } else {
-                panic!("Can't parse {}", line);
+                    for pair in line.into_inner() {
+                        match pair.as_rule() {
+                            Rule::code => {
+                                let mut chars = pair.as_str().chars();
+                                status_code[0] = chars.next().unwrap();
+                                status_code[1] = chars.next().unwrap();
+                            }
+                            Rule::file => path = pair.as_str().to_string(),
+                            Rule::new_file => new_path = Some(pair.as_str().to_string()),
+                            rule => panic!("No rule {:?}", rule),
+                        }
+                    }
+
+                    files.push(StatusFile {
+                        status_code,
+                        path,
+                        new_path,
+                    });
+                }
+                _ => panic!("No rule {:?}", line.as_rule()),
             }
         }
 
-        Self {
+        Status {
             branch_status: BranchStatus {
                 local,
                 remote,
@@ -100,38 +112,32 @@ mod tests {
 
     #[test]
     fn parse_simple() {
-        let input = r#"
-## master...origin/master
- M src/git.rs
- R foo -> bar
-?? spaghet
-"#
-        .trim();
+        let input = "## master...origin/master\n M src/git.rs\n R foo -> bar\n?? spaghet\n";
 
         assert_eq!(
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
-                    remote: "origin/master".to_string(),
+                    remote: Some("origin/master".to_string()),
                     ahead: 0,
                     behind: 0
                 },
                 files: vec![
                     StatusFile {
                         status_code: [' ', 'M'],
-                        orig_path: None,
-                        path: "src/git.rs".to_string()
+                        path: "src/git.rs".to_string(),
+                        new_path: None,
                     },
                     StatusFile {
                         status_code: [' ', 'R'],
-                        orig_path: Some("foo".to_string()),
-                        path: "bar".to_string()
+                        path: "foo".to_string(),
+                        new_path: Some("bar".to_string())
                     },
                     StatusFile {
                         status_code: ['?', '?'],
-                        orig_path: None,
-                        path: "spaghet".to_string()
+                        path: "spaghet".to_string(),
+                        new_path: None,
                     },
                 ]
             }
@@ -140,17 +146,14 @@ mod tests {
 
     #[test]
     fn parse_ahead() {
-        let input = r#"
-## master...origin/master [ahead 1]
-"#
-        .trim();
+        let input = "## master...origin/master [ahead 1]\n";
 
         assert_eq!(
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
-                    remote: "origin/master".to_string(),
+                    remote: Some("origin/master".to_string()),
                     ahead: 1,
                     behind: 0
                 },
@@ -161,17 +164,14 @@ mod tests {
 
     #[test]
     fn parse_behind() {
-        let input = r#"
-## master...origin/master [behind 1]
-"#
-        .trim();
+        let input = "## master...origin/master [behind 1]\n";
 
         assert_eq!(
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
-                    remote: "origin/master".to_string(),
+                    remote: Some("origin/master".to_string()),
                     ahead: 0,
                     behind: 1
                 },
@@ -182,19 +182,34 @@ mod tests {
 
     #[test]
     fn parse_diverge() {
-        let input = r#"
-## master...origin/master [ahead 1, behind 1]
-"#
-        .trim();
+        let input = "## master...origin/master [ahead 1, behind 1]\n";
 
         assert_eq!(
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
                     local: "master".to_string(),
-                    remote: "origin/master".to_string(),
+                    remote: Some("origin/master".to_string()),
                     ahead: 1,
                     behind: 1
+                },
+                files: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn parse_no_remote() {
+        let input = "## test.lol\n";
+
+        assert_eq!(
+            Status::parse(input),
+            Status {
+                branch_status: BranchStatus {
+                    local: "test.lol".to_string(),
+                    remote: None,
+                    ahead: 0,
+                    behind: 0
                 },
                 files: vec![]
             }
