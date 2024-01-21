@@ -7,10 +7,6 @@ pub(crate) struct Status {
     pub files: Vec<StatusFile>,
 }
 
-#[derive(Parser)]
-#[grammar = "status.pest"] // relative to src
-struct StatusParser;
-
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct BranchStatus {
     pub local: String,
@@ -44,6 +40,10 @@ impl StatusFile {
         self.status_code == ['?', '?']
     }
 }
+
+#[derive(Parser)]
+#[grammar = "status.pest"] // relative to src
+struct StatusParser;
 
 impl Status {
     pub fn parse(input: &str) -> Self {
@@ -93,7 +93,7 @@ impl Status {
             }
         }
 
-        Status {
+        Self {
             branch_status: BranchStatus {
                 local: local.expect("Error parsing local"),
                 remote,

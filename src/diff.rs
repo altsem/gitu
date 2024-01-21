@@ -1,16 +1,6 @@
-use regex::Regex;
+use pest::Parser;
+use pest_derive::Parser;
 use std::fmt::Display;
-
-const DELTAS_REGEX: &str = r"(?<header>diff --git a\/(?<old_file>\S+) b\/(?<new_file>\S+)
-([^@].*
-)*(:?--- .*
-\+\+\+ .*
-)?)(?<hunk>(:?[ @\-+\u{1b}].*
-)*)";
-
-const HUNKS_REGEX: &str = r"@@ \-(?<old_start>\d+),(?<old_lines>\d+) \+(?<new_start>\d+),(?<new_lines>\d+) @@(?<header_suffix>.*
-)(?<content>(:?[ \-+\u{1b}].*
-)*)";
 
 #[derive(Debug, Clone)]
 pub struct Diff {
@@ -27,56 +17,124 @@ impl Display for Diff {
     }
 }
 
+#[derive(Parser)]
+#[grammar = "diff.pest"]
+struct DiffParser;
+
 impl Diff {
-    pub fn parse(diff_str: &str) -> Self {
-        let deltas_regex = &Regex::new(DELTAS_REGEX).unwrap();
-        let hunks_regex = Regex::new(HUNKS_REGEX).unwrap();
+    pub fn parse(input: &str) -> Self {
+        let mut deltas = vec![];
 
-        Self {
-            deltas: deltas_regex
-                .captures_iter(diff_str)
-                .map(|cap| {
-                    let header = group_as_string(&cap, "header");
-                    let hunk = group_as_string(&cap, "hunk");
+        for diff in DiffParser::parse(Rule::diffs, input).expect("Error parsing diff") {
+            let mut old_file = None;
+            let mut new_file = None;
+            let mut file_header = None;
+            let mut hunks = vec![];
 
-                    Delta {
-                        file_header: header.clone(),
-                        old_file: group_as_string(&cap, "old_file"),
-                        new_file: group_as_string(&cap, "new_file"),
-                        hunks: hunks_regex
-                            .captures_iter(&hunk)
-                            .map(|hunk_cap| Hunk {
-                                file_header: header.clone(),
-                                old_file: group_as_string(&cap, "old_file"),
-                                new_file: group_as_string(&cap, "new_file"),
-                                old_start: group_as_u32(&hunk_cap, "old_start"),
-                                old_lines: group_as_u32(&hunk_cap, "old_lines"),
-                                new_start: group_as_u32(&hunk_cap, "new_start"),
-                                new_lines: group_as_u32(&hunk_cap, "new_lines"),
-                                header_suffix: group_as_string(&hunk_cap, "header_suffix"),
-                                content: group_as_string(&hunk_cap, "content"),
-                            })
-                            .collect::<Vec<_>>(),
+            match diff.as_rule() {
+                Rule::diff => {
+                    for diff_field in diff.into_inner() {
+                        match diff_field.as_rule() {
+                            Rule::diff_header => {
+                                file_header = Some(diff_field.as_str().to_string());
+
+                                for diff_header_field in diff_field.into_inner() {
+                                    match diff_header_field.as_rule() {
+                                        Rule::old_file => {
+                                            old_file = Some(diff_header_field.as_str().to_string())
+                                        }
+                                        Rule::new_file => {
+                                            new_file = Some(diff_header_field.as_str().to_string())
+                                        }
+                                        Rule::header_extra => {}
+                                        rule => panic!("No rule {:?}", rule),
+                                    }
+                                }
+                            }
+                            Rule::hunk => {
+                                let mut old_range = None;
+                                let mut new_range = None;
+                                let mut context = None;
+                                let mut body = None;
+
+                                for hunk_field in diff_field.into_inner() {
+                                    match hunk_field.as_rule() {
+                                        Rule::old_range => {
+                                            old_range = Some(parse_range(hunk_field))
+                                        }
+                                        Rule::new_range => {
+                                            new_range = Some(parse_range(hunk_field))
+                                        }
+                                        Rule::context => {
+                                            context = Some(hunk_field.as_str().to_string())
+                                        }
+                                        Rule::hunk_body => {
+                                            body = Some(hunk_field.as_str().to_string())
+                                        }
+                                        rule => panic!("No rule {:?}", rule),
+                                    }
+                                }
+
+                                hunks.push(Hunk {
+                                    file_header: "".to_string(),
+                                    old_file: old_file.clone().unwrap(),
+                                    new_file: new_file.clone().unwrap(),
+                                    old_start: old_range.unwrap().0,
+                                    old_lines: old_range.unwrap().1,
+                                    new_start: new_range.unwrap().0,
+                                    new_lines: new_range.unwrap().1,
+                                    header_suffix: context.unwrap(),
+                                    content: body.unwrap(),
+                                });
+                            }
+                            rule => panic!("No rule {:?}", rule),
+                        }
                     }
-                })
-                .collect::<Vec<_>>(),
+                }
+                rule => panic!("No rule {:?}", rule),
+            }
+
+            deltas.push(Delta {
+                file_header: file_header.unwrap(),
+                old_file: old_file.unwrap(),
+                new_file: new_file.unwrap(),
+                hunks,
+            })
         }
+
+        Self { deltas }
     }
 }
 
-fn group_as_string(cap: &regex::Captures<'_>, group: &str) -> String {
-    cap.name(group)
-        .unwrap_or_else(|| panic!("{} group not matching", group))
-        .as_str()
-        .to_string()
-}
+fn parse_range(hunk_field: pest::iterators::Pair<'_, Rule>) -> (u32, u32) {
+    let mut start = None;
+    let mut lines = None;
 
-fn group_as_u32(cap: &regex::Captures<'_>, group: &str) -> u32 {
-    cap.name(group)
-        .unwrap_or_else(|| panic!("{} group not matching", group))
-        .as_str()
-        .parse()
-        .unwrap_or_else(|_| panic!("Couldn't parse {}", group))
+    for range_field in hunk_field.into_inner() {
+        match range_field.as_rule() {
+            Rule::start => {
+                start = Some(
+                    range_field
+                        .as_str()
+                        .parse()
+                        .expect("Error parsing range start"),
+                );
+            }
+            Rule::lines => {
+                lines = Some(
+                    range_field
+                        .as_str()
+                        .parse()
+                        .expect("Error parsing range lines"),
+                );
+            }
+            rule => panic!("No rule {:?}", rule),
+        }
+    }
+    (
+        start.expect("No range start"),
+        lines.expect("No range lines"),
+    )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

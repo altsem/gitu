@@ -1,0 +1,22 @@
+WHITESPACE   = _{ " " }
+to_eol       = _{ (!NEWLINE ~ ANY)* }
+to_header    = _{ (!(hunk_header | diff_header) ~ ANY)* }
+old_file     =  { (!"b/" ~ ANY)+ }
+new_file     =  { to_eol }
+header_extra =  { to_header }
+diff_header  =  { "diff" ~ "--git" ~ "a/" ~ old_file ~ "b/" ~ new_file ~ NEWLINE ~ header_extra }
+
+uint         = _{ ASCII_DIGIT* }
+start        =  { uint }
+lines        =  { uint }
+old_range    =  { "-" ~ start ~ "," ~ lines }
+new_range    =  { "+" ~ start ~ "," ~ lines }
+context      =  { to_eol }
+hunk_header  = _{ "@@" ~ old_range ~ new_range ~ "@@" ~ context ~ NEWLINE }
+
+hunk_body    = { to_header }
+hunk         = { hunk_header ~ hunk_body }
+
+diff         = { diff_header ~ hunk* }
+
+diffs        = _{ diff* }
