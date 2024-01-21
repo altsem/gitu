@@ -220,4 +220,13 @@ mod tests {
         let input = "## mergetest...origin/mergetest\nUU src/main.rs\n";
         assert!(Status::parse(input).files[0].is_unmerged());
     }
+
+    #[test]
+    fn messy_file_name() {
+        let input = r#"## master...origin/master
+?? "spaghet lol.testing !@#$%^&*()"
+?? src/diff.pest
+"#;
+        assert_eq!(Status::parse(input).files.len(), 2);
+    }
 }
