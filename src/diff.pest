@@ -1,9 +1,9 @@
 to_eol       = _{ (!NEWLINE ~ ANY)* }
 to_header    = _{ (!(hunk_header | diff_header) ~ ANY)* }
-old_file     =  { (!"b/" ~ ANY)+ }
+old_file     =  { (!" b/" ~ ANY)+ }
 new_file     =  { to_eol }
 header_extra =  { to_header }
-diff_header  =  { "diff --git a/" ~ old_file ~ "b/" ~ new_file ~ NEWLINE ~ header_extra }
+diff_header  =  { "diff --git a/" ~ old_file ~ " b/" ~ new_file ~ NEWLINE ~ header_extra }
 
 uint        = _{ ASCII_DIGIT* }
 start       =  { uint }
