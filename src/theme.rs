@@ -27,13 +27,13 @@ pub const DEFAULT_THEME: Theme = Theme {
     command: Color::Rgb(0x7d, 0xae, 0xa3),
 };
 
-pub const BASE16_THEME: Theme = Theme {
-    section: Color::Yellow,
-    unstaged_file: Color::Red,
-    unmerged_file: Color::Red,
-    file: Color::Magenta,
-    hunk_header: Color::Blue,
-    highlight: Color::DarkGray,
-    dim_highlight: Color::LightGreen,
-    command: Color::Blue,
-};
+// pub const BASE16_THEME: Theme = Theme {
+//     section: Color::Yellow,
+//     unstaged_file: Color::Red,
+//     unmerged_file: Color::Red,
+//     file: Color::Magenta,
+//     hunk_header: Color::Blue,
+//     highlight: Color::DarkGray,
+//     dim_highlight: Color::LightGreen,
+//     command: Color::Blue,
+// };
