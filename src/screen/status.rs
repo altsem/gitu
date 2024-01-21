@@ -25,7 +25,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
                 Style::new().fg(theme::CURRENT_THEME.unstaged_file),
             )),
             depth: 1,
-            target_data: Some(items::TargetData::Untracked(file.path.clone())),
+            target_data: Some(items::TargetData::File(file.path.clone())),
             ..Default::default()
         })
         .collect::<Vec<_>>();
@@ -40,6 +40,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
                 Style::new().fg(theme::CURRENT_THEME.unmerged_file),
             )),
             depth: 1,
+            target_data: Some(items::TargetData::File(file.path.clone())),
             ..Default::default()
         })
         .collect::<Vec<_>>();
@@ -61,6 +62,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
             ..Default::default()
         })
     })
+    .chain(untracked)
     .chain(if unmerged.is_empty() {
         None
     } else {
@@ -74,7 +76,7 @@ pub(crate) fn create_status_items() -> impl Iterator<Item = Item> {
             ..Default::default()
         })
     })
-    .chain(untracked)
+    .chain(unmerged)
     .chain(create_status_section_items(
         "\nUnstaged changes",
         diff::Diff::parse(&git::diff_unstaged()),

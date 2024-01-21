@@ -22,7 +22,7 @@ pub(crate) struct Item {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum TargetData {
     Ref(String),
-    Untracked(String),
+    File(String),
     Delta(Delta),
     Hunk(Hunk),
 }

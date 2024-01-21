@@ -189,7 +189,7 @@ pub(crate) fn function_by_target_op(
                 goto_show_screen(&reference, &mut state.screens);
             }))
         }
-        (TargetOp::Show, TargetData::Untracked(u)) => {
+        (TargetOp::Show, TargetData::File(u)) => {
             let untracked = u.clone();
             Some(Box::new(move |state| {
                 open_subscreen(&mut state.terminal, &[], editor_cmd(&untracked, None))
@@ -219,7 +219,7 @@ pub(crate) fn function_by_target_op(
             }))
         }
         (TargetOp::Stage, TargetData::Ref(_)) => None,
-        (TargetOp::Stage, TargetData::Untracked(u)) => {
+        (TargetOp::Stage, TargetData::File(u)) => {
             let untracked = u.clone();
             Some(Box::new(move |state| {
                 state
@@ -250,7 +250,7 @@ pub(crate) fn function_by_target_op(
             }))
         }
         (TargetOp::Unstage, TargetData::Ref(_)) => None,
-        (TargetOp::Unstage, TargetData::Untracked(_)) => None,
+        (TargetOp::Unstage, TargetData::File(_)) => None,
         (TargetOp::Unstage, TargetData::Delta(d)) => {
             let delta = d.clone();
             Some(Box::new(move |state| {
@@ -277,7 +277,7 @@ pub(crate) fn function_by_target_op(
                 cli_clipboard::set_contents(reference.clone()).expect("Couldn't write to clipboard")
             }))
         }
-        (TargetOp::CopyToClipboard, TargetData::Untracked(u)) => {
+        (TargetOp::CopyToClipboard, TargetData::File(u)) => {
             let untracked = u.clone();
             Some(Box::new(move |_state| {
                 cli_clipboard::set_contents(untracked.clone()).expect("Couldn't write to clipboard")

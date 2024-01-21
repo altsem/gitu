@@ -215,4 +215,10 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn unmerged() {
+        let input = "## mergetest...origin/mergetest\nUU src/main.rs\n";
+        assert!(Status::parse(input).files[0].is_unmerged());
+    }
 }
