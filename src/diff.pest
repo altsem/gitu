@@ -5,18 +5,20 @@ new_file     =  { to_eol }
 header_extra =  { to_header }
 diff_header  =  { "diff --git a/" ~ old_file ~ "b/" ~ new_file ~ NEWLINE ~ header_extra }
 
-uint         = _{ ASCII_DIGIT* }
-start        =  { uint }
-lines        =  { uint }
-old_range    =  { "-" ~ start ~ "," ~ lines }
-new_range    =  { "+" ~ start ~ "," ~ lines }
-context      =  { to_eol }
-hunk_header  = _{ "@@ " ~ old_range ~ " " ~ new_range ~ " @@" ~ context ~ NEWLINE }
+uint        = _{ ASCII_DIGIT* }
+start       =  { uint }
+lines       =  { uint }
+old_range   =  { "-" ~ start ~ "," ~ lines }
+new_range   =  { "+" ~ start ~ "," ~ lines }
+context     =  { to_eol }
+hunk_header = _{ "@@ " ~ old_range ~ " " ~ new_range ~ " @@" ~ context ~ NEWLINE }
 
-hunk_line    = _{ (" " | "+" | "-") ~ to_eol ~ NEWLINE }
-hunk_body    = { hunk_line* }
-hunk         = { hunk_header ~ hunk_body }
+hunk_line = _{ (" " | "+" | "-") ~ to_eol ~ NEWLINE }
+hunk_body =  { hunk_line* }
+hunk      =  { hunk_header ~ hunk_body }
 
-diff         = { diff_header ~ hunk* }
+diff = { diff_header ~ hunk* }
 
-diffs        = _{ diff* }
+commit = { "commit " ~ to_header }
+
+diffs = _{ commit? ~ diff* }

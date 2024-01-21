@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Diff {
+    pub commit: Option<String>,
     pub deltas: Vec<Delta>,
 }
 
@@ -23,16 +24,18 @@ struct DiffParser;
 
 impl Diff {
     pub fn parse(input: &str) -> Self {
+        let mut commit = None;
         let mut deltas = vec![];
 
         for diff in DiffParser::parse(Rule::diffs, input).expect("Error parsing diff") {
-            let mut old_file = None;
-            let mut new_file = None;
-            let mut file_header = None;
-            let mut hunks = vec![];
-
             match diff.as_rule() {
+                Rule::commit => commit = Some(diff.as_str().to_string()),
                 Rule::diff => {
+                    let mut old_file = None;
+                    let mut new_file = None;
+                    let mut file_header = None;
+                    let mut hunks = vec![];
+
                     for diff_field in diff.into_inner() {
                         match diff_field.as_rule() {
                             Rule::diff_header => {
@@ -54,19 +57,19 @@ impl Diff {
                             rule => panic!("No rule {:?}", rule),
                         }
                     }
+
+                    deltas.push(Delta {
+                        file_header: file_header.unwrap(),
+                        old_file: old_file.unwrap(),
+                        new_file: new_file.unwrap(),
+                        hunks,
+                    })
                 }
                 rule => panic!("No rule {:?}", rule),
             }
-
-            deltas.push(Delta {
-                file_header: file_header.unwrap(),
-                old_file: old_file.unwrap(),
-                new_file: new_file.unwrap(),
-                hunks,
-            })
         }
 
-        Self { deltas }
+        Self { commit, deltas }
     }
 }
 
