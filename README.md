@@ -1,6 +1,8 @@
 # gitu
 A git TUI heavily inspired by Magit.
 
+<img src="gitu.png" width="600" />
+
 ## Dependencies
 Requires `git` and `delta` to be on your PATH.
 `delta` is used for formatting diff output.
