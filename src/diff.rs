@@ -30,46 +30,48 @@ impl Diff {
         for diff in DiffParser::parse(Rule::diffs, input).expect("Error parsing diff") {
             match diff.as_rule() {
                 Rule::commit => commit = Some(diff.as_str().to_string()),
-                Rule::diff => {
-                    let mut old_file = None;
-                    let mut new_file = None;
-                    let mut file_header = None;
-                    let mut hunks = vec![];
-
-                    for diff_field in diff.into_inner() {
-                        match diff_field.as_rule() {
-                            Rule::diff_header => {
-                                file_header = Some(diff_field.as_str().to_string());
-                                let (old, new) = parse_diff_header(diff_field);
-                                old_file = Some(old);
-                                new_file = Some(new);
-                            }
-                            Rule::hunk => {
-                                let hunk = parse_hunk(
-                                    diff_field,
-                                    &file_header.as_ref().unwrap(),
-                                    &old_file.as_ref().unwrap(),
-                                    &new_file.as_ref().unwrap(),
-                                );
-
-                                hunks.push(hunk);
-                            }
-                            rule => panic!("No rule {:?}", rule),
-                        }
-                    }
-
-                    deltas.push(Delta {
-                        file_header: file_header.unwrap(),
-                        old_file: old_file.unwrap(),
-                        new_file: new_file.unwrap(),
-                        hunks,
-                    })
-                }
+                Rule::diff => deltas.push(parse_diff(diff)),
                 rule => panic!("No rule {:?}", rule),
             }
         }
 
         Self { commit, deltas }
+    }
+}
+
+fn parse_diff(diff: pest::iterators::Pair<'_, Rule>) -> Delta {
+    let mut old_file = None;
+    let mut new_file = None;
+    let mut file_header = None;
+    let mut hunks = vec![];
+
+    for diff_field in diff.into_inner() {
+        match diff_field.as_rule() {
+            Rule::diff_header => {
+                file_header = Some(diff_field.as_str().to_string());
+                let (old, new) = parse_diff_header(diff_field);
+                old_file = Some(old);
+                new_file = Some(new);
+            }
+            Rule::hunk => {
+                let hunk = parse_hunk(
+                    diff_field,
+                    &file_header.as_ref().unwrap(),
+                    &old_file.as_ref().unwrap(),
+                    &new_file.as_ref().unwrap(),
+                );
+
+                hunks.push(hunk);
+            }
+            rule => panic!("No rule {:?}", rule),
+        }
+    }
+
+    Delta {
+        file_header: file_header.unwrap(),
+        old_file: old_file.unwrap(),
+        new_file: new_file.unwrap(),
+        hunks,
     }
 }
 
