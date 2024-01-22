@@ -1,7 +1,7 @@
-# gitu
+# Gitu
 A git TUI heavily inspired by Magit.
 
-<img src="gitu.png" width="600" />
+<img src="doc/gitu.png" width="600" />
 
 ## Dependencies
 Requires `git` and `delta` to be on your PATH.
@@ -43,3 +43,12 @@ Clone the repo and run:
   - [ ] Command-palette to visualize hotkeys hotkeys
 - [ ] Run arbitrary git command
 - [ ] Line wrapping
+
+## Configuration
+Gitu utilizes [Delta](https://github.com/dandavison/delta) to format and highlight diffs if installed.
+Configure Delta like you normally would, and the changes should be visible in Gitu.
+You can have diffs shown side-by-side
+
+<img src="doc/normal.png" width="600" />
+<img src="doc/side_by_side.png" width="600" />
+
