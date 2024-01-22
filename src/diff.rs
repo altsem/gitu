@@ -56,9 +56,9 @@ fn parse_diff(diff: pest::iterators::Pair<'_, Rule>) -> Delta {
             Rule::hunk => {
                 let hunk = parse_hunk(
                     diff_field,
-                    &file_header.as_ref().unwrap(),
-                    &old_file.as_ref().unwrap(),
-                    &new_file.as_ref().unwrap(),
+                    file_header.as_ref().unwrap(),
+                    old_file.as_ref().unwrap(),
+                    new_file.as_ref().unwrap(),
                 );
 
                 hunks.push(hunk);
@@ -112,7 +112,8 @@ fn parse_hunk(
         }
     }
 
-    let hunk = Hunk {
+    
+    Hunk {
         file_header: file_header.to_string(),
         old_file: old_file.to_string(),
         new_file: new_file.to_string(),
@@ -122,8 +123,7 @@ fn parse_hunk(
         new_lines: new_range.unwrap().1,
         header_suffix: context.unwrap(),
         content: body.unwrap(),
-    };
-    hunk
+    }
 }
 
 fn parse_range(hunk_field: pest::iterators::Pair<'_, Rule>) -> (u32, u32) {
