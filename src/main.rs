@@ -11,6 +11,7 @@ mod theme;
 mod ui;
 
 use clap::Parser;
+use command::IssuedCommand;
 use crossterm::{
     event::{self, Event, KeyEventKind},
     terminal::{
@@ -37,12 +38,43 @@ lazy_static::lazy_static! {
 struct State {
     quit: bool,
     screens: Vec<Screen>,
+    pub(crate) command: Option<IssuedCommand>,
     terminal: Terminal,
 }
 
 impl State {
     fn screen_mut(&mut self) -> &mut Screen {
         self.screens.last_mut().expect("No screen")
+    }
+
+    pub(crate) fn issue_command(
+        &mut self,
+        input: &[u8],
+        command: Command,
+    ) -> Result<(), io::Error> {
+        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
+            self.command = Some(IssuedCommand::spawn(input, command)?);
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn clear_finished_command(&mut self) {
+        if let Some(ref mut command) = self.command {
+            if !command.is_running() {
+                self.command = None
+            }
+        }
+    }
+
+    pub(crate) fn handle_command_output(&mut self) {
+        if let Some(cmd) = &mut self.command {
+            cmd.read_command_output_to_buffer();
+
+            if cmd.just_finished() {
+                self.screen_mut().refresh_items();
+            }
+        }
     }
 }
 
@@ -74,6 +106,7 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     Ok(State {
         quit: false,
         screens,
+        command: None,
         terminal: Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?,
     })
 }
@@ -81,8 +114,11 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
 fn run_app(state: &mut State) -> Result<(), io::Error> {
     while !state.quit {
         if let Some(screen) = state.screens.last_mut() {
-            state.terminal.draw(|frame| ui::ui(frame, screen))?;
-            screen.handle_command_output();
+            state
+                .terminal
+                .draw(|frame| ui::ui(frame, screen, &state.command))?;
+
+            state.handle_command_output();
         }
 
         handle_events(state)?;
@@ -109,7 +145,7 @@ fn handle_events(state: &mut State) -> io::Result<()> {
         Event::Resize(w, h) => screen.size = (w, h),
         Event::Key(key) => {
             if key.kind == KeyEventKind::Press {
-                screen.clear_finished_command();
+                state.clear_finished_command();
 
                 handle_op(state, key)?;
             }
@@ -129,9 +165,7 @@ fn handle_events(state: &mut State) -> io::Result<()> {
 }
 
 fn handle_op(state: &mut State, key: event::KeyEvent) -> Result<(), io::Error> {
-    let Some(screen) = state.screens.last_mut() else {
-        panic!("No screen");
-    };
+    let screen = state.screen_mut();
 
     if let Some(op) = keybinds::op_of_key_event(key) {
         match op {
@@ -144,15 +178,15 @@ fn handle_op(state: &mut State, key: event::KeyEvent) -> Result<(), io::Error> {
             Op::HalfPageDown => screen.scroll_half_page_down(),
             Op::Log => goto_log_screen(&mut state.screens),
             Op::Fetch => {
-                screen.issue_command(&[], git::fetch_all_cmd())?;
-                screen.refresh_items();
+                state.issue_command(&[], git::fetch_all_cmd())?;
+                state.screen_mut().refresh_items();
             }
             Op::Commit => {
                 open_subscreen(&mut state.terminal, &[], git::commit_cmd())?;
-                screen.refresh_items();
+                state.screen_mut().refresh_items();
             }
-            Op::Push => screen.issue_command(&[], git::push_cmd())?,
-            Op::Pull => screen.issue_command(&[], git::pull_cmd())?,
+            Op::Push => state.issue_command(&[], git::push_cmd())?,
+            Op::Pull => state.issue_command(&[], git::pull_cmd())?,
             Op::Target(target_op) => {
                 if let Some(act) = &screen.get_selected_item().target_data.clone() {
                     if let Some(mut function) = function_by_target_op(act, target_op) {
@@ -223,7 +257,6 @@ pub(crate) fn function_by_target_op(
             let untracked = u.clone();
             Some(Box::new(move |state| {
                 state
-                    .screen_mut()
                     .issue_command(&[], git::stage_file_cmd(&untracked))
                     .expect("Error staging file");
                 state.screen_mut().refresh_items();
@@ -233,7 +266,6 @@ pub(crate) fn function_by_target_op(
             let delta = d.clone();
             Some(Box::new(move |state| {
                 state
-                    .screen_mut()
                     .issue_command(&[], git::stage_file_cmd(&delta.new_file))
                     .expect("Error staging file");
                 state.screen_mut().refresh_items();
@@ -243,7 +275,6 @@ pub(crate) fn function_by_target_op(
             let hunk = h.clone();
             Some(Box::new(move |state| {
                 state
-                    .screen_mut()
                     .issue_command(hunk.format_patch().as_bytes(), git::stage_patch_cmd())
                     .expect("Error staging hunk");
                 state.screen_mut().refresh_items();
@@ -255,7 +286,6 @@ pub(crate) fn function_by_target_op(
             let delta = d.clone();
             Some(Box::new(move |state| {
                 state
-                    .screen_mut()
                     .issue_command(&[], git::unstage_file_cmd(&delta))
                     .expect("Error unstaging file");
                 state.screen_mut().refresh_items();
@@ -265,7 +295,6 @@ pub(crate) fn function_by_target_op(
             let hunk = h.clone();
             Some(Box::new(move |state| {
                 state
-                    .screen_mut()
                     .issue_command(hunk.format_patch().as_bytes(), git::unstage_patch_cmd())
                     .expect("Error unstaging hunk");
                 state.screen_mut().refresh_items();

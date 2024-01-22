@@ -1,8 +1,5 @@
 use super::Item;
-use crate::command::IssuedCommand;
 use std::collections::HashSet;
-use std::io;
-use std::process::Command;
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -13,7 +10,6 @@ pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
-    pub(crate) command: Option<IssuedCommand>,
     refresh_items: Box<dyn Fn() -> Vec<Item>>,
     items: Vec<Item>,
     collapsed: HashSet<Item>,
@@ -27,40 +23,9 @@ impl Screen {
             cursor: 0,
             scroll: 0,
             size,
-            command: None,
             refresh_items,
             items,
             collapsed: HashSet::new(),
-        }
-    }
-
-    pub(crate) fn issue_command(
-        &mut self,
-        input: &[u8],
-        command: Command,
-    ) -> Result<(), io::Error> {
-        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
-            self.command = Some(IssuedCommand::spawn(input, command)?);
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn clear_finished_command(&mut self) {
-        if let Some(ref mut command) = self.command {
-            if !command.is_running() {
-                self.command = None
-            }
-        }
-    }
-
-    pub(crate) fn handle_command_output(&mut self) {
-        if let Some(cmd) = &mut self.command {
-            cmd.read_command_output_to_buffer();
-
-            if cmd.just_finished() {
-                self.items = (self.refresh_items)();
-            }
         }
     }
 

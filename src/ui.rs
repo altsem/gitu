@@ -1,3 +1,4 @@
+use crate::command::IssuedCommand;
 use crate::screen::Screen;
 use crate::theme;
 use ratatui::prelude::*;
@@ -7,8 +8,8 @@ use ratatui::widgets::Borders;
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
-pub(crate) fn ui(frame: &mut Frame, screen: &Screen) {
-    let cmd_text = if let Some(ref cmd) = screen.command {
+pub(crate) fn ui(frame: &mut Frame, screen: &Screen, command: &Option<IssuedCommand>) {
+    let cmd_text = if let Some(ref cmd) = command {
         format_command(cmd)
     } else {
         vec![]
