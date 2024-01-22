@@ -27,22 +27,12 @@ Clone the repo and run:
 | c       | git commit                 |
 | f       | git fetch --all            |
 
-## Features
-- [ ] Staging / Unstaging (and apply / reverse)
-  - [ ] Whole sections (Unstaged, Staged, Untracked)
-  - [x] Files
-  - [x] Hunks
-  - [ ] Line-by-line
-- [x] Toggle sections
-- [x] Push / pull
-- [x] Scrolling
-- [x] Colorized / highlighted diffs
-- [x] Open in editor
-- [ ] Magit-like stateful hotkeys (c -> a to amend commit)
-  - [ ] Command args e.g. --force on push
-  - [ ] Command-palette to visualize hotkeys hotkeys
-- [ ] Run arbitrary git command
-- [ ] Line wrapping
+## CLI
+Gitu can drop you right into a log, or to the display of a commit:
+```
+gitu log <git_log_args>
+gitu show <git_show_args>
+```
 
 ## Configuration
 Gitu utilizes [Delta](https://github.com/dandavison/delta) to format and highlight diffs if installed.
