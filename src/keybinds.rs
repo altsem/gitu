@@ -1,5 +1,4 @@
 use crossterm::event::{self, KeyCode, KeyModifiers};
-use std::fmt::Display;
 
 type Mods = KeyModifiers;
 
@@ -9,10 +8,10 @@ use TargetOp::*;
 use TransientOp::*;
 
 pub(crate) struct Keybind {
-    transient: Option<TransientOp>,
-    mods: KeyModifiers,
-    key: KeyCode,
-    op: Op,
+    pub transient: Option<TransientOp>,
+    pub mods: KeyModifiers,
+    pub key: KeyCode,
+    pub op: Op,
 }
 
 impl Keybind {
@@ -24,33 +23,27 @@ impl Keybind {
             op,
         }
     }
-}
 
-impl Display for Keybind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!(
-            "{} {:?}",
-            match self.key {
-                KeyCode::Enter => "ret".to_string(),
-                KeyCode::Left => "←".to_string(),
-                KeyCode::Right => "→".to_string(),
-                KeyCode::Up => "↑".to_string(),
-                KeyCode::Down => "↓".to_string(),
-                KeyCode::Tab => "tab".to_string(),
-                KeyCode::Delete => "del".to_string(),
-                KeyCode::Insert => "ins".to_string(),
-                KeyCode::F(n) => format!("F{}", n),
-                KeyCode::Char(c) => if self.mods.contains(KeyModifiers::SHIFT) {
-                    c.to_ascii_uppercase()
-                } else {
-                    c
-                }
-                .to_string(),
-                KeyCode::Esc => "esc".to_string(),
-                _ => "???".to_string(),
-            },
-            self.op
-        ))
+    pub(crate) fn format_key(&self) -> String {
+        match self.key {
+            KeyCode::Enter => "ret".to_string(),
+            KeyCode::Left => "←".to_string(),
+            KeyCode::Right => "→".to_string(),
+            KeyCode::Up => "↑".to_string(),
+            KeyCode::Down => "↓".to_string(),
+            KeyCode::Tab => "tab".to_string(),
+            KeyCode::Delete => "del".to_string(),
+            KeyCode::Insert => "ins".to_string(),
+            KeyCode::F(n) => format!("F{}", n),
+            KeyCode::Char(c) => if self.mods.contains(KeyModifiers::SHIFT) {
+                c.to_ascii_uppercase()
+            } else {
+                c
+            }
+            .to_string(),
+            KeyCode::Esc => "esc".to_string(),
+            _ => "???".to_string(),
+        }
     }
 }
 
