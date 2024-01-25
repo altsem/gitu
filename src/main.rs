@@ -21,7 +21,7 @@ use crossterm::{
 };
 use diff::Hunk;
 use items::{Item, TargetData};
-use keybinds::{Op, TargetOp};
+use keybinds::{Op, TargetOp, TransientOp};
 use ratatui::prelude::CrosstermBackend;
 use screen::Screen;
 use std::{
@@ -38,13 +38,17 @@ lazy_static::lazy_static! {
 struct State {
     quit: bool,
     screens: Vec<Screen>,
+    pending_transient_op: Option<TransientOp>,
     pub(crate) command: Option<IssuedCommand>,
-    terminal: Terminal,
 }
 
 impl State {
     fn screen_mut(&mut self) -> &mut Screen {
         self.screens.last_mut().expect("No screen")
+    }
+
+    fn screen(&self) -> &Screen {
+        self.screens.last().expect("No screen")
     }
 
     pub(crate) fn issue_command(
@@ -80,13 +84,14 @@ impl State {
 
 fn main() -> io::Result<()> {
     let mut state = create_initial_state(cli::Cli::parse())?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
 
-    state.terminal.hide_cursor()?;
+    terminal.hide_cursor()?;
 
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run_app(&mut state)?;
+    run_app(&mut terminal, &mut state)?;
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
@@ -106,22 +111,20 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     Ok(State {
         quit: false,
         screens,
+        pending_transient_op: None,
         command: None,
-        terminal: Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?,
     })
 }
 
-fn run_app(state: &mut State) -> Result<(), io::Error> {
+fn run_app(terminal: &mut Terminal, state: &mut State) -> Result<(), io::Error> {
     while !state.quit {
-        if let Some(screen) = state.screens.last_mut() {
-            state
-                .terminal
-                .draw(|frame| ui::ui(frame, screen, &state.command))?;
+        if let Some(_screen) = state.screens.last_mut() {
+            terminal.draw(|frame| ui::ui(frame, &state))?;
 
             state.handle_command_output();
         }
 
-        handle_events(state)?;
+        handle_events(terminal, state)?;
 
         if let Some(screen) = state.screens.last_mut() {
             screen.clamp_cursor();
@@ -131,7 +134,7 @@ fn run_app(state: &mut State) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn handle_events(state: &mut State) -> io::Result<()> {
+fn handle_events(terminal: &mut Terminal, state: &mut State) -> io::Result<()> {
     // TODO Won't need to poll all the time if command outputs were handled async
     if !event::poll(std::time::Duration::from_millis(100))? {
         return Ok(());
@@ -147,50 +150,60 @@ fn handle_events(state: &mut State) -> io::Result<()> {
             if key.kind == KeyEventKind::Press {
                 state.clear_finished_command();
 
-                handle_op(state, key)?;
+                handle_op(terminal, state, key)?;
             }
         }
         _ => (),
     }
 
-    if state.quit {
-        state.screens.pop();
-        if let Some(screen) = state.screens.last_mut() {
-            state.quit = false;
-            screen.refresh_items();
-        }
-    }
-
     Ok(())
 }
 
-fn handle_op(state: &mut State, key: event::KeyEvent) -> Result<(), io::Error> {
-    let screen = state.screen_mut();
+fn handle_op(
+    terminal: &mut Terminal,
+    state: &mut State,
+    key: event::KeyEvent,
+) -> Result<(), io::Error> {
+    if let Some(op) = keybinds::op_of_key_event(state.pending_transient_op, key) {
+        use Op::*;
+        let was_transient = state.pending_transient_op.is_some();
+        state.pending_transient_op = None;
 
-    if let Some(op) = keybinds::op_of_key_event(key) {
         match op {
-            Op::Quit => state.quit = true,
-            Op::Refresh => screen.refresh_items(),
-            Op::ToggleSection => screen.toggle_section(),
-            Op::SelectPrevious => screen.select_previous(),
-            Op::SelectNext => screen.select_next(),
-            Op::HalfPageUp => screen.scroll_half_page_up(),
-            Op::HalfPageDown => screen.scroll_half_page_down(),
-            Op::Log => goto_log_screen(&mut state.screens),
-            Op::Fetch => {
+            Quit => {
+                if was_transient {
+                    // Do nothing, already cleared
+                } else {
+                    state.screens.pop();
+                    if let Some(screen) = state.screens.last_mut() {
+                        screen.refresh_items();
+                    } else {
+                        state.quit = true
+                    }
+                }
+            }
+            Refresh => state.screen_mut().refresh_items(),
+            ToggleSection => state.screen_mut().toggle_section(),
+            SelectPrevious => state.screen_mut().select_previous(),
+            SelectNext => state.screen_mut().select_next(),
+            HalfPageUp => state.screen_mut().scroll_half_page_up(),
+            HalfPageDown => state.screen_mut().scroll_half_page_down(),
+            Fetch => {
                 state.issue_command(&[], git::fetch_all_cmd())?;
                 state.screen_mut().refresh_items();
             }
-            Op::Commit => {
-                open_subscreen(&mut state.terminal, &[], git::commit_cmd())?;
+            Commit => {
+                open_subscreen(terminal, &[], git::commit_cmd())?;
                 state.screen_mut().refresh_items();
             }
-            Op::Push => state.issue_command(&[], git::push_cmd())?,
-            Op::Pull => state.issue_command(&[], git::pull_cmd())?,
-            Op::Target(target_op) => {
-                if let Some(act) = &screen.get_selected_item().target_data.clone() {
+            Push => state.issue_command(&[], git::push_cmd())?,
+            Pull => state.issue_command(&[], git::pull_cmd())?,
+            Transient(op) => state.pending_transient_op = Some(op),
+            LogCurrent => goto_log_screen(&mut state.screens),
+            Target(target_op) => {
+                if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
                     if let Some(mut function) = function_by_target_op(act, target_op) {
-                        function(state);
+                        function(terminal, state);
                     }
                 }
             }
@@ -215,26 +228,25 @@ pub(crate) fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
 pub(crate) fn function_by_target_op(
     target: &TargetData,
     target_op: TargetOp,
-) -> Option<Box<dyn FnMut(&mut State)>> {
+) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
     match (target_op, target) {
         (TargetOp::Show, TargetData::Ref(r)) => {
             let reference = r.clone();
-            Some(Box::new(move |state| {
+            Some(Box::new(move |_terminal, state| {
                 goto_show_screen(&reference, &mut state.screens);
             }))
         }
         (TargetOp::Show, TargetData::File(u)) => {
             let untracked = u.clone();
-            Some(Box::new(move |state| {
-                open_subscreen(&mut state.terminal, &[], editor_cmd(&untracked, None))
+            Some(Box::new(move |terminal, state| {
+                open_subscreen(terminal, &[], editor_cmd(&untracked, None))
                     .expect("Error opening editor");
                 state.screen_mut().refresh_items();
             }))
         }
         (TargetOp::Show, TargetData::Delta(d)) => {
             let delta = d.clone();
-            Some(Box::new(move |state| {
-                let terminal: &mut Terminal = &mut state.terminal;
+            Some(Box::new(move |terminal, state| {
                 open_subscreen(terminal, &[], editor_cmd(&delta.new_file, None))
                     .expect("Error opening editor");
                 state.screen_mut().refresh_items();
@@ -242,20 +254,16 @@ pub(crate) fn function_by_target_op(
         }
         (TargetOp::Show, TargetData::Hunk(h)) => {
             let hunk = h.clone();
-            Some(Box::new(move |state| {
-                open_subscreen(
-                    &mut state.terminal,
-                    &[],
-                    editor_cmd(&hunk.new_file, Some(&hunk)),
-                )
-                .expect("Error opening editor");
+            Some(Box::new(move |terminal, state| {
+                open_subscreen(terminal, &[], editor_cmd(&hunk.new_file, Some(&hunk)))
+                    .expect("Error opening editor");
                 state.screen_mut().refresh_items();
             }))
         }
         (TargetOp::Stage, TargetData::Ref(_)) => None,
         (TargetOp::Stage, TargetData::File(u)) => {
             let untracked = u.clone();
-            Some(Box::new(move |state| {
+            Some(Box::new(move |_terminal, state| {
                 state
                     .issue_command(&[], git::stage_file_cmd(&untracked))
                     .expect("Error staging file");
@@ -264,7 +272,7 @@ pub(crate) fn function_by_target_op(
         }
         (TargetOp::Stage, TargetData::Delta(d)) => {
             let delta = d.clone();
-            Some(Box::new(move |state| {
+            Some(Box::new(move |_terminal, state| {
                 state
                     .issue_command(&[], git::stage_file_cmd(&delta.new_file))
                     .expect("Error staging file");
@@ -273,7 +281,7 @@ pub(crate) fn function_by_target_op(
         }
         (TargetOp::Stage, TargetData::Hunk(h)) => {
             let hunk = h.clone();
-            Some(Box::new(move |state| {
+            Some(Box::new(move |_terminal, state| {
                 state
                     .issue_command(hunk.format_patch().as_bytes(), git::stage_patch_cmd())
                     .expect("Error staging hunk");
@@ -284,7 +292,7 @@ pub(crate) fn function_by_target_op(
         (TargetOp::Unstage, TargetData::File(_)) => None,
         (TargetOp::Unstage, TargetData::Delta(d)) => {
             let delta = d.clone();
-            Some(Box::new(move |state| {
+            Some(Box::new(move |_terminal, state| {
                 state
                     .issue_command(&[], git::unstage_file_cmd(&delta))
                     .expect("Error unstaging file");
@@ -293,7 +301,7 @@ pub(crate) fn function_by_target_op(
         }
         (TargetOp::Unstage, TargetData::Hunk(h)) => {
             let hunk = h.clone();
-            Some(Box::new(move |state| {
+            Some(Box::new(move |_terminal, state| {
                 state
                     .issue_command(hunk.format_patch().as_bytes(), git::unstage_patch_cmd())
                     .expect("Error unstaging hunk");
@@ -302,25 +310,25 @@ pub(crate) fn function_by_target_op(
         }
         (TargetOp::CopyToClipboard, TargetData::Ref(r)) => {
             let reference = r.clone();
-            Some(Box::new(move |_state| {
+            Some(Box::new(move |_terminal, _state| {
                 cli_clipboard::set_contents(reference.clone()).expect("Couldn't write to clipboard")
             }))
         }
         (TargetOp::CopyToClipboard, TargetData::File(u)) => {
             let untracked = u.clone();
-            Some(Box::new(move |_state| {
+            Some(Box::new(move |_terminal, _state| {
                 cli_clipboard::set_contents(untracked.clone()).expect("Couldn't write to clipboard")
             }))
         }
         (TargetOp::CopyToClipboard, TargetData::Delta(d)) => {
             let file = d.new_file.clone();
-            Some(Box::new(move |_state| {
+            Some(Box::new(move |_terminal, _state| {
                 cli_clipboard::set_contents(file.clone()).expect("Couldn't write to clipboard")
             }))
         }
         (TargetOp::CopyToClipboard, TargetData::Hunk(h)) => {
             let patch = h.format_patch();
-            Some(Box::new(move |_state| {
+            Some(Box::new(move |_terminal, _state| {
                 cli_clipboard::set_contents(patch.clone()).expect("Couldn't write to clipboard")
             }))
         }

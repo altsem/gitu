@@ -84,7 +84,7 @@ fn key_hint(target_data: &TargetData) -> String {
     list_target_ops(target_data)
         .into_iter()
         .filter_map(|target_op| {
-            keybinds::display_key(Op::Target(target_op))
+            keybinds::display_key(None, Op::Target(target_op))
                 .map(|key| format!("{} {:?}", key, target_op))
         })
         .collect::<Vec<_>>()

@@ -1,6 +1,6 @@
-use crate::command::IssuedCommand;
-use crate::screen::Screen;
+use crate::keybinds;
 use crate::theme;
+use crate::State;
 use ratatui::prelude::*;
 use ratatui::text::Text;
 use ratatui::widgets::Block;
@@ -8,27 +8,26 @@ use ratatui::widgets::Borders;
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
-pub(crate) fn ui(frame: &mut Frame, screen: &Screen, command: &Option<IssuedCommand>) {
-    let cmd_text = if let Some(ref cmd) = command {
+pub(crate) fn ui(frame: &mut Frame, state: &State) {
+    let popup = if let Some(transient) = state.pending_transient_op {
+        format_transient_menu(transient)
+    } else if let Some(ref cmd) = state.command {
         format_command(cmd)
     } else {
         vec![]
     };
 
-    let cmd_len = cmd_text.len() as u16;
+    let popup_len = if popup.len() > 0 { popup.len() + 1 } else { 0 } as u16;
     let layout = Layout::new(
         Direction::Vertical,
-        [
-            Constraint::Min(1),
-            Constraint::Length(if cmd_len > 0 { cmd_len + 1 } else { 0 }),
-        ],
+        [Constraint::Min(1), Constraint::Length(popup_len)],
     )
     .split(frame.size());
 
-    frame.render_widget(screen, layout[0]);
+    frame.render_widget(state.screen(), layout[0]);
 
-    if !cmd_text.is_empty() {
-        frame.render_widget(command_popup(cmd_text), layout[1]);
+    if !popup.is_empty() {
+        frame.render_widget(command_popup(popup), layout[1]);
     }
 }
 
@@ -50,6 +49,19 @@ fn format_command<'b>(cmd: &crate::command::IssuedCommand) -> Vec<Line<'b>> {
         .lines,
     )
     .collect::<Vec<Line>>()
+}
+
+fn format_transient_menu<'b>(transient: crate::keybinds::TransientOp) -> Vec<Line<'b>> {
+    Text::styled(
+        format!(
+            "{:?}",
+            keybinds::list_transient_binds(&transient)
+                .map(|keybind| format!("{}", keybind))
+                .collect::<Vec<_>>()
+        ),
+        Style::new(),
+    )
+    .lines
 }
 
 fn command_popup(output_lines: Vec<Line>) -> Paragraph {
