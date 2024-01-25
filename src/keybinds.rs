@@ -63,12 +63,12 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::new(Some(TransientOp::Commit), Mods::NONE, Char('q'), Quit),
     // Fetch
     Keybind::new(None, Mods::NONE, Char('f'), Transient(Fetch)),
-    Keybind::new(Some(Fetch), Mods::NONE, Char('q'), Quit),
     Keybind::new(Some(Fetch), Mods::NONE, Char('a'), FetchAll),
+    Keybind::new(Some(Fetch), Mods::NONE, Char('q'), Quit),
     // Log
     Keybind::new(None, Mods::NONE, Char('l'), Transient(Log)),
-    Keybind::new(Some(Log), Mods::NONE, Char('q'), Quit),
     Keybind::new(Some(Log), Mods::NONE, Char('l'), LogCurrent),
+    Keybind::new(Some(Log), Mods::NONE, Char('q'), Quit),
     // Pull
     Keybind::new(None, Mods::SHIFT, Char('F'), Transient(Pull)),
     Keybind::new(Some(Pull), Mods::NONE, Char('p'), PullRemote),
