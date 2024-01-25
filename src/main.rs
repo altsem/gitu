@@ -188,18 +188,18 @@ fn handle_op(
             SelectNext => state.screen_mut().select_next(),
             HalfPageUp => state.screen_mut().scroll_half_page_up(),
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
-            Fetch => {
-                state.issue_command(&[], git::fetch_all_cmd())?;
-                state.screen_mut().refresh_items();
-            }
             Commit => {
                 open_subscreen(terminal, &[], git::commit_cmd())?;
                 state.screen_mut().refresh_items();
             }
-            Push => state.issue_command(&[], git::push_cmd())?,
-            Pull => state.issue_command(&[], git::pull_cmd())?,
             Transient(op) => state.pending_transient_op = Some(op),
             LogCurrent => goto_log_screen(&mut state.screens),
+            FetchAll => {
+                state.issue_command(&[], git::fetch_all_cmd())?;
+                state.screen_mut().refresh_items();
+            }
+            PullRemote => state.issue_command(&[], git::pull_cmd())?,
+            PushRemote => state.issue_command(&[], git::push_cmd())?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
                     if let Some(mut function) = function_by_target_op(act, target_op) {

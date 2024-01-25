@@ -64,15 +64,26 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::new(None, Mods::NONE, Char('j'), SelectNext),
     Keybind::new(None, Mods::CONTROL, Char('u'), HalfPageUp),
     Keybind::new(None, Mods::CONTROL, Char('d'), HalfPageDown),
-    // TransientOps
+    // Commit
+    Keybind::new(None, Mods::NONE, Char('c'), Transient(TransientOp::Commit)),
+    Keybind::new(Some(TransientOp::Commit), Mods::NONE, Char('c'), Op::Commit),
+    Keybind::new(Some(TransientOp::Commit), Mods::NONE, Char('q'), Quit),
+    // Fetch
+    Keybind::new(None, Mods::NONE, Char('f'), Transient(Fetch)),
+    Keybind::new(Some(Fetch), Mods::NONE, Char('q'), Quit),
+    Keybind::new(Some(Fetch), Mods::NONE, Char('a'), FetchAll),
+    // Log
     Keybind::new(None, Mods::NONE, Char('l'), Transient(Log)),
     Keybind::new(Some(Log), Mods::NONE, Char('q'), Quit),
     Keybind::new(Some(Log), Mods::NONE, Char('l'), LogCurrent),
-    // TODO Make these transient
-    Keybind::new(None, Mods::NONE, Char('f'), Fetch),
-    Keybind::new(None, Mods::NONE, Char('c'), Commit),
-    Keybind::new(None, Mods::SHIFT, Char('P'), Push),
-    Keybind::new(None, Mods::NONE, Char('p'), Pull),
+    // Pull
+    Keybind::new(None, Mods::SHIFT, Char('F'), Transient(Pull)),
+    Keybind::new(Some(Pull), Mods::NONE, Char('p'), PullRemote),
+    Keybind::new(Some(Pull), Mods::NONE, Char('q'), Quit),
+    // Push
+    Keybind::new(None, Mods::SHIFT, Char('P'), Transient(Push)),
+    Keybind::new(Some(Push), Mods::NONE, Char('p'), PushRemote),
+    Keybind::new(Some(Push), Mods::NONE, Char('q'), Quit),
     // Target actions
     Keybind::new(None, Mods::NONE, Enter, Target(Show)),
     Keybind::new(None, Mods::NONE, Char('s'), Target(Stage)),
@@ -89,18 +100,22 @@ pub(crate) enum Op {
     ToggleSection,
     HalfPageUp,
     HalfPageDown,
-    Fetch,
-    Commit,
-    Push,
-    Pull,
+    PushRemote,
+    PullRemote,
     Transient(TransientOp),
+    Commit,
+    FetchAll,
     LogCurrent,
     Target(TargetOp),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TransientOp {
+    Commit,
+    Fetch,
     Log,
+    Pull,
+    Push,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
