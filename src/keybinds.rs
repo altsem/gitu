@@ -57,6 +57,9 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::new(None, Mods::NONE, Char('j'), SelectNext),
     Keybind::new(None, Mods::CONTROL, Char('u'), HalfPageUp),
     Keybind::new(None, Mods::CONTROL, Char('d'), HalfPageDown),
+    // Help
+    Keybind::new(None, Mods::NONE, Char('h'), Transient(Help)),
+    Keybind::new(Some(Help), Mods::NONE, Char('q'), Quit),
     // Commit
     Keybind::new(None, Mods::NONE, Char('c'), Transient(TransientOp::Commit)),
     Keybind::new(Some(TransientOp::Commit), Mods::NONE, Char('c'), Op::Commit),
@@ -106,6 +109,7 @@ pub(crate) enum Op {
 pub(crate) enum TransientOp {
     Commit,
     Fetch,
+    Help,
     Log,
     Pull,
     Push,
@@ -135,9 +139,11 @@ pub(crate) fn op_of_key_event(pending: Option<TransientOp>, key: event::KeyEvent
 }
 
 pub(crate) fn list_transient_binds(op: &TransientOp) -> impl Iterator<Item = &Keybind> {
+    let expected = if op == &Help { None } else { Some(*op) };
+
     KEYBINDS
         .iter()
-        .filter(|keybind| keybind.transient == Some(*op))
+        .filter(move |keybind| keybind.transient == expected)
 }
 
 pub(crate) fn display_key(pending: Option<TransientOp>, op: Op) -> Option<String> {
