@@ -23,11 +23,13 @@ use diff::Hunk;
 use items::{Item, TargetData};
 use keybinds::{Op, TargetOp, TransientOp};
 use ratatui::prelude::CrosstermBackend;
-use screen::Screen;
+use screen::{status::StatusData, Screen};
 use std::{
     io::{self, stderr, BufWriter, Stderr},
     process::{Command, Stdio},
 };
+
+use crate::screen::{log::LogData, show::ShowData};
 
 type Terminal = ratatui::Terminal<CrosstermBackend<BufWriter<Stderr>>>;
 
@@ -76,7 +78,7 @@ impl State {
             cmd.read_command_output_to_buffer();
 
             if cmd.just_finished() {
-                self.screen_mut().refresh_items();
+                self.screen_mut().update();
             }
         }
     }
@@ -102,10 +104,25 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     let size = terminal::size()?;
     let screens = match args.command {
         Some(cli::Commands::Show { git_show_args }) => {
-            vec![screen::show::create(size, git_show_args)]
+            vec![Screen::new(
+                size,
+                Box::new(move || {
+                    Box::new(ShowData::capture(
+                        &git_show_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
+                    ))
+                }),
+            )]
         }
-        Some(cli::Commands::Log { git_log_args }) => vec![screen::log::create(size, git_log_args)],
-        None => vec![screen::status::create(size)],
+        Some(cli::Commands::Log { git_log_args }) => {
+            vec![Screen::new(
+                size,
+                Box::new(move || Box::new(LogData::capture(&git_log_args))),
+            )]
+        }
+        None => vec![Screen::new(
+            size,
+            Box::new(|| Box::new(StatusData::capture())),
+        )],
     };
 
     Ok(State {
@@ -176,13 +193,13 @@ fn handle_op(
                 } else {
                     state.screens.pop();
                     if let Some(screen) = state.screens.last_mut() {
-                        screen.refresh_items();
+                        screen.update();
                     } else {
                         state.quit = true
                     }
                 }
             }
-            Refresh => state.screen_mut().refresh_items(),
+            Refresh => state.screen_mut().update(),
             ToggleSection => state.screen_mut().toggle_section(),
             SelectPrevious => state.screen_mut().select_previous(),
             SelectNext => state.screen_mut().select_next(),
@@ -190,13 +207,13 @@ fn handle_op(
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
             Commit => {
                 open_subscreen(terminal, &[], git::commit_cmd())?;
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }
             Transient(op) => state.pending_transient_op = Some(op),
             LogCurrent => goto_log_screen(&mut state.screens),
             FetchAll => {
                 state.issue_command(&[], git::fetch_all_cmd())?;
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }
             PullRemote => state.issue_command(&[], git::pull_cmd())?,
             PushRemote => state.issue_command(&[], git::push_cmd())?,
@@ -225,23 +242,20 @@ pub(crate) fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
         .collect()
 }
 
-pub(crate) fn function_by_target_op(
-    target: &TargetData,
+pub(crate) fn function_by_target_op<'a>(
+    target: &'a TargetData,
     target_op: TargetOp,
-) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+) -> Option<Box<dyn FnMut(&mut Terminal, &mut State) + 'a>> {
     match (target_op, target) {
-        (TargetOp::Show, TargetData::Ref(r)) => {
-            let reference = r.clone();
-            Some(Box::new(move |_terminal, state| {
-                goto_show_screen(&reference, &mut state.screens);
-            }))
-        }
+        (TargetOp::Show, TargetData::Ref(r)) => Some(Box::new(move |_terminal, state| {
+            goto_show_screen(r, &mut state.screens);
+        })),
         (TargetOp::Show, TargetData::File(u)) => {
             let untracked = u.clone();
             Some(Box::new(move |terminal, state| {
                 open_subscreen(terminal, &[], editor_cmd(&untracked, None))
                     .expect("Error opening editor");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Show, TargetData::Delta(d)) => {
@@ -249,7 +263,7 @@ pub(crate) fn function_by_target_op(
             Some(Box::new(move |terminal, state| {
                 open_subscreen(terminal, &[], editor_cmd(&delta.new_file, None))
                     .expect("Error opening editor");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Show, TargetData::Hunk(h)) => {
@@ -257,7 +271,7 @@ pub(crate) fn function_by_target_op(
             Some(Box::new(move |terminal, state| {
                 open_subscreen(terminal, &[], editor_cmd(&hunk.new_file, Some(&hunk)))
                     .expect("Error opening editor");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Stage, TargetData::Ref(_)) => None,
@@ -267,7 +281,7 @@ pub(crate) fn function_by_target_op(
                 state
                     .issue_command(&[], git::stage_file_cmd(&untracked))
                     .expect("Error staging file");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Stage, TargetData::Delta(d)) => {
@@ -276,7 +290,7 @@ pub(crate) fn function_by_target_op(
                 state
                     .issue_command(&[], git::stage_file_cmd(&delta.new_file))
                     .expect("Error staging file");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Stage, TargetData::Hunk(h)) => {
@@ -285,7 +299,7 @@ pub(crate) fn function_by_target_op(
                 state
                     .issue_command(hunk.format_patch().as_bytes(), git::stage_patch_cmd())
                     .expect("Error staging hunk");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Unstage, TargetData::Ref(_)) => None,
@@ -296,7 +310,7 @@ pub(crate) fn function_by_target_op(
                 state
                     .issue_command(&[], git::unstage_file_cmd(&delta))
                     .expect("Error unstaging file");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::Unstage, TargetData::Hunk(h)) => {
@@ -305,13 +319,14 @@ pub(crate) fn function_by_target_op(
                 state
                     .issue_command(hunk.format_patch().as_bytes(), git::unstage_patch_cmd())
                     .expect("Error unstaging hunk");
-                state.screen_mut().refresh_items();
+                state.screen_mut().update();
             }))
         }
         (TargetOp::CopyToClipboard, TargetData::Ref(r)) => {
             let reference = r.clone();
             Some(Box::new(move |_terminal, _state| {
-                cli_clipboard::set_contents(reference.clone()).expect("Couldn't write to clipboard")
+                cli_clipboard::set_contents(reference.to_string())
+                    .expect("Couldn't write to clipboard")
             }))
         }
         (TargetOp::CopyToClipboard, TargetData::File(u)) => {
@@ -337,13 +352,23 @@ pub(crate) fn function_by_target_op(
 
 fn goto_show_screen(reference: &str, screens: &mut Vec<Screen>) {
     let size = terminal::size().expect("Error reading terminal size");
-    screens.push(screen::show::create(size, vec![reference.to_string()]));
+    let string_reference = reference.to_string();
+
+    screens.push({
+        Screen::new(
+            size,
+            Box::new(move || Box::new(ShowData::capture(&[&string_reference]))),
+        )
+    });
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) {
     let size = terminal::size().expect("Error reading terminal size");
     screens.drain(1..);
-    screens.push(screen::log::create(size, vec![]));
+    screens.push(Screen::new(
+        size,
+        Box::new(|| Box::new(LogData::capture(&[]))),
+    ));
 }
 
 fn editor_cmd(delta: &str, maybe_hunk: Option<&Hunk>) -> Command {

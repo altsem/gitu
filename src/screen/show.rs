@@ -1,28 +1,33 @@
-use super::Screen;
+use super::ScreenData;
 use crate::{
-    diff, git,
+    diff::Diff,
+    git,
     items::{self, Item},
 };
 use ratatui::style::Style;
 use std::iter;
 
-pub(crate) fn create(size: (u16, u16), args: Vec<String>) -> Screen {
-    let args_clone = args.clone();
-    Screen::new(
-        size,
-        Box::new(move || create_show_items(args_clone.clone()).collect()),
-    )
+pub(crate) struct ShowData {
+    summary: String,
+    show: Diff,
 }
 
-fn create_show_items(args: Vec<String>) -> impl Iterator<Item = Item> {
-    let args = args.iter().map(String::as_str).collect::<Vec<_>>();
+impl ShowData {
+    pub(crate) fn capture(args: &[&str]) -> Self {
+        Self {
+            summary: git::show_summary(args),
+            show: Diff::parse(&git::show(args)),
+        }
+    }
+}
 
-    iter::once(Item {
-        display: Some((git::show_summary(&args), Style::new())),
-        ..Default::default()
-    })
-    .chain(items::create_diff_items(
-        diff::Diff::parse(&git::show(&args)),
-        0,
-    ))
+impl ScreenData for ShowData {
+    fn items<'a>(&'a self) -> Vec<Item> {
+        iter::once(Item {
+            display: Some((self.summary.clone(), Style::new())),
+            ..Default::default()
+        })
+        .chain(items::create_diff_items(&self.show, &0))
+        .collect()
+    }
 }

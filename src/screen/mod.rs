@@ -6,24 +6,32 @@ pub(crate) mod show;
 pub(crate) mod status;
 pub(crate) mod widget;
 
+pub(crate) trait ScreenData {
+    fn items<'a>(&'a self) -> Vec<Item>;
+}
+
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
-    refresh_items: Box<dyn Fn() -> Vec<Item>>,
+    capture_data: Box<dyn Fn() -> Box<dyn ScreenData>>,
     items: Vec<Item>,
-    collapsed: HashSet<Item>,
+    // TODO Make non-string
+    collapsed: HashSet<String>,
 }
 
-impl Screen {
-    pub(crate) fn new(size: (u16, u16), refresh_items: Box<dyn Fn() -> Vec<Item>>) -> Self {
-        let items = refresh_items();
+impl<'a> Screen {
+    pub(crate) fn new(
+        size: (u16, u16),
+        capture_data: Box<dyn Fn() -> Box<dyn ScreenData>>,
+    ) -> Self {
+        let items = capture_data().items();
 
         Self {
             cursor: 0,
             scroll: 0,
             size,
-            refresh_items,
+            capture_data,
             items,
             collapsed: HashSet::new(),
         }
@@ -102,7 +110,7 @@ impl Screen {
         );
     }
 
-    fn collapsed_lines_items_iter(&self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
+    fn collapsed_lines_items_iter(&'a self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
         self.collapsed_items_iter().scan(0, |lines, (i, item)| {
             let line = *lines;
 
@@ -122,10 +130,14 @@ impl Screen {
         let selected = &self.items[self.cursor];
 
         if selected.section {
-            if self.collapsed.contains(selected) {
-                self.collapsed.remove(selected);
+            if self
+                .collapsed
+                .contains(&selected.display.as_ref().unwrap().0)
+            {
+                self.collapsed.remove(&selected.display.as_ref().unwrap().0);
             } else {
-                self.collapsed.insert(selected.clone());
+                self.collapsed
+                    .insert(selected.display.as_ref().unwrap().0.clone());
             }
         }
     }
@@ -134,11 +146,11 @@ impl Screen {
         self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1))
     }
 
-    pub(crate) fn refresh_items(&mut self) {
-        self.items = (self.refresh_items)();
+    pub(crate) fn update(&mut self) {
+        self.items = (self.capture_data)().items();
     }
 
-    pub(crate) fn collapsed_items_iter(&self) -> impl Iterator<Item = (usize, &Item)> {
+    pub(crate) fn collapsed_items_iter(&'a self) -> impl Iterator<Item = (usize, &Item)> {
         self.items
             .iter()
             .enumerate()
@@ -147,11 +159,12 @@ impl Screen {
                     return Some(None);
                 }
 
-                *collapse_depth = if next.section && self.collapsed.contains(next) {
-                    Some(next.depth)
-                } else {
-                    None
-                };
+                *collapse_depth =
+                    if next.section && self.collapsed.contains(&next.display.as_ref().unwrap().0) {
+                        Some(next.depth)
+                    } else {
+                        None
+                    };
 
                 Some(Some((i, next)))
             })
@@ -159,7 +172,7 @@ impl Screen {
     }
 
     pub(crate) fn is_collapsed(&self, item: &Item) -> bool {
-        self.collapsed.contains(item)
+        self.collapsed.contains(&item.display.as_ref().unwrap().0)
     }
 
     pub(crate) fn get_selected_item(&self) -> &Item {

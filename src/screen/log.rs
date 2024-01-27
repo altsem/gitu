@@ -1,16 +1,19 @@
-use super::Screen;
+use super::ScreenData;
 use crate::{git, items};
 
-pub(crate) fn create(size: (u16, u16), args: Vec<String>) -> Screen {
-    let args_clone = args.clone();
+pub(crate) struct LogData {
+    log: String,
+}
 
-    Screen::new(
-        size,
-        Box::new(move || {
-            items::create_log_items(git::log(
-                &args_clone.iter().map(String::as_str).collect::<Vec<_>>(),
-            ))
-            .collect()
-        }),
-    )
+impl LogData {
+    pub(crate) fn capture(args: &[String]) -> Self {
+        let log = git::log(&args.iter().map(String::as_str).collect::<Vec<_>>());
+        Self { log }
+    }
+}
+
+impl ScreenData for LogData {
+    fn items<'a>(&'a self) -> Vec<items::Item> {
+        items::create_log_items(&self.log).collect()
+    }
 }

@@ -29,9 +29,9 @@ fn main_ui_lines(screen: &Screen) -> impl Iterator<Item = Line> {
             Some((i, item, highlight_depth.is_some()))
         })
         .flat_map(|(i, item, should_highlight)| {
-            let mut text = get_display_text(item);
+            let mut text = get_display_text(&item);
 
-            if screen.is_collapsed(item) {
+            if screen.is_collapsed(&item) {
                 if let Some(last_line) = text.lines.last_mut() {
                     last_line.spans.push("…".into());
                 }
@@ -47,7 +47,7 @@ fn main_ui_lines(screen: &Screen) -> impl Iterator<Item = Line> {
         })
 }
 
-fn get_display_text(item: &crate::items::Item) -> Text<'_> {
+fn get_display_text<'a>(item: &crate::items::Item) -> Text<'a> {
     if let Some((ref text, style)) = item.display {
         use ansi_to_tui::IntoText;
         let mut text = text.into_text().expect("Couldn't read ansi codes");

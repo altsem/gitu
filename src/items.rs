@@ -11,6 +11,7 @@ use std::iter;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Item {
+    // TODO display doesn't need to be an Option
     pub(crate) display: Option<(String, Style)>,
     pub(crate) section: bool,
     pub(crate) depth: usize,
@@ -27,8 +28,11 @@ pub(crate) enum TargetData {
     Hunk(Hunk),
 }
 
-pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator<Item = Item> {
-    diff.deltas.into_iter().flat_map(move |delta| {
+pub(crate) fn create_diff_items<'a>(
+    diff: &'a diff::Diff,
+    depth: &'a usize,
+) -> impl Iterator<Item = Item> + 'a {
+    diff.deltas.iter().flat_map(|delta| {
         let target_data = TargetData::Delta(delta.clone());
 
         iter::once(Item {
@@ -41,7 +45,7 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
                 Style::new().fg(theme::CURRENT_THEME.file),
             )),
             section: true,
-            depth,
+            depth: *depth,
             key_hint: Some(key_hint(&target_data)),
             target_data: Some(target_data),
             ..Default::default()
@@ -49,13 +53,13 @@ pub(crate) fn create_diff_items(diff: diff::Diff, depth: usize) -> impl Iterator
         .chain(
             delta
                 .hunks
-                .into_iter()
-                .flat_map(move |hunk| create_hunk_items(&hunk, depth)),
+                .iter()
+                .flat_map(|hunk| create_hunk_items(hunk, *depth)),
         )
     })
 }
 
-fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
+fn create_hunk_items<'a>(hunk: &'a Hunk, depth: usize) -> impl Iterator<Item = Item> {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
@@ -107,16 +111,14 @@ fn format_diff_hunk(hunk: &Hunk) -> String {
     }
 }
 
-pub(crate) fn create_log_items(log: String) -> impl Iterator<Item = Item> {
-    log.leak().lines().map(|log_line| {
-        let target_data = TargetData::Ref(
-            strip_ansi_escapes::strip_str(log_line)
-                .to_string()
+pub(crate) fn create_log_items<'a>(log: &'a str) -> impl Iterator<Item = Item> + 'a {
+    log.lines().map(|log_line| {
+        let target_data = TargetData::Ref(strip_ansi_escapes::strip_str(
+            log_line
                 .split_whitespace()
                 .next()
-                .expect("Error extracting ref")
-                .to_string(),
-        );
+                .expect("Error extracting ref"),
+        ));
 
         Item {
             display: Some((log_line.to_string(), Style::new())),
