@@ -23,13 +23,11 @@ use diff::Hunk;
 use items::{Item, TargetData};
 use keybinds::{Op, TargetOp, TransientOp};
 use ratatui::prelude::CrosstermBackend;
-use screen::{status::StatusData, Screen};
+use screen::Screen;
 use std::{
     io::{self, stderr, BufWriter, Stderr},
     process::{Command, Stdio},
 };
-
-use crate::screen::{log::LogData, show::ShowData};
 
 type Terminal = ratatui::Terminal<CrosstermBackend<BufWriter<Stderr>>>;
 
@@ -107,22 +105,23 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
             vec![Screen::new(
                 size,
                 Box::new(move || {
-                    Box::new(ShowData::capture(
+                    screen::show::create(
                         &git_show_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
-                    ))
+                    )
                 }),
             )]
         }
         Some(cli::Commands::Log { git_log_args }) => {
             vec![Screen::new(
                 size,
-                Box::new(move || Box::new(LogData::capture(&git_log_args))),
+                Box::new(move || {
+                    screen::log::create(
+                        &git_log_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
+                    )
+                }),
             )]
         }
-        None => vec![Screen::new(
-            size,
-            Box::new(|| Box::new(StatusData::capture())),
-        )],
+        None => vec![Screen::new(size, Box::new(|| screen::status::create()))],
     };
 
     Ok(State {
@@ -352,23 +351,17 @@ pub(crate) fn function_by_target_op<'a>(
 
 fn goto_show_screen(reference: &str, screens: &mut Vec<Screen>) {
     let size = terminal::size().expect("Error reading terminal size");
-    let string_reference = reference.to_string();
-
-    screens.push({
-        Screen::new(
-            size,
-            Box::new(move || Box::new(ShowData::capture(&[&string_reference]))),
-        )
-    });
+    let ref_clone = reference.to_string();
+    screens.push(Screen::new(
+        size,
+        Box::new(move || screen::show::create(&[&ref_clone])),
+    ));
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) {
     let size = terminal::size().expect("Error reading terminal size");
     screens.drain(1..);
-    screens.push(Screen::new(
-        size,
-        Box::new(|| Box::new(LogData::capture(&[]))),
-    ));
+    screens.push(Screen::new(size, Box::new(|| screen::log::create(&[]))));
 }
 
 fn editor_cmd(delta: &str, maybe_hunk: Option<&Hunk>) -> Command {

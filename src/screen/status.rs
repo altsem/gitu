@@ -1,112 +1,85 @@
-use super::ScreenData;
 use crate::{
     diff::Diff,
     git,
     items::{self, Item},
-    status::{BranchStatus, Status},
+    status::BranchStatus,
     theme,
 };
 use ratatui::style::{Color, Style};
 use std::iter;
 
-pub(crate) struct StatusData {
-    status: Status,
-    unstaged: Diff,
-    staged: Diff,
-    log: String,
-}
+pub(crate) fn create() -> Vec<Item> {
+    let status = git::status();
+    let unstaged = git::diff_unstaged();
+    let staged = git::diff_staged();
+    let log = git::log_recent();
 
-impl StatusData {
-    pub(crate) fn capture() -> Self {
-        Self {
-            status: git::status(),
-            unstaged: git::diff_unstaged(),
-            staged: git::diff_staged(),
-            log: git::log_recent(),
-        }
-    }
-}
-
-impl ScreenData for StatusData {
-    fn items<'a>(&'a self) -> Vec<Item> {
-        let untracked = self
-            .status
-            .files
-            .iter()
-            .filter(|file| file.is_untracked())
-            .map(|file| Item {
-                display: (
-                    file.path.clone(),
-                    Style::new().fg(theme::CURRENT_THEME.unstaged_file),
-                ),
-                depth: 1,
-                target_data: Some(items::TargetData::File(file.path.clone())),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
-
-        let unmerged = self
-            .status
-            .files
-            .iter()
-            .filter(|file| file.is_unmerged())
-            .map(|file| Item {
-                display: (
-                    file.path.clone(),
-                    Style::new().fg(theme::CURRENT_THEME.unmerged_file),
-                ),
-                depth: 1,
-                target_data: Some(items::TargetData::File(file.path.clone())),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
-
-        iter::once(Item {
+    let untracked = status
+        .files
+        .iter()
+        .filter(|file| file.is_untracked())
+        .map(|file| Item {
             display: (
-                format_branch_status(&self.status.branch_status),
-                Style::new(),
+                file.path.clone(),
+                Style::new().fg(theme::CURRENT_THEME.unstaged_file),
             ),
+            depth: 1,
+            target_data: Some(items::TargetData::File(file.path.clone())),
             ..Default::default()
         })
-        .chain(if untracked.is_empty() {
-            None
-        } else {
-            Some(Item {
-                display: (
-                    "\nUntracked files".to_string(),
-                    Style::new().fg(theme::CURRENT_THEME.section),
-                ),
-                section: true,
-                depth: 0,
-                ..Default::default()
-            })
+        .collect::<Vec<_>>();
+
+    let unmerged = status
+        .files
+        .iter()
+        .filter(|file| file.is_unmerged())
+        .map(|file| Item {
+            display: (
+                file.path.clone(),
+                Style::new().fg(theme::CURRENT_THEME.unmerged_file),
+            ),
+            depth: 1,
+            target_data: Some(items::TargetData::File(file.path.clone())),
+            ..Default::default()
         })
-        .chain(untracked)
-        .chain(if unmerged.is_empty() {
-            None
-        } else {
-            Some(Item {
-                display: (
-                    "\nUnmerged".to_string(),
-                    Style::new().fg(theme::CURRENT_THEME.section),
-                ),
-                section: true,
-                depth: 0,
-                ..Default::default()
-            })
+        .collect::<Vec<_>>();
+
+    iter::once(Item {
+        display: (format_branch_status(&status.branch_status), Style::new()),
+        ..Default::default()
+    })
+    .chain(if untracked.is_empty() {
+        None
+    } else {
+        Some(Item {
+            display: (
+                "\nUntracked files".to_string(),
+                Style::new().fg(theme::CURRENT_THEME.section),
+            ),
+            section: true,
+            depth: 0,
+            ..Default::default()
         })
-        .chain(unmerged)
-        .chain(create_status_section_items(
-            "\nUnstaged changes",
-            &self.unstaged,
-        ))
-        .chain(create_status_section_items(
-            "\nStaged changes",
-            &self.staged,
-        ))
-        .chain(create_log_section_items("\nRecent commits", &self.log))
-        .collect()
-    }
+    })
+    .chain(untracked)
+    .chain(if unmerged.is_empty() {
+        None
+    } else {
+        Some(Item {
+            display: (
+                "\nUnmerged".to_string(),
+                Style::new().fg(theme::CURRENT_THEME.section),
+            ),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        })
+    })
+    .chain(unmerged)
+    .chain(create_status_section_items("\nUnstaged changes", &unstaged))
+    .chain(create_status_section_items("\nStaged changes", &staged))
+    .chain(create_log_section_items("\nRecent commits", &log))
+    .collect()
 }
 
 fn format_branch_status(status: &BranchStatus) -> String {

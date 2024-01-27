@@ -9,15 +9,11 @@ pub(crate) mod log;
 pub(crate) mod show;
 pub(crate) mod status;
 
-pub(crate) trait ScreenData {
-    fn items<'a>(&'a self) -> Vec<Item>;
-}
-
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
-    capture_data: Box<dyn Fn() -> Box<dyn ScreenData>>,
+    refresh_items: Box<dyn Fn() -> Vec<Item>>,
     items: Vec<Item>,
     ui_lines: Vec<(usize, Item, Line<'static>)>,
     // TODO Make non-string
@@ -25,17 +21,14 @@ pub(crate) struct Screen {
 }
 
 impl<'a> Screen {
-    pub(crate) fn new(
-        size: (u16, u16),
-        capture_data: Box<dyn Fn() -> Box<dyn ScreenData>>,
-    ) -> Self {
-        let items = capture_data().items();
+    pub(crate) fn new(size: (u16, u16), refresh_items: Box<dyn Fn() -> Vec<Item>>) -> Self {
+        let items = refresh_items();
 
         let mut screen = Self {
             cursor: 0,
             scroll: 0,
             size,
-            capture_data,
+            refresh_items,
             items,
             ui_lines: vec![],
             collapsed: HashSet::new(),
@@ -147,7 +140,7 @@ impl<'a> Screen {
     }
 
     pub(crate) fn update(&mut self) {
-        self.items = (self.capture_data)().items();
+        self.items = (self.refresh_items)();
         self.update_ui_lines();
     }
 
