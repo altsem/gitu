@@ -19,32 +19,29 @@ impl Widget for &Screen {
 fn main_ui_lines(screen: &Screen) -> impl Iterator<Item = Line> {
     screen
         .collapsed_items_iter()
-        .scan(None, |highlight_depth, (i, item)| {
+        .map(|(i, item)| (i, item, get_display_text(&item)))
+        .flat_map(|(i, item, text)| text.lines.into_iter().map(move |line| (i, item, line)))
+        .scan(None, |highlight_depth, (i, item, mut line)| {
+            if screen.is_collapsed(&item) {
+                if line.width() > 0 {
+                    line.spans.push("…".into());
+                }
+            }
+
+            extend_bg_to_line_end(&mut line, screen);
             if screen.cursor == i {
                 *highlight_depth = Some(item.depth);
             } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                 *highlight_depth = None;
             };
 
-            Some((i, item, highlight_depth.is_some()))
-        })
-        .flat_map(|(i, item, should_highlight)| {
-            let mut text = get_display_text(&item);
-
-            if screen.is_collapsed(&item) {
-                if let Some(last_line) = text.lines.last_mut() {
-                    last_line.spans.push("…".into());
-                }
+            if highlight_depth.is_some() {
+                highlight_line(&mut line, screen, i);
             }
 
-            extend_bg_to_line_end(&mut text, screen);
-
-            if should_highlight {
-                highlight_section(&mut text, screen, i);
-            }
-
-            text
+            Some((i, item, line))
         })
+        .map(|(_i, _item, line)| line)
 }
 
 fn get_display_text<'a>(item: &crate::items::Item) -> Text<'a> {
@@ -58,27 +55,23 @@ fn get_display_text<'a>(item: &crate::items::Item) -> Text<'a> {
     }
 }
 
-fn extend_bg_to_line_end(text: &mut Text<'_>, screen: &Screen) {
-    for line in text.lines.iter_mut() {
-        let padding = (screen.size.0 as usize).saturating_sub(line.width());
+fn extend_bg_to_line_end(line: &mut Line<'_>, screen: &Screen) {
+    let padding = (screen.size.0 as usize).saturating_sub(line.width());
 
-        line.spans.push(Span::styled(
-            " ".repeat(padding),
-            line.spans.first().unwrap().style,
-        ));
-    }
+    line.spans.push(Span::styled(
+        " ".repeat(padding),
+        line.spans.first().unwrap().style,
+    ));
 }
 
-fn highlight_section(text: &mut Text<'_>, screen: &Screen, i: usize) {
-    for line in &mut text.lines {
-        for span in &mut line.spans {
-            if span.style.bg.is_none() {
-                span.style.bg = Some(if screen.cursor == i {
-                    theme::CURRENT_THEME.highlight
-                } else {
-                    theme::CURRENT_THEME.dim_highlight
-                })
-            }
+fn highlight_line(line: &mut Line<'_>, screen: &Screen, i: usize) {
+    for span in &mut line.spans {
+        if span.style.bg.is_none() {
+            span.style.bg = Some(if screen.cursor == i {
+                theme::CURRENT_THEME.highlight
+            } else {
+                theme::CURRENT_THEME.dim_highlight
+            })
         }
     }
 }
