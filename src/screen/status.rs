@@ -20,8 +20,8 @@ impl StatusData {
     pub(crate) fn capture() -> Self {
         Self {
             status: git::status(),
-            unstaged: Diff::parse(&git::diff_unstaged()),
-            staged: Diff::parse(&git::diff_staged()),
+            unstaged: git::diff_unstaged(),
+            staged: git::diff_staged(),
             log: git::log_recent(),
         }
     }

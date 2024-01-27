@@ -1,24 +1,28 @@
-use crate::{diff, process, status::Status};
+use crate::{
+    diff::{self, Diff},
+    process,
+    status::Status,
+};
 use std::process::Command;
 
 pub(crate) fn status() -> Status {
     Status::parse(&process::run(&["git", "status", "--porcelain", "--branch"]).0)
 }
 
-pub(crate) fn diff_unstaged() -> String {
-    process::run(&["git", "diff"]).0
+pub(crate) fn diff_unstaged() -> Diff {
+    Diff::parse(&process::run(&["git", "diff"]).0)
 }
 
-pub(crate) fn show(args: &[&str]) -> String {
-    process::run(&[&["git", "show"], args].concat()).0
+pub(crate) fn show(args: &[&str]) -> Diff {
+    Diff::parse(&process::run(&[&["git", "show"], args].concat()).0)
 }
 
 pub(crate) fn show_summary(args: &[&str]) -> String {
     process::run(&[&["git", "show", "--summary", "--decorate", "--color"], args].concat()).0
 }
 
-pub(crate) fn diff_staged() -> String {
-    process::run(&["git", "diff", "--staged"]).0
+pub(crate) fn diff_staged() -> Diff {
+    Diff::parse(&process::run(&["git", "diff", "--staged"]).0)
 }
 
 pub(crate) fn log_recent() -> String {

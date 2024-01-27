@@ -16,7 +16,7 @@ impl ShowData {
     pub(crate) fn capture(args: &[&str]) -> Self {
         Self {
             summary: git::show_summary(args),
-            show: Diff::parse(&git::show(args)),
+            show: git::show(args),
         }
     }
 }
