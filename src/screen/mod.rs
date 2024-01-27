@@ -175,17 +175,15 @@ impl<'a> Screen {
     fn update_ui_lines(&mut self) {
         self.ui_lines = self
             .collapsed_items_iter()
-            .map(|(i, item)| (i, item, get_display_text(&item)))
+            .map(|(i, item)| (i, item, get_display_text(item)))
             .flat_map(|(i, item, text)| {
                 text.lines
                     .into_iter()
                     .map(move |line| (i, item.to_owned(), line))
             })
             .map(|(i, item, mut line)| {
-                if self.is_collapsed(&item) {
-                    if line.width() > 0 {
-                        line.spans.push("…".into());
-                    }
+                if self.is_collapsed(&item) && line.width() > 0 {
+                    line.spans.push("…".into());
                 }
 
                 (i, item, line)

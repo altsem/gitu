@@ -121,7 +121,7 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
                 }),
             )]
         }
-        None => vec![Screen::new(size, Box::new(|| screen::status::create()))],
+        None => vec![Screen::new(size, Box::new(screen::status::create))],
     };
 
     Ok(State {
@@ -135,7 +135,7 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
 fn run_app(terminal: &mut Terminal, state: &mut State) -> Result<(), io::Error> {
     while !state.quit {
         if let Some(_screen) = state.screens.last_mut() {
-            terminal.draw(|frame| ui::ui(frame, &state))?;
+            terminal.draw(|frame| ui::ui(frame, state))?;
 
             state.handle_command_output();
         }

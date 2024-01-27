@@ -125,7 +125,7 @@ fn create_status_section_items<'a>(
         })
     }
     .into_iter()
-    .chain(items::create_diff_items(&diff, &1))
+    .chain(items::create_diff_items(diff, &1))
 }
 
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {

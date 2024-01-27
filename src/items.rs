@@ -58,7 +58,7 @@ pub(crate) fn create_diff_items<'a>(
     })
 }
 
-fn create_hunk_items<'a>(hunk: &'a Hunk, depth: usize) -> impl Iterator<Item = Item> {
+fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
@@ -110,7 +110,7 @@ fn format_diff_hunk(hunk: &Hunk) -> String {
     }
 }
 
-pub(crate) fn create_log_items<'a>(log: &'a str) -> impl Iterator<Item = Item> + 'a {
+pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
     log.lines().map(|log_line| {
         let target_data = TargetData::Ref(strip_ansi_escapes::strip_str(
             log_line

@@ -20,7 +20,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &State) {
         vec![]
     };
 
-    let popup_len = if popup.len() > 0 { popup.len() + 1 } else { 0 } as u16;
+    let popup_len = if !popup.is_empty() { popup.len() + 1 } else { 0 } as u16;
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Min(1), Constraint::Length(popup_len)],
