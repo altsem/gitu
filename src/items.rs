@@ -11,8 +11,7 @@ use std::iter;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Item {
-    // TODO display doesn't need to be an Option
-    pub(crate) display: Option<(String, Style)>,
+    pub(crate) display: (String, Style),
     pub(crate) section: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
@@ -36,14 +35,14 @@ pub(crate) fn create_diff_items<'a>(
         let target_data = TargetData::Delta(delta.clone());
 
         iter::once(Item {
-            display: Some((
+            display: (
                 if delta.old_file == delta.new_file {
                     delta.new_file.clone()
                 } else {
                     format!("{} -> {}", delta.old_file, delta.new_file)
                 },
                 Style::new().fg(theme::CURRENT_THEME.file),
-            )),
+            ),
             section: true,
             depth: *depth,
             key_hint: Some(key_hint(&target_data)),
@@ -63,10 +62,10 @@ fn create_hunk_items<'a>(hunk: &'a Hunk, depth: usize) -> impl Iterator<Item = I
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
-        display: Some((
+        display: (
             hunk.display_header(),
             Style::new().fg(theme::CURRENT_THEME.hunk_header),
-        )),
+        ),
         section: true,
         depth: depth + 1,
         key_hint: Some(key_hint(&target_data)),
@@ -75,7 +74,7 @@ fn create_hunk_items<'a>(hunk: &'a Hunk, depth: usize) -> impl Iterator<Item = I
     })
     .chain([{
         Item {
-            display: Some((format_diff_hunk(hunk), Style::new())),
+            display: (format_diff_hunk(hunk), Style::new()),
             unselectable: true,
             depth: depth + 2,
             target_data: None,
@@ -121,7 +120,7 @@ pub(crate) fn create_log_items<'a>(log: &'a str) -> impl Iterator<Item = Item> +
         ));
 
         Item {
-            display: Some((log_line.to_string(), Style::new())),
+            display: (log_line.to_string(), Style::new()),
             depth: 1,
             key_hint: Some(key_hint(&target_data)),
             target_data: Some(target_data),

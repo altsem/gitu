@@ -113,13 +113,7 @@ impl<'a> Screen {
     fn collapsed_lines_items_iter(&'a self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
         self.collapsed_items_iter().scan(0, |lines, (i, item)| {
             let line = *lines;
-
-            let lc = item
-                .display
-                .as_ref()
-                .map(|item| item.0.lines().count())
-                .unwrap_or(1);
-
+            let lc = item.display.0.lines().count();
             *lines += lc;
 
             Some((line, i, item, lc))
@@ -130,14 +124,10 @@ impl<'a> Screen {
         let selected = &self.items[self.cursor];
 
         if selected.section {
-            if self
-                .collapsed
-                .contains(&selected.display.as_ref().unwrap().0)
-            {
-                self.collapsed.remove(&selected.display.as_ref().unwrap().0);
+            if self.collapsed.contains(&selected.display.0) {
+                self.collapsed.remove(&selected.display.0);
             } else {
-                self.collapsed
-                    .insert(selected.display.as_ref().unwrap().0.clone());
+                self.collapsed.insert(selected.display.0.clone());
             }
         }
     }
@@ -159,12 +149,11 @@ impl<'a> Screen {
                     return Some(None);
                 }
 
-                *collapse_depth =
-                    if next.section && self.collapsed.contains(&next.display.as_ref().unwrap().0) {
-                        Some(next.depth)
-                    } else {
-                        None
-                    };
+                *collapse_depth = if next.section && self.collapsed.contains(&next.display.0) {
+                    Some(next.depth)
+                } else {
+                    None
+                };
 
                 Some(Some((i, next)))
             })
@@ -172,7 +161,7 @@ impl<'a> Screen {
     }
 
     pub(crate) fn is_collapsed(&self, item: &Item) -> bool {
-        self.collapsed.contains(&item.display.as_ref().unwrap().0)
+        self.collapsed.contains(&item.display.0)
     }
 
     pub(crate) fn get_selected_item(&self) -> &Item {

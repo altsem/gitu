@@ -24,7 +24,7 @@ impl ShowData {
 impl ScreenData for ShowData {
     fn items<'a>(&'a self) -> Vec<Item> {
         iter::once(Item {
-            display: Some((self.summary.clone(), Style::new())),
+            display: (self.summary.clone(), Style::new()),
             ..Default::default()
         })
         .chain(items::create_diff_items(&self.show, &0))

@@ -35,10 +35,10 @@ impl ScreenData for StatusData {
             .iter()
             .filter(|file| file.is_untracked())
             .map(|file| Item {
-                display: Some((
+                display: (
                     file.path.clone(),
                     Style::new().fg(theme::CURRENT_THEME.unstaged_file),
-                )),
+                ),
                 depth: 1,
                 target_data: Some(items::TargetData::File(file.path.clone())),
                 ..Default::default()
@@ -51,10 +51,10 @@ impl ScreenData for StatusData {
             .iter()
             .filter(|file| file.is_unmerged())
             .map(|file| Item {
-                display: Some((
+                display: (
                     file.path.clone(),
                     Style::new().fg(theme::CURRENT_THEME.unmerged_file),
-                )),
+                ),
                 depth: 1,
                 target_data: Some(items::TargetData::File(file.path.clone())),
                 ..Default::default()
@@ -62,20 +62,20 @@ impl ScreenData for StatusData {
             .collect::<Vec<_>>();
 
         iter::once(Item {
-            display: Some((
+            display: (
                 format_branch_status(&self.status.branch_status),
                 Style::new(),
-            )),
+            ),
             ..Default::default()
         })
         .chain(if untracked.is_empty() {
             None
         } else {
             Some(Item {
-                display: Some((
+                display: (
                     "\nUntracked files".to_string(),
                     Style::new().fg(theme::CURRENT_THEME.section),
-                )),
+                ),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -86,10 +86,10 @@ impl ScreenData for StatusData {
             None
         } else {
             Some(Item {
-                display: Some((
+                display: (
                     "\nUnmerged".to_string(),
                     Style::new().fg(theme::CURRENT_THEME.section),
-                )),
+                ),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -142,10 +142,10 @@ fn create_status_section_items<'a>(
         None
     } else {
         Some(Item {
-            display: Some((
+            display: (
                 format!("{} ({})", header, diff.deltas.len()),
                 Style::new().fg(theme::CURRENT_THEME.section),
-            )),
+            ),
             section: true,
             depth: 0,
             ..Default::default()
@@ -157,7 +157,7 @@ fn create_status_section_items<'a>(
 
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {
     iter::once(Item {
-        display: Some((header.to_string(), Style::new().fg(Color::Yellow))),
+        display: (header.to_string(), Style::new().fg(Color::Yellow)),
         section: true,
         depth: 0,
         ..Default::default()

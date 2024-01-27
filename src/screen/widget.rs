@@ -45,14 +45,11 @@ fn main_ui_lines(screen: &Screen) -> impl Iterator<Item = Line> {
 }
 
 fn get_display_text<'a>(item: &crate::items::Item) -> Text<'a> {
-    if let Some((ref text, style)) = item.display {
-        use ansi_to_tui::IntoText;
-        let mut text = text.into_text().expect("Couldn't read ansi codes");
-        text.patch_style(style);
-        text
-    } else {
-        Text::raw("")
-    }
+    let (ref text, style) = item.display;
+    use ansi_to_tui::IntoText;
+    let mut text = text.into_text().expect("Couldn't read ansi codes");
+    text.patch_style(style);
+    text
 }
 
 fn extend_bg_to_line_end(line: &mut Line<'_>, screen: &Screen) {
