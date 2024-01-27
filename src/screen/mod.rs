@@ -19,6 +19,7 @@ pub(crate) struct Screen {
     pub(crate) size: (u16, u16),
     capture_data: Box<dyn Fn() -> Box<dyn ScreenData>>,
     items: Vec<Item>,
+    ui_lines: Vec<(usize, Item, Line<'static>)>,
     // TODO Make non-string
     collapsed: HashSet<String>,
 }
@@ -30,14 +31,18 @@ impl<'a> Screen {
     ) -> Self {
         let items = capture_data().items();
 
-        Self {
+        let mut screen = Self {
             cursor: 0,
             scroll: 0,
             size,
             capture_data,
             items,
+            ui_lines: vec![],
             collapsed: HashSet::new(),
-        }
+        };
+
+        screen.update_ui_lines();
+        screen
     }
 
     pub(crate) fn select_next(&mut self) {
@@ -133,6 +138,8 @@ impl<'a> Screen {
                 self.collapsed.insert(selected.display.0.clone());
             }
         }
+
+        self.update_ui_lines();
     }
 
     pub(crate) fn clamp_cursor(&mut self) {
@@ -141,6 +148,7 @@ impl<'a> Screen {
 
     pub(crate) fn update(&mut self) {
         self.items = (self.capture_data)().items();
+        self.update_ui_lines();
     }
 
     pub(crate) fn collapsed_items_iter(&'a self) -> impl Iterator<Item = (usize, &Item)> {
@@ -171,43 +179,69 @@ impl<'a> Screen {
         &self.items[self.cursor]
     }
 
-    fn screen_ui_lines(&self) -> impl Iterator<Item = Line> {
-        self.collapsed_items_iter()
+    fn update_ui_lines(&mut self) {
+        self.ui_lines = self
+            .collapsed_items_iter()
             .map(|(i, item)| (i, item, get_display_text(&item)))
-            .flat_map(|(i, item, text)| text.lines.into_iter().map(move |line| (i, item, line)))
-            .scan(None, |highlight_depth, (i, item, mut line)| {
+            .flat_map(|(i, item, text)| {
+                text.lines
+                    .into_iter()
+                    .map(move |line| (i, item.to_owned(), line))
+            })
+            .map(|(i, item, mut line)| {
                 if self.is_collapsed(&item) {
                     if line.width() > 0 {
                         line.spans.push("…".into());
                     }
                 }
 
-                extend_bg_to_line_end(&mut line, self);
-                if self.cursor == i {
-                    *highlight_depth = Some(item.depth);
-                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                    *highlight_depth = None;
-                };
-
-                if highlight_depth.is_some() {
-                    highlight_line(&mut line, self, i);
-                }
-
-                Some((i, item, line))
+                (i, item, line)
             })
-            .map(|(_i, _item, line)| line)
+            .collect();
     }
 }
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.screen_ui_lines()
+        let mut highlight_depth = None;
+
+        for (line_i, (item_i, item, line)) in self
+            .ui_lines
+            .iter()
             .skip(self.scroll as usize)
             .take(area.height as usize)
             .enumerate()
-            .for_each(|(i, line)| {
-                buf.set_line(0, i as u16, &line, area.width);
-            });
+        {
+            if self.cursor == *item_i {
+                highlight_depth = Some(item.depth);
+            } else if highlight_depth.is_some_and(|s| s >= item.depth) {
+                highlight_depth = None;
+            };
+
+            if highlight_depth.is_some() {
+                let area = Rect {
+                    x: 0,
+                    y: line_i as u16,
+                    width: buf.area.width,
+                    height: 1,
+                };
+
+                buf.set_style(
+                    area,
+                    Style::new().bg(if self.cursor == *item_i {
+                        CURRENT_THEME.highlight
+                    } else {
+                        CURRENT_THEME.dim_highlight
+                    }),
+                );
+            }
+
+            let mut x = 0;
+            for span in line.spans.iter() {
+                buf.set_stringn(x, line_i as u16, &span.content, span.width(), span.style);
+                x += span.width() as u16;
+            }
+        }
     }
 }
 
@@ -217,25 +251,4 @@ fn get_display_text<'a>(item: &crate::items::Item) -> Text<'a> {
     let mut text = text.into_text().expect("Couldn't read ansi codes");
     text.patch_style(style);
     text
-}
-
-fn extend_bg_to_line_end(line: &mut Line<'_>, screen: &Screen) {
-    let padding = (screen.size.0 as usize).saturating_sub(line.width());
-
-    line.spans.push(Span::styled(
-        " ".repeat(padding),
-        line.spans.first().unwrap().style,
-    ));
-}
-
-fn highlight_line(line: &mut Line<'_>, screen: &Screen, i: usize) {
-    for span in &mut line.spans {
-        if span.style.bg.is_none() {
-            span.style.bg = Some(if screen.cursor == i {
-                CURRENT_THEME.highlight
-            } else {
-                CURRENT_THEME.dim_highlight
-            })
-        }
-    }
 }
