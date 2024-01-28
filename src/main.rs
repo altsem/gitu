@@ -289,13 +289,13 @@ pub(crate) fn closure_by_target_op<'a>(
         (Show, Delta(d)) => editor(d.new_file.clone(), None),
         (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.new_start)),
         (Stage, Ref(_)) => None,
-        (Stage, File(u)) => issue_command_arg(git::stage_file_cmd, &u),
-        (Stage, Delta(d)) => issue_command_arg(git::stage_file_cmd, &d.new_file),
-        (Stage, Hunk(h)) => issue_command(h.format_patch().into_bytes(), git::stage_patch_cmd),
+        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, &u),
+        (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, &d.new_file),
+        (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
         (Unstage, Ref(_)) => None,
         (Unstage, File(_)) => None,
-        (Unstage, Delta(d)) => issue_command_arg(git::unstage_file_cmd, &d.new_file),
-        (Unstage, Hunk(h)) => issue_command(h.format_patch().into_bytes(), git::unstage_patch_cmd),
+        (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, &d.new_file),
+        (Unstage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::unstage_patch_cmd),
         (RebaseInteractive, Ref(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
         (RebaseInteractive, _) => None,
         (CommitFixup, Ref(r)) => subscreen_arg(git::commit_fixup_cmd, r),
@@ -343,7 +343,7 @@ fn editor(file: String, line: Option<u32>) -> Option<Box<dyn FnMut(&mut Terminal
     }))
 }
 
-fn issue_command(
+fn cmd(
     input: Vec<u8>,
     command: fn() -> Command,
 ) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
@@ -355,7 +355,7 @@ fn issue_command(
     }))
 }
 
-fn issue_command_arg(
+fn cmd_arg(
     command: fn(&str) -> Command,
     arg: &String,
 ) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
