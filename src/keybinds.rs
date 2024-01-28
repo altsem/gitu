@@ -103,7 +103,6 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(None, Enter, Target(Show)),
     Keybind::nomod(None, Char('s'), Target(Stage)),
     Keybind::nomod(None, Char('u'), Target(Unstage)),
-    Keybind::nomod(None, Char('y'), Target(CopyToClipboard)),
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -146,7 +145,6 @@ pub(crate) enum TargetOp {
     Show,
     Stage,
     Unstage,
-    CopyToClipboard,
     RebaseAutosquash,
     RebaseInteractive,
 }
@@ -158,7 +156,6 @@ impl TargetOp {
             &TargetOp::Show,
             &TargetOp::Stage,
             &TargetOp::Unstage,
-            &CopyToClipboard,
             &RebaseAutosquash,
             &RebaseInteractive,
         ]

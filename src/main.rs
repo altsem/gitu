@@ -296,10 +296,6 @@ pub(crate) fn closure_by_target_op<'a>(
         (Unstage, File(_)) => None,
         (Unstage, Delta(d)) => issue_command_arg(git::unstage_file_cmd, &d.new_file),
         (Unstage, Hunk(h)) => issue_command(h.format_patch().into_bytes(), git::unstage_patch_cmd),
-        (CopyToClipboard, Ref(r)) => copy_to_clipboard(r),
-        (CopyToClipboard, File(u)) => copy_to_clipboard(u),
-        (CopyToClipboard, Delta(d)) => copy_to_clipboard(&d.new_file),
-        (CopyToClipboard, Hunk(h)) => copy_to_clipboard(&h.format_patch()),
         (RebaseInteractive, Ref(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
         (RebaseInteractive, _) => None,
         (CommitFixup, Ref(r)) => subscreen_arg(git::commit_fixup_cmd, r),
@@ -369,13 +365,6 @@ fn issue_command_arg(
             .issue_command(&[], command(&arg_clone))
             .expect("Error unstaging hunk");
         state.screen_mut().update();
-    }))
-}
-
-fn copy_to_clipboard(content: &String) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
-    let content_clone = content.clone();
-    Some(Box::new(move |_terminal, _state| {
-        cli_clipboard::set_contents(content_clone.clone()).expect("Couldn't write to clipboard")
     }))
 }
 
