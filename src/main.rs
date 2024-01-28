@@ -236,6 +236,10 @@ fn handle_op(
                 state.issue_subscreen_command(terminal, git::commit_cmd())?;
                 state.screen_mut().update();
             }
+            CommitAmend => {
+                state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
+                state.screen_mut().update();
+            }
             Transient(op) => state.pending_transient_op = op,
             LogCurrent => goto_log_screen(&mut state.screens),
             FetchAll => {
@@ -250,6 +254,14 @@ fn handle_op(
                         closure(terminal, state);
                     }
                 }
+            }
+            RebaseAbort => {
+                state.issue_command(&[], git::rebase_abort_cmd())?;
+                state.screen_mut().update();
+            }
+            RebaseContinue => {
+                state.issue_command(&[], git::rebase_continue_cmd())?;
+                state.screen_mut().update();
             }
         }
     }
@@ -384,6 +396,26 @@ pub(crate) fn closure_by_target_op<'a>(
         (TargetOp::RebaseInteractive, TargetData::File(_)) => None,
         (TargetOp::RebaseInteractive, TargetData::Delta(_)) => None,
         (TargetOp::RebaseInteractive, TargetData::Hunk(_)) => None,
+        (TargetOp::CommitFixup, TargetData::Ref(r)) => Some(Box::new(move |terminal, state| {
+            state
+                .issue_subscreen_command(terminal, git::commit_fixup_cmd(r))
+                .expect("Error rebasing");
+            state.screen_mut().update();
+        })),
+        (TargetOp::CommitFixup, TargetData::File(_)) => None,
+        (TargetOp::CommitFixup, TargetData::Delta(_)) => None,
+        (TargetOp::CommitFixup, TargetData::Hunk(_)) => None,
+        (TargetOp::RebaseAutosquash, TargetData::Ref(r)) => {
+            Some(Box::new(move |terminal, state| {
+                state
+                    .issue_subscreen_command(terminal, git::rebase_autosquash_cmd(r))
+                    .expect("Error rebasing");
+                state.screen_mut().update();
+            }))
+        }
+        (TargetOp::RebaseAutosquash, TargetData::File(_)) => None,
+        (TargetOp::RebaseAutosquash, TargetData::Delta(_)) => None,
+        (TargetOp::RebaseAutosquash, TargetData::Hunk(_)) => None,
     }
 }
 

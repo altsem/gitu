@@ -79,6 +79,8 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Commit
     Keybind::nomod(None, Char('c'), Transient(TransientOp::Commit)),
     Keybind::nomod(TransientOp::Commit, Char('c'), Op::Commit),
+    Keybind::nomod(TransientOp::Commit, Char('a'), CommitAmend),
+    Keybind::nomod(TransientOp::Commit, Char('f'), Target(CommitFixup)),
     // Fetch
     Keybind::nomod(None, Char('f'), Transient(Fetch)),
     Keybind::nomod(Fetch, Char('a'), FetchAll),
@@ -94,6 +96,9 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Rebase
     Keybind::nomod(None, Char('r'), Transient(Rebase)),
     Keybind::nomod(Rebase, Char('i'), Target(RebaseInteractive)),
+    Keybind::nomod(Rebase, Char('a'), RebaseAbort),
+    Keybind::nomod(Rebase, Char('c'), RebaseContinue),
+    Keybind::nomod(Rebase, Char('f'), Target(RebaseAutosquash)),
     // Target actions
     Keybind::nomod(None, Enter, Target(Show)),
     Keybind::nomod(None, Char('s'), Target(Stage)),
@@ -114,8 +119,11 @@ pub(crate) enum Op {
     PullRemote,
     Transient(TransientOp),
     Commit,
+    CommitAmend,
     FetchAll,
     LogCurrent,
+    RebaseAbort,
+    RebaseContinue,
     Target(TargetOp),
 }
 
@@ -134,20 +142,24 @@ pub(crate) enum TransientOp {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TargetOp {
+    CommitFixup,
     Show,
     Stage,
     Unstage,
     CopyToClipboard,
+    RebaseAutosquash,
     RebaseInteractive,
 }
 
 impl TargetOp {
     pub(crate) fn list_all() -> impl Iterator<Item = &'static TargetOp> {
         [
+            &TargetOp::CommitFixup,
             &TargetOp::Show,
             &TargetOp::Stage,
             &TargetOp::Unstage,
             &CopyToClipboard,
+            &RebaseAutosquash,
             &RebaseInteractive,
         ]
         .into_iter()

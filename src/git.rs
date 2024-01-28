@@ -83,6 +83,18 @@ pub(crate) fn commit_cmd() -> Command {
     cmd
 }
 
+pub(crate) fn commit_amend_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["commit", "--amend"]);
+    cmd
+}
+
+pub(crate) fn commit_fixup_cmd(reference: &str) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["commit", "--fixup", reference]);
+    cmd
+}
+
 pub(crate) fn push_cmd() -> Command {
     let mut cmd = Command::new("git");
     cmd.arg("push");
@@ -104,6 +116,32 @@ pub(crate) fn fetch_all_cmd() -> Command {
 pub(crate) fn rebase_interactive_cmd(reference: &str) -> Command {
     let mut cmd = Command::new("git");
     // TODO autostash flag should be visible as a flag (though set as default)
-    cmd.args(["rebase", "--autostash", "-i", reference]);
+    cmd.args(["rebase", "-i", "--autostash", reference]);
+    cmd
+}
+
+pub(crate) fn rebase_autosquash_cmd(reference: &str) -> Command {
+    let mut cmd = Command::new("git");
+    // TODO autostash flag should be visible as a flag (though set as default)
+    cmd.args([
+        "rebase",
+        "-i",
+        "--autosquash",
+        "--keep-empty",
+        "--autostash",
+        reference,
+    ]);
+    cmd
+}
+
+pub(crate) fn rebase_continue_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["rebase", "--continue"]);
+    cmd
+}
+
+pub(crate) fn rebase_abort_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["rebase", "--continue"]);
     cmd
 }
