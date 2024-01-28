@@ -50,8 +50,8 @@ pub(crate) fn create() -> Vec<Item> {
         .collect::<Vec<_>>();
 
     iter::once(Item {
-        id: "branch_status".into(),
-        display: Text::styled(format_branch_status(&status.branch_status), Style::new()),
+        id: "status".into(),
+        display: Text::raw(git::status_simple()),
         ..Default::default()
     })
     .chain(if untracked.is_empty() {

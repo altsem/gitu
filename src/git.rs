@@ -12,6 +12,10 @@ pub(crate) fn status() -> Status {
     Status::parse(&process::run(&["git", "status", "--porcelain", "--branch"]).0)
 }
 
+pub(crate) fn status_simple() -> String {
+    process::run(&["git", "status"]).0
+}
+
 pub(crate) fn diff_unstaged() -> Diff {
     Diff::parse(&process::run(&["git", "diff"]).0)
 }
