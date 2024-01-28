@@ -1,6 +1,7 @@
 use crate::diff;
 use crate::keybinds;
 use crate::keybinds::Op;
+use crate::keybinds::TransientOp;
 use crate::list_target_ops;
 use crate::process;
 use crate::theme;
@@ -95,7 +96,7 @@ fn key_hint(target_data: &TargetData) -> String {
     list_target_ops(target_data)
         .into_iter()
         .filter_map(|target_op| {
-            keybinds::display_key(None, Op::Target(target_op))
+            keybinds::display_key(TransientOp::None, Op::Target(target_op))
                 .map(|key| format!("{} {:?}", key, target_op))
         })
         .collect::<Vec<_>>()

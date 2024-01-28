@@ -38,7 +38,7 @@ lazy_static::lazy_static! {
 struct State {
     quit: bool,
     screens: Vec<Screen>,
-    pending_transient_op: Option<TransientOp>,
+    pending_transient_op: TransientOp,
     pub(crate) command: Option<IssuedCommand>,
 }
 
@@ -149,7 +149,7 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     Ok(State {
         quit: false,
         screens,
-        pending_transient_op: None,
+        pending_transient_op: TransientOp::None,
         command: None,
     })
 }
@@ -204,8 +204,8 @@ fn handle_op(
 ) -> Result<(), io::Error> {
     if let Some(op) = keybinds::op_of_key_event(state.pending_transient_op, key) {
         use Op::*;
-        let was_transient = state.pending_transient_op.is_some();
-        state.pending_transient_op = None;
+        let was_transient = state.pending_transient_op != TransientOp::None;
+        state.pending_transient_op = TransientOp::None;
 
         match op {
             Quit => {
@@ -230,7 +230,7 @@ fn handle_op(
                 state.issue_subscreen_command(terminal, git::commit_cmd())?;
                 state.screen_mut().update();
             }
-            Transient(op) => state.pending_transient_op = Some(op),
+            Transient(op) => state.pending_transient_op = op,
             LogCurrent => goto_log_screen(&mut state.screens),
             FetchAll => {
                 state.issue_command(&[], git::fetch_all_cmd())?;

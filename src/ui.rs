@@ -2,6 +2,7 @@ use std::iter;
 
 use crate::keybinds;
 use crate::keybinds::Keybind;
+use crate::keybinds::TransientOp;
 use crate::theme;
 use crate::State;
 use ratatui::prelude::*;
@@ -12,15 +13,19 @@ use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 
 pub(crate) fn ui(frame: &mut Frame, state: &State) {
-    let popup = if let Some(transient) = state.pending_transient_op {
-        format_transient_menu(transient)
+    let popup = if state.pending_transient_op != TransientOp::None {
+        format_transient_menu(state.pending_transient_op)
     } else if let Some(ref cmd) = state.command {
         format_command(cmd)
     } else {
         vec![]
     };
 
-    let popup_len = if !popup.is_empty() { popup.len() + 1 } else { 0 } as u16;
+    let popup_len = if !popup.is_empty() {
+        popup.len() + 1
+    } else {
+        0
+    } as u16;
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Min(1), Constraint::Length(popup_len)],

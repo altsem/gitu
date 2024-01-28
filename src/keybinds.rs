@@ -1,24 +1,40 @@
 use crossterm::event::{self, KeyCode, KeyModifiers};
 
-type Mods = KeyModifiers;
-
 use KeyCode::*;
 use Op::*;
 use TargetOp::*;
 use TransientOp::*;
 
 pub(crate) struct Keybind {
-    pub transient: Option<TransientOp>,
+    pub transient: TransientOp,
     pub mods: KeyModifiers,
     pub key: KeyCode,
     pub op: Op,
 }
 
 impl Keybind {
-    const fn new(transient: Option<TransientOp>, mods: KeyModifiers, key: KeyCode, op: Op) -> Self {
+    const fn nomod(transient: TransientOp, key: KeyCode, op: Op) -> Self {
         Self {
             transient,
-            mods,
+            mods: KeyModifiers::NONE,
+            key,
+            op,
+        }
+    }
+
+    const fn ctrl(transient: TransientOp, key: KeyCode, op: Op) -> Self {
+        Self {
+            transient,
+            mods: KeyModifiers::CONTROL,
+            key,
+            op,
+        }
+    }
+
+    const fn shift(transient: TransientOp, key: KeyCode, op: Op) -> Self {
+        Self {
+            transient,
+            mods: KeyModifiers::SHIFT,
             key,
             op,
         }
@@ -49,51 +65,40 @@ impl Keybind {
 
 pub(crate) const KEYBINDS: &[Keybind] = &[
     // Generic
-    Keybind::new(None, Mods::NONE, Char('q'), Quit),
-    Keybind::new(None, Mods::NONE, Char('g'), Refresh),
-    Keybind::new(None, Mods::NONE, Tab, ToggleSection),
+    Keybind::nomod(Any, Char('q'), Quit),
+    Keybind::nomod(Any, Esc, Quit),
+    Keybind::nomod(None, Char('g'), Refresh),
+    Keybind::nomod(None, Tab, ToggleSection),
     // Navigation
-    Keybind::new(None, Mods::NONE, Char('k'), SelectPrevious),
-    Keybind::new(None, Mods::NONE, Char('j'), SelectNext),
-    Keybind::new(None, Mods::CONTROL, Char('u'), HalfPageUp),
-    Keybind::new(None, Mods::CONTROL, Char('d'), HalfPageDown),
+    Keybind::nomod(None, Char('k'), SelectPrevious),
+    Keybind::nomod(None, Char('j'), SelectNext),
+    Keybind::ctrl(None, Char('u'), HalfPageUp),
+    Keybind::ctrl(None, Char('d'), HalfPageDown),
     // Help
-    Keybind::new(None, Mods::NONE, Char('h'), Transient(Help)),
-    Keybind::new(Some(Help), Mods::NONE, Char('q'), Quit),
+    Keybind::nomod(None, Char('h'), Transient(Help)),
     // Commit
-    Keybind::new(None, Mods::NONE, Char('c'), Transient(TransientOp::Commit)),
-    Keybind::new(Some(TransientOp::Commit), Mods::NONE, Char('c'), Op::Commit),
-    Keybind::new(Some(TransientOp::Commit), Mods::NONE, Char('q'), Quit),
+    Keybind::nomod(None, Char('c'), Transient(TransientOp::Commit)),
+    Keybind::nomod(TransientOp::Commit, Char('c'), Op::Commit),
     // Fetch
-    Keybind::new(None, Mods::NONE, Char('f'), Transient(Fetch)),
-    Keybind::new(Some(Fetch), Mods::NONE, Char('a'), FetchAll),
-    Keybind::new(Some(Fetch), Mods::NONE, Char('q'), Quit),
+    Keybind::nomod(None, Char('f'), Transient(Fetch)),
+    Keybind::nomod(Fetch, Char('a'), FetchAll),
     // Log
-    Keybind::new(None, Mods::NONE, Char('l'), Transient(Log)),
-    Keybind::new(Some(Log), Mods::NONE, Char('l'), LogCurrent),
-    Keybind::new(Some(Log), Mods::NONE, Char('q'), Quit),
+    Keybind::nomod(None, Char('l'), Transient(Log)),
+    Keybind::nomod(Log, Char('l'), LogCurrent),
     // Pull
-    Keybind::new(None, Mods::SHIFT, Char('F'), Transient(Pull)),
-    Keybind::new(Some(Pull), Mods::NONE, Char('p'), PullRemote),
-    Keybind::new(Some(Pull), Mods::NONE, Char('q'), Quit),
+    Keybind::shift(None, Char('F'), Transient(Pull)),
+    Keybind::nomod(Pull, Char('p'), PullRemote),
     // Push
-    Keybind::new(None, Mods::SHIFT, Char('P'), Transient(Push)),
-    Keybind::new(Some(Push), Mods::NONE, Char('p'), PushRemote),
-    Keybind::new(Some(Push), Mods::NONE, Char('q'), Quit),
+    Keybind::shift(None, Char('P'), Transient(Push)),
+    Keybind::nomod(Push, Char('p'), PushRemote),
     // Rebase
-    Keybind::new(None, Mods::NONE, Char('r'), Transient(TransientOp::Rebase)),
-    Keybind::new(
-        Some(TransientOp::Rebase),
-        Mods::NONE,
-        Char('i'),
-        Target(TargetOp::RebaseInteractive),
-    ),
-    Keybind::new(Some(TransientOp::Rebase), Mods::NONE, Char('q'), Quit),
+    Keybind::nomod(None, Char('r'), Transient(Rebase)),
+    Keybind::nomod(Rebase, Char('i'), Target(RebaseInteractive)),
     // Target actions
-    Keybind::new(None, Mods::NONE, Enter, Target(Show)),
-    Keybind::new(None, Mods::NONE, Char('s'), Target(Stage)),
-    Keybind::new(None, Mods::NONE, Char('u'), Target(Unstage)),
-    Keybind::new(None, Mods::NONE, Char('y'), Target(CopyToClipboard)),
+    Keybind::nomod(None, Enter, Target(Show)),
+    Keybind::nomod(None, Char('s'), Target(Stage)),
+    Keybind::nomod(None, Char('u'), Target(Unstage)),
+    Keybind::nomod(None, Char('y'), Target(CopyToClipboard)),
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -116,6 +121,8 @@ pub(crate) enum Op {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TransientOp {
+    Any,
+    None,
     Commit,
     Fetch,
     Help,
@@ -140,24 +147,25 @@ impl TargetOp {
     }
 }
 
-pub(crate) fn op_of_key_event(pending: Option<TransientOp>, key: event::KeyEvent) -> Option<Op> {
+pub(crate) fn op_of_key_event(pending: TransientOp, key: event::KeyEvent) -> Option<Op> {
     KEYBINDS
         .iter()
         .find(|keybind| {
             (keybind.transient, keybind.mods, keybind.key) == (pending, key.modifiers, key.code)
+                || (keybind.transient, keybind.mods, keybind.key) == (Any, key.modifiers, key.code)
         })
         .map(|keybind| keybind.op)
 }
 
 pub(crate) fn list_transient_binds(op: &TransientOp) -> impl Iterator<Item = &Keybind> {
-    let expected = if op == &Help { None } else { Some(*op) };
+    let expected = if op == &Help { None } else { *op };
 
     KEYBINDS
         .iter()
         .filter(move |keybind| keybind.transient == expected)
 }
 
-pub(crate) fn display_key(pending: Option<TransientOp>, op: Op) -> Option<String> {
+pub(crate) fn display_key(pending: TransientOp, op: Op) -> Option<String> {
     KEYBINDS
         .iter()
         .find(|keybind| keybind.transient == pending && keybind.op == op)
