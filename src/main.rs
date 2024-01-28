@@ -352,6 +352,16 @@ pub(crate) fn closure_by_target_op<'a>(
                 cli_clipboard::set_contents(patch.clone()).expect("Couldn't write to clipboard")
             }))
         }
+        (TargetOp::RebaseInteractive, TargetData::Ref(r)) => {
+            Some(Box::new(move |terminal, state| {
+                open_subscreen(terminal, &[], git::rebase_interactive_cmd(r))
+                    .expect("Error rebasing");
+                state.screen_mut().update();
+            }))
+        }
+        (TargetOp::RebaseInteractive, TargetData::File(_)) => None,
+        (TargetOp::RebaseInteractive, TargetData::Delta(_)) => None,
+        (TargetOp::RebaseInteractive, TargetData::Hunk(_)) => None,
     }
 }
 

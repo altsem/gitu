@@ -80,6 +80,15 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::new(None, Mods::SHIFT, Char('P'), Transient(Push)),
     Keybind::new(Some(Push), Mods::NONE, Char('p'), PushRemote),
     Keybind::new(Some(Push), Mods::NONE, Char('q'), Quit),
+    // Rebase
+    Keybind::new(None, Mods::NONE, Char('r'), Transient(TransientOp::Rebase)),
+    Keybind::new(
+        Some(TransientOp::Rebase),
+        Mods::NONE,
+        Char('i'),
+        Target(TargetOp::RebaseInteractive),
+    ),
+    Keybind::new(Some(TransientOp::Rebase), Mods::NONE, Char('q'), Quit),
     // Target actions
     Keybind::new(None, Mods::NONE, Enter, Target(Show)),
     Keybind::new(None, Mods::NONE, Char('s'), Target(Stage)),
@@ -113,6 +122,7 @@ pub(crate) enum TransientOp {
     Log,
     Pull,
     Push,
+    Rebase,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -121,6 +131,7 @@ pub(crate) enum TargetOp {
     Stage,
     Unstage,
     CopyToClipboard,
+    RebaseInteractive,
 }
 
 impl TargetOp {

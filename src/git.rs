@@ -96,3 +96,10 @@ pub(crate) fn fetch_all_cmd() -> Command {
     cmd.args(["fetch", "--all"]);
     cmd
 }
+
+pub(crate) fn rebase_interactive_cmd(reference: &str) -> Command {
+    let mut cmd = Command::new("git");
+    // TODO autostash flag should be visible as a flag (though set as default)
+    cmd.args(["rebase", "--autostash", "-i", reference]);
+    cmd
+}
