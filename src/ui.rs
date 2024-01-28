@@ -24,18 +24,17 @@ enum Popup<'a> {
 }
 
 pub(crate) fn ui(frame: &mut Frame, state: &State) {
-    let (popup_line_count, popup): (usize, Popup) =
-        if state.pending_transient_op != TransientOp::None {
-            format_keybinds_menu(
-                &state.pending_transient_op,
-                state.screen().get_selected_item(),
-            )
-        } else if let Some(ref cmd) = state.command {
-            let lines = format_command(cmd);
-            (lines.len(), command_popup(lines))
-        } else {
-            (0, Popup::None)
-        };
+    let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.command {
+        let lines = format_command(cmd);
+        (lines.len(), command_popup(lines))
+    } else if state.pending_transient_op != TransientOp::None {
+        format_keybinds_menu(
+            &state.pending_transient_op,
+            state.screen().get_selected_item(),
+        )
+    } else {
+        (0, Popup::None)
+    };
 
     let popup_len = if popup_line_count > 0 {
         popup_line_count + 1
@@ -95,7 +94,7 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
         pending_binds_column.push(Line::from(vec![
             Span::styled(
                 Keybind::format_key(bind),
-                Style::new().fg(CURRENT_THEME.command),
+                Style::new().fg(CURRENT_THEME.hotkey),
             ),
             Span::styled(format!(" {:?}", bind.op), Style::new()),
         ]));
@@ -121,7 +120,7 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
         transient_binds_column.push(Line::from(vec![
             Span::styled(
                 Keybind::format_key(bind),
-                Style::new().fg(CURRENT_THEME.command),
+                Style::new().fg(CURRENT_THEME.hotkey),
             ),
             Span::styled(format!(" {:?}", transient), Style::new()),
         ]));
@@ -132,6 +131,13 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
         let target_ops = list_target_ops(target_data).collect::<Vec<_>>();
         let target_binds = keybinds::list(pending)
             .filter(|keybind| matches!(keybind.op, keybinds::Op::Target(_)))
+            .filter(|keybind| {
+                let Op::Target(target) = keybind.op else {
+                    unreachable!();
+                };
+
+                target_ops.contains(&&target)
+            })
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
@@ -143,14 +149,10 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
                 unreachable!();
             };
 
-            if !target_ops.contains(&&target) {
-                continue;
-            }
-
             target_binds_column.push(Line::from(vec![
                 Span::styled(
                     Keybind::format_key(bind),
-                    Style::new().fg(CURRENT_THEME.command),
+                    Style::new().fg(CURRENT_THEME.hotkey),
                 ),
                 Span::styled(format!(" {:?}", target), Style::new()),
             ]));
@@ -177,7 +179,17 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
         Constraint::Length(20),
         Constraint::Length(20),
     ];
-    (rows.len(), Popup::Table(Table::new(rows, widths)))
+    (
+        rows.len(),
+        Popup::Table(
+            Table::new(rows, widths).block(
+                Block::new()
+                    .borders(Borders::TOP)
+                    .border_style(Style::new().fg(CURRENT_THEME.highlight))
+                    .border_type(ratatui::widgets::BorderType::Plain),
+            ),
+        ),
+    )
 }
 
 fn command_popup(lines: Vec<Line>) -> Popup {
