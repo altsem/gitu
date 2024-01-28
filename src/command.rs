@@ -3,6 +3,8 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 
+use crate::Terminal;
+
 #[derive(Debug)]
 pub(crate) struct IssuedCommand {
     pub(crate) args: String,
@@ -26,6 +28,27 @@ impl IssuedCommand {
             .unwrap_or_else(|| panic!("No stdin for process"))
             .write_all(input)
             .unwrap_or_else(|_| panic!("Error writing to stdin"));
+
+        let issued_command = IssuedCommand {
+            args: format_command(&command),
+            child,
+            output: vec![],
+            finish_acked: false,
+        };
+        Ok(issued_command)
+    }
+
+    pub(crate) fn spawn_in_subscreen(
+        terminal: &mut Terminal,
+        mut command: Command,
+    ) -> Result<IssuedCommand, io::Error> {
+        command.stdin(Stdio::piped());
+        let mut child = command.spawn()?;
+
+        child.wait()?;
+
+        terminal.hide_cursor()?;
+        terminal.clear()?;
 
         let issued_command = IssuedCommand {
             args: format_command(&command),

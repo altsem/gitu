@@ -26,7 +26,7 @@ use ratatui::prelude::CrosstermBackend;
 use screen::Screen;
 use std::{
     io::{self, stderr, BufWriter, Stderr},
-    process::{Command, Stdio},
+    process::Command,
 };
 
 type Terminal = ratatui::Terminal<CrosstermBackend<BufWriter<Stderr>>>;
@@ -58,6 +58,18 @@ impl State {
     ) -> Result<(), io::Error> {
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
             self.command = Some(IssuedCommand::spawn(input, command)?);
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn issue_subscreen_command(
+        &mut self,
+        terminal: &mut Terminal,
+        command: Command,
+    ) -> Result<(), io::Error> {
+        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
+            self.command = Some(IssuedCommand::spawn_in_subscreen(terminal, command)?);
         }
 
         Ok(())
@@ -215,7 +227,7 @@ fn handle_op(
             HalfPageUp => state.screen_mut().scroll_half_page_up(),
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
             Commit => {
-                open_subscreen(terminal, &[], git::commit_cmd())?;
+                state.issue_subscreen_command(terminal, git::commit_cmd())?;
                 state.screen_mut().update();
             }
             Transient(op) => state.pending_transient_op = Some(op),
@@ -258,7 +270,8 @@ pub(crate) fn closure_by_target_op<'a>(
         (TargetOp::Show, TargetData::File(u)) => {
             let untracked = u.clone();
             Some(Box::new(move |terminal, state| {
-                open_subscreen(terminal, &[], editor_cmd(&untracked, None))
+                state
+                    .issue_subscreen_command(terminal, editor_cmd(&untracked, None))
                     .expect("Error opening editor");
                 state.screen_mut().update();
             }))
@@ -266,7 +279,8 @@ pub(crate) fn closure_by_target_op<'a>(
         (TargetOp::Show, TargetData::Delta(d)) => {
             let delta = d.clone();
             Some(Box::new(move |terminal, state| {
-                open_subscreen(terminal, &[], editor_cmd(&delta.new_file, None))
+                state
+                    .issue_subscreen_command(terminal, editor_cmd(&delta.new_file, None))
                     .expect("Error opening editor");
                 state.screen_mut().update();
             }))
@@ -274,7 +288,8 @@ pub(crate) fn closure_by_target_op<'a>(
         (TargetOp::Show, TargetData::Hunk(h)) => {
             let hunk = h.clone();
             Some(Box::new(move |terminal, state| {
-                open_subscreen(terminal, &[], editor_cmd(&hunk.new_file, Some(&hunk)))
+                state
+                    .issue_subscreen_command(terminal, editor_cmd(&hunk.new_file, Some(&hunk)))
                     .expect("Error opening editor");
                 state.screen_mut().update();
             }))
@@ -354,7 +369,8 @@ pub(crate) fn closure_by_target_op<'a>(
         }
         (TargetOp::RebaseInteractive, TargetData::Ref(r)) => {
             Some(Box::new(move |terminal, state| {
-                open_subscreen(terminal, &[], git::rebase_interactive_cmd(r))
+                state
+                    .issue_subscreen_command(terminal, git::rebase_interactive_cmd(r))
                     .expect("Error rebasing");
                 state.screen_mut().update();
             }))
@@ -395,26 +411,4 @@ fn editor_cmd(delta: &str, maybe_hunk: Option<&Hunk>) -> Command {
 
     cmd.args(args);
     cmd
-}
-
-pub(crate) fn open_subscreen(
-    terminal: &mut Terminal,
-    input: &[u8],
-    mut cmd: Command,
-) -> Result<(), io::Error> {
-    cmd.stdin(Stdio::piped());
-    let mut cmd = cmd.spawn()?;
-
-    use std::io::Write;
-    cmd.stdin
-        .take()
-        .expect("Error taking stdin")
-        .write_all(input)?;
-
-    cmd.wait()?;
-
-    terminal.hide_cursor()?;
-    terminal.clear()?;
-
-    Ok(())
 }
