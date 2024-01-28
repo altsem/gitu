@@ -4,14 +4,18 @@ use crate::keybinds::Op;
 use crate::list_target_ops;
 use crate::process;
 use crate::theme;
+use ansi_to_tui::IntoText;
 use diff::Delta;
 use diff::Hunk;
 use ratatui::style::Style;
+use ratatui::text::Text;
+use std::borrow::Cow;
 use std::iter;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Item {
-    pub(crate) display: (String, Style),
+    pub(crate) id: Cow<'static, str>,
+    pub(crate) display: Text<'static>,
     pub(crate) section: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
@@ -35,7 +39,8 @@ pub(crate) fn create_diff_items<'a>(
         let target_data = TargetData::Delta(delta.clone());
 
         iter::once(Item {
-            display: (
+            id: delta.file_header.to_string().into(),
+            display: Text::styled(
                 if delta.old_file == delta.new_file {
                     delta.new_file.clone()
                 } else {
@@ -62,7 +67,8 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
-        display: (
+        id: hunk.format_patch().into(),
+        display: Text::styled(
             hunk.display_header(),
             Style::new().fg(theme::CURRENT_THEME.hunk_header),
         ),
@@ -74,7 +80,9 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     })
     .chain([{
         Item {
-            display: (format_diff_hunk(hunk), Style::new()),
+            display: format_diff_hunk(hunk)
+                .into_text()
+                .expect("Error creating hunk text"),
             unselectable: true,
             depth: depth + 2,
             target_data: None,
@@ -120,7 +128,11 @@ pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
         ));
 
         Item {
-            display: (log_line.to_string(), Style::new()),
+            id: log_line.to_string().into(),
+            display: log_line
+                .to_string()
+                .into_text()
+                .expect("Error creating log text"),
             depth: 1,
             key_hint: Some(key_hint(&target_data)),
             target_data: Some(target_data),

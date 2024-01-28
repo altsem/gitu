@@ -2,7 +2,7 @@ use crate::{
     git,
     items::{self, Item},
 };
-use ratatui::style::Style;
+use ansi_to_tui::IntoText;
 use std::iter;
 
 pub(crate) fn create(args: &[&str]) -> Vec<Item> {
@@ -10,7 +10,7 @@ pub(crate) fn create(args: &[&str]) -> Vec<Item> {
     let show = git::show(args);
 
     iter::once(Item {
-        display: (summary.clone(), Style::new()),
+        display: summary.into_text().expect("Couldn't read ansi codes"),
         ..Default::default()
     })
     .chain(items::create_diff_items(&show, &0))

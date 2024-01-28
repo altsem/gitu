@@ -3,7 +3,7 @@ use ratatui::{prelude::*, widgets::Widget};
 use crate::theme::CURRENT_THEME;
 
 use super::Item;
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -16,8 +16,7 @@ pub(crate) struct Screen {
     refresh_items: Box<dyn Fn() -> Vec<Item>>,
     items: Vec<Item>,
     ui_lines: Vec<(usize, Item, Line<'static>)>,
-    // TODO Make non-string
-    collapsed: HashSet<String>,
+    collapsed: HashSet<Cow<'static, str>>,
 }
 
 impl<'a> Screen {
@@ -114,7 +113,7 @@ impl<'a> Screen {
     fn collapsed_lines_items_iter(&'a self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
         self.collapsed_items_iter().scan(0, |lines, (i, item)| {
             let line = *lines;
-            let lc = item.display.0.lines().count();
+            let lc = item.display.lines.len();
             *lines += lc;
 
             Some((line, i, item, lc))
@@ -125,10 +124,10 @@ impl<'a> Screen {
         let selected = &self.items[self.cursor];
 
         if selected.section {
-            if self.collapsed.contains(&selected.display.0) {
-                self.collapsed.remove(&selected.display.0);
+            if self.collapsed.contains(&selected.id) {
+                self.collapsed.remove(&selected.id);
             } else {
-                self.collapsed.insert(selected.display.0.clone());
+                self.collapsed.insert(selected.id.clone());
             }
         }
 
@@ -153,7 +152,7 @@ impl<'a> Screen {
                     return Some(None);
                 }
 
-                *collapse_depth = if next.section && self.collapsed.contains(&next.display.0) {
+                *collapse_depth = if next.section && self.is_collapsed(&next) {
                     Some(next.depth)
                 } else {
                     None
@@ -164,8 +163,8 @@ impl<'a> Screen {
             .flatten()
     }
 
-    pub(crate) fn is_collapsed(&self, item: &Item) -> bool {
-        self.collapsed.contains(&item.display.0)
+    fn is_collapsed(&self, item: &Item) -> bool {
+        self.collapsed.contains(&item.id)
     }
 
     pub(crate) fn get_selected_item(&self) -> &Item {
@@ -175,9 +174,11 @@ impl<'a> Screen {
     fn update_ui_lines(&mut self) {
         self.ui_lines = self
             .collapsed_items_iter()
-            .map(|(i, item)| (i, item, get_display_text(item)))
-            .flat_map(|(i, item, text)| {
-                text.lines
+            .map(|(i, item)| (i, item))
+            .flat_map(|(i, item)| {
+                item.display
+                    .clone()
+                    .lines
                     .into_iter()
                     .map(move |line| (i, item.to_owned(), line))
             })
@@ -234,12 +235,4 @@ impl Widget for &Screen {
             }
         }
     }
-}
-
-fn get_display_text<'a>(item: &crate::items::Item) -> Text<'a> {
-    let (ref text, style) = item.display;
-    use ansi_to_tui::IntoText;
-    let mut text = text.into_text().expect("Couldn't read ansi codes");
-    text.patch_style(style);
-    text
 }

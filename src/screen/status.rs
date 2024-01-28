@@ -5,7 +5,10 @@ use crate::{
     status::BranchStatus,
     theme,
 };
-use ratatui::style::{Color, Style};
+use ratatui::{
+    style::{Color, Style},
+    text::Text,
+};
 use std::iter;
 
 pub(crate) fn create() -> Vec<Item> {
@@ -19,7 +22,8 @@ pub(crate) fn create() -> Vec<Item> {
         .iter()
         .filter(|file| file.is_untracked())
         .map(|file| Item {
-            display: (
+            id: file.path.clone().into(),
+            display: Text::styled(
                 file.path.clone(),
                 Style::new().fg(theme::CURRENT_THEME.unstaged_file),
             ),
@@ -34,7 +38,8 @@ pub(crate) fn create() -> Vec<Item> {
         .iter()
         .filter(|file| file.is_unmerged())
         .map(|file| Item {
-            display: (
+            id: file.path.clone().into(),
+            display: Text::styled(
                 file.path.clone(),
                 Style::new().fg(theme::CURRENT_THEME.unmerged_file),
             ),
@@ -45,14 +50,16 @@ pub(crate) fn create() -> Vec<Item> {
         .collect::<Vec<_>>();
 
     iter::once(Item {
-        display: (format_branch_status(&status.branch_status), Style::new()),
+        id: "branch_status".into(),
+        display: Text::styled(format_branch_status(&status.branch_status), Style::new()),
         ..Default::default()
     })
     .chain(if untracked.is_empty() {
         None
     } else {
         Some(Item {
-            display: (
+            id: "untracked".into(),
+            display: Text::styled(
                 "\nUntracked files".to_string(),
                 Style::new().fg(theme::CURRENT_THEME.section),
             ),
@@ -66,7 +73,8 @@ pub(crate) fn create() -> Vec<Item> {
         None
     } else {
         Some(Item {
-            display: (
+            id: "unmerged".into(),
+            display: Text::styled(
                 "\nUnmerged".to_string(),
                 Style::new().fg(theme::CURRENT_THEME.section),
             ),
@@ -115,7 +123,8 @@ fn create_status_section_items<'a>(
         None
     } else {
         Some(Item {
-            display: (
+            id: header.to_string().into(),
+            display: Text::styled(
                 format!("{} ({})", header, diff.deltas.len()),
                 Style::new().fg(theme::CURRENT_THEME.section),
             ),
@@ -125,12 +134,13 @@ fn create_status_section_items<'a>(
         })
     }
     .into_iter()
-    .chain(items::create_diff_items(diff, &1))
+    .chain(items::create_diff_items(&diff, &1))
 }
 
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {
     iter::once(Item {
-        display: (header.to_string(), Style::new().fg(Color::Yellow)),
+        id: header.to_string().into(),
+        display: Text::styled(header.to_string(), Style::new().fg(Color::Yellow)),
         section: true,
         depth: 0,
         ..Default::default()

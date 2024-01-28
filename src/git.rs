@@ -5,6 +5,8 @@ use crate::{
 };
 use std::process::Command;
 
+// TODO Check for.git/index.lock and block if it exists
+
 pub(crate) fn status() -> Status {
     Status::parse(&process::run(&["git", "status", "--porcelain", "--branch"]).0)
 }
