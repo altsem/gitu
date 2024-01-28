@@ -42,6 +42,34 @@ pub(crate) fn log(args: &[&str]) -> String {
     process::run(&[&["git", "log", "--oneline", "--decorate", "--color"], args].concat()).0
 }
 
+pub(crate) fn show_refs() -> Vec<(String, String, String)> {
+    process::run(&[
+        "git",
+        "for-each-ref",
+        "--format",
+        "%(refname) %(upstream) %(subject)",
+        "refs/heads",
+    ])
+    .0
+    .lines()
+    .map(|line| {
+        let mut columns = line.splitn(3, " ");
+        let local = columns.next().unwrap().to_string();
+        let remote = columns.next().unwrap().to_string();
+        let subject = columns.next().unwrap().to_string();
+
+        (
+            local.strip_prefix("refs/heads/").unwrap().to_string(),
+            remote
+                .strip_prefix("refs/remotes/")
+                .unwrap_or("")
+                .to_string(),
+            subject,
+        )
+    })
+    .collect()
+}
+
 pub(crate) fn stage_file_cmd(file: &str) -> Command {
     git(&["add", file])
 }
@@ -97,8 +125,12 @@ pub(crate) fn rebase_abort_cmd() -> Command {
     git(&["rebase", "--abort"])
 }
 
-pub(crate) fn checkout_cmd(file: &str) -> Command {
+pub(crate) fn checkout_file_cmd(file: &str) -> Command {
     git(&["checkout", "--", file])
+}
+
+pub(crate) fn checkout_ref_cmd(reference: &str) -> Command {
+    git(&["checkout", reference])
 }
 
 fn git(args: &[&str]) -> Command {

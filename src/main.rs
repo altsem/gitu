@@ -238,6 +238,7 @@ fn handle_op(
                 state.issue_command(&[], git::rebase_continue_cmd())?;
                 state.screen_mut().update();
             }
+            ShowRefs => goto_refs_screen(&mut state.screens),
         }
     }
 
@@ -285,7 +286,7 @@ pub(crate) fn closure_by_target_op<'a>(
         })),
         (Discard, Delta(d)) => {
             if d.old_file == d.new_file {
-                cmd_arg(git::checkout_cmd, &d.old_file)
+                cmd_arg(git::checkout_file_cmd, &d.old_file)
             } else {
                 // TODO
                 None
@@ -295,6 +296,8 @@ pub(crate) fn closure_by_target_op<'a>(
             h.format_patch().into_bytes(),
             git::discard_unstaged_patch_cmd,
         ),
+        (Checkout, Ref(r)) => cmd_arg(git::checkout_ref_cmd, &r),
+        (Checkout, _) => None,
     }
 }
 
@@ -370,4 +373,9 @@ fn subscreen_arg(
 fn goto_log_screen(screens: &mut Vec<Screen>) {
     screens.drain(1..);
     screens.push(screen::log::create(vec![]));
+}
+
+fn goto_refs_screen(screens: &mut Vec<Screen>) {
+    screens.drain(1..);
+    screens.push(screen::show_refs::create());
 }

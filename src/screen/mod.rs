@@ -9,6 +9,7 @@ use std::{borrow::Cow, collections::HashSet};
 pub(crate) mod diff;
 pub(crate) mod log;
 pub(crate) mod show;
+pub(crate) mod show_refs;
 pub(crate) mod status;
 
 pub(crate) struct Screen {

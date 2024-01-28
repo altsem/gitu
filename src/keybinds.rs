@@ -76,6 +76,9 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::ctrl(None, Char('d'), HalfPageDown),
     // Help
     Keybind::nomod(None, Char('h'), Transient(Help)),
+    // Branch
+    Keybind::nomod(None, Char('b'), Transient(Branch)),
+    Keybind::nomod(Branch, Char('b'), Target(Checkout)),
     // Commit
     Keybind::nomod(None, Char('c'), Transient(TransientOp::Commit)),
     Keybind::nomod(TransientOp::Commit, Char('c'), Op::Commit),
@@ -99,6 +102,8 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Rebase, Char('a'), RebaseAbort),
     Keybind::nomod(Rebase, Char('c'), RebaseContinue),
     Keybind::nomod(Rebase, Char('f'), Target(RebaseAutosquash)),
+    // Show refs
+    Keybind::nomod(None, Char('y'), ShowRefs),
     // Discard
     Keybind::shift(None, Char('K'), Transient(TransientOp::Discard)),
     Keybind::nomod(TransientOp::Discard, Char('y'), Target(TargetOp::Discard)),
@@ -127,6 +132,7 @@ pub(crate) enum Op {
     LogCurrent,
     RebaseAbort,
     RebaseContinue,
+    ShowRefs,
     Target(TargetOp),
 }
 
@@ -134,6 +140,7 @@ pub(crate) enum Op {
 pub(crate) enum TransientOp {
     Any,
     None,
+    Branch,
     Commit,
     Discard,
     Fetch,
@@ -146,6 +153,7 @@ pub(crate) enum TransientOp {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TargetOp {
+    Checkout,
     CommitFixup,
     Show,
     Stage,
@@ -158,6 +166,7 @@ pub(crate) enum TargetOp {
 impl TargetOp {
     pub(crate) fn list_all() -> impl Iterator<Item = &'static TargetOp> {
         [
+            &TargetOp::Checkout,
             &TargetOp::CommitFixup,
             &TargetOp::Show,
             &TargetOp::Stage,
