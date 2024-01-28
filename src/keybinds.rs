@@ -99,11 +99,14 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Rebase, Char('a'), RebaseAbort),
     Keybind::nomod(Rebase, Char('c'), RebaseContinue),
     Keybind::nomod(Rebase, Char('f'), Target(RebaseAutosquash)),
+    // Discard
+    Keybind::shift(None, Char('K'), Transient(TransientOp::Discard)),
+    Keybind::nomod(TransientOp::Discard, Char('y'), Target(TargetOp::Discard)),
+    Keybind::nomod(TransientOp::Discard, Char('n'), Quit),
     // Target actions
     Keybind::nomod(None, Enter, Target(Show)),
     Keybind::nomod(None, Char('s'), Target(Stage)),
     Keybind::nomod(None, Char('u'), Target(Unstage)),
-    Keybind::nomod(None, Char('x'), Target(Discard)),
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -132,6 +135,7 @@ pub(crate) enum TransientOp {
     Any,
     None,
     Commit,
+    Discard,
     Fetch,
     Help,
     Log,
@@ -158,9 +162,9 @@ impl TargetOp {
             &TargetOp::Show,
             &TargetOp::Stage,
             &TargetOp::Unstage,
-            &RebaseAutosquash,
-            &RebaseInteractive,
-            &Discard,
+            &TargetOp::RebaseAutosquash,
+            &TargetOp::RebaseInteractive,
+            &TargetOp::Discard,
         ]
         .into_iter()
     }

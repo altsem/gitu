@@ -279,7 +279,10 @@ pub(crate) fn closure_by_target_op<'a>(
         (RebaseAutosquash, Ref(r)) => subscreen_arg(git::rebase_autosquash_cmd, r),
         (RebaseAutosquash, _) => None,
         (Discard, Ref(_)) => None,
-        (Discard, File(_)) => None, // TODO
+        (Discard, File(f)) => Some(Box::new(|_term, state| {
+            std::fs::remove_file(f.clone()).expect("Error removing file");
+            state.screen_mut().update();
+        })),
         (Discard, Delta(d)) => {
             if d.old_file == d.new_file {
                 cmd_arg(git::checkout_cmd, &d.old_file)
