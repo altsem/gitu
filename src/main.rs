@@ -9,6 +9,7 @@ mod screen;
 mod status;
 mod theme;
 mod ui;
+mod util;
 
 use clap::Parser;
 use command::IssuedCommand;
@@ -113,34 +114,13 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     let size = terminal::size()?;
     let screens = match args.command {
         Some(cli::Commands::Show { git_show_args }) => {
-            vec![Screen::new(
-                size,
-                Box::new(move || {
-                    screen::show::create(
-                        &git_show_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
-                    )
-                }),
-            )]
+            vec![screen::show::create(size, &git_show_args)]
         }
         Some(cli::Commands::Log { git_log_args }) => {
-            vec![Screen::new(
-                size,
-                Box::new(move || {
-                    screen::log::create(
-                        &git_log_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
-                    )
-                }),
-            )]
+            vec![screen::log::create(size, &git_log_args)]
         }
         Some(cli::Commands::Diff { git_diff_args }) => {
-            vec![Screen::new(
-                size,
-                Box::new(move || {
-                    screen::diff::create(
-                        &git_diff_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
-                    )
-                }),
-            )]
+            vec![screen::diff::create(size, &git_diff_args)]
         }
         None => vec![Screen::new(size, Box::new(screen::status::create))],
     };
@@ -307,14 +287,9 @@ pub(crate) fn closure_by_target_op<'a>(
 
 fn goto_show_screen(r: String) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
     Some(Box::new(move |_terminal, state| {
-        let reference: &str = &r;
         let screens: &mut Vec<Screen> = &mut state.screens;
         let size = terminal::size().expect("Error reading terminal size");
-        let ref_clone = reference.to_string();
-        screens.push(Screen::new(
-            size,
-            Box::new(move || screen::show::create(&[&ref_clone])),
-        ));
+        screens.push(screen::show::create(size, &[r.clone()]));
     }))
 }
 
@@ -384,5 +359,5 @@ fn subscreen_arg(
 fn goto_log_screen(screens: &mut Vec<Screen>) {
     let size = terminal::size().expect("Error reading terminal size");
     screens.drain(1..);
-    screens.push(Screen::new(size, Box::new(|| screen::log::create(&[]))));
+    screens.push(screen::log::create(size, &[]));
 }
