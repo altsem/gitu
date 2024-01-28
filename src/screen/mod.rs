@@ -205,11 +205,8 @@ impl<'a> Screen {
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut highlight_depth = None;
-
-        for (line_i, (item_i, item, line)) in self
-            .ui_lines
+        for (line_i, (item_i, item, line)) in self.ui_lines[(self.scroll as usize)..]
             .iter()
-            .skip(self.scroll as usize)
             .take(area.height as usize)
             .enumerate()
         {
