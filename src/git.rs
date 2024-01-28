@@ -43,7 +43,7 @@ pub(crate) fn log(args: &[&str]) -> String {
 }
 
 pub(crate) fn stage_file_cmd(file: &str) -> Command {
-    git(&["add", &file])
+    git(&["add", file])
 }
 pub(crate) fn stage_patch_cmd() -> Command {
     git(&["apply", "--cached"])
@@ -53,6 +53,9 @@ pub(crate) fn unstage_file_cmd(file: &str) -> Command {
 }
 pub(crate) fn unstage_patch_cmd() -> Command {
     git(&["apply", "--cached", "--reverse"])
+}
+pub(crate) fn discard_unstaged_patch_cmd() -> Command {
+    git(&["apply", "--reverse"])
 }
 pub(crate) fn commit_cmd() -> Command {
     git(&["commit"])
@@ -92,6 +95,10 @@ pub(crate) fn rebase_continue_cmd() -> Command {
 }
 pub(crate) fn rebase_abort_cmd() -> Command {
     git(&["rebase", "--abort"])
+}
+
+pub(crate) fn checkout_cmd(file: &str) -> Command {
+    git(&["checkout", "--", file])
 }
 
 fn git(args: &[&str]) -> Command {
