@@ -1,3 +1,4 @@
+use crossterm::terminal;
 use ratatui::{prelude::*, widgets::Widget};
 
 use crate::theme::CURRENT_THEME;
@@ -21,7 +22,9 @@ pub(crate) struct Screen {
 }
 
 impl<'a> Screen {
-    pub(crate) fn new(size: (u16, u16), refresh_items: Box<dyn Fn() -> Vec<Item>>) -> Self {
+    pub(crate) fn new(refresh_items: Box<dyn Fn() -> Vec<Item>>) -> Self {
+        let size = terminal::size().expect("Error reading terminal size");
+
         let items = refresh_items();
 
         let mut screen = Self {

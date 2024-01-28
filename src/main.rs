@@ -15,9 +15,7 @@ use clap::Parser;
 use command::IssuedCommand;
 use crossterm::{
     event::{self, Event, KeyEventKind},
-    terminal::{
-        self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
-    },
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 use items::{Item, TargetData};
@@ -111,18 +109,17 @@ fn main() -> io::Result<()> {
 }
 
 fn create_initial_state(args: cli::Cli) -> io::Result<State> {
-    let size = terminal::size()?;
     let screens = match args.command {
         Some(cli::Commands::Show { git_show_args }) => {
-            vec![screen::show::create(size, &git_show_args)]
+            vec![screen::show::create(git_show_args)]
         }
         Some(cli::Commands::Log { git_log_args }) => {
-            vec![screen::log::create(size, &git_log_args)]
+            vec![screen::log::create(git_log_args)]
         }
         Some(cli::Commands::Diff { git_diff_args }) => {
-            vec![screen::diff::create(size, &git_diff_args)]
+            vec![screen::diff::create(git_diff_args)]
         }
-        None => vec![Screen::new(size, Box::new(screen::status::create))],
+        None => vec![screen::status::create()],
     };
 
     Ok(State {
@@ -286,9 +283,7 @@ pub(crate) fn closure_by_target_op<'a>(
 
 fn goto_show_screen(r: String) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
     Some(Box::new(move |_terminal, state| {
-        let screens: &mut Vec<Screen> = &mut state.screens;
-        let size = terminal::size().expect("Error reading terminal size");
-        screens.push(screen::show::create(size, &[r.clone()]));
+        state.screens.push(screen::show::create(vec![r.clone()]));
     }))
 }
 
@@ -356,7 +351,6 @@ fn subscreen_arg(
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) {
-    let size = terminal::size().expect("Error reading terminal size");
     screens.drain(1..);
-    screens.push(screen::log::create(size, &[]));
+    screens.push(screen::log::create(vec![]));
 }
