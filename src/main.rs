@@ -152,7 +152,6 @@ fn run_app(terminal: &mut Terminal, state: &mut State) -> Result<(), io::Error> 
 }
 
 fn handle_events(terminal: &mut Terminal, state: &mut State) -> io::Result<()> {
-    // TODO Won't need to poll all the time if command outputs were handled async
     if !event::poll(std::time::Duration::from_millis(100))? {
         return Ok(());
     }
