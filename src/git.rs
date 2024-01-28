@@ -6,6 +6,7 @@ use crate::{
 use std::process::Command;
 
 // TODO Check for.git/index.lock and block if it exists
+// TODO Use only plumbing commands
 
 pub(crate) fn status() -> Status {
     Status::parse(&process::run(&["git", "status", "--porcelain", "--branch"]).0)
@@ -21,6 +22,10 @@ pub(crate) fn show(args: &[&str]) -> Diff {
 
 pub(crate) fn show_summary(args: &[&str]) -> String {
     process::run(&[&["git", "show", "--summary", "--decorate", "--color"], args].concat()).0
+}
+
+pub(crate) fn diff(args: &[&str]) -> Diff {
+    Diff::parse(&process::run(&[&["git", "diff"], args].concat()).0)
 }
 
 pub(crate) fn diff_staged() -> Diff {

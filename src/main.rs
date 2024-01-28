@@ -121,6 +121,16 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
                 }),
             )]
         }
+        Some(cli::Commands::Diff { git_diff_args }) => {
+            vec![Screen::new(
+                size,
+                Box::new(move || {
+                    screen::diff::create(
+                        &git_diff_args.iter().map(|s| s.as_ref()).collect::<Vec<_>>(),
+                    )
+                }),
+            )]
+        }
         None => vec![Screen::new(size, Box::new(screen::status::create))],
     };
 

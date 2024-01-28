@@ -12,4 +12,5 @@ pub(crate) struct Cli {
 pub(crate) enum Commands {
     Show { git_show_args: Vec<String> },
     Log { git_log_args: Vec<String> },
+    Diff { git_diff_args: Vec<String> },
 }

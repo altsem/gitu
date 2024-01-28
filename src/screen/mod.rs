@@ -5,6 +5,7 @@ use crate::theme::CURRENT_THEME;
 use super::Item;
 use std::{borrow::Cow, collections::HashSet};
 
+pub(crate) mod diff;
 pub(crate) mod log;
 pub(crate) mod show;
 pub(crate) mod status;
@@ -44,6 +45,10 @@ impl<'a> Screen {
     }
 
     fn scroll_fit_start(&mut self) {
+        if self.items.is_empty() {
+            return;
+        }
+
         let start_line = self
             .collapsed_lines_items_iter()
             .find(|(_line, i, item, _lc)| self.selected_or_direct_ancestor(item, i))
@@ -61,6 +66,10 @@ impl<'a> Screen {
     }
 
     fn scroll_fit_end(&mut self) {
+        if self.items.is_empty() {
+            return;
+        }
+
         let depth = self.items[self.cursor].depth;
         let last = 1 + self
             .collapsed_lines_items_iter()
