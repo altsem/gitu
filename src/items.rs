@@ -1,8 +1,4 @@
 use crate::diff;
-use crate::keybinds;
-use crate::keybinds::Op;
-use crate::keybinds::TransientOp;
-use crate::list_target_ops;
 use crate::process;
 use crate::theme;
 use ansi_to_tui::IntoText;
@@ -20,7 +16,6 @@ pub(crate) struct Item {
     pub(crate) section: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
-    pub(crate) key_hint: Option<String>,
     pub(crate) target_data: Option<TargetData>,
 }
 
@@ -51,7 +46,6 @@ pub(crate) fn create_diff_items<'a>(
             ),
             section: true,
             depth: *depth,
-            key_hint: Some(key_hint(&target_data)),
             target_data: Some(target_data),
             ..Default::default()
         })
@@ -75,7 +69,6 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
         ),
         section: true,
         depth: depth + 1,
-        key_hint: Some(key_hint(&target_data)),
         target_data: Some(target_data),
         ..Default::default()
     })
@@ -90,17 +83,6 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
             ..Default::default()
         }
     }])
-}
-
-fn key_hint(target_data: &TargetData) -> String {
-    list_target_ops(target_data)
-        .into_iter()
-        .filter_map(|target_op| {
-            keybinds::display_key(TransientOp::None, Op::Target(target_op))
-                .map(|key| format!("{} {:?}", key, target_op))
-        })
-        .collect::<Vec<_>>()
-        .join("  ")
 }
 
 fn format_diff_hunk(hunk: &Hunk) -> String {
@@ -135,7 +117,6 @@ pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
                 .into_text()
                 .expect("Error creating log text"),
             depth: 1,
-            key_hint: Some(key_hint(&target_data)),
             target_data: Some(target_data),
             ..Default::default()
         }

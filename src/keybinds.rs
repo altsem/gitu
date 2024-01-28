@@ -142,8 +142,15 @@ pub(crate) enum TargetOp {
 }
 
 impl TargetOp {
-    pub(crate) fn list_all() -> impl Iterator<Item = TargetOp> {
-        [TargetOp::Show, TargetOp::Stage, TargetOp::Unstage].into_iter()
+    pub(crate) fn list_all() -> impl Iterator<Item = &'static TargetOp> {
+        [
+            &TargetOp::Show,
+            &TargetOp::Stage,
+            &TargetOp::Unstage,
+            &CopyToClipboard,
+            &RebaseInteractive,
+        ]
+        .into_iter()
     }
 }
 
@@ -157,35 +164,10 @@ pub(crate) fn op_of_key_event(pending: TransientOp, key: event::KeyEvent) -> Opt
         .map(|keybind| keybind.op)
 }
 
-pub(crate) fn list_transient_binds(op: &TransientOp) -> impl Iterator<Item = &Keybind> {
-    let expected = if op == &Help { None } else { *op };
+pub(crate) fn list(pending: &TransientOp) -> impl Iterator<Item = &Keybind> {
+    let expected = if pending == &Help { None } else { *pending };
 
     KEYBINDS
         .iter()
         .filter(move |keybind| keybind.transient == expected)
-}
-
-pub(crate) fn display_key(pending: TransientOp, op: Op) -> Option<String> {
-    KEYBINDS
-        .iter()
-        .find(|keybind| keybind.transient == pending && keybind.op == op)
-        .map(|keybind| match keybind.key {
-            KeyCode::Enter => "ret".to_string(),
-            KeyCode::Left => "←".to_string(),
-            KeyCode::Right => "→".to_string(),
-            KeyCode::Up => "↑".to_string(),
-            KeyCode::Down => "↓".to_string(),
-            KeyCode::Tab => "tab".to_string(),
-            KeyCode::Delete => "del".to_string(),
-            KeyCode::Insert => "ins".to_string(),
-            KeyCode::F(n) => format!("F{}", n),
-            KeyCode::Char(c) => if keybind.mods.contains(KeyModifiers::SHIFT) {
-                c.to_ascii_uppercase()
-            } else {
-                c
-            }
-            .to_string(),
-            KeyCode::Esc => "esc".to_string(),
-            _ => "???".to_string(),
-        })
 }

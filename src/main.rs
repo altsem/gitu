@@ -202,7 +202,13 @@ fn handle_op(
     state: &mut State,
     key: event::KeyEvent,
 ) -> Result<(), io::Error> {
-    if let Some(op) = keybinds::op_of_key_event(state.pending_transient_op, key) {
+    let pending = if state.pending_transient_op == TransientOp::Help {
+        TransientOp::None
+    } else {
+        state.pending_transient_op
+    };
+
+    if let Some(op) = keybinds::op_of_key_event(pending, key) {
         use Op::*;
         let was_transient = state.pending_transient_op != TransientOp::None;
         state.pending_transient_op = TransientOp::None;
@@ -251,10 +257,10 @@ fn handle_op(
     Ok(())
 }
 
-pub(crate) fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
-    TargetOp::list_all()
-        .filter(|target_op| closure_by_target_op(target, target_op).is_some())
-        .collect()
+pub(crate) fn list_target_ops<'a>(
+    target: &'a TargetData,
+) -> impl Iterator<Item = &'static TargetOp> + 'a {
+    TargetOp::list_all().filter(|target_op| closure_by_target_op(target, target_op).is_some())
 }
 
 type OpClosure<'a> = Box<dyn FnMut(&mut Terminal, &mut State) + 'a>;
