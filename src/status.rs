@@ -24,16 +24,16 @@ pub(crate) struct StatusFile {
 
 impl StatusFile {
     pub fn is_unmerged(&self) -> bool {
-        match self.status_code {
+        matches!(
+            self.status_code,
             ['D', 'D']
-            | ['A', 'U']
-            | ['U', 'D']
-            | ['U', 'A']
-            | ['D', 'U']
-            | ['A', 'A']
-            | ['U', 'U'] => true,
-            _ => false,
-        }
+                | ['A', 'U']
+                | ['U', 'D']
+                | ['U', 'A']
+                | ['D', 'U']
+                | ['A', 'A']
+                | ['U', 'U']
+        )
     }
 
     pub fn is_untracked(&self) -> bool {

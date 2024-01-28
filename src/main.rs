@@ -218,8 +218,8 @@ fn handle_op(
             PushRemote => state.issue_command(&[], git::push_cmd())?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
-                    if let Some(mut function) = function_by_target_op(act, target_op) {
-                        function(terminal, state);
+                    if let Some(mut closure) = closure_by_target_op(act, &target_op) {
+                        closure(terminal, state);
                     }
                 }
             }
@@ -231,20 +231,16 @@ fn handle_op(
 
 pub(crate) fn list_target_ops(target: &TargetData) -> Vec<TargetOp> {
     TargetOp::list_all()
-        .filter_map(|target_op| {
-            if function_by_target_op(target, target_op).is_some() {
-                Some(target_op)
-            } else {
-                None
-            }
-        })
+        .filter(|target_op| closure_by_target_op(target, target_op).is_some())
         .collect()
 }
 
-pub(crate) fn function_by_target_op<'a>(
+type OpClosure<'a> = Box<dyn FnMut(&mut Terminal, &mut State) + 'a>;
+
+pub(crate) fn closure_by_target_op<'a>(
     target: &'a TargetData,
-    target_op: TargetOp,
-) -> Option<Box<dyn FnMut(&mut Terminal, &mut State) + 'a>> {
+    target_op: &TargetOp,
+) -> Option<OpClosure<'a>> {
     match (target_op, target) {
         (TargetOp::Show, TargetData::Ref(r)) => Some(Box::new(move |_terminal, state| {
             goto_show_screen(r, &mut state.screens);
