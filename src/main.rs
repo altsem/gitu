@@ -19,7 +19,6 @@ use crossterm::{
     },
     ExecutableCommand,
 };
-use diff::Hunk;
 use items::{Item, TargetData};
 use keybinds::{Op, TargetOp, TransientOp};
 use ratatui::prelude::CrosstermBackend;
@@ -281,172 +280,120 @@ pub(crate) fn closure_by_target_op<'a>(
     target: &'a TargetData,
     target_op: &TargetOp,
 ) -> Option<OpClosure<'a>> {
+    use TargetData::*;
+    use TargetOp::*;
+
     match (target_op, target) {
-        (TargetOp::Show, TargetData::Ref(r)) => Some(Box::new(move |_terminal, state| {
-            goto_show_screen(r, &mut state.screens);
-        })),
-        (TargetOp::Show, TargetData::File(u)) => {
-            let untracked = u.clone();
-            Some(Box::new(move |terminal, state| {
-                state
-                    .issue_subscreen_command(terminal, editor_cmd(&untracked, None))
-                    .expect("Error opening editor");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Show, TargetData::Delta(d)) => {
-            let delta = d.clone();
-            Some(Box::new(move |terminal, state| {
-                state
-                    .issue_subscreen_command(terminal, editor_cmd(&delta.new_file, None))
-                    .expect("Error opening editor");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Show, TargetData::Hunk(h)) => {
-            let hunk = h.clone();
-            Some(Box::new(move |terminal, state| {
-                state
-                    .issue_subscreen_command(terminal, editor_cmd(&hunk.new_file, Some(&hunk)))
-                    .expect("Error opening editor");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Stage, TargetData::Ref(_)) => None,
-        (TargetOp::Stage, TargetData::File(u)) => {
-            let untracked = u.clone();
-            Some(Box::new(move |_terminal, state| {
-                state
-                    .issue_command(&[], git::stage_file_cmd(&untracked))
-                    .expect("Error staging file");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Stage, TargetData::Delta(d)) => {
-            let delta = d.clone();
-            Some(Box::new(move |_terminal, state| {
-                state
-                    .issue_command(&[], git::stage_file_cmd(&delta.new_file))
-                    .expect("Error staging file");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Stage, TargetData::Hunk(h)) => {
-            let hunk = h.clone();
-            Some(Box::new(move |_terminal, state| {
-                state
-                    .issue_command(hunk.format_patch().as_bytes(), git::stage_patch_cmd())
-                    .expect("Error staging hunk");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Unstage, TargetData::Ref(_)) => None,
-        (TargetOp::Unstage, TargetData::File(_)) => None,
-        (TargetOp::Unstage, TargetData::Delta(d)) => {
-            let delta = d.clone();
-            Some(Box::new(move |_terminal, state| {
-                state
-                    .issue_command(&[], git::unstage_file_cmd(&delta))
-                    .expect("Error unstaging file");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::Unstage, TargetData::Hunk(h)) => {
-            let hunk = h.clone();
-            Some(Box::new(move |_terminal, state| {
-                state
-                    .issue_command(hunk.format_patch().as_bytes(), git::unstage_patch_cmd())
-                    .expect("Error unstaging hunk");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::CopyToClipboard, TargetData::Ref(r)) => {
-            let reference = r.clone();
-            Some(Box::new(move |_terminal, _state| {
-                cli_clipboard::set_contents(reference.to_string())
-                    .expect("Couldn't write to clipboard")
-            }))
-        }
-        (TargetOp::CopyToClipboard, TargetData::File(u)) => {
-            let untracked = u.clone();
-            Some(Box::new(move |_terminal, _state| {
-                cli_clipboard::set_contents(untracked.clone()).expect("Couldn't write to clipboard")
-            }))
-        }
-        (TargetOp::CopyToClipboard, TargetData::Delta(d)) => {
-            let file = d.new_file.clone();
-            Some(Box::new(move |_terminal, _state| {
-                cli_clipboard::set_contents(file.clone()).expect("Couldn't write to clipboard")
-            }))
-        }
-        (TargetOp::CopyToClipboard, TargetData::Hunk(h)) => {
-            let patch = h.format_patch();
-            Some(Box::new(move |_terminal, _state| {
-                cli_clipboard::set_contents(patch.clone()).expect("Couldn't write to clipboard")
-            }))
-        }
-        (TargetOp::RebaseInteractive, TargetData::Ref(r)) => {
-            Some(Box::new(move |terminal, state| {
-                state
-                    .issue_subscreen_command(terminal, git::rebase_interactive_cmd(r))
-                    .expect("Error rebasing");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::RebaseInteractive, TargetData::File(_)) => None,
-        (TargetOp::RebaseInteractive, TargetData::Delta(_)) => None,
-        (TargetOp::RebaseInteractive, TargetData::Hunk(_)) => None,
-        (TargetOp::CommitFixup, TargetData::Ref(r)) => Some(Box::new(move |terminal, state| {
-            state
-                .issue_subscreen_command(terminal, git::commit_fixup_cmd(r))
-                .expect("Error rebasing");
-            state.screen_mut().update();
-        })),
-        (TargetOp::CommitFixup, TargetData::File(_)) => None,
-        (TargetOp::CommitFixup, TargetData::Delta(_)) => None,
-        (TargetOp::CommitFixup, TargetData::Hunk(_)) => None,
-        (TargetOp::RebaseAutosquash, TargetData::Ref(r)) => {
-            Some(Box::new(move |terminal, state| {
-                state
-                    .issue_subscreen_command(terminal, git::rebase_autosquash_cmd(r))
-                    .expect("Error rebasing");
-                state.screen_mut().update();
-            }))
-        }
-        (TargetOp::RebaseAutosquash, TargetData::File(_)) => None,
-        (TargetOp::RebaseAutosquash, TargetData::Delta(_)) => None,
-        (TargetOp::RebaseAutosquash, TargetData::Hunk(_)) => None,
+        (Show, Ref(r)) => goto_show_screen(r.clone()),
+        (Show, File(u)) => editor(u.clone(), None),
+        (Show, Delta(d)) => editor(d.new_file.clone(), None),
+        (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.new_start)),
+        (Stage, Ref(_)) => None,
+        (Stage, File(u)) => issue_command_arg(git::stage_file_cmd, &u),
+        (Stage, Delta(d)) => issue_command_arg(git::stage_file_cmd, &d.new_file),
+        (Stage, Hunk(h)) => issue_command(h.format_patch().into_bytes(), git::stage_patch_cmd),
+        (Unstage, Ref(_)) => None,
+        (Unstage, File(_)) => None,
+        (Unstage, Delta(d)) => issue_command_arg(git::unstage_file_cmd, &d.new_file),
+        (Unstage, Hunk(h)) => issue_command(h.format_patch().into_bytes(), git::unstage_patch_cmd),
+        (CopyToClipboard, Ref(r)) => copy_to_clipboard(r),
+        (CopyToClipboard, File(u)) => copy_to_clipboard(u),
+        (CopyToClipboard, Delta(d)) => copy_to_clipboard(&d.new_file),
+        (CopyToClipboard, Hunk(h)) => copy_to_clipboard(&h.format_patch()),
+        (RebaseInteractive, Ref(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
+        (RebaseInteractive, _) => None,
+        (CommitFixup, Ref(r)) => subscreen_arg(git::commit_fixup_cmd, r),
+        (CommitFixup, _) => None,
+        (RebaseAutosquash, Ref(r)) => subscreen_arg(git::rebase_autosquash_cmd, r),
+        (RebaseAutosquash, _) => None,
     }
 }
 
-fn goto_show_screen(reference: &str, screens: &mut Vec<Screen>) {
-    let size = terminal::size().expect("Error reading terminal size");
-    let ref_clone = reference.to_string();
-    screens.push(Screen::new(
-        size,
-        Box::new(move || screen::show::create(&[&ref_clone])),
-    ));
+fn goto_show_screen(r: String) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+    Some(Box::new(move |_terminal, state| {
+        let reference: &str = &r;
+        let screens: &mut Vec<Screen> = &mut state.screens;
+        let size = terminal::size().expect("Error reading terminal size");
+        let ref_clone = reference.to_string();
+        screens.push(Screen::new(
+            size,
+            Box::new(move || screen::show::create(&[&ref_clone])),
+        ));
+    }))
+}
+
+fn editor(file: String, line: Option<u32>) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+    Some(Box::new(move |terminal, state| {
+        let file: &str = &file;
+        let editor = std::env::var("EDITOR").expect("EDITOR not set");
+        let mut cmd = Command::new(editor.clone());
+        let args = match line {
+            Some(line) => match editor.as_str() {
+                "vi" | "vim" | "nvim" | "nano" => {
+                    vec![format!("+{}", line), file.to_string()]
+                }
+                _ => vec![format!("{}:{}", file, line)],
+            },
+            None => vec![file.to_string()],
+        };
+
+        cmd.args(args);
+
+        state
+            .issue_subscreen_command(terminal, cmd)
+            .expect("Error opening editor");
+
+        state.screen_mut().update();
+    }))
+}
+
+fn issue_command(
+    input: Vec<u8>,
+    command: fn() -> Command,
+) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+    Some(Box::new(move |_terminal, state| {
+        state
+            .issue_command(&input, command())
+            .expect("Error unstaging hunk");
+        state.screen_mut().update();
+    }))
+}
+
+fn issue_command_arg(
+    command: fn(&str) -> Command,
+    arg: &String,
+) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+    let arg_clone = arg.clone();
+    Some(Box::new(move |_terminal, state| {
+        state
+            .issue_command(&[], command(&arg_clone))
+            .expect("Error unstaging hunk");
+        state.screen_mut().update();
+    }))
+}
+
+fn copy_to_clipboard(content: &String) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+    let content_clone = content.clone();
+    Some(Box::new(move |_terminal, _state| {
+        cli_clipboard::set_contents(content_clone.clone()).expect("Couldn't write to clipboard")
+    }))
+}
+
+fn subscreen_arg(
+    command: fn(&str) -> Command,
+    arg: &String,
+) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+    let arg_clone = arg.clone();
+    Some(Box::new(move |terminal, state| {
+        state
+            .issue_subscreen_command(terminal, command(&arg_clone))
+            .expect("Error issuing command");
+        state.screen_mut().update();
+    }))
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) {
     let size = terminal::size().expect("Error reading terminal size");
     screens.drain(1..);
     screens.push(Screen::new(size, Box::new(|| screen::log::create(&[]))));
-}
-
-fn editor_cmd(delta: &str, maybe_hunk: Option<&Hunk>) -> Command {
-    let editor = std::env::var("EDITOR").expect("EDITOR not set");
-    let mut cmd = Command::new(editor.clone());
-    let args = match maybe_hunk {
-        Some(hunk) => match editor.as_str() {
-            "vi" | "vim" | "nvim" | "nano" => {
-                vec![format!("+{}", hunk.new_start), delta.to_string()]
-            }
-            _ => vec![format!("{}:{}", delta, hunk.new_start)],
-        },
-        None => vec![delta.to_string()],
-    };
-
-    cmd.args(args);
-    cmd
 }

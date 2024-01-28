@@ -65,9 +65,9 @@ pub(crate) fn stage_patch_cmd() -> Command {
     cmd
 }
 
-pub(crate) fn unstage_file_cmd(delta: &diff::Delta) -> Command {
+pub(crate) fn unstage_file_cmd(file: &str) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args(["restore", "--staged", &delta.new_file]);
+    cmd.args(["restore", "--staged", file]);
     cmd
 }
 
