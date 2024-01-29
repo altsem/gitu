@@ -112,7 +112,6 @@ fn parse_hunk(
         }
     }
 
-    
     Hunk {
         file_header: file_header.to_string(),
         old_file: old_file.to_string(),
@@ -205,12 +204,7 @@ impl Hunk {
     }
 
     pub fn format_patch(&self) -> String {
-        format!(
-            "{}{}\n{}",
-            strip_ansi_escapes::strip_str(&self.file_header),
-            strip_ansi_escapes::strip_str(self.header()),
-            strip_ansi_escapes::strip_str(&self.content)
-        )
+        format!("{}{}\n{}", &self.file_header, self.header(), &self.content)
     }
 }
 
