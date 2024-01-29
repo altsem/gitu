@@ -53,6 +53,8 @@ pub(crate) fn show_refs() -> Vec<(String, String, String)> {
     process::run(&[
         "git",
         "for-each-ref",
+        "--sort",
+        "-creatordate",
         "--format",
         "%(refname) %(upstream) %(subject)",
         "refs/heads",
