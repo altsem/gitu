@@ -41,25 +41,36 @@ impl Keybind {
     }
 
     pub(crate) fn format_key(&self) -> String {
-        match self.key {
-            KeyCode::Enter => "ret".to_string(),
-            KeyCode::Left => "←".to_string(),
-            KeyCode::Right => "→".to_string(),
-            KeyCode::Up => "↑".to_string(),
-            KeyCode::Down => "↓".to_string(),
-            KeyCode::Tab => "tab".to_string(),
-            KeyCode::Delete => "del".to_string(),
-            KeyCode::Insert => "ins".to_string(),
-            KeyCode::F(n) => format!("F{}", n),
-            KeyCode::Char(c) => if self.mods.contains(KeyModifiers::SHIFT) {
-                c.to_ascii_uppercase()
-            } else {
-                c
+        let modifiers = self
+            .mods
+            .iter_names()
+            .map(|(name, _)| match name {
+                "CONTROL" => "C-",
+                "SHIFT" => "",
+                _ => unimplemented!("format_key mod {}", name),
+            })
+            .collect::<String>();
+
+        modifiers
+            + &match self.key {
+                KeyCode::Enter => "ret".to_string(),
+                KeyCode::Left => "←".to_string(),
+                KeyCode::Right => "→".to_string(),
+                KeyCode::Up => "↑".to_string(),
+                KeyCode::Down => "↓".to_string(),
+                KeyCode::Tab => "tab".to_string(),
+                KeyCode::Delete => "del".to_string(),
+                KeyCode::Insert => "ins".to_string(),
+                KeyCode::F(n) => format!("F{}", n),
+                KeyCode::Char(c) => if self.mods.contains(KeyModifiers::SHIFT) {
+                    c.to_ascii_uppercase()
+                } else {
+                    c
+                }
+                .to_string(),
+                KeyCode::Esc => "esc".to_string(),
+                _ => "???".to_string(),
             }
-            .to_string(),
-            KeyCode::Esc => "esc".to_string(),
-            _ => "???".to_string(),
-        }
     }
 }
 
