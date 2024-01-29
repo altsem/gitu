@@ -14,6 +14,8 @@ pub struct Theme {
     pub dim_highlight: Color,
     pub command: Color,
     pub hotkey: Color,
+    pub branch: Color,
+    pub remote: Color,
 }
 
 // https://github.com/sainnhe/gruvbox-material-vscode
@@ -27,6 +29,8 @@ pub const DEFAULT_THEME: Theme = Theme {
     dim_highlight: Color::Rgb(0x2a, 0x28, 0x27),
     command: Color::Rgb(0x7d, 0xae, 0xa3),
     hotkey: Color::Rgb(0xd3, 0x86, 0x9b),
+    branch: Color::Rgb(0x7d, 0xae, 0xa3),
+    remote: Color::Rgb(0xd3, 0x86, 0x9b),
 };
 
 // pub const BASE16_THEME: Theme = Theme {
