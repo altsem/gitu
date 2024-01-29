@@ -64,7 +64,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     iter::once(Item {
         id: hunk.format_patch().into(),
         display: Text::styled(
-            hunk.display_header(),
+            hunk.header(),
             Style::new().fg(theme::CURRENT_THEME.hunk_header),
         ),
         section: true,
@@ -92,10 +92,15 @@ fn format_diff_hunk(hunk: &Hunk) -> String {
             content.as_bytes(),
             &[
                 "delta",
+                "--color-only",
                 &format!("-w {}", crossterm::terminal::size().unwrap().0),
             ],
         )
         .0
+        .lines()
+        .skip(1) // Header is already shown
+        .collect::<Vec<_>>()
+        .join("\n")
     } else {
         hunk.content.clone()
     }
