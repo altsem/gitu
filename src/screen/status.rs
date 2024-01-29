@@ -4,6 +4,7 @@ use crate::{
     items::{self, Item},
     theme,
 };
+use ansi_to_tui::IntoText;
 use ratatui::{
     style::{Color, Style},
     text::Text,
@@ -53,7 +54,9 @@ pub(crate) fn create() -> Screen {
 
         iter::once(Item {
             id: "status".into(),
-            display: Text::raw(git::status_simple()),
+            display: (git::status_simple())
+                .into_text()
+                .expect("Error parsing status ansi"),
             ..Default::default()
         })
         .chain(if untracked.is_empty() {

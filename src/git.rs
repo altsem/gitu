@@ -8,7 +8,9 @@ pub(crate) fn status() -> Status {
     Status::parse(&process::run(&["git", "status", "--porcelain", "--branch"]).0)
 }
 pub(crate) fn status_simple() -> String {
-    process::run(&["git", "status"]).0
+    process::run(&["git", "-c", "color.status=always", "status"])
+        .0
+        .replace("[m", "[0m")
 }
 pub(crate) fn diff_unstaged() -> Diff {
     Diff::parse(&process::run(&["git", "diff"]).0)
@@ -17,7 +19,9 @@ pub(crate) fn show(args: &[&str]) -> Diff {
     Diff::parse(&process::run(&[&["git", "show"], args].concat()).0)
 }
 pub(crate) fn show_summary(args: &[&str]) -> String {
-    process::run(&[&["git", "show", "--summary", "--decorate", "--color"], args].concat()).0
+    process::run(&[&["git", "show", "--summary", "--decorate", "--color"], args].concat())
+        .0
+        .replace("[m", "[0m")
 }
 pub(crate) fn diff(args: &[&str]) -> Diff {
     Diff::parse(&process::run(&[&["git", "diff"], args].concat()).0)
@@ -36,10 +40,13 @@ pub(crate) fn log_recent() -> String {
         "--color",
     ])
     .0
+    .replace("[m", "[0m")
 }
 
 pub(crate) fn log(args: &[&str]) -> String {
-    process::run(&[&["git", "log", "--oneline", "--decorate", "--color"], args].concat()).0
+    process::run(&[&["git", "log", "--oneline", "--decorate", "--color"], args].concat())
+        .0
+        .replace("[m", "[0m")
 }
 
 pub(crate) fn show_refs() -> Vec<(String, String, String)> {
