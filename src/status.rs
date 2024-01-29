@@ -9,7 +9,7 @@ pub(crate) struct Status {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct BranchStatus {
-    pub local: String,
+    pub local: Option<String>,
     pub remote: Option<String>,
     pub ahead: u32,
     pub behind: u32,
@@ -53,11 +53,12 @@ impl Status {
         let mut behind = 0;
         let mut files = vec![];
 
-        for line in StatusParser::parse(Rule::lines, input).expect("Error parsing status") {
+        for line in StatusParser::parse(Rule::status_lines, input).expect("Error parsing status") {
             match line.as_rule() {
                 Rule::branch_status => {
                     for pair in line.into_inner() {
                         match pair.as_rule() {
+                            Rule::no_branch => (),
                             Rule::local => local = Some(pair.as_str().to_string()),
                             Rule::remote => remote = Some(pair.as_str().to_string()),
                             Rule::ahead => ahead = pair.as_str().parse().unwrap(),
@@ -95,7 +96,7 @@ impl Status {
 
         Self {
             branch_status: BranchStatus {
-                local: local.expect("Error parsing local"),
+                local,
                 remote,
                 ahead,
                 behind,
@@ -117,7 +118,7 @@ mod tests {
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
-                    local: "master".to_string(),
+                    local: Some("master".to_string()),
                     remote: Some("origin/master".to_string()),
                     ahead: 0,
                     behind: 0
@@ -151,7 +152,7 @@ mod tests {
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
-                    local: "master".to_string(),
+                    local: Some("master".to_string()),
                     remote: Some("origin/master".to_string()),
                     ahead: 1,
                     behind: 0
@@ -169,7 +170,7 @@ mod tests {
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
-                    local: "master".to_string(),
+                    local: Some("master".to_string()),
                     remote: Some("origin/master".to_string()),
                     ahead: 0,
                     behind: 1
@@ -187,7 +188,7 @@ mod tests {
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
-                    local: "master".to_string(),
+                    local: Some("master".to_string()),
                     remote: Some("origin/master".to_string()),
                     ahead: 1,
                     behind: 1
@@ -205,7 +206,7 @@ mod tests {
             Status::parse(input),
             Status {
                 branch_status: BranchStatus {
-                    local: "test.lol".to_string(),
+                    local: Some("test.lol".to_string()),
                     remote: None,
                     ahead: 0,
                     behind: 0
@@ -228,5 +229,21 @@ mod tests {
 ?? src/diff.pest
 "#;
         assert_eq!(Status::parse(input).files.len(), 2);
+    }
+
+    #[test]
+    fn no_branch() {
+        assert_eq!(
+            Status::parse("## HEAD (no branch)\n"),
+            Status {
+                branch_status: BranchStatus {
+                    local: None,
+                    remote: None,
+                    ahead: 0,
+                    behind: 0
+                },
+                files: vec![]
+            }
+        );
     }
 }
