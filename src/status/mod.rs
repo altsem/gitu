@@ -42,7 +42,7 @@ impl StatusFile {
 }
 
 #[derive(Parser)]
-#[grammar = "status.pest"] // relative to src
+#[grammar = "status/status.pest"] // relative to src
 struct StatusParser;
 
 impl Status {

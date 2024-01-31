@@ -19,7 +19,7 @@ impl Display for Diff {
 }
 
 #[derive(Parser)]
-#[grammar = "diff.pest"]
+#[grammar = "diff/diff.pest"]
 struct DiffParser;
 
 impl Diff {
