@@ -266,6 +266,7 @@ pub(crate) fn closure_by_target_op<'a>(
         (Show, Delta(d)) => editor(d.new_file.clone(), None),
         (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.new_start)),
         (Stage, Ref(_)) => None,
+        // FIXME Staging (Unstaging) files only works when ran from root dir
         (Stage, File(u)) => cmd_arg(git::stage_file_cmd, &u),
         (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, &d.new_file),
         (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
