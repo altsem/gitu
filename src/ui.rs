@@ -108,7 +108,7 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
     let mut transient_binds_column = vec![];
     if !transients.is_empty() {
         transient_binds_column.push(Line::styled(
-            "Transient",
+            "Submenu",
             Style::new().fg(CURRENT_THEME.command),
         ));
     }
