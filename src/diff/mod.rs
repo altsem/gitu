@@ -206,6 +206,17 @@ impl Hunk {
     pub fn format_patch(&self) -> String {
         format!("{}{}\n{}", &self.file_header, self.header(), &self.content)
     }
+
+    pub fn first_diff_line(&self) -> u32 {
+        self.content
+            .lines()
+            .enumerate()
+            .filter(|(_, line)| line.starts_with("+") || line.starts_with("-"))
+            .map(|(i, _)| i)
+            .next()
+            .unwrap_or(0) as u32
+            + self.new_start
+    }
 }
 
 impl Display for Hunk {
