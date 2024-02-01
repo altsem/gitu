@@ -38,6 +38,10 @@ impl<'a> Screen {
             collapsed: HashSet::new(),
         };
 
+        // Sets cursor to first selectable item
+        screen.select_next();
+        screen.select_previous();
+
         screen.update_ui_lines();
         screen
     }

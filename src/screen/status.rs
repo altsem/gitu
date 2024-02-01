@@ -57,6 +57,7 @@ pub(crate) fn create() -> Screen {
             display: (git::status_simple())
                 .into_text()
                 .expect("Error parsing status ansi"),
+            unselectable: true,
             ..Default::default()
         })
         .chain(if untracked.is_empty() {
