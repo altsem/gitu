@@ -10,7 +10,7 @@ Requires `git` and [Delta](https://github.com/dandavison/delta) to be on your PA
 ## Install
 ### Using Cargo
 Clone the repo and run:
-`cargo install --path .`
+`cargo install --path . --locked`
 
 ## Hotkeys (WIP)
 | Key     | Action                     |
