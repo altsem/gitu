@@ -31,6 +31,9 @@ type Terminal = ratatui::Terminal<CrosstermBackend<BufWriter<Stderr>>>;
 
 lazy_static::lazy_static! {
     static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
+    static ref GIT_DIR: String = process::run(&["git", "rev-parse", "--show-toplevel"])
+            .0
+            .trim_end().to_string();
 }
 
 struct State {
@@ -266,7 +269,6 @@ pub(crate) fn closure_by_target_op<'a>(
         (Show, Delta(d)) => editor(d.new_file.clone(), None),
         (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.first_diff_line())),
         (Stage, Ref(_)) => None,
-        // FIXME Staging (Unstaging) files only works when ran from root dir
         (Stage, File(u)) => cmd_arg(git::stage_file_cmd, &u),
         (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, &d.new_file),
         (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),

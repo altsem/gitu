@@ -1,4 +1,4 @@
-use crate::{diff::Diff, process, status::Status};
+use crate::{diff::Diff, process, status::Status, GIT_DIR};
 use std::process::Command;
 
 // TODO Check for.git/index.lock and block if it exists
@@ -145,5 +145,6 @@ pub(crate) fn checkout_ref_cmd(reference: &str) -> Command {
 fn git(args: &[&str]) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(args);
+    cmd.current_dir(&*GIT_DIR);
     cmd
 }
