@@ -291,7 +291,7 @@ pub(crate) fn closure_by_target_op<'a>(
             if d.old_file == d.new_file {
                 cmd_arg(git::checkout_file_cmd, &d.old_file)
             } else {
-                // TODO
+                // TODO Discard file move
                 None
             }
         }
