@@ -20,14 +20,12 @@ use crossterm::{
 };
 use items::{Item, TargetData};
 use keybinds::{Op, TargetOp, TransientOp};
-use ratatui::prelude::CrosstermBackend;
+use ratatui::{prelude::*, Terminal};
 use screen::Screen;
 use std::{
-    io::{self, stderr, BufWriter, Stderr},
+    io::{self, stderr, BufWriter},
     process::Command,
 };
-
-type Terminal = ratatui::Terminal<CrosstermBackend<BufWriter<Stderr>>>;
 
 lazy_static::lazy_static! {
     static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
@@ -64,9 +62,9 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn issue_subscreen_command(
+    pub(crate) fn issue_subscreen_command<B: Backend>(
         &mut self,
-        terminal: &mut Terminal,
+        terminal: &mut Terminal<B>,
         command: Command,
     ) -> Result<(), io::Error> {
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
@@ -96,18 +94,38 @@ impl State {
 }
 
 fn main() -> io::Result<()> {
-    let mut state = create_initial_state(cli::Cli::parse())?;
     let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
-
     terminal.hide_cursor()?;
-
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run_app(&mut terminal, &mut state)?;
+    run(cli::Cli::parse(), terminal)?;
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
+    Ok(())
+}
+
+// TODO Rename Cli to Args
+fn run<B: Backend>(args: cli::Cli, mut terminal: Terminal<B>) -> Result<(), io::Error> {
+    let mut state = create_initial_state(args)?;
+
+    let terminal: &mut Terminal<B> = &mut terminal;
+    let state: &mut State = &mut state;
+    while !state.quit {
+        if let Some(_screen) = state.screens.last_mut() {
+            terminal.draw(|frame| ui::ui::<B>(frame, state))?;
+
+            state.handle_command_output();
+        }
+
+        handle_events(terminal, state)?;
+
+        if let Some(screen) = state.screens.last_mut() {
+            screen.clamp_cursor();
+        }
+    }
+
     Ok(())
 }
 
@@ -133,25 +151,7 @@ fn create_initial_state(args: cli::Cli) -> io::Result<State> {
     })
 }
 
-fn run_app(terminal: &mut Terminal, state: &mut State) -> Result<(), io::Error> {
-    while !state.quit {
-        if let Some(_screen) = state.screens.last_mut() {
-            terminal.draw(|frame| ui::ui(frame, state))?;
-
-            state.handle_command_output();
-        }
-
-        handle_events(terminal, state)?;
-
-        if let Some(screen) = state.screens.last_mut() {
-            screen.clamp_cursor();
-        }
-    }
-
-    Ok(())
-}
-
-fn handle_events(terminal: &mut Terminal, state: &mut State) -> io::Result<()> {
+fn handle_events<B: Backend>(terminal: &mut Terminal<B>, state: &mut State) -> io::Result<()> {
     if !event::poll(std::time::Duration::from_millis(100))? {
         return Ok(());
     }
@@ -175,8 +175,8 @@ fn handle_events(terminal: &mut Terminal, state: &mut State) -> io::Result<()> {
     Ok(())
 }
 
-fn handle_op(
-    terminal: &mut Terminal,
+fn handle_op<B: Backend>(
+    terminal: &mut Terminal<B>,
     state: &mut State,
     key: event::KeyEvent,
 ) -> Result<(), io::Error> {
@@ -248,18 +248,18 @@ fn handle_op(
     Ok(())
 }
 
-pub(crate) fn list_target_ops<'a>(
+pub(crate) fn list_target_ops<'a, B: Backend>(
     target: &'a TargetData,
 ) -> impl Iterator<Item = &'static TargetOp> + 'a {
-    TargetOp::list_all().filter(|target_op| closure_by_target_op(target, target_op).is_some())
+    TargetOp::list_all().filter(|target_op| closure_by_target_op::<B>(target, target_op).is_some())
 }
 
-type OpClosure<'a> = Box<dyn FnMut(&mut Terminal, &mut State) + 'a>;
+type OpClosure<'a, B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) + 'a>;
 
-pub(crate) fn closure_by_target_op<'a>(
+pub(crate) fn closure_by_target_op<'a, B: Backend>(
     target: &'a TargetData,
     target_op: &TargetOp,
-) -> Option<OpClosure<'a>> {
+) -> Option<OpClosure<'a, B>> {
     use TargetData::*;
     use TargetOp::*;
 
@@ -304,13 +304,16 @@ pub(crate) fn closure_by_target_op<'a>(
     }
 }
 
-fn goto_show_screen(r: String) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+fn goto_show_screen<B: Backend>(r: String) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
     Some(Box::new(move |_terminal, state| {
         state.screens.push(screen::show::create(vec![r.clone()]));
     }))
 }
 
-fn editor(file: String, line: Option<u32>) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+fn editor<B: Backend>(
+    file: String,
+    line: Option<u32>,
+) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
     Some(Box::new(move |terminal, state| {
         let file: &str = &file;
         let editor = std::env::var("EDITOR").expect("EDITOR not set");
@@ -335,10 +338,10 @@ fn editor(file: String, line: Option<u32>) -> Option<Box<dyn FnMut(&mut Terminal
     }))
 }
 
-fn cmd(
+fn cmd<B: Backend>(
     input: Vec<u8>,
     command: fn() -> Command,
-) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
     Some(Box::new(move |_terminal, state| {
         state
             .issue_command(&input, command())
@@ -347,10 +350,10 @@ fn cmd(
     }))
 }
 
-fn cmd_arg(
+fn cmd_arg<B: Backend>(
     command: fn(&str) -> Command,
     arg: &String,
-) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
     let arg_clone = arg.clone();
     Some(Box::new(move |_terminal, state| {
         state
@@ -360,10 +363,10 @@ fn cmd_arg(
     }))
 }
 
-fn subscreen_arg(
+fn subscreen_arg<B: Backend>(
     command: fn(&str) -> Command,
     arg: &String,
-) -> Option<Box<dyn FnMut(&mut Terminal, &mut State)>> {
+) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
     let arg_clone = arg.clone();
     Some(Box::new(move |terminal, state| {
         state

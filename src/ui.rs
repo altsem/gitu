@@ -23,12 +23,12 @@ enum Popup<'a> {
     Table(Table<'a>),
 }
 
-pub(crate) fn ui(frame: &mut Frame, state: &State) {
+pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
     let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.command {
         let lines = format_command(cmd);
         (lines.len(), command_popup(lines))
     } else if state.pending_transient_op != TransientOp::None {
-        format_keybinds_menu(
+        format_keybinds_menu::<B>(
             &state.pending_transient_op,
             state.screen().get_selected_item(),
         )
@@ -77,7 +77,10 @@ fn format_command<'b>(cmd: &crate::command::IssuedCommand) -> Vec<Line<'b>> {
     .collect::<Vec<Line>>()
 }
 
-fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize, Popup<'b>) {
+fn format_keybinds_menu<'b, B: Backend>(
+    pending: &'b TransientOp,
+    item: &'b Item,
+) -> (usize, Popup<'b>) {
     let non_target_binds = keybinds::list(pending)
         .filter(|keybind| !matches!(keybind.op, keybinds::Op::Target(_)))
         .collect::<Vec<_>>();
@@ -128,7 +131,7 @@ fn format_keybinds_menu<'b>(pending: &'b TransientOp, item: &'b Item) -> (usize,
 
     let mut target_binds_column = vec![];
     if let Some(target_data) = &item.target_data {
-        let target_ops = list_target_ops(target_data).collect::<Vec<_>>();
+        let target_ops = list_target_ops::<B>(target_data).collect::<Vec<_>>();
         let target_binds = keybinds::list(pending)
             .filter(|keybind| matches!(keybind.op, keybinds::Op::Target(_)))
             .filter(|keybind| {

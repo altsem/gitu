@@ -3,7 +3,8 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 
-use crate::Terminal;
+use ratatui::prelude::*;
+use ratatui::Terminal;
 
 #[derive(Debug)]
 pub(crate) struct IssuedCommand {
@@ -38,8 +39,8 @@ impl IssuedCommand {
         Ok(issued_command)
     }
 
-    pub(crate) fn spawn_in_subscreen(
-        terminal: &mut Terminal,
+    pub(crate) fn spawn_in_subscreen<B: Backend>(
+        terminal: &mut Terminal<B>,
         mut command: Command,
     ) -> Result<IssuedCommand, io::Error> {
         command.stdin(Stdio::piped());
