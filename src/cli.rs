@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_CRATE_NAME"))]
 #[command(flatten_help = true)]
-pub(crate) struct Cli {
+pub(crate) struct Args {
     #[command(subcommand)]
     pub(crate) command: Option<Commands>,
 }

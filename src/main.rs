@@ -99,15 +99,14 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run(cli::Cli::parse(), terminal)?;
+    run(cli::Args::parse(), terminal)?;
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
 
-// TODO Rename Cli to Args
-fn run<B: Backend>(args: cli::Cli, mut terminal: Terminal<B>) -> Result<(), io::Error> {
+fn run<B: Backend>(args: cli::Args, mut terminal: Terminal<B>) -> Result<(), io::Error> {
     let mut state = create_initial_state(args)?;
 
     let terminal: &mut Terminal<B> = &mut terminal;
@@ -129,7 +128,7 @@ fn run<B: Backend>(args: cli::Cli, mut terminal: Terminal<B>) -> Result<(), io::
     Ok(())
 }
 
-fn create_initial_state(args: cli::Cli) -> io::Result<State> {
+fn create_initial_state(args: cli::Args) -> io::Result<State> {
     let screens = match args.command {
         Some(cli::Commands::Show { git_show_args }) => {
             vec![screen::show::create(git_show_args)]
