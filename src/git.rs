@@ -29,6 +29,7 @@ pub(crate) fn diff(args: &[&str]) -> Diff {
 pub(crate) fn diff_staged() -> Diff {
     Diff::parse(&process::run(&["git", "diff", "--staged"]).0)
 }
+// TODO Make this return a more useful type. Vec<Log>?
 pub(crate) fn log_recent() -> String {
     process::run(&[
         "git",
@@ -42,13 +43,12 @@ pub(crate) fn log_recent() -> String {
     .0
     .replace("[m", "[0m")
 }
-
+// TODO Make this return a more useful type. Vec<Log>?
 pub(crate) fn log(args: &[&str]) -> String {
     process::run(&[&["git", "log", "--oneline", "--decorate", "--color"], args].concat())
         .0
         .replace("[m", "[0m")
 }
-
 pub(crate) fn show_refs() -> Vec<(String, String, String)> {
     process::run(&[
         "git",

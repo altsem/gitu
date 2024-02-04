@@ -55,9 +55,11 @@ impl Status {
 
         for line in StatusParser::parse(Rule::status_lines, input).expect("Error parsing status") {
             match line.as_rule() {
+                Rule::no_repo => (),
                 Rule::branch_status => {
                     for pair in line.into_inner() {
                         match pair.as_rule() {
+                            Rule::no_commits => (),
                             Rule::no_branch => (),
                             Rule::local => local = Some(pair.as_str().to_string()),
                             Rule::remote => remote = Some(pair.as_str().to_string()),

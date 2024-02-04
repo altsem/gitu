@@ -13,14 +13,9 @@ use std::iter;
 
 use super::Screen;
 
-pub(crate) fn create() -> Screen {
-    Screen::new(Box::new(|| {
-        let status = git::status();
-        let unstaged = git::diff_unstaged();
-        let staged = git::diff_staged();
-        let log = git::log_recent();
-
-        let untracked = status
+pub(crate) fn create(status: bool) -> Screen {
+    Screen::new(Box::new(move || {
+        let untracked = git::status()
             .files
             .iter()
             .filter(|file| file.is_untracked())
@@ -36,7 +31,7 @@ pub(crate) fn create() -> Screen {
             })
             .collect::<Vec<_>>();
 
-        let unmerged = status
+        let unmerged = git::status()
             .files
             .iter()
             .filter(|file| file.is_unmerged())
@@ -52,48 +47,59 @@ pub(crate) fn create() -> Screen {
             })
             .collect::<Vec<_>>();
 
-        iter::once(Item {
-            id: "status".into(),
-            display: (git::status_simple())
-                .into_text()
-                .expect("Error parsing status ansi"),
-            unselectable: true,
-            ..Default::default()
-        })
-        .chain(if untracked.is_empty() {
-            None
-        } else {
-            Some(Item {
-                id: "untracked".into(),
-                display: Text::styled(
-                    "\nUntracked files".to_string(),
-                    Style::new().fg(theme::CURRENT_THEME.section),
-                ),
-                section: true,
-                depth: 0,
+        status
+            .then_some(Item {
+                id: "status".into(),
+                display: (git::status_simple())
+                    .into_text()
+                    .expect("Error parsing status ansi"),
+                unselectable: true,
                 ..Default::default()
             })
-        })
-        .chain(untracked)
-        .chain(if unmerged.is_empty() {
-            None
-        } else {
-            Some(Item {
-                id: "unmerged".into(),
-                display: Text::styled(
-                    "\nUnmerged".to_string(),
-                    Style::new().fg(theme::CURRENT_THEME.section),
-                ),
-                section: true,
-                depth: 0,
-                ..Default::default()
+            .into_iter()
+            .chain(if untracked.is_empty() {
+                None
+            } else {
+                Some(Item {
+                    id: "untracked".into(),
+                    display: Text::styled(
+                        "\nUntracked files".to_string(),
+                        Style::new().fg(theme::CURRENT_THEME.section),
+                    ),
+                    section: true,
+                    depth: 0,
+                    ..Default::default()
+                })
             })
-        })
-        .chain(unmerged)
-        .chain(create_status_section_items("\nUnstaged changes", &unstaged))
-        .chain(create_status_section_items("\nStaged changes", &staged))
-        .chain(create_log_section_items("\nRecent commits", &log))
-        .collect()
+            .chain(untracked)
+            .chain(if unmerged.is_empty() {
+                None
+            } else {
+                Some(Item {
+                    id: "unmerged".into(),
+                    display: Text::styled(
+                        "\nUnmerged".to_string(),
+                        Style::new().fg(theme::CURRENT_THEME.section),
+                    ),
+                    section: true,
+                    depth: 0,
+                    ..Default::default()
+                })
+            })
+            .chain(unmerged)
+            .chain(create_status_section_items(
+                "\nUnstaged changes",
+                &git::diff_unstaged(),
+            ))
+            .chain(create_status_section_items(
+                "\nStaged changes",
+                &git::diff_staged(),
+            ))
+            .chain(create_log_section_items(
+                "\nRecent commits",
+                &git::log_recent(),
+            ))
+            .collect()
     }))
 }
 

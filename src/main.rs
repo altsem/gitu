@@ -42,6 +42,28 @@ struct State {
 }
 
 impl State {
+    fn create(args: cli::Args) -> io::Result<Self> {
+        let screens = match args.command {
+            Some(cli::Commands::Show { git_show_args }) => {
+                vec![screen::show::create(git_show_args)]
+            }
+            Some(cli::Commands::Log { git_log_args }) => {
+                vec![screen::log::create(git_log_args)]
+            }
+            Some(cli::Commands::Diff { git_diff_args }) => {
+                vec![screen::diff::create(git_diff_args)]
+            }
+            None => vec![screen::status::create(args.status)],
+        };
+
+        Ok(Self {
+            quit: false,
+            screens,
+            pending_transient_op: TransientOp::None,
+            command: None,
+        })
+    }
+
     fn screen_mut(&mut self) -> &mut Screen {
         self.screens.last_mut().expect("No screen")
     }
@@ -99,68 +121,38 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run(cli::Args::parse(), terminal)?;
+    run(cli::Args::parse(), &mut terminal)?;
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
 
-fn run<B: Backend>(args: cli::Args, mut terminal: Terminal<B>) -> Result<(), io::Error> {
-    let mut state = create_initial_state(args)?;
+fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io::Error> {
+    let mut state = State::create(args)?;
 
-    let terminal: &mut Terminal<B> = &mut terminal;
-    let state: &mut State = &mut state;
     while !state.quit {
-        if let Some(_screen) = state.screens.last_mut() {
-            terminal.draw(|frame| ui::ui::<B>(frame, state))?;
-
-            state.handle_command_output();
+        // TODO Gather all events, no need to draw for every
+        if !event::poll(std::time::Duration::from_millis(100))? {
+            continue;
         }
 
-        handle_events(terminal, state)?;
-
-        if let Some(screen) = state.screens.last_mut() {
-            screen.clamp_cursor();
-        }
+        let event = event::read()?;
+        update(terminal, &mut state, event)?;
     }
 
     Ok(())
 }
 
-fn create_initial_state(args: cli::Args) -> io::Result<State> {
-    let screens = match args.command {
-        Some(cli::Commands::Show { git_show_args }) => {
-            vec![screen::show::create(git_show_args)]
-        }
-        Some(cli::Commands::Log { git_log_args }) => {
-            vec![screen::log::create(git_log_args)]
-        }
-        Some(cli::Commands::Diff { git_diff_args }) => {
-            vec![screen::diff::create(git_diff_args)]
-        }
-        None => vec![screen::status::create()],
-    };
+pub(crate) fn update<B: Backend>(
+    terminal: &mut Terminal<B>,
+    state: &mut State,
+    event: Event,
+) -> io::Result<()> {
+    state.handle_command_output();
 
-    Ok(State {
-        quit: false,
-        screens,
-        pending_transient_op: TransientOp::None,
-        command: None,
-    })
-}
-
-fn handle_events<B: Backend>(terminal: &mut Terminal<B>, state: &mut State) -> io::Result<()> {
-    if !event::poll(std::time::Duration::from_millis(100))? {
-        return Ok(());
-    }
-
-    let Some(screen) = state.screens.last_mut() else {
-        panic!("No screen");
-    };
-
-    match event::read()? {
-        Event::Resize(w, h) => screen.size = (w, h),
+    match event {
+        Event::Resize(w, h) => state.screen_mut().size = (w, h),
         Event::Key(key) => {
             if key.kind == KeyEventKind::Press {
                 state.clear_finished_command();
@@ -170,6 +162,12 @@ fn handle_events<B: Backend>(terminal: &mut Terminal<B>, state: &mut State) -> i
         }
         _ => (),
     }
+
+    if let Some(screen) = state.screens.last_mut() {
+        screen.clamp_cursor();
+    }
+
+    terminal.draw(|frame| ui::ui::<B>(frame, &*state))?;
 
     Ok(())
 }
@@ -383,4 +381,93 @@ fn goto_log_screen(screens: &mut Vec<Screen>) {
 fn goto_refs_screen(screens: &mut Vec<Screen>) {
     screens.drain(1..);
     screens.push(screen::show_refs::create());
+}
+
+#[cfg(test)]
+mod tests {
+    use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+    use pretty_assertions::assert_eq;
+    use ratatui::{backend::TestBackend, Terminal};
+    use temp_dir::TempDir;
+
+    use crate::{cli::Args, process, update, State};
+
+    #[test]
+    fn integration() {
+        let (mut terminal, mut state, _dir) = setup();
+
+        // TODO Save/load buffer test snapshots
+
+        assert_text(
+            &terminal,
+            vec![
+                "                                        ",
+                "                                        ",
+                "                                        ",
+                "                                        ",
+                "                                        ",
+            ],
+        );
+
+        process::run(&["git", "init"]);
+        update(&mut terminal, &mut state, key('g')).unwrap();
+
+        assert_text(
+            &terminal,
+            vec![
+                "                                        ",
+                "Recent commits                          ",
+                "                                        ",
+                "                                        ",
+                "                                        ",
+            ],
+        );
+
+        process::run(&["touch", "new-file"]);
+        update(&mut terminal, &mut state, key('g')).unwrap();
+
+        assert_text(
+            &terminal,
+            vec![
+                "                                        ",
+                "Untracked files                         ",
+                "new-file                                ",
+                "                                        ",
+                "Recent commits                          ",
+            ],
+        );
+    }
+
+    fn key(char: char) -> Event {
+        Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
+    }
+
+    fn setup() -> (Terminal<TestBackend>, State, TempDir) {
+        let terminal = Terminal::new(TestBackend::new(40, 5)).unwrap();
+        let dir = TempDir::new().unwrap();
+
+        std::env::set_current_dir(dir.path()).unwrap();
+
+        let state = State::create(Args {
+            command: None,
+            status: false,
+        })
+        .unwrap();
+
+        (terminal, state, dir)
+    }
+
+    fn assert_text(terminal: &Terminal<TestBackend>, expected: Vec<&str>) {
+        let buffer = terminal.backend().buffer();
+        let actual = buffer
+            .content()
+            .into_iter()
+            .map(|cell| cell.symbol())
+            .collect::<Vec<_>>()
+            .chunks(buffer.area.width as usize)
+            .map(|chunk| chunk.join(""))
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, actual);
+    }
 }
