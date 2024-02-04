@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 pub(crate) struct Args {
     #[command(subcommand)]
     pub(crate) command: Option<Commands>,
+    #[clap(long, action, default_value_t = true)]
     pub(crate) status: bool,
 }
 
