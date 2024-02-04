@@ -3,13 +3,13 @@ source: src/main.rs
 expression: terminal.backend().buffer()
 ---
 Buffer {
-    area: Rect { x: 0, y: 0, width: 40, height: 5 },
+    area: Rect { x: 0, y: 0, width: 70, height: 5 },
     content: [
-        "                                        ",
-        "Recent commits                          ",
-        "                                        ",
-        "                                        ",
-        "                                        ",
+        "                                                                      ",
+        "Recent commits                                                        ",
+        "                                                                      ",
+        "                                                                      ",
+        "                                                                      ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
