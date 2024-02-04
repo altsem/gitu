@@ -384,6 +384,7 @@ fn goto_refs_screen(screens: &mut Vec<Screen>) {
 }
 
 #[cfg(test)]
+#[serial_test::serial]
 mod tests {
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{backend::TestBackend, Terminal};
@@ -392,15 +393,24 @@ mod tests {
     use crate::{cli::Args, process, update, State};
 
     #[test]
-    fn integration() {
-        let (mut terminal, mut state, _dir) = setup();
-
+    fn no_repo() {
+        let (terminal, _state, _dir) = setup();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
+    }
 
+    #[test]
+    fn fresh_init() {
+        let (mut terminal, mut state, _dir) = setup();
         process::run(&["git", "init"]);
         update(&mut terminal, &mut state, key('g')).unwrap();
+        dbg!(std::fs::read_dir(".").unwrap().collect::<Vec<_>>());
         insta::assert_debug_snapshot!(terminal.backend().buffer());
+    }
 
+    #[test]
+    fn new_file() {
+        let (mut terminal, mut state, _dir) = setup();
+        process::run(&["git", "init"]);
         process::run(&["touch", "new-file"]);
         update(&mut terminal, &mut state, key('g')).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
