@@ -166,9 +166,8 @@ pub(crate) fn update<B: Backend>(
 
     if let Some(screen) = state.screens.last_mut() {
         screen.clamp_cursor();
+        terminal.draw(|frame| ui::ui::<B>(frame, &*state))?;
     }
-
-    terminal.draw(|frame| ui::ui::<B>(frame, &*state))?;
 
     Ok(())
 }
