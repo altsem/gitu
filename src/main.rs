@@ -403,7 +403,6 @@ mod tests {
         let (mut terminal, mut state, _dir) = setup();
         process::run(&["git", "init"]);
         update(&mut terminal, &mut state, key('g')).unwrap();
-        dbg!(std::fs::read_dir(".").unwrap().collect::<Vec<_>>());
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
