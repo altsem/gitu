@@ -130,6 +130,7 @@ fn main() -> io::Result<()> {
 
 fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io::Error> {
     let mut state = State::create(args)?;
+    update(terminal, &mut state, None)?;
 
     while !state.quit {
         // TODO Gather all events, no need to draw for every
@@ -138,7 +139,7 @@ fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io
         }
 
         let event = event::read()?;
-        update(terminal, &mut state, event)?;
+        update(terminal, &mut state, Some(event))?;
     }
 
     Ok(())
@@ -147,13 +148,13 @@ fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io
 pub(crate) fn update<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
-    event: Event,
+    event: Option<Event>,
 ) -> io::Result<()> {
     state.handle_command_output();
 
     match event {
-        Event::Resize(w, h) => state.screen_mut().size = (w, h),
-        Event::Key(key) => {
+        Some(Event::Resize(w, h)) => state.screen_mut().size = (w, h),
+        Some(Event::Key(key)) => {
             if key.kind == KeyEventKind::Press {
                 state.clear_finished_command();
 
@@ -434,8 +435,11 @@ mod tests {
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
-    fn key(char: char) -> Event {
-        Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
+    fn key(char: char) -> Option<Event> {
+        Some(Event::Key(KeyEvent::new(
+            KeyCode::Char(char),
+            KeyModifiers::empty(),
+        )))
     }
 
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
