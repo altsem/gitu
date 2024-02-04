@@ -386,7 +386,6 @@ fn goto_refs_screen(screens: &mut Vec<Screen>) {
 #[cfg(test)]
 mod tests {
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-    use pretty_assertions::assert_eq;
     use ratatui::{backend::TestBackend, Terminal};
     use temp_dir::TempDir;
 
@@ -396,46 +395,15 @@ mod tests {
     fn integration() {
         let (mut terminal, mut state, _dir) = setup();
 
-        // TODO Save/load buffer test snapshots
-
-        assert_text(
-            &terminal,
-            vec![
-                "                                        ",
-                "                                        ",
-                "                                        ",
-                "                                        ",
-                "                                        ",
-            ],
-        );
+        insta::assert_debug_snapshot!(terminal.backend().buffer());
 
         process::run(&["git", "init"]);
         update(&mut terminal, &mut state, key('g')).unwrap();
-
-        assert_text(
-            &terminal,
-            vec![
-                "                                        ",
-                "Recent commits                          ",
-                "                                        ",
-                "                                        ",
-                "                                        ",
-            ],
-        );
+        insta::assert_debug_snapshot!(terminal.backend().buffer());
 
         process::run(&["touch", "new-file"]);
         update(&mut terminal, &mut state, key('g')).unwrap();
-
-        assert_text(
-            &terminal,
-            vec![
-                "                                        ",
-                "Untracked files                         ",
-                "new-file                                ",
-                "                                        ",
-                "Recent commits                          ",
-            ],
-        );
+        insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
     fn key(char: char) -> Event {
@@ -455,19 +423,5 @@ mod tests {
         .unwrap();
 
         (terminal, state, dir)
-    }
-
-    fn assert_text(terminal: &Terminal<TestBackend>, expected: Vec<&str>) {
-        let buffer = terminal.backend().buffer();
-        let actual = buffer
-            .content()
-            .into_iter()
-            .map(|cell| cell.symbol())
-            .collect::<Vec<_>>()
-            .chunks(buffer.area.width as usize)
-            .map(|chunk| chunk.join(""))
-            .collect::<Vec<_>>();
-
-        assert_eq!(expected, actual);
     }
 }
