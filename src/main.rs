@@ -406,37 +406,34 @@ mod tests {
 
     #[test]
     fn help_menu() {
-        let (mut terminal, mut state, _dir) = setup(70, 12);
-        update(&mut terminal, &mut state, &[key('h')]).unwrap();
+        let (ref mut terminal, ref mut state, _dir) = setup(70, 12);
+        update(terminal, state, &[key('h')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
     #[test]
     fn fresh_init() {
-        let (mut terminal, mut state, _dir) = setup(70, 5);
+        let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
         process::run(&["git", "init"]);
-        update(&mut terminal, &mut state, &[key('g')]).unwrap();
+        update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
     #[test]
     fn new_file() {
-        let (mut terminal, mut state, _dir) = setup(70, 5);
+        let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
         process::run(&["git", "init"]);
         process::run(&["touch", "new-file"]);
-        update(&mut terminal, &mut state, &[key('g')]).unwrap();
+        update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
     #[test]
     fn stage_file() {
-        let (mut terminal, mut state, _dir) = setup(70, 5);
+        let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
         process::run(&["git", "init"]);
         process::run(&["touch", "new-file"]);
-        update(&mut terminal, &mut state, &[key('g')]).unwrap();
-        update(&mut terminal, &mut state, &[key('j')]).unwrap();
-        update(&mut terminal, &mut state, &[key('s')]).unwrap();
-        update(&mut terminal, &mut state, &[key('g')]).unwrap();
+        update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
