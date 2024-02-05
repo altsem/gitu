@@ -130,16 +130,16 @@ fn main() -> io::Result<()> {
 
 fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io::Error> {
     let mut state = State::create(args)?;
-    update(terminal, &mut state, None)?;
+    update(terminal, &mut state, &[])?;
 
     while !state.quit {
         // TODO Gather all events, no need to draw for every
-        if !event::poll(std::time::Duration::from_millis(100))? {
+        if !event::poll(std::time::Duration::from_millis(u64::MAX))? {
             continue;
         }
 
         let event = event::read()?;
-        update(terminal, &mut state, Some(event))?;
+        update(terminal, &mut state, &[event])?;
     }
 
     Ok(())
@@ -148,20 +148,23 @@ fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io
 pub(crate) fn update<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
-    event: Option<Event>,
+    events: &[Event],
 ) -> io::Result<()> {
     state.handle_command_output();
 
-    match event {
-        Some(Event::Resize(w, h)) => state.screen_mut().size = (w, h),
-        Some(Event::Key(key)) => {
-            if key.kind == KeyEventKind::Press {
-                state.clear_finished_command();
+    for event in events {
+        // TODO Duplicate calls are made to state.screen_mut().update() - which is unnecassary
+        match *event {
+            Event::Resize(w, h) => state.screen_mut().size = (w, h),
+            Event::Key(key) => {
+                if key.kind == KeyEventKind::Press {
+                    state.clear_finished_command();
 
-                handle_op(terminal, state, key)?;
+                    handle_op(terminal, state, key)?;
+                }
             }
+            _ => (),
         }
-        _ => (),
     }
 
     if let Some(screen) = state.screens.last_mut() {
@@ -401,7 +404,7 @@ mod tests {
     #[test]
     fn help_menu() {
         let (mut terminal, mut state, _dir) = setup(70, 12);
-        update(&mut terminal, &mut state, key('h')).unwrap();
+        update(&mut terminal, &mut state, &[key('h')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
@@ -409,7 +412,7 @@ mod tests {
     fn fresh_init() {
         let (mut terminal, mut state, _dir) = setup(70, 5);
         process::run(&["git", "init"]);
-        update(&mut terminal, &mut state, key('g')).unwrap();
+        update(&mut terminal, &mut state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
@@ -418,7 +421,7 @@ mod tests {
         let (mut terminal, mut state, _dir) = setup(70, 5);
         process::run(&["git", "init"]);
         process::run(&["touch", "new-file"]);
-        update(&mut terminal, &mut state, key('g')).unwrap();
+        update(&mut terminal, &mut state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
@@ -427,18 +430,15 @@ mod tests {
         let (mut terminal, mut state, _dir) = setup(70, 5);
         process::run(&["git", "init"]);
         process::run(&["touch", "new-file"]);
-        update(&mut terminal, &mut state, key('g')).unwrap();
-        update(&mut terminal, &mut state, key('j')).unwrap();
-        update(&mut terminal, &mut state, key('s')).unwrap();
-        update(&mut terminal, &mut state, key('g')).unwrap();
+        update(&mut terminal, &mut state, &[key('g')]).unwrap();
+        update(&mut terminal, &mut state, &[key('j')]).unwrap();
+        update(&mut terminal, &mut state, &[key('s')]).unwrap();
+        update(&mut terminal, &mut state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
-    fn key(char: char) -> Option<Event> {
-        Some(Event::Key(KeyEvent::new(
-            KeyCode::Char(char),
-            KeyModifiers::empty(),
-        )))
+    fn key(char: char) -> Event {
+        Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
     }
 
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
