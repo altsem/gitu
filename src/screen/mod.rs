@@ -1,7 +1,7 @@
 use crossterm::terminal;
 use ratatui::{prelude::*, widgets::Widget};
 
-use crate::theme::CURRENT_THEME;
+use crate::{theme::CURRENT_THEME, Res};
 
 use super::Item;
 use std::{borrow::Cow, collections::HashSet};
@@ -16,17 +16,17 @@ pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: (u16, u16),
-    refresh_items: Box<dyn Fn() -> Vec<Item>>,
+    refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
     ui_lines: Vec<(usize, Item, Line<'static>)>,
     collapsed: HashSet<Cow<'static, str>>,
 }
 
 impl<'a> Screen {
-    pub(crate) fn new(refresh_items: Box<dyn Fn() -> Vec<Item>>) -> Self {
+    pub(crate) fn new(refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>) -> Res<Self> {
         let size = terminal::size().expect("Error reading terminal size");
 
-        let items = refresh_items();
+        let items = refresh_items()?;
 
         let mut screen = Self {
             cursor: 0,
@@ -43,7 +43,7 @@ impl<'a> Screen {
         screen.select_previous();
 
         screen.update_ui_lines();
-        screen
+        Ok(screen)
     }
 
     pub(crate) fn select_next(&mut self) {
@@ -155,9 +155,10 @@ impl<'a> Screen {
         self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1))
     }
 
-    pub(crate) fn update(&mut self) {
-        self.items = (self.refresh_items)();
+    pub(crate) fn update(&mut self) -> Res<()> {
+        self.items = (self.refresh_items)()?;
         self.update_ui_lines();
+        Ok(())
     }
 
     pub(crate) fn collapsed_items_iter(&'a self) -> impl Iterator<Item = (usize, &Item)> {

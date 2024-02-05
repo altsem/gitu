@@ -1,16 +1,16 @@
 use crate::{
     git,
     items::{self},
-    util,
+    util, Res,
 };
 
 use super::Screen;
 
-pub(crate) fn create(args: Vec<String>) -> Screen {
+pub(crate) fn create(args: Vec<String>) -> Res<Screen> {
     Screen::new(Box::new(move || {
         let str_args = util::str_vec(&args);
-        let log = git::log(&str_args);
+        let log = git::log(&str_args)?;
 
-        items::create_log_items(&log).collect()
+        Ok(items::create_log_items(&log).collect())
     }))
 }

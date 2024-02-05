@@ -7,13 +7,14 @@ use crate::{
     git,
     items::{Item, TargetData},
     theme::CURRENT_THEME,
+    Res,
 };
 
 use super::Screen;
 
-pub(crate) fn create() -> Screen {
+pub(crate) fn create() -> Res<Screen> {
     Screen::new(Box::new(move || {
-        git::show_refs()
+        Ok(git::show_refs()?
             .into_iter()
             .map(|(local, remote, subject)| {
                 let columns = [
@@ -38,6 +39,6 @@ pub(crate) fn create() -> Screen {
                     ..Default::default()
                 }
             })
-            .collect()
+            .collect())
     }))
 }

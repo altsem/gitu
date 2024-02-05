@@ -23,19 +23,25 @@ use keybinds::{Op, TargetOp, TransientOp};
 use ratatui::{prelude::*, Terminal};
 use screen::Screen;
 use std::{
+    error::Error,
     io::{self, stderr, BufWriter},
+    path::PathBuf,
     process::Command,
 };
+
+type Res<T> = Result<T, Box<dyn Error>>;
 
 // TODO Initialize per `State`? Tests are flaky likely due to GIT_DIR here being global.
 lazy_static::lazy_static! {
     static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
-    static ref GIT_DIR: String = process::run(&["git", "rev-parse", "--show-toplevel"])
-            .0
-            .trim_end().to_string();
+}
+
+struct Config {
+    dir: PathBuf,
 }
 
 struct State {
+    config: Config,
     quit: bool,
     screens: Vec<Screen>,
     pending_transient_op: TransientOp,
@@ -43,21 +49,22 @@ struct State {
 }
 
 impl State {
-    fn create(args: cli::Args) -> io::Result<Self> {
+    fn create(config: Config, args: cli::Args) -> Res<Self> {
         let screens = match args.command {
             Some(cli::Commands::Show { git_show_args }) => {
-                vec![screen::show::create(git_show_args)]
+                vec![screen::show::create(git_show_args)?]
             }
             Some(cli::Commands::Log { git_log_args }) => {
-                vec![screen::log::create(git_log_args)]
+                vec![screen::log::create(git_log_args)?]
             }
             Some(cli::Commands::Diff { git_diff_args }) => {
-                vec![screen::diff::create(git_diff_args)]
+                vec![screen::diff::create(git_diff_args)?]
             }
-            None => vec![screen::status::create(args.status)],
+            None => vec![screen::status::create(args.status)?],
         };
 
         Ok(Self {
+            config,
             quit: false,
             screens,
             pending_transient_op: TransientOp::None,
@@ -76,8 +83,10 @@ impl State {
     pub(crate) fn issue_command(
         &mut self,
         input: &[u8],
-        command: Command,
+        mut command: Command,
     ) -> Result<(), io::Error> {
+        command.current_dir(&self.config.dir);
+
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
             self.command = Some(IssuedCommand::spawn(input, command)?);
         }
@@ -88,8 +97,10 @@ impl State {
     pub(crate) fn issue_subscreen_command<B: Backend>(
         &mut self,
         terminal: &mut Terminal<B>,
-        command: Command,
+        mut command: Command,
     ) -> Result<(), io::Error> {
+        command.current_dir(&self.config.dir);
+
         if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
             self.command = Some(IssuedCommand::spawn_in_subscreen(terminal, command)?);
         }
@@ -105,18 +116,19 @@ impl State {
         }
     }
 
-    pub(crate) fn handle_command_output(&mut self) {
+    pub(crate) fn handle_command_output(&mut self) -> Res<()> {
         if let Some(cmd) = &mut self.command {
             cmd.read_command_output_to_buffer();
 
             if cmd.just_finished() {
-                self.screen_mut().update();
+                self.screen_mut().update()?;
             }
         }
+        Ok(())
     }
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
     terminal.hide_cursor()?;
     enable_raw_mode()?;
@@ -129,8 +141,20 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), io::Error> {
-    let mut state = State::create(args)?;
+fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
+    let mut state = State::create(
+        Config {
+            dir: String::from_utf8(
+                Command::new("git")
+                    .args(&["rev-parse", "--show-toplevel"])
+                    .output()?
+                    .stdout,
+            )?
+            .trim_end()
+            .into(),
+        },
+        args,
+    )?;
     update(terminal, &mut state, &[])?;
 
     while !state.quit {
@@ -150,8 +174,8 @@ pub(crate) fn update<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
     events: &[Event],
-) -> io::Result<()> {
-    state.handle_command_output();
+) -> Res<()> {
+    state.handle_command_output()?;
 
     for event in events {
         match *event {
@@ -179,7 +203,7 @@ fn handle_op<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
     key: event::KeyEvent,
-) -> Result<(), io::Error> {
+) -> Res<()> {
     let pending = if state.pending_transient_op == TransientOp::Help {
         TransientOp::None
     } else {
@@ -198,13 +222,13 @@ fn handle_op<B: Backend>(
                 } else {
                     state.screens.pop();
                     if let Some(screen) = state.screens.last_mut() {
-                        screen.update();
+                        screen.update()?;
                     } else {
                         state.quit = true
                     }
                 }
             }
-            Refresh => state.screen_mut().update(),
+            Refresh => state.screen_mut().update()?,
             ToggleSection => state.screen_mut().toggle_section(),
             SelectPrevious => state.screen_mut().select_previous(),
             SelectNext => state.screen_mut().select_next(),
@@ -212,34 +236,34 @@ fn handle_op<B: Backend>(
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
             Commit => {
                 state.issue_subscreen_command(terminal, git::commit_cmd())?;
-                state.screen_mut().update();
+                state.screen_mut().update()?;
             }
             CommitAmend => {
                 state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
-                state.screen_mut().update();
+                state.screen_mut().update()?;
             }
             Transient(op) => state.pending_transient_op = op,
             LogCurrent => goto_log_screen(&mut state.screens),
             FetchAll => {
                 state.issue_command(&[], git::fetch_all_cmd())?;
-                state.screen_mut().update();
+                state.screen_mut().update()?;
             }
             PullRemote => state.issue_command(&[], git::pull_cmd())?,
             PushRemote => state.issue_command(&[], git::push_cmd())?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
                     if let Some(mut closure) = closure_by_target_op(act, &target_op) {
-                        closure(terminal, state);
+                        closure(terminal, state)?;
                     }
                 }
             }
             RebaseAbort => {
                 state.issue_command(&[], git::rebase_abort_cmd())?;
-                state.screen_mut().update();
+                state.screen_mut().update()?;
             }
             RebaseContinue => {
                 state.issue_command(&[], git::rebase_continue_cmd())?;
-                state.screen_mut().update();
+                state.screen_mut().update()?;
             }
             ShowRefs => goto_refs_screen(&mut state.screens),
         }
@@ -254,7 +278,7 @@ pub(crate) fn list_target_ops<'a, B: Backend>(
     TargetOp::list_all().filter(|target_op| closure_by_target_op::<B>(target, target_op).is_some())
 }
 
-type OpClosure<'a, B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) + 'a>;
+type OpClosure<'a, B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) -> Res<()> + 'a>;
 
 /// Retrieves the 'implementation' of a `TargetOp`.
 /// These are `Option<OpClosure>`s, so that the mappings
@@ -288,7 +312,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         (Discard, Ref(_)) => None,
         (Discard, File(f)) => Some(Box::new(|_term, state| {
             std::fs::remove_file(f.clone()).expect("Error removing file");
-            state.screen_mut().update();
+            state.screen_mut().update()
         })),
         (Discard, Delta(d)) => {
             if d.old_file == d.new_file {
@@ -307,16 +331,16 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
     }
 }
 
-fn goto_show_screen<B: Backend>(r: String) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
+fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |_terminal, state| {
-        state.screens.push(screen::show::create(vec![r.clone()]));
+        state
+            .screens
+            .push(screen::show::create(vec![r.clone()]).expect("Couldn't create screen"));
+        Ok(())
     }))
 }
 
-fn editor<B: Backend>(
-    file: String,
-    line: Option<u32>,
-) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
+fn editor<'a, B: Backend>(file: String, line: Option<u32>) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |terminal, state| {
         let file: &str = &file;
         let editor = std::env::var("EDITOR").expect("EDITOR not set");
@@ -337,65 +361,58 @@ fn editor<B: Backend>(
             .issue_subscreen_command(terminal, cmd)
             .expect("Error opening editor");
 
-        state.screen_mut().update();
+        state.screen_mut().update()
     }))
 }
 
-fn cmd<B: Backend>(
-    input: Vec<u8>,
-    command: fn() -> Command,
-) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
+fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |_terminal, state| {
         state
             .issue_command(&input, command())
             .expect("Error unstaging hunk");
-        state.screen_mut().update();
+        state.screen_mut().update()
     }))
 }
 
-fn cmd_arg<B: Backend>(
-    command: fn(&str) -> Command,
-    arg: &String,
-) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
+fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &String) -> Option<OpClosure<B>> {
     let arg_clone = arg.clone();
     Some(Box::new(move |_terminal, state| {
         state
             .issue_command(&[], command(&arg_clone))
             .expect("Error unstaging hunk");
-        state.screen_mut().update();
+        state.screen_mut().update()
     }))
 }
 
-fn subscreen_arg<B: Backend>(
-    command: fn(&str) -> Command,
-    arg: &String,
-) -> Option<Box<dyn FnMut(&mut Terminal<B>, &mut State)>> {
+fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &String) -> Option<OpClosure<B>> {
     let arg_clone = arg.clone();
     Some(Box::new(move |terminal, state| {
         state
             .issue_subscreen_command(terminal, command(&arg_clone))
             .expect("Error issuing command");
-        state.screen_mut().update();
+        state.screen_mut().update()
     }))
 }
 
 fn goto_log_screen(screens: &mut Vec<Screen>) {
     screens.drain(1..);
-    screens.push(screen::log::create(vec![]));
+    screens.push(screen::log::create(vec![]).expect("Couldn't create screen"));
 }
 
 fn goto_refs_screen(screens: &mut Vec<Screen>) {
     screens.drain(1..);
-    screens.push(screen::show_refs::create());
+    screens.push(screen::show_refs::create().expect("Couldn't create screen"));
 }
 
 #[cfg(test)]
 mod tests {
+    use std::process::Command;
+
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{backend::TestBackend, Terminal};
     use temp_dir::TempDir;
 
-    use crate::{cli::Args, process, update, State};
+    use crate::{cli::Args, update, Res, State};
 
     #[test]
     fn no_repo() {
@@ -411,29 +428,32 @@ mod tests {
     }
 
     #[test]
-    fn fresh_init() {
+    fn fresh_init() -> Res<()> {
         let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
-        process::run(&["git", "init"]);
+        assert!(Command::new("git").arg("init").status()?.success());
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
+        Ok(())
     }
 
     #[test]
-    fn new_file() {
+    fn new_file() -> Res<()> {
         let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
-        process::run(&["git", "init"]);
-        process::run(&["touch", "new-file"]);
+        assert!(Command::new("git").arg("init").status()?.success());
+        assert!(Command::new("touch").arg("new-file").status()?.success());
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
+        Ok(())
     }
 
     #[test]
-    fn stage_file() {
+    fn stage_file() -> Res<()> {
         let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
-        process::run(&["git", "init"]);
-        process::run(&["touch", "new-file"]);
+        assert!(Command::new("git").arg("init").status()?.success());
+        assert!(Command::new("touch").arg("new-file").status()?.success());
         update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
+        Ok(())
     }
 
     fn key(char: char) -> Event {
@@ -444,12 +464,15 @@ mod tests {
         let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         let dir = TempDir::new().unwrap();
 
-        std::env::set_current_dir(dir.path()).unwrap();
-
-        let state = State::create(Args {
-            command: None,
-            status: false,
-        })
+        let state = State::create(
+            crate::Config {
+                dir: dir.path().into(),
+            },
+            Args {
+                command: None,
+                status: false,
+            },
+        )
         .unwrap();
 
         (terminal, state, dir)
