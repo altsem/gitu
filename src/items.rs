@@ -1,5 +1,4 @@
 use crate::diff;
-use crate::process;
 use crate::theme;
 use ansi_to_tui::IntoText;
 use diff::Delta;
@@ -7,7 +6,10 @@ use diff::Hunk;
 use ratatui::style::Style;
 use ratatui::text::Text;
 use std::borrow::Cow;
+use std::io::Write;
 use std::iter;
+use std::process::Command;
+use std::process::Stdio;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Item {
@@ -88,15 +90,32 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
 fn format_diff_hunk(hunk: &Hunk) -> String {
     if *crate::USE_DELTA {
         let content = format!("{}\n{}", hunk.header(), hunk.content);
-        process::pipe(
-            content.as_bytes(),
-            &[
+        {
+            let input = content.as_bytes();
+            let cmd: &[&str] = &[
                 "delta",
                 "--color-only",
                 &format!("-w {}", crossterm::terminal::size().unwrap().0),
-            ],
-        )
-        .0
+            ];
+            let mut command = Command::new(cmd[0])
+                .args(&cmd[1..])
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("Couldn't spawn process");
+
+            command
+                .stdin
+                .take()
+                .unwrap_or_else(|| panic!("No stdin for {:?} process", cmd))
+                .write_all(input)
+                .expect("Couldn't write to process stdin");
+            let output = command
+                .wait_with_output()
+                .unwrap_or_else(|_| panic!("Error writing {:?} output", cmd));
+
+            String::from_utf8(output.stdout).unwrap()
+        }
         .lines()
         .skip(1) // Header is already shown
         .collect::<Vec<_>>()

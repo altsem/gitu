@@ -4,7 +4,6 @@ mod diff;
 mod git;
 mod items;
 mod keybinds;
-mod process;
 mod screen;
 mod status;
 mod theme;
