@@ -430,11 +430,7 @@ mod tests {
     #[test]
     fn fresh_init() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(Command::new("git")
-            .arg("init")
-            .current_dir(dir.path())
-            .status()?
-            .success());
+        assert!(run(&dir, Command::new("git").arg("init"))?);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
@@ -443,16 +439,8 @@ mod tests {
     #[test]
     fn new_file() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(Command::new("git")
-            .arg("init")
-            .current_dir(dir.path())
-            .status()?
-            .success());
-        assert!(Command::new("touch")
-            .arg("new-file")
-            .current_dir(dir.path())
-            .status()?
-            .success());
+        assert!(run(&dir, Command::new("git").arg("init"))?);
+        assert!(run(&dir, Command::new("touch").arg("new-file"))?);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
@@ -461,19 +449,15 @@ mod tests {
     #[test]
     fn stage_file() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(Command::new("git")
-            .arg("init")
-            .current_dir(dir.path())
-            .status()?
-            .success());
-        assert!(Command::new("touch")
-            .arg("new-file")
-            .current_dir(dir.path())
-            .status()?
-            .success());
+        assert!(run(&dir, Command::new("git").arg("init"))?);
+        assert!(run(&dir, Command::new("touch").arg("new-file"))?);
         update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
+    }
+
+    fn run(dir: &TempDir, command: &mut Command) -> Res<bool> {
+        Ok(command.current_dir(dir.path()).status()?.success())
     }
 
     fn key(char: char) -> Event {
