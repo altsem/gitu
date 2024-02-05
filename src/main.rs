@@ -145,7 +145,7 @@ fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Bo
         Config {
             dir: String::from_utf8(
                 Command::new("git")
-                    .args(&["rev-parse", "--show-toplevel"])
+                    .args(["rev-parse", "--show-toplevel"])
                     .output()?
                     .stdout,
             )?
@@ -271,9 +271,9 @@ fn handle_op<B: Backend>(
     Ok(())
 }
 
-pub(crate) fn list_target_ops<'a, B: Backend>(
-    target: &'a TargetData,
-) -> impl Iterator<Item = &'static TargetOp> + 'a {
+pub(crate) fn list_target_ops<B: Backend>(
+    target: &TargetData,
+) -> impl Iterator<Item = &'static TargetOp> + '_ {
     TargetOp::list_all().filter(|target_op| closure_by_target_op::<B>(target, target_op).is_some())
 }
 
@@ -295,7 +295,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         (Show, Delta(d)) => editor(d.new_file.clone(), None),
         (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.first_diff_line())),
         (Stage, Ref(_)) => None,
-        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, &u),
+        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u),
         (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, &d.new_file),
         (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
         (Unstage, Ref(_)) => None,
@@ -326,7 +326,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
             h.format_patch().into_bytes(),
             git::discard_unstaged_patch_cmd,
         ),
-        (Checkout, Ref(r)) => cmd_arg(git::checkout_ref_cmd, &r),
+        (Checkout, Ref(r)) => cmd_arg(git::checkout_ref_cmd, r),
         (Checkout, _) => None,
     }
 }
@@ -374,21 +374,19 @@ fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClo
     }))
 }
 
-fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &String) -> Option<OpClosure<B>> {
-    let arg_clone = arg.clone();
+fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |_terminal, state| {
         state
-            .issue_command(&[], command(&arg_clone))
+            .issue_command(&[], command(arg))
             .expect("Error unstaging hunk");
         state.screen_mut().update()
     }))
 }
 
-fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &String) -> Option<OpClosure<B>> {
-    let arg_clone = arg.clone();
+fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |terminal, state| {
         state
-            .issue_subscreen_command(terminal, command(&arg_clone))
+            .issue_subscreen_command(terminal, command(arg))
             .expect("Error issuing command");
         state.screen_mut().update()
     }))

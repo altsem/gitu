@@ -211,7 +211,7 @@ impl Hunk {
         self.content
             .lines()
             .enumerate()
-            .filter(|(_, line)| line.starts_with("+") || line.starts_with("-"))
+            .filter(|(_, line)| line.starts_with('+') || line.starts_with('-'))
             .map(|(i, _)| i)
             .next()
             .unwrap_or(0) as u32

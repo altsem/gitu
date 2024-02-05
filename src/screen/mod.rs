@@ -170,7 +170,7 @@ impl<'a> Screen {
                     return Some(None);
                 }
 
-                *collapse_depth = if next.section && self.is_collapsed(&next) {
+                *collapse_depth = if next.section && self.is_collapsed(next) {
                     Some(next.depth)
                 } else {
                     None
@@ -192,7 +192,6 @@ impl<'a> Screen {
     fn update_ui_lines(&mut self) {
         self.ui_lines = self
             .collapsed_items_iter()
-            .map(|(i, item)| (i, item))
             .flat_map(|(i, item)| {
                 item.display
                     .clone()

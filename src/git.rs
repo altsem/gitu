@@ -6,19 +6,19 @@ use std::{path::Path, process::Command, str};
 
 pub(crate) fn status(dir: &Path) -> Res<Status> {
     let out = Command::new("git")
-        .args(&["status", "--porcelain", "--branch"])
+        .args(["status", "--porcelain", "--branch"])
         .current_dir(dir)
         .output()?
         .stdout;
-    Ok(Status::parse(&str::from_utf8(&out)?))
+    Ok(Status::parse(str::from_utf8(&out)?))
 }
 pub(crate) fn status_simple(dir: &Path) -> Res<String> {
     let out = &Command::new("git")
-        .args(&["-c", "color.status=always", "status"])
+        .args(["-c", "color.status=always", "status"])
         .current_dir(dir)
         .output()?
         .stdout;
-    Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
+    Ok(str::from_utf8(out)?.replace("[m", "[0m"))
 }
 pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
     let out = Command::new("git")
@@ -26,7 +26,7 @@ pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
         .current_dir(dir)
         .output()?
         .stdout;
-    Ok(Diff::parse(&str::from_utf8(&out)?))
+    Ok(Diff::parse(str::from_utf8(&out)?))
 }
 pub(crate) fn show(dir: &Path, args: &[&str]) -> Res<Diff> {
     let out = Command::new("git")
@@ -56,7 +56,7 @@ pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
 }
 pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
     let out = &Command::new("git")
-        .args(&["diff", "--staged"])
+        .args(["diff", "--staged"])
         .current_dir(dir)
         .output()?
         .stdout;
@@ -65,7 +65,7 @@ pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
 // TODO Make this return a more useful type. Vec<Log>?
 pub(crate) fn log_recent(dir: &Path) -> Res<String> {
     let out = Command::new("git")
-        .args(&["log", "-n", "5", "--oneline", "--decorate", "--color"])
+        .args(["log", "-n", "5", "--oneline", "--decorate", "--color"])
         .current_dir(dir)
         .output()?
         .stdout;
@@ -82,7 +82,7 @@ pub(crate) fn log(dir: &Path, args: &[&str]) -> Res<String> {
 }
 pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
     let out = Command::new("git")
-        .args(&[
+        .args([
             "for-each-ref",
             "--sort",
             "-creatordate",
@@ -97,7 +97,7 @@ pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
     Ok(str::from_utf8(&out)?
         .lines()
         .map(|line| {
-            let mut columns = line.splitn(3, " ");
+            let mut columns = line.splitn(3, ' ');
             let local = columns.next().unwrap().to_string();
             let remote = columns.next().unwrap().to_string();
             let subject = columns.next().unwrap().to_string();
