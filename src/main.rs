@@ -256,6 +256,9 @@ pub(crate) fn list_target_ops<'a, B: Backend>(
 
 type OpClosure<'a, B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) + 'a>;
 
+/// Retrieves the 'implementation' of a `TargetOp`.
+/// These are `Option<OpClosure>`s, so that the mappings
+/// can be introspected.
 pub(crate) fn closure_by_target_op<'a, B: Backend>(
     target: &'a TargetData,
     target_op: &TargetOp,
