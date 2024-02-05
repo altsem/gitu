@@ -153,7 +153,6 @@ pub(crate) fn update<B: Backend>(
     state.handle_command_output();
 
     for event in events {
-        // TODO Duplicate calls are made to state.screen_mut().update() - which is unnecassary
         match *event {
             Event::Resize(w, h) => state.screen_mut().size = (w, h),
             Event::Key(key) => {
