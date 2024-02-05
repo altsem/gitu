@@ -27,6 +27,7 @@ use std::{
     process::Command,
 };
 
+// TODO Initialize per `State`? Tests are flaky likely due to GIT_DIR here being global.
 lazy_static::lazy_static! {
     static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
     static ref GIT_DIR: String = process::run(&["git", "rev-parse", "--show-toplevel"])
@@ -389,7 +390,6 @@ fn goto_refs_screen(screens: &mut Vec<Screen>) {
 }
 
 #[cfg(test)]
-#[serial_test::serial]
 mod tests {
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{backend::TestBackend, Terminal};
