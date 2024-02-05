@@ -1,20 +1,19 @@
+use super::Screen;
+use crate::{
+    git,
+    items::{Item, TargetData},
+    theme::CURRENT_THEME,
+    Config, Res,
+};
 use ratatui::{
     style::Style,
     text::{Line, Span, Text},
 };
 
-use crate::{
-    git,
-    items::{Item, TargetData},
-    theme::CURRENT_THEME,
-    Res,
-};
-
-use super::Screen;
-
-pub(crate) fn create() -> Res<Screen> {
+pub(crate) fn create(config: &Config) -> Res<Screen> {
+    let path_buf = config.dir.clone();
     Screen::new(Box::new(move || {
-        Ok(git::show_refs()?
+        Ok(git::show_refs(&path_buf)?
             .into_iter()
             .map(|(local, remote, subject)| {
                 let columns = [

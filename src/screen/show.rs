@@ -1,18 +1,19 @@
 use crate::{
     git,
     items::{self, Item},
-    util, Res,
+    util, Config, Res,
 };
 use ansi_to_tui::IntoText;
 use std::iter;
 
 use super::Screen;
 
-pub(crate) fn create(args: Vec<String>) -> Res<Screen> {
+pub(crate) fn create(config: &Config, args: Vec<String>) -> Res<Screen> {
+    let path_buf = config.dir.clone();
     Screen::new(Box::new(move || {
         let str_args = util::str_vec(&args);
-        let summary = git::show_summary(&str_args)?;
-        let show = git::show(&str_args)?;
+        let summary = git::show_summary(&path_buf, &str_args)?;
+        let show = git::show(&path_buf, &str_args)?;
 
         Ok(iter::once(Item {
             display: summary.into_text()?,

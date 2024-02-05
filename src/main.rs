@@ -51,15 +51,15 @@ impl State {
     fn create(config: Config, args: cli::Args) -> Res<Self> {
         let screens = match args.command {
             Some(cli::Commands::Show { git_show_args }) => {
-                vec![screen::show::create(git_show_args)?]
+                vec![screen::show::create(&config, git_show_args)?]
             }
             Some(cli::Commands::Log { git_log_args }) => {
-                vec![screen::log::create(git_log_args)?]
+                vec![screen::log::create(&config, git_log_args)?]
             }
             Some(cli::Commands::Diff { git_diff_args }) => {
-                vec![screen::diff::create(git_diff_args)?]
+                vec![screen::diff::create(&config, git_diff_args)?]
             }
-            None => vec![screen::status::create(args.status)?],
+            None => vec![screen::status::create(&config, args.status)?],
         };
 
         Ok(Self {
@@ -242,7 +242,7 @@ fn handle_op<B: Backend>(
                 state.screen_mut().update()?;
             }
             Transient(op) => state.pending_transient_op = op,
-            LogCurrent => goto_log_screen(&mut state.screens),
+            LogCurrent => goto_log_screen(&state.config, &mut state.screens),
             FetchAll => {
                 state.issue_command(&[], git::fetch_all_cmd())?;
                 state.screen_mut().update()?;
@@ -264,7 +264,7 @@ fn handle_op<B: Backend>(
                 state.issue_command(&[], git::rebase_continue_cmd())?;
                 state.screen_mut().update()?;
             }
-            ShowRefs => goto_refs_screen(&mut state.screens),
+            ShowRefs => goto_refs_screen(&state.config, &mut state.screens),
         }
     }
 
@@ -310,7 +310,8 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         (RebaseAutosquash, _) => None,
         (Discard, Ref(_)) => None,
         (Discard, File(f)) => Some(Box::new(|_term, state| {
-            std::fs::remove_file(f.clone()).expect("Error removing file");
+            let path = PathBuf::from_iter([state.config.dir.to_path_buf(), f.clone().into()]);
+            std::fs::remove_file(path)?;
             state.screen_mut().update()
         })),
         (Discard, Delta(d)) => {
@@ -332,9 +333,9 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
 
 fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |_terminal, state| {
-        state
-            .screens
-            .push(screen::show::create(vec![r.clone()]).expect("Couldn't create screen"));
+        state.screens.push(
+            screen::show::create(&state.config, vec![r.clone()]).expect("Couldn't create screen"),
+        );
         Ok(())
     }))
 }
@@ -393,14 +394,14 @@ fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &String) -> Opti
     }))
 }
 
-fn goto_log_screen(screens: &mut Vec<Screen>) {
+fn goto_log_screen(config: &Config, screens: &mut Vec<Screen>) {
     screens.drain(1..);
-    screens.push(screen::log::create(vec![]).expect("Couldn't create screen"));
+    screens.push(screen::log::create(config, vec![]).expect("Couldn't create screen"));
 }
 
-fn goto_refs_screen(screens: &mut Vec<Screen>) {
+fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
     screens.drain(1..);
-    screens.push(screen::show_refs::create().expect("Couldn't create screen"));
+    screens.push(screen::show_refs::create(config).expect("Couldn't create screen"));
 }
 
 #[cfg(test)]
@@ -428,8 +429,12 @@ mod tests {
 
     #[test]
     fn fresh_init() -> Res<()> {
-        let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
-        assert!(Command::new("git").arg("init").status()?.success());
+        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        assert!(Command::new("git")
+            .arg("init")
+            .current_dir(dir.path())
+            .status()?
+            .success());
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
@@ -437,9 +442,17 @@ mod tests {
 
     #[test]
     fn new_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
-        assert!(Command::new("git").arg("init").status()?.success());
-        assert!(Command::new("touch").arg("new-file").status()?.success());
+        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        assert!(Command::new("git")
+            .arg("init")
+            .current_dir(dir.path())
+            .status()?
+            .success());
+        assert!(Command::new("touch")
+            .arg("new-file")
+            .current_dir(dir.path())
+            .status()?
+            .success());
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
@@ -447,9 +460,17 @@ mod tests {
 
     #[test]
     fn stage_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, _dir) = setup(70, 5);
-        assert!(Command::new("git").arg("init").status()?.success());
-        assert!(Command::new("touch").arg("new-file").status()?.success());
+        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        assert!(Command::new("git")
+            .arg("init")
+            .current_dir(dir.path())
+            .status()?
+            .success());
+        assert!(Command::new("touch")
+            .arg("new-file")
+            .current_dir(dir.path())
+            .status()?
+            .success());
         update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())

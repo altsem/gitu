@@ -1,74 +1,86 @@
 use crate::{diff::Diff, status::Status, Res};
-use std::{process::Command, str};
+use std::{path::Path, process::Command, str};
 
 // TODO Check for.git/index.lock and block if it exists
 // TODO Use only plumbing commands
 
-pub(crate) fn status() -> Res<Status> {
+pub(crate) fn status(dir: &Path) -> Res<Status> {
     let out = Command::new("git")
         .args(&["status", "--porcelain", "--branch"])
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(Status::parse(&str::from_utf8(&out)?))
 }
-pub(crate) fn status_simple() -> Res<String> {
+pub(crate) fn status_simple(dir: &Path) -> Res<String> {
     let out = &Command::new("git")
         .args(&["-c", "color.status=always", "status"])
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
 }
-pub(crate) fn diff_unstaged() -> Res<Diff> {
-    let out = Command::new("git").arg("diff").output()?.stdout;
+pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
+    let out = Command::new("git")
+        .arg("diff")
+        .current_dir(dir)
+        .output()?
+        .stdout;
     Ok(Diff::parse(&str::from_utf8(&out)?))
 }
-pub(crate) fn show(args: &[&str]) -> Res<Diff> {
+pub(crate) fn show(dir: &Path, args: &[&str]) -> Res<Diff> {
     let out = Command::new("git")
         .args(&[&["show"], args].concat())
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(Diff::parse(str::from_utf8(&out)?))
 }
-pub(crate) fn show_summary(args: &[&str]) -> Res<String> {
+pub(crate) fn show_summary(dir: &Path, args: &[&str]) -> Res<String> {
     let out = Command::new("git")
         .args(&[&["show", "--summary", "--decorate", "--color"], args].concat())
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
 }
-pub(crate) fn diff(args: &[&str]) -> Res<Diff> {
+pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
     let out = String::from_utf8(
         Command::new("git")
             .args(&[&["diff"], args].concat())
+            .current_dir(dir)
             .output()?
             .stdout,
     )?;
     Ok(Diff::parse(&out))
 }
-pub(crate) fn diff_staged() -> Res<Diff> {
+pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
     let out = &Command::new("git")
         .args(&["diff", "--staged"])
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(Diff::parse(str::from_utf8(out)?))
 }
 // TODO Make this return a more useful type. Vec<Log>?
-pub(crate) fn log_recent() -> Res<String> {
+pub(crate) fn log_recent(dir: &Path) -> Res<String> {
     let out = Command::new("git")
         .args(&["log", "-n", "5", "--oneline", "--decorate", "--color"])
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(String::from_utf8(out)?.replace("[m", "[0m"))
 }
 // TODO Make this return a more useful type. Vec<Log>?
-pub(crate) fn log(args: &[&str]) -> Res<String> {
+pub(crate) fn log(dir: &Path, args: &[&str]) -> Res<String> {
     let out = Command::new("git")
         .args(&[&["log", "--oneline", "--decorate", "--color"], args].concat())
+        .current_dir(dir)
         .output()?
         .stdout;
     Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
 }
-pub(crate) fn show_refs() -> Res<Vec<(String, String, String)>> {
+pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
     let out = Command::new("git")
         .args(&[
             "for-each-ref",
@@ -78,6 +90,7 @@ pub(crate) fn show_refs() -> Res<Vec<(String, String, String)>> {
             "%(refname) %(upstream) %(subject)",
             "refs/heads",
         ])
+        .current_dir(dir)
         .output()?
         .stdout;
 

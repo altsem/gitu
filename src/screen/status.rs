@@ -1,8 +1,9 @@
+use super::Screen;
 use crate::{
     diff::Diff,
     git,
     items::{self, Item},
-    theme, Res,
+    theme, Config, Res,
 };
 use ansi_to_tui::IntoText;
 use ratatui::{
@@ -11,11 +12,10 @@ use ratatui::{
 };
 use std::iter;
 
-use super::Screen;
-
-pub(crate) fn create(status: bool) -> Res<Screen> {
+pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
+    let path_buf = config.dir.clone();
     Screen::new(Box::new(move || {
-        let untracked = git::status()?
+        let untracked = git::status(&path_buf)?
             .files
             .iter()
             .filter(|file| file.is_untracked())
@@ -31,7 +31,7 @@ pub(crate) fn create(status: bool) -> Res<Screen> {
             })
             .collect::<Vec<_>>();
 
-        let unmerged = git::status()?
+        let unmerged = git::status(&path_buf)?
             .files
             .iter()
             .filter(|file| file.is_unmerged())
@@ -50,7 +50,7 @@ pub(crate) fn create(status: bool) -> Res<Screen> {
         let items = status
             .then_some(Item {
                 id: "status".into(),
-                display: git::status_simple()?
+                display: git::status_simple(&path_buf)?
                     .into_text()
                     .expect("Error parsing status ansi"),
                 unselectable: true,
@@ -89,15 +89,15 @@ pub(crate) fn create(status: bool) -> Res<Screen> {
             .chain(unmerged)
             .chain(create_status_section_items(
                 "\nUnstaged changes",
-                &git::diff_unstaged()?,
+                &git::diff_unstaged(&path_buf)?,
             ))
             .chain(create_status_section_items(
                 "\nStaged changes",
-                &git::diff_staged()?,
+                &git::diff_staged(&path_buf)?,
             ))
             .chain(create_log_section_items(
                 "\nRecent commits",
-                &git::log_recent()?,
+                &git::log_recent(&path_buf)?,
             ))
             .collect();
 
