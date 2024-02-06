@@ -13,9 +13,9 @@ use ratatui::{
 use std::iter;
 
 pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
-    let path_buf = config.dir.clone();
+    let config = config.clone();
     Screen::new(Box::new(move || {
-        let untracked = git::status(&path_buf)?
+        let untracked = git::status(&config.dir)?
             .files
             .iter()
             .filter(|file| file.is_untracked())
@@ -31,7 +31,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
             })
             .collect::<Vec<_>>();
 
-        let unmerged = git::status(&path_buf)?
+        let unmerged = git::status(&config.dir)?
             .files
             .iter()
             .filter(|file| file.is_unmerged())
@@ -50,7 +50,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
         let items = status
             .then_some(Item {
                 id: "status".into(),
-                display: git::status_simple(&path_buf)?
+                display: git::status_simple(&config.dir)?
                     .into_text()
                     .expect("Error parsing status ansi"),
                 unselectable: true,
@@ -88,16 +88,18 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
             })
             .chain(unmerged)
             .chain(create_status_section_items(
+                &config,
                 "\nUnstaged changes",
-                &git::diff_unstaged(&path_buf)?,
+                &git::diff_unstaged(&config.dir)?,
             ))
             .chain(create_status_section_items(
+                &config,
                 "\nStaged changes",
-                &git::diff_staged(&path_buf)?,
+                &git::diff_staged(&config.dir)?,
             ))
             .chain(create_log_section_items(
                 "\nRecent commits",
-                &git::log_recent(&path_buf)?,
+                &git::log_recent(&config.dir)?,
             ))
             .collect();
 
@@ -131,6 +133,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
 // }
 
 fn create_status_section_items<'a>(
+    config: &'a Config,
     header: &str,
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
@@ -149,7 +152,7 @@ fn create_status_section_items<'a>(
         })
     }
     .into_iter()
-    .chain(items::create_diff_items(diff, &1))
+    .chain(items::create_diff_items(config, diff, &1))
 }
 
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {

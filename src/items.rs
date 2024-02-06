@@ -1,5 +1,6 @@
 use crate::diff;
 use crate::theme;
+use crate::Config;
 use ansi_to_tui::IntoText;
 use diff::Delta;
 use diff::Hunk;
@@ -30,6 +31,7 @@ pub(crate) enum TargetData {
 }
 
 pub(crate) fn create_diff_items<'a>(
+    config: &'a Config,
     diff: &'a diff::Diff,
     depth: &'a usize,
 ) -> impl Iterator<Item = Item> + 'a {
@@ -55,12 +57,12 @@ pub(crate) fn create_diff_items<'a>(
             delta
                 .hunks
                 .iter()
-                .flat_map(|hunk| create_hunk_items(hunk, *depth)),
+                .flat_map(|hunk| create_hunk_items(config, hunk, *depth)),
         )
     })
 }
 
-fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
+fn create_hunk_items(config: &Config, hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
@@ -76,7 +78,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     })
     .chain([{
         Item {
-            display: format_diff_hunk(hunk)
+            display: format_diff_hunk(config, hunk)
                 .into_text()
                 .expect("Error creating hunk text"),
             unselectable: true,
@@ -87,8 +89,8 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     }])
 }
 
-fn format_diff_hunk(hunk: &Hunk) -> String {
-    if *crate::USE_DELTA {
+fn format_diff_hunk(config: &Config, hunk: &Hunk) -> String {
+    if config.use_delta {
         let content = format!("{}\n{}", hunk.header(), hunk.content);
         {
             let input = content.as_bytes();

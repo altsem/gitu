@@ -31,16 +31,10 @@ use tokio::sync::mpsc::{error::TryRecvError, Receiver, Sender};
 
 type Res<T> = Result<T, Box<dyn Error>>;
 
-// TODO Initialize per `State`? Tests are flaky likely due to GIT_DIR here being global.
-lazy_static::lazy_static! {
-    // static ref USE_DELTA: bool = Command::new("delta").output().map(|out| out.status.success()).unwrap_or(false);
-    // TODO move to state init fn
-    static ref USE_DELTA: bool = true;
-}
-
 #[derive(Clone)]
 struct Config {
     dir: PathBuf,
+    use_delta: bool,
 }
 
 enum UiEvent {
@@ -192,6 +186,10 @@ async fn run<B: Backend>(
             )?
             .trim_end()
             .into(),
+            use_delta: Command::new("delta")
+                .output()
+                .map(|out| out.status.success())
+                .unwrap_or(false),
         },
         args,
     )?;
@@ -560,6 +558,7 @@ mod tests {
         let state = State::create(
             crate::Config {
                 dir: dir.path().into(),
+                use_delta: false,
             },
             Args {
                 command: None,
