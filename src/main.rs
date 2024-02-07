@@ -1,4 +1,4 @@
-mod cli;
+pub mod cli;
 mod diff;
 mod git;
 mod items;
@@ -64,7 +64,7 @@ impl State {
 
         Ok(Self {
             config,
-            quit: false,
+            quit: args.exit_immediately,
             screens,
             pending_transient_op: TransientOp::None,
             cmd_meta: None,
@@ -138,7 +138,7 @@ fn command_args(cmd: &Command) -> Vec<String> {
     args
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+pub fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
     terminal.hide_cursor()?;
     enable_raw_mode()?;
@@ -151,7 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
+pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
     let mut state = State::create(
         Config {
             dir: String::from_utf8(
@@ -473,6 +473,7 @@ mod tests {
             Args {
                 command: None,
                 status: false,
+                exit_immediately: false,
             },
         )
         .unwrap();

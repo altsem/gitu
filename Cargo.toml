@@ -5,6 +5,19 @@ edition = "2021"
 #test
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "gitu"
+path = "src/main.rs"
+
+[[bench]]
+name = "show"
+harness = false
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"
+temp-dir = "0.1.12"
+criterion = "0.5.1"
+
 [dependencies]
 ansi-to-tui = "3.1.0"
 clap = { version = "4.4.16", features = ["derive"] }
@@ -15,7 +28,5 @@ itertools = "0.12.0"
 lazy_static = "1.4.0"
 pest = "2.7.6"
 pest_derive = "2.7.6"
-pretty_assertions = "1.4.0"
 ratatui = "0.25.0"
 strip-ansi-escapes = "0.2.0"
-temp-dir = "0.1.12"
