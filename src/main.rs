@@ -1,5 +1,4 @@
 mod cli;
-mod command;
 mod diff;
 mod git;
 mod items;
@@ -11,7 +10,6 @@ mod ui;
 mod util;
 
 use clap::Parser;
-use command::IssuedCommand;
 use crossterm::{
     event::{self, Event, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -23,9 +21,9 @@ use ratatui::{prelude::*, Terminal};
 use screen::Screen;
 use std::{
     error::Error,
-    io::{self, stderr, BufWriter},
+    io::{stderr, BufWriter},
     path::PathBuf,
-    process::Command,
+    process::{Command, Output, Stdio},
 };
 
 type Res<T> = Result<T, Box<dyn Error>>;
@@ -36,12 +34,17 @@ struct Config {
     use_delta: bool,
 }
 
+pub(crate) struct CmdMeta {
+    pub(crate) args: Vec<String>,
+    pub(crate) out: Option<Output>,
+}
+
 struct State {
     config: Config,
     quit: bool,
     screens: Vec<Screen>,
     pending_transient_op: TransientOp,
-    pub(crate) command: Option<IssuedCommand>,
+    pub(crate) cmd_meta: Option<CmdMeta>,
 }
 
 impl State {
@@ -64,7 +67,7 @@ impl State {
             quit: false,
             screens,
             pending_transient_op: TransientOp::None,
-            command: None,
+            cmd_meta: None,
         })
     }
 
@@ -76,16 +79,28 @@ impl State {
         self.screens.last().expect("No screen")
     }
 
-    pub(crate) fn issue_command(
-        &mut self,
-        input: &[u8],
-        mut command: Command,
-    ) -> Result<(), io::Error> {
-        command.current_dir(&self.config.dir);
+    pub(crate) fn issue_command(&mut self, input: &[u8], mut cmd: Command) -> Res<()> {
+        cmd.current_dir(&self.config.dir);
 
-        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
-            self.command = Some(IssuedCommand::spawn(input, command)?);
-        }
+        cmd.stdin(Stdio::piped());
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+
+        self.cmd_meta = Some(CmdMeta {
+            args: command_args(&cmd),
+            out: None,
+        });
+
+        // TODO draw
+        // terminal.draw(|frame| ui::ui::<B>(frame, &*state))?;
+
+        let mut child = cmd.spawn()?;
+
+        use std::io::Write;
+        child.stdin.take().unwrap().write_all(input)?;
+
+        self.cmd_meta.as_mut().unwrap().out = Some(child.wait_with_output()?);
+        self.screen_mut().update()?;
 
         Ok(())
     }
@@ -93,35 +108,34 @@ impl State {
     pub(crate) fn issue_subscreen_command<B: Backend>(
         &mut self,
         terminal: &mut Terminal<B>,
-        mut command: Command,
-    ) -> Result<(), io::Error> {
-        command.current_dir(&self.config.dir);
+        mut cmd: Command,
+    ) -> Res<()> {
+        cmd.current_dir(&self.config.dir);
 
-        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
-            self.command = Some(IssuedCommand::spawn_in_subscreen(terminal, command)?);
-        }
+        cmd.stdin(Stdio::piped());
+        let child = cmd.spawn()?;
+
+        let out = child.wait_with_output()?;
+
+        self.cmd_meta = Some(CmdMeta {
+            args: command_args(&cmd),
+            out: Some(out),
+        });
+
+        terminal.hide_cursor()?;
+        terminal.clear()?;
+
+        self.screen_mut().update()?;
 
         Ok(())
     }
+}
 
-    pub(crate) fn clear_finished_command(&mut self) {
-        if let Some(ref mut command) = self.command {
-            if !command.is_running() {
-                self.command = None
-            }
-        }
-    }
-
-    pub(crate) fn handle_command_output(&mut self) -> Res<()> {
-        if let Some(cmd) = &mut self.command {
-            cmd.read_command_output_to_buffer();
-
-            if cmd.just_finished() {
-                self.screen_mut().update()?;
-            }
-        }
-        Ok(())
-    }
+fn command_args(cmd: &Command) -> Vec<String> {
+    let mut args = vec![];
+    args.push(cmd.get_program().to_string_lossy().to_string());
+    args.extend(cmd.get_args().map(|arg| arg.to_string_lossy().to_string()));
+    args
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -175,14 +189,12 @@ pub(crate) fn update<B: Backend>(
     state: &mut State,
     events: &[Event],
 ) -> Res<()> {
-    state.handle_command_output()?;
-
     for event in events {
         match *event {
             Event::Resize(w, h) => state.screen_mut().size = (w, h),
             Event::Key(key) => {
                 if key.kind == KeyEventKind::Press {
-                    state.clear_finished_command();
+                    state.cmd_meta = None;
 
                     handle_op(terminal, state, key)?;
                 }
@@ -236,17 +248,14 @@ fn handle_op<B: Backend>(
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
             Commit => {
                 state.issue_subscreen_command(terminal, git::commit_cmd())?;
-                state.screen_mut().update()?;
             }
             CommitAmend => {
                 state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
-                state.screen_mut().update()?;
             }
             Transient(op) => state.pending_transient_op = op,
             LogCurrent => goto_log_screen(&state.config, &mut state.screens),
             FetchAll => {
                 state.issue_command(&[], git::fetch_all_cmd())?;
-                state.screen_mut().update()?;
             }
             PullRemote => state.issue_command(&[], git::pull_cmd())?,
             PushRemote => state.issue_command(&[], git::push_cmd())?,
@@ -259,11 +268,9 @@ fn handle_op<B: Backend>(
             }
             RebaseAbort => {
                 state.issue_command(&[], git::rebase_abort_cmd())?;
-                state.screen_mut().update()?;
             }
             RebaseContinue => {
                 state.issue_command(&[], git::rebase_continue_cmd())?;
-                state.screen_mut().update()?;
             }
             ShowRefs => goto_refs_screen(&state.config, &mut state.screens),
         }
@@ -368,28 +375,19 @@ fn editor<'a, B: Backend>(file: String, line: Option<u32>) -> Option<OpClosure<'
 
 fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |_terminal, state| {
-        state
-            .issue_command(&input, command())
-            .expect("Error unstaging hunk");
-        state.screen_mut().update()
+        state.issue_command(&input, command())
     }))
 }
 
 fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |_terminal, state| {
-        state
-            .issue_command(&[], command(arg))
-            .expect("Error unstaging hunk");
-        state.screen_mut().update()
+        state.issue_command(&[], command(arg))
     }))
 }
 
 fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |terminal, state| {
-        state
-            .issue_subscreen_command(terminal, command(arg))
-            .expect("Error issuing command");
-        state.screen_mut().update()
+        state.issue_subscreen_command(terminal, command(arg))
     }))
 }
 

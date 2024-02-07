@@ -5,6 +5,7 @@ use crate::keybinds::Op;
 use crate::keybinds::TransientOp;
 use crate::list_target_ops;
 use crate::theme::CURRENT_THEME;
+use crate::CmdMeta;
 use crate::State;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
@@ -24,7 +25,7 @@ enum Popup<'a> {
 }
 
 pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
-    let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.command {
+    let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.cmd_meta {
         let lines = format_command(cmd);
         (lines.len(), command_popup(lines))
     } else if state.pending_transient_op != TransientOp::None {
@@ -57,23 +58,23 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
     }
 }
 
-fn format_command<'b>(cmd: &crate::command::IssuedCommand) -> Vec<Line<'b>> {
+fn format_command<'b>(cmd: &CmdMeta) -> Vec<Line<'b>> {
     Text::styled(
         format!(
             "$ {}{}",
-            cmd.args,
-            if cmd.finish_acked { "" } else { "..." }
+            cmd.args.join(" "),
+            if cmd.out.is_some() { "" } else { "..." }
         ),
         Style::new().fg(CURRENT_THEME.command),
     )
     .lines
     .into_iter()
-    .chain(
+    .chain(cmd.out.iter().flat_map(|out| {
         Text::raw(
-            String::from_utf8(cmd.output.clone()).expect("Error turning command output to String"),
+            String::from_utf8(out.stderr.clone()).expect("Error turning command output to String"),
         )
-        .lines,
-    )
+        .lines
+    }))
     .collect::<Vec<Line>>()
 }
 
