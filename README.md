@@ -42,3 +42,12 @@ You can even have diffs shown side-by-side
 <img src="doc/normal.png" width="600" />
 <img src="doc/side_by_side.png" width="600" />
 
+## Development
+### Benchmarking
+`cargo bench`
+
+### Profiling
+This project comes with ppref as a dev-dependency. You can run it with:
+`cargo bench --bench show -- --profile-time 5`
+
+A flamegraph would then be output to `target/criterion/show/profile/flamegraph.svg`
