@@ -1,4 +1,5 @@
 mod cli;
+mod command;
 mod diff;
 mod git;
 mod items;
@@ -10,13 +11,13 @@ mod ui;
 mod util;
 
 use clap::Parser;
+use command::IssuedCommand;
 use crossterm::{
     event::{self, Event, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 use items::{Item, TargetData};
-use itertools::Itertools;
 use keybinds::{Op, TargetOp, TransientOp};
 use ratatui::{prelude::*, Terminal};
 use screen::Screen;
@@ -24,10 +25,8 @@ use std::{
     error::Error,
     io::{self, stderr, BufWriter},
     path::PathBuf,
-    process::{Command, Output, Stdio},
-    time::Duration,
+    process::Command,
 };
-use tokio::sync::mpsc::{error::TryRecvError, Receiver, Sender};
 
 type Res<T> = Result<T, Box<dyn Error>>;
 
@@ -37,24 +36,12 @@ struct Config {
     use_delta: bool,
 }
 
-enum UiEvent {
-    CommandStarted(String),
-    CommandFinished(Output),
-    Quit,
-}
-
-pub(crate) struct IssuedCommand {
-    args: String,
-    output: Option<Output>,
-}
-
 struct State {
     config: Config,
+    quit: bool,
     screens: Vec<Screen>,
     pending_transient_op: TransientOp,
-    ui_event_send: Sender<UiEvent>,
-    ui_event_recv: Receiver<UiEvent>,
-    command: Option<IssuedCommand>,
+    pub(crate) command: Option<IssuedCommand>,
 }
 
 impl State {
@@ -72,14 +59,11 @@ impl State {
             None => vec![screen::status::create(&config, args.status)?],
         };
 
-        let (command_send, command_recv) = tokio::sync::mpsc::channel(10);
-
         Ok(Self {
             config,
+            quit: false,
             screens,
             pending_transient_op: TransientOp::None,
-            ui_event_send: command_send,
-            ui_event_recv: command_recv,
             command: None,
         })
     }
@@ -91,91 +75,69 @@ impl State {
     fn screen(&self) -> &Screen {
         self.screens.last().expect("No screen")
     }
+
+    pub(crate) fn issue_command(
+        &mut self,
+        input: &[u8],
+        mut command: Command,
+    ) -> Result<(), io::Error> {
+        command.current_dir(&self.config.dir);
+
+        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
+            self.command = Some(IssuedCommand::spawn(input, command)?);
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn issue_subscreen_command<B: Backend>(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        mut command: Command,
+    ) -> Result<(), io::Error> {
+        command.current_dir(&self.config.dir);
+
+        if !self.command.as_mut().is_some_and(|cmd| cmd.is_running()) {
+            self.command = Some(IssuedCommand::spawn_in_subscreen(terminal, command)?);
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn clear_finished_command(&mut self) {
+        if let Some(ref mut command) = self.command {
+            if !command.is_running() {
+                self.command = None
+            }
+        }
+    }
+
+    pub(crate) fn handle_command_output(&mut self) -> Res<()> {
+        if let Some(cmd) = &mut self.command {
+            cmd.read_command_output_to_buffer();
+
+            if cmd.just_finished() {
+                self.screen_mut().update()?;
+            }
+        }
+        Ok(())
+    }
 }
 
-pub(crate) async fn spawn_command(
-    config: Config,
-    send: Sender<UiEvent>,
-    input: Vec<u8>,
-    mut command: std::process::Command,
-) -> Result<(), io::Error> {
-    send.send(UiEvent::CommandStarted(format_args(&command)))
-        .await
-        .expect("Output send failed");
-
-    command.current_dir(&config.dir);
-
-    command.stdin(Stdio::piped());
-    command.stdout(Stdio::piped());
-    command.stderr(Stdio::piped());
-
-    let mut child = tokio::process::Command::from(command).spawn()?;
-
-    use tokio::io::AsyncWriteExt;
-    child
-        .stdin
-        .take()
-        .unwrap_or_else(|| panic!("No stdin for process"))
-        .write_all(&input)
-        .await?;
-
-    tokio::spawn(async move {
-        let out = child.wait_with_output().await.expect("Process failed");
-        send.send(UiEvent::CommandFinished(out))
-            .await
-            .expect("Output send failed");
-    });
-
-    Ok(())
-}
-
-fn format_args(command: &Command) -> String {
-    [command.get_program().to_string_lossy().to_string()]
-        .into_iter()
-        .chain(
-            command
-                .get_args()
-                .map(|arg| arg.to_string_lossy().to_string()),
-        )
-        .join(" ")
-}
-
-pub(crate) fn run_subscreen_command<B: Backend>(
-    config: &Config,
-    terminal: &mut Terminal<B>,
-    mut command: std::process::Command,
-) -> Result<(), io::Error> {
-    command.current_dir(&config.dir);
-
-    command.stdin(Stdio::piped());
-    let mut child = command.spawn()?;
-
-    child.wait()?;
-
-    terminal.hide_cursor()?;
-    terminal.clear()?;
-
-    Ok(())
-}
-
-#[tokio::main]
-async fn main() -> Res<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
     terminal.hide_cursor()?;
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run(cli::Args::parse(), &mut terminal).await?;
+    run(cli::Args::parse(), &mut terminal)?;
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
 
-async fn run<B: Backend>(
-    args: cli::Args,
-    terminal: &mut Terminal<B>,
-) -> Result<(), Box<dyn Error>> {
+fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
     let mut state = State::create(
         Config {
             dir: String::from_utf8(
@@ -193,51 +155,36 @@ async fn run<B: Backend>(
         },
         args,
     )?;
+    update(terminal, &mut state, &[])?;
 
-    update(terminal, &mut state, &[]).await?;
-
-    loop {
-        let maybe_events = if event::poll(Duration::from_millis(10))? {
-            Some(vec![event::read()?])
-        } else {
-            match state.ui_event_recv.try_recv() {
-                Ok(ui_event) => Some(match ui_event {
-                    UiEvent::CommandStarted(args) => {
-                        state.command = Some(IssuedCommand { args, output: None });
-                        vec![]
-                    }
-                    UiEvent::CommandFinished(out) => {
-                        if let Some(ref mut cmd) = state.command {
-                            cmd.output = Some(out)
-                        }
-                        state.screen_mut().update().expect("Fail updating");
-                        vec![]
-                    }
-                    UiEvent::Quit => return Ok(()),
-                }),
-                Err(TryRecvError::Empty) => None,
-                Err(TryRecvError::Disconnected) => return Err("Error".into()),
-            }
-        };
-
-        if let Some(events) = maybe_events {
-            update(terminal, &mut state, &events).await?;
+    while !state.quit {
+        // TODO Gather all events, no need to draw for every
+        if !event::poll(std::time::Duration::from_millis(u64::MAX))? {
+            continue;
         }
+
+        let event = event::read()?;
+        update(terminal, &mut state, &[event])?;
     }
+
+    Ok(())
 }
 
-pub(crate) async fn update<B: Backend>(
+pub(crate) fn update<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
     events: &[Event],
 ) -> Res<()> {
+    state.handle_command_output()?;
+
     for event in events {
         match *event {
             Event::Resize(w, h) => state.screen_mut().size = (w, h),
             Event::Key(key) => {
                 if key.kind == KeyEventKind::Press {
-                    state.command = None;
-                    handle_op(terminal, state, key).await?;
+                    state.clear_finished_command();
+
+                    handle_op(terminal, state, key)?;
                 }
             }
             _ => (),
@@ -252,7 +199,7 @@ pub(crate) async fn update<B: Backend>(
     Ok(())
 }
 
-async fn handle_op<B: Backend>(
+fn handle_op<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
     key: event::KeyEvent,
@@ -277,7 +224,7 @@ async fn handle_op<B: Backend>(
                     if let Some(screen) = state.screens.last_mut() {
                         screen.update()?;
                     } else {
-                        state.ui_event_send.send(UiEvent::Quit).await?;
+                        state.quit = true
                     }
                 }
             }
@@ -288,43 +235,21 @@ async fn handle_op<B: Backend>(
             HalfPageUp => state.screen_mut().scroll_half_page_up(),
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
             Commit => {
-                run_subscreen_command(&state.config, terminal, git::commit_cmd())?;
+                state.issue_subscreen_command(terminal, git::commit_cmd())?;
                 state.screen_mut().update()?;
             }
             CommitAmend => {
-                run_subscreen_command(&state.config, terminal, git::commit_amend_cmd())?;
+                state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
                 state.screen_mut().update()?;
             }
             Transient(op) => state.pending_transient_op = op,
             LogCurrent => goto_log_screen(&state.config, &mut state.screens),
             FetchAll => {
-                spawn_command(
-                    state.config.clone(),
-                    state.ui_event_send.clone(),
-                    vec![],
-                    git::fetch_all_cmd(),
-                )
-                .await?;
+                state.issue_command(&[], git::fetch_all_cmd())?;
                 state.screen_mut().update()?;
             }
-            PullRemote => {
-                spawn_command(
-                    state.config.clone(),
-                    state.ui_event_send.clone(),
-                    vec![],
-                    git::pull_cmd(),
-                )
-                .await?
-            }
-            PushRemote => {
-                spawn_command(
-                    state.config.clone(),
-                    state.ui_event_send.clone(),
-                    vec![],
-                    git::push_cmd(),
-                )
-                .await?
-            }
+            PullRemote => state.issue_command(&[], git::pull_cmd())?,
+            PushRemote => state.issue_command(&[], git::push_cmd())?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
                     if let Some(mut closure) = closure_by_target_op(act, &target_op) {
@@ -333,23 +258,11 @@ async fn handle_op<B: Backend>(
                 }
             }
             RebaseAbort => {
-                spawn_command(
-                    state.config.clone(),
-                    state.ui_event_send.clone(),
-                    vec![],
-                    git::rebase_abort_cmd(),
-                )
-                .await?;
+                state.issue_command(&[], git::rebase_abort_cmd())?;
                 state.screen_mut().update()?;
             }
             RebaseContinue => {
-                spawn_command(
-                    state.config.clone(),
-                    state.ui_event_send.clone(),
-                    vec![],
-                    git::rebase_continue_cmd(),
-                )
-                .await?;
+                state.issue_command(&[], git::rebase_continue_cmd())?;
                 state.screen_mut().update()?;
             }
             ShowRefs => goto_refs_screen(&state.config, &mut state.screens),
@@ -445,37 +358,38 @@ fn editor<'a, B: Backend>(file: String, line: Option<u32>) -> Option<OpClosure<'
 
         cmd.args(args);
 
-        run_subscreen_command(&state.config, terminal, cmd).expect("Error opening editor");
+        state
+            .issue_subscreen_command(terminal, cmd)
+            .expect("Error opening editor");
+
         state.screen_mut().update()
     }))
 }
 
 fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |_terminal, state| {
-        let config = state.config.clone();
-        let sender = state.ui_event_send.clone();
-        let input = input.clone();
-        tokio::spawn(spawn_command(config, sender, input, command()));
-        Ok(())
+        state
+            .issue_command(&input, command())
+            .expect("Error unstaging hunk");
+        state.screen_mut().update()
     }))
 }
 
 fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |_terminal, state| {
-        tokio::spawn(spawn_command(
-            state.config.clone(),
-            state.ui_event_send.clone(),
-            vec![],
-            command(arg),
-        ));
-        Ok(())
+        state
+            .issue_command(&[], command(arg))
+            .expect("Error unstaging hunk");
+        state.screen_mut().update()
     }))
 }
 
 fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |terminal, state| {
-        run_subscreen_command(&state.config, terminal, command(arg))?;
-        Ok(())
+        state
+            .issue_subscreen_command(terminal, command(arg))
+            .expect("Error issuing command");
+        state.screen_mut().update()
     }))
 }
 
@@ -505,40 +419,38 @@ mod tests {
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
-    #[tokio::test]
-    async fn help_menu() {
+    #[test]
+    fn help_menu() {
         let (ref mut terminal, ref mut state, _dir) = setup(70, 12);
-        update(terminal, state, &[key('h')]).await.unwrap();
+        update(terminal, state, &[key('h')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
-    #[tokio::test]
-    async fn fresh_init() -> Res<()> {
+    #[test]
+    fn fresh_init() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
         assert!(run(&dir, Command::new("git").arg("init"))?);
-        update(terminal, state, &[key('g')]).await.unwrap();
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn new_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(run(&dir, Command::new("git").arg("init"))?);
-        assert!(run(&dir, Command::new("touch").arg("new-file"))?);
-        update(terminal, state, &[key('g')]).await.unwrap();
+        update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
     }
 
-    #[tokio::test]
-    async fn stage_file() -> Res<()> {
+    #[test]
+    fn new_file() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
         assert!(run(&dir, Command::new("git").arg("init"))?);
         assert!(run(&dir, Command::new("touch").arg("new-file"))?);
-        update(terminal, state, &[key('g'), key('j'), key('s'), key('g')])
-            .await
-            .unwrap();
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_debug_snapshot!(terminal.backend().buffer());
+        Ok(())
+    }
+
+    #[test]
+    fn stage_file() -> Res<()> {
+        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        assert!(run(&dir, Command::new("git").arg("init"))?);
+        assert!(run(&dir, Command::new("touch").arg("new-file"))?);
+        update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
     }

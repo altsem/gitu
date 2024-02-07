@@ -1,5 +1,3 @@
-use std::iter;
-
 use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
@@ -7,7 +5,6 @@ use crate::keybinds::Op;
 use crate::keybinds::TransientOp;
 use crate::list_target_ops;
 use crate::theme::CURRENT_THEME;
-use crate::IssuedCommand;
 use crate::State;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
@@ -60,19 +57,23 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
     }
 }
 
-fn format_command<'b>(cmd: &IssuedCommand) -> Vec<Line<'b>> {
-    iter::once(Line::styled(
+fn format_command<'b>(cmd: &crate::command::IssuedCommand) -> Vec<Line<'b>> {
+    Text::styled(
         format!(
             "$ {}{}",
             cmd.args,
-            if cmd.output.is_none() { "..." } else { "" }
+            if cmd.finish_acked { "" } else { "..." }
         ),
         Style::new().fg(CURRENT_THEME.command),
-    ))
-    .chain(match &cmd.output {
-        Some(c) => Text::raw(String::from_utf8_lossy(&c.stderr).to_string()).lines,
-        None => vec![],
-    })
+    )
+    .lines
+    .into_iter()
+    .chain(
+        Text::raw(
+            String::from_utf8(cmd.output.clone()).expect("Error turning command output to String"),
+        )
+        .lines,
+    )
     .collect::<Vec<Line>>()
 }
 
