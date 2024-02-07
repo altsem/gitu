@@ -169,7 +169,7 @@ fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Bo
         },
         args,
     )?;
-    update(terminal, &mut state, &[])?;
+    terminal.draw(|frame| ui::ui::<B>(frame, &state))?;
 
     while !state.quit {
         // TODO Gather all events, no need to draw for every
