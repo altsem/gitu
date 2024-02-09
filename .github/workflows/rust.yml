@@ -22,3 +22,7 @@ jobs:
       run: |
         git config --global init.defaultBranch master
         cargo test --verbose
+    - name: Lint
+      run: cargo clippy
+    - name: Check format
+      run: cargo fmt --check
