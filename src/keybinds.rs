@@ -179,6 +179,7 @@ pub(crate) enum TargetOp {
 }
 
 impl TargetOp {
+    // TODO find a better way to always keep this up to date with TargetOp contents
     pub(crate) fn list_all() -> impl Iterator<Item = &'static TargetOp> {
         [
             &TargetOp::Checkout,
