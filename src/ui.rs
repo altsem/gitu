@@ -2,7 +2,7 @@ use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::keybinds::Op;
-use crate::keybinds::TransientOp;
+use crate::keybinds::SubmenuOp;
 use crate::list_target_ops;
 use crate::theme::CURRENT_THEME;
 use crate::CmdMeta;
@@ -28,9 +28,9 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
     let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.cmd_meta {
         let lines = format_command(cmd);
         (lines.len(), command_popup(lines))
-    } else if state.pending_transient_op != TransientOp::None {
+    } else if state.pending_submenu_op != SubmenuOp::None {
         format_keybinds_menu::<B>(
-            &state.pending_transient_op,
+            &state.pending_submenu_op,
             state.screen().get_selected_item(),
         )
     } else {
@@ -79,7 +79,7 @@ fn format_command<'b>(cmd: &CmdMeta) -> Vec<Line<'b>> {
 }
 
 fn format_keybinds_menu<'b, B: Backend>(
-    pending: &'b TransientOp,
+    pending: &'b SubmenuOp,
     item: &'b Item,
 ) -> (usize, Popup<'b>) {
     let non_target_binds = keybinds::list(pending)
@@ -93,7 +93,7 @@ fn format_keybinds_menu<'b, B: Backend>(
     ));
     for bind in non_target_binds
         .iter()
-        .filter(|bind| !matches!(bind.op, Op::Transient(_)))
+        .filter(|bind| !matches!(bind.op, Op::Submenu(_)))
     {
         pending_binds_column.push(Line::from(vec![
             Span::styled(
@@ -104,29 +104,29 @@ fn format_keybinds_menu<'b, B: Backend>(
         ]));
     }
 
-    let transients = non_target_binds
+    let submenus = non_target_binds
         .iter()
-        .filter(|bind| matches!(bind.op, Op::Transient(_)))
+        .filter(|bind| matches!(bind.op, Op::Submenu(_)))
         .collect::<Vec<_>>();
 
-    let mut transient_binds_column = vec![];
-    if !transients.is_empty() {
-        transient_binds_column.push(Line::styled(
+    let mut submenu_binds_column = vec![];
+    if !submenus.is_empty() {
+        submenu_binds_column.push(Line::styled(
             "Submenu",
             Style::new().fg(CURRENT_THEME.command),
         ));
     }
-    for bind in transients {
-        let Op::Transient(transient) = bind.op else {
+    for bind in submenus {
+        let Op::Submenu(submenu) = bind.op else {
             unreachable!();
         };
 
-        transient_binds_column.push(Line::from(vec![
+        submenu_binds_column.push(Line::from(vec![
             Span::styled(
                 Keybind::format_key(bind),
                 Style::new().fg(CURRENT_THEME.hotkey),
             ),
-            Span::styled(format!(" {:?}", transient), Style::new()),
+            Span::styled(format!(" {:?}", submenu), Style::new()),
         ]));
     }
 
@@ -165,7 +165,7 @@ fn format_keybinds_menu<'b, B: Backend>(
 
     let rows = pending_binds_column
         .into_iter()
-        .zip_longest(transient_binds_column)
+        .zip_longest(submenu_binds_column)
         .zip_longest(target_binds_column)
         .map(|lines| {
             let (ab, c) = lines.or(

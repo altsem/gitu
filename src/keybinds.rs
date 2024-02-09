@@ -2,38 +2,38 @@ use crossterm::event::{self, KeyCode, KeyModifiers};
 
 use KeyCode::*;
 use Op::*;
+use SubmenuOp::*;
 use TargetOp::*;
-use TransientOp::*;
 
 pub(crate) struct Keybind {
-    pub transient: TransientOp,
+    pub submenu: SubmenuOp,
     pub mods: KeyModifiers,
     pub key: KeyCode,
     pub op: Op,
 }
 
 impl Keybind {
-    const fn nomod(transient: TransientOp, key: KeyCode, op: Op) -> Self {
+    const fn nomod(submenu: SubmenuOp, key: KeyCode, op: Op) -> Self {
         Self {
-            transient,
+            submenu,
             mods: KeyModifiers::NONE,
             key,
             op,
         }
     }
 
-    const fn ctrl(transient: TransientOp, key: KeyCode, op: Op) -> Self {
+    const fn ctrl(submenu: SubmenuOp, key: KeyCode, op: Op) -> Self {
         Self {
-            transient,
+            submenu,
             mods: KeyModifiers::CONTROL,
             key,
             op,
         }
     }
 
-    const fn shift(transient: TransientOp, key: KeyCode, op: Op) -> Self {
+    const fn shift(submenu: SubmenuOp, key: KeyCode, op: Op) -> Self {
         Self {
-            transient,
+            submenu,
             mods: KeyModifiers::SHIFT,
             key,
             op,
@@ -86,29 +86,29 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::ctrl(None, Char('u'), HalfPageUp),
     Keybind::ctrl(None, Char('d'), HalfPageDown),
     // Help
-    Keybind::nomod(None, Char('h'), Transient(Help)),
+    Keybind::nomod(None, Char('h'), Submenu(Help)),
     // Branch
-    Keybind::nomod(None, Char('b'), Transient(Branch)),
+    Keybind::nomod(None, Char('b'), Submenu(Branch)),
     Keybind::nomod(Branch, Char('b'), Target(Checkout)),
     // Commit
-    Keybind::nomod(None, Char('c'), Transient(TransientOp::Commit)),
-    Keybind::nomod(TransientOp::Commit, Char('c'), Op::Commit),
-    Keybind::nomod(TransientOp::Commit, Char('a'), CommitAmend),
-    Keybind::nomod(TransientOp::Commit, Char('f'), Target(CommitFixup)),
+    Keybind::nomod(None, Char('c'), Submenu(SubmenuOp::Commit)),
+    Keybind::nomod(SubmenuOp::Commit, Char('c'), Op::Commit),
+    Keybind::nomod(SubmenuOp::Commit, Char('a'), CommitAmend),
+    Keybind::nomod(SubmenuOp::Commit, Char('f'), Target(CommitFixup)),
     // Fetch
-    Keybind::nomod(None, Char('f'), Transient(Fetch)),
+    Keybind::nomod(None, Char('f'), Submenu(Fetch)),
     Keybind::nomod(Fetch, Char('a'), FetchAll),
     // Log
-    Keybind::nomod(None, Char('l'), Transient(Log)),
+    Keybind::nomod(None, Char('l'), Submenu(Log)),
     Keybind::nomod(Log, Char('l'), LogCurrent),
     // Pull
-    Keybind::shift(None, Char('F'), Transient(Pull)),
+    Keybind::shift(None, Char('F'), Submenu(Pull)),
     Keybind::nomod(Pull, Char('p'), PullRemote),
     // Push
-    Keybind::shift(None, Char('P'), Transient(Push)),
+    Keybind::shift(None, Char('P'), Submenu(Push)),
     Keybind::nomod(Push, Char('p'), PushRemote),
     // Rebase
-    Keybind::nomod(None, Char('r'), Transient(Rebase)),
+    Keybind::nomod(None, Char('r'), Submenu(Rebase)),
     Keybind::nomod(Rebase, Char('i'), Target(RebaseInteractive)),
     Keybind::nomod(Rebase, Char('a'), RebaseAbort),
     Keybind::nomod(Rebase, Char('c'), RebaseContinue),
@@ -116,9 +116,9 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Show refs
     Keybind::nomod(None, Char('y'), ShowRefs),
     // Discard
-    Keybind::shift(None, Char('K'), Transient(TransientOp::Discard)),
-    Keybind::nomod(TransientOp::Discard, Char('y'), Target(TargetOp::Discard)),
-    Keybind::nomod(TransientOp::Discard, Char('n'), Quit),
+    Keybind::shift(None, Char('K'), Submenu(SubmenuOp::Discard)),
+    Keybind::nomod(SubmenuOp::Discard, Char('y'), Target(TargetOp::Discard)),
+    Keybind::nomod(SubmenuOp::Discard, Char('n'), Quit),
     // Target actions
     Keybind::nomod(None, Enter, Target(Show)),
     Keybind::nomod(None, Char('s'), Target(Stage)),
@@ -136,7 +136,7 @@ pub(crate) enum Op {
     HalfPageDown,
     PushRemote,
     PullRemote,
-    Transient(TransientOp),
+    Submenu(SubmenuOp),
     Commit,
     CommitAmend,
     FetchAll,
@@ -148,7 +148,7 @@ pub(crate) enum Op {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum TransientOp {
+pub(crate) enum SubmenuOp {
     Any,
     None,
     Branch,
@@ -190,20 +190,20 @@ impl TargetOp {
     }
 }
 
-pub(crate) fn op_of_key_event(pending: TransientOp, key: event::KeyEvent) -> Option<Op> {
+pub(crate) fn op_of_key_event(pending: SubmenuOp, key: event::KeyEvent) -> Option<Op> {
     KEYBINDS
         .iter()
         .find(|keybind| {
-            (keybind.transient, keybind.mods, keybind.key) == (pending, key.modifiers, key.code)
-                || (keybind.transient, keybind.mods, keybind.key) == (Any, key.modifiers, key.code)
+            (keybind.submenu, keybind.mods, keybind.key) == (pending, key.modifiers, key.code)
+                || (keybind.submenu, keybind.mods, keybind.key) == (Any, key.modifiers, key.code)
         })
         .map(|keybind| keybind.op)
 }
 
-pub(crate) fn list(pending: &TransientOp) -> impl Iterator<Item = &Keybind> {
+pub(crate) fn list(pending: &SubmenuOp) -> impl Iterator<Item = &Keybind> {
     let expected = if pending == &Help { None } else { *pending };
 
     KEYBINDS
         .iter()
-        .filter(move |keybind| keybind.transient == expected)
+        .filter(move |keybind| keybind.submenu == expected)
 }

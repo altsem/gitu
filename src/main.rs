@@ -16,7 +16,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use items::{Item, TargetData};
-use keybinds::{Op, TargetOp, TransientOp};
+use keybinds::{Op, SubmenuOp, TargetOp};
 use ratatui::{prelude::*, Terminal};
 use screen::Screen;
 use std::{
@@ -42,7 +42,7 @@ struct State {
     config: Config,
     quit: bool,
     screens: Vec<Screen>,
-    pending_transient_op: TransientOp,
+    pending_submenu_op: SubmenuOp,
     pub(crate) cmd_meta: Option<CmdMeta>,
 }
 
@@ -65,7 +65,7 @@ impl State {
             config,
             quit: args.exit_immediately,
             screens,
-            pending_transient_op: TransientOp::None,
+            pending_submenu_op: SubmenuOp::None,
             cmd_meta: None,
         })
     }
@@ -211,20 +211,20 @@ fn handle_op<B: Backend>(
     state: &mut State,
     key: event::KeyEvent,
 ) -> Res<()> {
-    let pending = if state.pending_transient_op == TransientOp::Help {
-        TransientOp::None
+    let pending = if state.pending_submenu_op == SubmenuOp::Help {
+        SubmenuOp::None
     } else {
-        state.pending_transient_op
+        state.pending_submenu_op
     };
 
     if let Some(op) = keybinds::op_of_key_event(pending, key) {
         use Op::*;
-        let was_transient = state.pending_transient_op != TransientOp::None;
-        state.pending_transient_op = TransientOp::None;
+        let was_submenu = state.pending_submenu_op != SubmenuOp::None;
+        state.pending_submenu_op = SubmenuOp::None;
 
         match op {
             Quit => {
-                if was_transient {
+                if was_submenu {
                     // Do nothing, already cleared
                 } else {
                     state.screens.pop();
@@ -247,7 +247,7 @@ fn handle_op<B: Backend>(
             CommitAmend => {
                 state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
             }
-            Transient(op) => state.pending_transient_op = op,
+            Submenu(op) => state.pending_submenu_op = op,
             LogCurrent => goto_log_screen(&state.config, &mut state.screens),
             FetchAll => {
                 state.issue_command(&[], git::fetch_all_cmd())?;
