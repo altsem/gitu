@@ -1,7 +1,7 @@
 ## It's Gitu! - A Git porcelain *outside* of Emacs
 
 A terminal user interface for Git. Heavily inspired by Magit.
-Gitu launches launches straight from the terminal without tying the user to any specific
+Gitu launches launches straight from the terminal.
 
 <img src="doc/gitu.png" width="600" />
 
