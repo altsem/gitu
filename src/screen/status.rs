@@ -3,11 +3,12 @@ use crate::{
     diff::Diff,
     git,
     items::{self, Item},
-    theme, Config, Res,
+    theme::CURRENT_THEME,
+    Config, Res,
 };
 use ansi_to_tui::IntoText;
 use ratatui::{
-    style::{Color, Style},
+    style::{Style, Stylize},
     text::Text,
 };
 use std::iter;
@@ -23,7 +24,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
                 id: file.path.clone().into(),
                 display: Text::styled(
                     file.path.clone(),
-                    Style::new().fg(theme::CURRENT_THEME.unstaged_file),
+                    Style::new().fg(CURRENT_THEME.unstaged_file).bold(),
                 ),
                 depth: 1,
                 target_data: Some(items::TargetData::File(file.path.clone())),
@@ -39,7 +40,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
                 id: file.path.clone().into(),
                 display: Text::styled(
                     file.path.clone(),
-                    Style::new().fg(theme::CURRENT_THEME.unmerged_file),
+                    Style::new().fg(CURRENT_THEME.unmerged_file).bold(),
                 ),
                 depth: 1,
                 target_data: Some(items::TargetData::File(file.path.clone())),
@@ -64,7 +65,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
                     id: "untracked".into(),
                     display: Text::styled(
                         "\nUntracked files".to_string(),
-                        Style::new().fg(theme::CURRENT_THEME.section),
+                        Style::new().fg(CURRENT_THEME.section).bold(),
                     ),
                     section: true,
                     depth: 0,
@@ -79,7 +80,7 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
                     id: "unmerged".into(),
                     display: Text::styled(
                         "\nUnmerged".to_string(),
-                        Style::new().fg(theme::CURRENT_THEME.section),
+                        Style::new().fg(CURRENT_THEME.section).bold(),
                     ),
                     section: true,
                     depth: 0,
@@ -141,7 +142,7 @@ fn create_status_section_items<'a>(
             id: header.to_string().into(),
             display: Text::styled(
                 format!("{} ({})", header, diff.deltas.len()),
-                Style::new().fg(theme::CURRENT_THEME.section),
+                Style::new().fg(CURRENT_THEME.section).bold(),
             ),
             section: true,
             depth: 0,
@@ -155,7 +156,10 @@ fn create_status_section_items<'a>(
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {
     iter::once(Item {
         id: header.to_string().into(),
-        display: Text::styled(header.to_string(), Style::new().fg(Color::Yellow)),
+        display: Text::styled(
+            header.to_string(),
+            Style::new().fg(CURRENT_THEME.section).bold(),
+        ),
         section: true,
         depth: 0,
         ..Default::default()

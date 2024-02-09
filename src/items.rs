@@ -50,7 +50,7 @@ pub(crate) fn create_diff_items<'a>(
                 } else {
                     format!("{} -> {}", delta.old_file, delta.new_file)
                 },
-                Style::new().fg(theme::CURRENT_THEME.file),
+                Style::new().fg(CURRENT_THEME.file).bold(),
             ),
             section: true,
             depth: *depth,
