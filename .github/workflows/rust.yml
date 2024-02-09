@@ -26,3 +26,5 @@ jobs:
       run: cargo clippy
     - name: Check format
       run: cargo fmt --check
+    - name: Bench
+      run: cargo bench
