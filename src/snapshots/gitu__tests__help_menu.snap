@@ -21,9 +21,9 @@ Buffer {
     styles: [
         x: 0, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
         x: 0, y: 1, fg: Rgb(80, 73, 69), bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 2, fg: Rgb(125, 174, 163), bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 2, fg: Rgb(125, 174, 163), bg: Reset, underline: Reset, modifier: BOLD,
         x: 4, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 21, y: 2, fg: Rgb(125, 174, 163), bg: Reset, underline: Reset, modifier: NONE,
+        x: 21, y: 2, fg: Rgb(125, 174, 163), bg: Reset, underline: Reset, modifier: BOLD,
         x: 28, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 0, y: 3, fg: Rgb(211, 134, 155), bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
