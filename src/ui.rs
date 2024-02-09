@@ -89,7 +89,7 @@ fn format_keybinds_menu<'b, B: Backend>(
     let mut pending_binds_column = vec![];
     pending_binds_column.push(Line::styled(
         format!("{:?}", pending),
-        Style::new().fg(CURRENT_THEME.command),
+        Style::new().fg(CURRENT_THEME.command).bold(),
     ));
     for bind in non_target_binds
         .iter()
@@ -113,7 +113,7 @@ fn format_keybinds_menu<'b, B: Backend>(
     if !submenus.is_empty() {
         submenu_binds_column.push(Line::styled(
             "Submenu",
-            Style::new().fg(CURRENT_THEME.command),
+            Style::new().fg(CURRENT_THEME.command).bold(),
         ));
     }
     for bind in submenus {
