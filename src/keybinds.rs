@@ -82,7 +82,11 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(None, Tab, ToggleSection),
     // Navigation
     Keybind::nomod(None, Char('k'), SelectPrevious),
+    Keybind::nomod(None, Char('p'), SelectPrevious),
+    Keybind::nomod(None, KeyCode::Up, SelectPrevious),
     Keybind::nomod(None, Char('j'), SelectNext),
+    Keybind::nomod(None, Char('n'), SelectNext),
+    Keybind::nomod(None, KeyCode::Down, SelectNext),
     Keybind::ctrl(None, Char('u'), HalfPageUp),
     Keybind::ctrl(None, Char('d'), HalfPageDown),
     // Help
