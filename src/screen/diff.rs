@@ -7,6 +7,6 @@ pub(crate) fn create(config: &Config, args: Vec<String>) -> Res<Screen> {
         let str_args = util::str_vec(&args);
         let diff = git::diff(&config.dir, &str_args)?;
 
-        Ok(items::create_diff_items(&config, &diff, &0).collect())
+        Ok(items::create_diff_items(&diff, &0).collect())
     }))
 }

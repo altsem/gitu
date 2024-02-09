@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use pest::Parser;
 use pest_derive::Parser;
 use std::fmt::Display;
@@ -205,6 +206,22 @@ impl Hunk {
 
     pub fn format_patch(&self) -> String {
         format!("{}{}\n{}", &self.file_header, self.header(), &self.content)
+    }
+
+    pub fn old_content(&self) -> String {
+        self.content
+            .lines()
+            .filter(|line| !line.starts_with("+"))
+            .map(|line| &line[1..])
+            .join("\n")
+    }
+
+    pub fn new_content(&self) -> String {
+        self.content
+            .lines()
+            .filter(|line| !line.starts_with("-"))
+            .map(|line| &line[1..])
+            .join("\n")
     }
 
     pub fn first_diff_line(&self) -> u32 {

@@ -3,10 +3,6 @@ A git TUI heavily inspired by Magit.
 
 <img src="doc/gitu.png" width="600" />
 
-## Dependencies
-Requires `git` and [Delta](https://github.com/dandavison/delta) to be on your PATH.
-[Delta](https://github.com/dandavison/delta) is used for formatting diff output.
-
 ## Install
 ### Using Cargo
 Clone the repo and run:
@@ -33,14 +29,6 @@ Gitu can drop you right into a log, or to the display of a commit:
 gitu log <git_log_args>
 gitu show <git_show_args>
 ```
-
-## Configuration
-Gitu utilizes [Delta](https://github.com/dandavison/delta) to format and highlight diffs if installed.
-Configure Delta like you normally would, and the changes should be visible in Gitu.
-You can even have diffs shown side-by-side
-
-<img src="doc/normal.png" width="600" />
-<img src="doc/side_by_side.png" width="600" />
 
 ## Development
 ### Benchmarking

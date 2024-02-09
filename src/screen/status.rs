@@ -88,12 +88,10 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
             })
             .chain(unmerged)
             .chain(create_status_section_items(
-                &config,
                 "\nUnstaged changes",
                 &git::diff_unstaged(&config.dir)?,
             ))
             .chain(create_status_section_items(
-                &config,
                 "\nStaged changes",
                 &git::diff_staged(&config.dir)?,
             ))
@@ -133,7 +131,6 @@ pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
 // }
 
 fn create_status_section_items<'a>(
-    config: &'a Config,
     header: &str,
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
@@ -152,7 +149,7 @@ fn create_status_section_items<'a>(
         })
     }
     .into_iter()
-    .chain(items::create_diff_items(config, diff, &1))
+    .chain(items::create_diff_items(diff, &1))
 }
 
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {

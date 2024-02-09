@@ -31,7 +31,6 @@ type Res<T> = Result<T, Box<dyn Error>>;
 #[derive(Clone)]
 struct Config {
     dir: PathBuf,
-    use_delta: bool,
 }
 
 pub(crate) struct CmdMeta {
@@ -162,10 +161,6 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
             )?
             .trim_end()
             .into(),
-            use_delta: Command::new("delta")
-                .output()
-                .map(|out| out.status.success())
-                .unwrap_or(false),
         },
         args,
     )?;
@@ -468,7 +463,6 @@ mod tests {
         let state = State::create(
             crate::Config {
                 dir: dir.path().into(),
-                use_delta: false,
             },
             Args {
                 command: None,

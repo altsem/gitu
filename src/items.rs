@@ -1,16 +1,21 @@
 use crate::diff;
 use crate::theme;
-use crate::Config;
+use crate::theme::CURRENT_THEME;
 use ansi_to_tui::IntoText;
 use diff::Delta;
 use diff::Hunk;
+use ratatui::style::Color;
+use ratatui::style::Modifier;
 use ratatui::style::Style;
+use ratatui::style::Stylize;
+use ratatui::text::Line;
+use ratatui::text::Span;
 use ratatui::text::Text;
+use similar::Algorithm;
+use similar::ChangeTag;
+use similar::TextDiff;
 use std::borrow::Cow;
-use std::io::Write;
 use std::iter;
-use std::process::Command;
-use std::process::Stdio;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Item {
@@ -31,7 +36,6 @@ pub(crate) enum TargetData {
 }
 
 pub(crate) fn create_diff_items<'a>(
-    config: &'a Config,
     diff: &'a diff::Diff,
     depth: &'a usize,
 ) -> impl Iterator<Item = Item> + 'a {
@@ -57,12 +61,12 @@ pub(crate) fn create_diff_items<'a>(
             delta
                 .hunks
                 .iter()
-                .flat_map(|hunk| create_hunk_items(config, hunk, *depth)),
+                .flat_map(|hunk| create_hunk_items(hunk, *depth)),
         )
     })
 }
 
-fn create_hunk_items(config: &Config, hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
+fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
@@ -78,9 +82,7 @@ fn create_hunk_items(config: &Config, hunk: &Hunk, depth: usize) -> impl Iterato
     })
     .chain([{
         Item {
-            display: format_diff_hunk(config, hunk)
-                .into_text()
-                .expect("Error creating hunk text"),
+            display: format_diff_hunk(hunk),
             unselectable: true,
             depth: depth + 2,
             target_data: None,
@@ -89,42 +91,47 @@ fn create_hunk_items(config: &Config, hunk: &Hunk, depth: usize) -> impl Iterato
     }])
 }
 
-fn format_diff_hunk(config: &Config, hunk: &Hunk) -> String {
-    if config.use_delta {
-        let content = format!("{}\n{}", hunk.header(), hunk.content);
-        {
-            let input = content.as_bytes();
-            let cmd: &[&str] = &[
-                "delta",
-                "--color-only",
-                &format!("-w {}", crossterm::terminal::size().unwrap().0),
-            ];
-            let mut command = Command::new(cmd[0])
-                .args(&cmd[1..])
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .spawn()
-                .expect("Couldn't spawn process");
+fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
+    let old = hunk.old_content();
+    let new = hunk.new_content();
+    let diff = TextDiff::configure()
+        .algorithm(Algorithm::Patience)
+        .diff_lines(&old, &new);
 
-            command
-                .stdin
-                .take()
-                .unwrap_or_else(|| panic!("No stdin for {:?} process", cmd))
-                .write_all(input)
-                .expect("Couldn't write to process stdin");
-            let output = command
-                .wait_with_output()
-                .unwrap_or_else(|_| panic!("Error writing {:?} output", cmd));
+    let lines = diff
+        .grouped_ops(4)
+        .iter()
+        .flat_map(|group| {
+            group.into_iter().flat_map(|op| {
+                diff.iter_inline_changes(op).map(|change| {
+                    let color = match change.tag() {
+                        ChangeTag::Equal => Color::Reset,
+                        ChangeTag::Delete => CURRENT_THEME.removed,
+                        ChangeTag::Insert => CURRENT_THEME.added,
+                    };
 
-            String::from_utf8(output.stdout).unwrap()
-        }
-        .lines()
-        .skip(1) // Header is already shown
-        .collect::<Vec<_>>()
-        .join("\n")
-    } else {
-        hunk.content.clone()
-    }
+                    Line::from(
+                        change
+                            .values()
+                            .into_iter()
+                            .map(|(emph, value)| {
+                                Span::styled(
+                                    value.to_string(),
+                                    if *emph {
+                                        Style::new().fg(color).add_modifier(Modifier::REVERSED)
+                                    } else {
+                                        Style::new().fg(color)
+                                    },
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                })
+            })
+        })
+        .collect::<Vec<_>>();
+
+    Text::from(lines)
 }
 
 pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
