@@ -1,33 +1,53 @@
-# Gitu
-## It's Gitu - A git porcelain outside of Emacs
+## It's Gitu! - A Git porcelain *outside* of Emacs
 
-A stand-alone terminal user interface for Git. Heavily inspired by Magit.
+A terminal user interface for Git. Heavily inspired by Magit.
+Gitu launches launches straight from the terminal without tying the user to any specific
 
 <img src="doc/gitu.png" width="600" />
 
-## Features
+### Features
 Gitu aims to implement many of the core features of Magit over time. 
 It should be familiar to any previous Magit users.
 
-<img src="doc/help.png" width="600" />
+A rough list of so-far supported features:
+- File/Hunk-level stage/unstage
+- Show (view commits / open EDITOR at line)
+- Show branches
+- Branch:
+  - checkout
+- Commit:
+  - commit, amend, fixup
+- Fetch:
+  - all
+- Log:
+  - current
+- Pull / Push:
+  - remote
+- Rebase:
+  - abort, continue, autosquash, interactive
 
-## CLI
+### Keybinds
+A help-menu can be shown by pressing the `h` key.
+
+<img src="doc/help.png" width="400" />
+
+### CLI
 Gitu can drop you right into a log, or to the display of a commit:
 ```
 gitu log <git_log_args>
 gitu show <git_show_args>
 ```
 
-## Install
-### Using Cargo
+### Install
+#### Using Cargo
 Clone the repo and run:
 `cargo install --path . --locked`
 
-## Development
-### Benchmarking
+### Development
+#### Benchmarking
 `cargo bench`
 
-### Profiling
+#### Profiling
 This project comes with pprof as a dev-dependency. You can run it with:
 `cargo bench --bench show -- --profile-time 5`
 
