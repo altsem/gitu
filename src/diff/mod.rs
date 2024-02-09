@@ -211,7 +211,7 @@ impl Hunk {
     pub fn old_content(&self) -> String {
         self.content
             .lines()
-            .filter(|line| !line.starts_with("+"))
+            .filter(|line| !line.starts_with('+'))
             .map(|line| &line[1..])
             .join("\n")
     }
@@ -219,7 +219,7 @@ impl Hunk {
     pub fn new_content(&self) -> String {
         self.content
             .lines()
-            .filter(|line| !line.starts_with("-"))
+            .filter(|line| !line.starts_with('-'))
             .map(|line| &line[1..])
             .join("\n")
     }

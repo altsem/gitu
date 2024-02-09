@@ -102,7 +102,7 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
         .grouped_ops(4)
         .iter()
         .flat_map(|group| {
-            group.into_iter().flat_map(|op| {
+            group.iter().flat_map(|op| {
                 diff.iter_inline_changes(op).map(|change| {
                     let color = match change.tag() {
                         ChangeTag::Equal => Color::Reset,
@@ -113,7 +113,7 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
                     Line::from(
                         change
                             .values()
-                            .into_iter()
+                            .iter()
                             .map(|(emph, value)| {
                                 Span::styled(
                                     value.to_string(),
