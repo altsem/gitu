@@ -1,4 +1,3 @@
-use crossterm::terminal;
 use ratatui::{prelude::*, widgets::Widget};
 
 use crate::{theme::CURRENT_THEME, Res};
@@ -15,7 +14,7 @@ pub(crate) mod status;
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
-    pub(crate) size: (u16, u16),
+    pub(crate) size: Rect,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
     ui_lines: Vec<(usize, Item, Line<'static>)>,
@@ -23,9 +22,7 @@ pub(crate) struct Screen {
 }
 
 impl<'a> Screen {
-    pub(crate) fn new(refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>) -> Res<Self> {
-        let size = terminal::size().expect("Error reading terminal size");
-
+    pub(crate) fn new(size: Rect, refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>) -> Res<Self> {
         let items = refresh_items()?;
 
         let mut screen = Self {
@@ -87,7 +84,7 @@ impl<'a> Screen {
             .last()
             .unwrap();
 
-        let end_line = self.size.1.saturating_sub(1);
+        let end_line = self.size.height.saturating_sub(1);
         if last as u16 > end_line + self.scroll {
             self.scroll = last as u16 - end_line;
         }
@@ -112,12 +109,12 @@ impl<'a> Screen {
     }
 
     pub(crate) fn scroll_half_page_up(&mut self) {
-        let half_screen = self.size.1 / 2;
+        let half_screen = self.size.height / 2;
         self.scroll = self.scroll.saturating_sub(half_screen);
     }
 
     pub(crate) fn scroll_half_page_down(&mut self) {
-        let half_screen = self.size.1 / 2;
+        let half_screen = self.size.height / 2;
         self.scroll = (self.scroll + half_screen).min(
             // FIXME Why doesn't this work?
             self.collapsed_lines_items_iter()

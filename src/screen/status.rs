@@ -8,102 +8,106 @@ use crate::{
 };
 use ansi_to_tui::IntoText;
 use ratatui::{
+    prelude::Rect,
     style::{Style, Stylize},
     text::Text,
 };
 use std::iter;
 
-pub(crate) fn create(config: &Config, status: bool) -> Res<Screen> {
+pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
     let config = config.clone();
-    Screen::new(Box::new(move || {
-        let untracked = git::status(&config.dir)?
-            .files
-            .iter()
-            .filter(|file| file.is_untracked())
-            .map(|file| Item {
-                id: file.path.clone().into(),
-                display: Text::styled(
-                    file.path.clone(),
-                    Style::new().fg(CURRENT_THEME.unstaged_file).bold(),
-                ),
-                depth: 1,
-                target_data: Some(items::TargetData::File(file.path.clone())),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
-
-        let unmerged = git::status(&config.dir)?
-            .files
-            .iter()
-            .filter(|file| file.is_unmerged())
-            .map(|file| Item {
-                id: file.path.clone().into(),
-                display: Text::styled(
-                    file.path.clone(),
-                    Style::new().fg(CURRENT_THEME.unmerged_file).bold(),
-                ),
-                depth: 1,
-                target_data: Some(items::TargetData::File(file.path.clone())),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
-
-        let items = status
-            .then_some(Item {
-                id: "status".into(),
-                display: git::status_simple(&config.dir)?
-                    .into_text()
-                    .expect("Error parsing status ansi"),
-                unselectable: true,
-                ..Default::default()
-            })
-            .into_iter()
-            .chain(if untracked.is_empty() {
-                None
-            } else {
-                Some(Item {
-                    id: "untracked".into(),
+    Screen::new(
+        size,
+        Box::new(move || {
+            let untracked = git::status(&config.dir)?
+                .files
+                .iter()
+                .filter(|file| file.is_untracked())
+                .map(|file| Item {
+                    id: file.path.clone().into(),
                     display: Text::styled(
-                        "\nUntracked files".to_string(),
-                        Style::new().fg(CURRENT_THEME.section).bold(),
+                        file.path.clone(),
+                        Style::new().fg(CURRENT_THEME.unstaged_file).bold(),
                     ),
-                    section: true,
-                    depth: 0,
+                    depth: 1,
+                    target_data: Some(items::TargetData::File(file.path.clone())),
                     ..Default::default()
                 })
-            })
-            .chain(untracked)
-            .chain(if unmerged.is_empty() {
-                None
-            } else {
-                Some(Item {
-                    id: "unmerged".into(),
+                .collect::<Vec<_>>();
+
+            let unmerged = git::status(&config.dir)?
+                .files
+                .iter()
+                .filter(|file| file.is_unmerged())
+                .map(|file| Item {
+                    id: file.path.clone().into(),
                     display: Text::styled(
-                        "\nUnmerged".to_string(),
-                        Style::new().fg(CURRENT_THEME.section).bold(),
+                        file.path.clone(),
+                        Style::new().fg(CURRENT_THEME.unmerged_file).bold(),
                     ),
-                    section: true,
-                    depth: 0,
+                    depth: 1,
+                    target_data: Some(items::TargetData::File(file.path.clone())),
                     ..Default::default()
                 })
-            })
-            .chain(unmerged)
-            .chain(create_status_section_items(
-                "\nUnstaged changes",
-                &git::diff_unstaged(&config.dir)?,
-            ))
-            .chain(create_status_section_items(
-                "\nStaged changes",
-                &git::diff_staged(&config.dir)?,
-            ))
-            .chain(create_log_section_items(
-                "\nRecent commits",
-                &git::log_recent(&config.dir)?,
-            ))
-            .collect();
+                .collect::<Vec<_>>();
 
-        Ok(items)
-    }))
+            let items = status
+                .then_some(Item {
+                    id: "status".into(),
+                    display: git::status_simple(&config.dir)?
+                        .into_text()
+                        .expect("Error parsing status ansi"),
+                    unselectable: true,
+                    ..Default::default()
+                })
+                .into_iter()
+                .chain(if untracked.is_empty() {
+                    None
+                } else {
+                    Some(Item {
+                        id: "untracked".into(),
+                        display: Text::styled(
+                            "\nUntracked files".to_string(),
+                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        ),
+                        section: true,
+                        depth: 0,
+                        ..Default::default()
+                    })
+                })
+                .chain(untracked)
+                .chain(if unmerged.is_empty() {
+                    None
+                } else {
+                    Some(Item {
+                        id: "unmerged".into(),
+                        display: Text::styled(
+                            "\nUnmerged".to_string(),
+                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        ),
+                        section: true,
+                        depth: 0,
+                        ..Default::default()
+                    })
+                })
+                .chain(unmerged)
+                .chain(create_status_section_items(
+                    "\nUnstaged changes",
+                    &git::diff_unstaged(&config.dir)?,
+                ))
+                .chain(create_status_section_items(
+                    "\nStaged changes",
+                    &git::diff_staged(&config.dir)?,
+                ))
+                .chain(create_log_section_items(
+                    "\nRecent commits",
+                    &git::log_recent(&config.dir)?,
+                ))
+                .collect();
+
+            Ok(items)
+        }),
+    )
 }
 
 // fn format_branch_status(status: &BranchStatus) -> String {

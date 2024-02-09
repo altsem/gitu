@@ -47,18 +47,18 @@ struct State {
 }
 
 impl State {
-    fn create(config: Config, args: cli::Args) -> Res<Self> {
+    fn create(config: Config, size: Rect, args: cli::Args) -> Res<Self> {
         let screens = match args.command {
             Some(cli::Commands::Show { git_show_args }) => {
-                vec![screen::show::create(&config, git_show_args)?]
+                vec![screen::show::create(&config, size, git_show_args)?]
             }
             Some(cli::Commands::Log { git_log_args }) => {
-                vec![screen::log::create(&config, git_log_args)?]
+                vec![screen::log::create(&config, size, git_log_args)?]
             }
             Some(cli::Commands::Diff { git_diff_args }) => {
-                vec![screen::diff::create(&config, git_diff_args)?]
+                vec![screen::diff::create(&config, size, git_diff_args)?]
             }
-            None => vec![screen::status::create(&config, args.status)?],
+            None => vec![screen::status::create(&config, size, args.status)?],
         };
 
         Ok(Self {
@@ -162,6 +162,7 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
             .trim_end()
             .into(),
         },
+        terminal.size()?,
         args,
     )?;
     terminal.draw(|frame| ui::ui::<B>(frame, &state))?;
@@ -186,7 +187,11 @@ pub(crate) fn update<B: Backend>(
 ) -> Res<()> {
     for event in events {
         match *event {
-            Event::Resize(w, h) => state.screen_mut().size = (w, h),
+            Event::Resize(w, h) => {
+                for screen in state.screens.iter_mut() {
+                    screen.size = Rect::new(0, 0, w, h);
+                }
+            }
             Event::Key(key) => {
                 if key.kind == KeyEventKind::Press {
                     state.cmd_meta = None;
@@ -335,9 +340,10 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
 }
 
 fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
-    Some(Box::new(move |_terminal, state| {
+    Some(Box::new(move |terminal, state| {
         state.screens.push(
-            screen::show::create(&state.config, vec![r.clone()]).expect("Couldn't create screen"),
+            screen::show::create(&state.config, terminal.size()?, vec![r.clone()])
+                .expect("Couldn't create screen"),
         );
         Ok(())
     }))
@@ -388,12 +394,14 @@ fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<
 
 fn goto_log_screen(config: &Config, screens: &mut Vec<Screen>) {
     screens.drain(1..);
-    screens.push(screen::log::create(config, vec![]).expect("Couldn't create screen"));
+    let size = screens.last().unwrap().size;
+    screens.push(screen::log::create(config, size, vec![]).expect("Couldn't create screen"));
 }
 
 fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
     screens.drain(1..);
-    screens.push(screen::show_refs::create(config).expect("Couldn't create screen"));
+    let size = screens.last().unwrap().size;
+    screens.push(screen::show_refs::create(config, size).expect("Couldn't create screen"));
 }
 
 #[cfg(test)]
@@ -401,7 +409,7 @@ mod tests {
     use std::process::Command;
 
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-    use ratatui::{backend::TestBackend, Terminal};
+    use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
     use temp_dir::TempDir;
 
     use crate::{cli::Args, update, Res, State};
@@ -464,6 +472,7 @@ mod tests {
             crate::Config {
                 dir: dir.path().into(),
             },
+            Rect::new(0, 0, width, height),
             Args {
                 command: None,
                 status: false,
