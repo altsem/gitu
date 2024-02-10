@@ -455,7 +455,7 @@ mod tests {
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
 
-        update(terminal, state, &[key('s'), key('g')]).unwrap();
+        update(terminal, state, &[key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
     }
