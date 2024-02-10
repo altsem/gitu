@@ -113,9 +113,8 @@ impl<'a> Screen {
     pub(crate) fn scroll_half_page_down(&mut self) {
         let half_screen = self.size.height / 2;
         self.scroll = (self.scroll + half_screen).min(
-            // FIXME Why doesn't this work?
             self.collapsed_lines_items_iter()
-                .map(|(line, _i, _item, lc)| line + lc)
+                .map(|(line, _i, _item, lc)| (line + lc).saturating_sub(half_screen as usize))
                 .last()
                 .unwrap_or(0) as u16,
         );
