@@ -15,18 +15,6 @@ pub(crate) struct Delta {
     pub hunks: Vec<Hunk>,
 }
 
-// TODO Is this needed?
-impl Display for Delta {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.file_header)?;
-        for hunk in self.hunks.iter() {
-            f.write_str(&hunk.to_string())?;
-        }
-
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Hunk {
     pub file_header: String,
