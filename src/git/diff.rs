@@ -4,7 +4,6 @@ use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Diff {
-    pub commit: Option<String>,
     pub deltas: Vec<Delta>,
 }
 

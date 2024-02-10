@@ -12,18 +12,16 @@ impl FromStr for Diff {
     type Err = pest::error::Error<Rule>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut commit = None;
         let mut deltas = vec![];
 
         for diff in DiffParser::parse(Rule::diffs, s)? {
             match diff.as_rule() {
-                Rule::commit => commit = Some(diff.as_str().to_string()),
                 Rule::diff => deltas.push(parse_diff(diff)),
                 rule => panic!("No rule {:?}", rule),
             }
         }
 
-        Ok(Self { commit, deltas })
+        Ok(Self { deltas })
     }
 }
 

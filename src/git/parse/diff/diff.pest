@@ -19,6 +19,6 @@ hunk      =  { hunk_header ~ hunk_body }
 
 diff = { diff_header ~ hunk* }
 
-commit = { "commit " ~ to_header }
+commit = _{ "commit " ~ to_header }
 
 diffs = _{ commit? ~ diff* }
