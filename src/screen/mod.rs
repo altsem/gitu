@@ -17,7 +17,6 @@ pub(crate) struct Screen {
     pub(crate) size: Rect,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
-    ui_lines: Vec<(usize, Item, Line<'static>)>,
     collapsed: HashSet<Cow<'static, str>>,
 }
 
@@ -31,7 +30,6 @@ impl<'a> Screen {
             size,
             refresh_items,
             items,
-            ui_lines: vec![],
             collapsed: HashSet::new(),
         };
 
@@ -39,7 +37,6 @@ impl<'a> Screen {
         screen.select_next();
         screen.select_previous();
 
-        screen.update_ui_lines();
         Ok(screen)
     }
 
@@ -144,8 +141,6 @@ impl<'a> Screen {
                 self.collapsed.insert(selected.id.clone());
             }
         }
-
-        self.update_ui_lines();
     }
 
     pub(crate) fn clamp_cursor(&mut self) {
@@ -154,7 +149,6 @@ impl<'a> Screen {
 
     pub(crate) fn update(&mut self) -> Res<()> {
         self.items = (self.refresh_items)()?;
-        self.update_ui_lines();
         Ok(())
     }
 
@@ -186,36 +180,22 @@ impl<'a> Screen {
         &self.items[self.cursor]
     }
 
-    fn update_ui_lines(&mut self) {
-        self.ui_lines = self
-            .collapsed_items_iter()
-            .flat_map(|(i, item)| {
-                item.display
-                    .clone()
-                    .lines
-                    .into_iter()
-                    .map(move |line| (i, item.to_owned(), line))
-            })
-            .map(|(i, item, mut line)| {
-                if self.is_collapsed(&item) && line.width() > 0 {
-                    line.spans.push("…".into());
-                }
-
-                (i, item, line)
-            })
-            .collect();
+    fn display_lines(&self) -> impl Iterator<Item = (usize, &Item, &Line<'_>)> {
+        self.collapsed_items_iter()
+            .flat_map(|(i, item)| item.display.lines.iter().map(move |line| (i, item, line)))
     }
 }
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut highlight_depth = None;
-        for (line_i, (item_i, item, line)) in self.ui_lines[(self.scroll as usize)..]
-            .iter()
+        for (line_i, (item_i, item, line)) in self
+            .display_lines()
+            .skip(self.scroll as usize)
             .take(area.height as usize)
             .enumerate()
         {
-            if self.cursor == *item_i {
+            if self.cursor == item_i {
                 highlight_depth = Some(item.depth);
             } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                 highlight_depth = None;
@@ -231,7 +211,7 @@ impl Widget for &Screen {
 
                 buf.set_style(
                     area,
-                    Style::new().bg(if self.cursor == *item_i {
+                    Style::new().bg(if self.cursor == item_i {
                         CURRENT_THEME.highlight
                     } else {
                         CURRENT_THEME.dim_highlight
@@ -240,14 +220,19 @@ impl Widget for &Screen {
             }
 
             let mut x = 0;
+            let mut overflow = false;
             for span in line.spans.iter() {
                 buf.set_span(x, line_i as u16, &span, span.width() as u16);
-                let overflow = x + span.width() as u16 >= area.width;
+                overflow = x + span.width() as u16 >= area.width;
                 if overflow {
-                    buf.get_mut(area.width - 1, line_i as u16).set_char('…');
+                    x = area.width - 1;
                     break;
                 }
                 x += span.width() as u16;
+            }
+
+            if self.is_collapsed(&item) && line.width() > 0 || overflow {
+                buf.get_mut(x, line_i as u16).set_char('…');
             }
         }
     }
