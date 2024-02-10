@@ -165,7 +165,7 @@ fn run_git<T: FromStr<Err = Box<dyn Error>>>(
         .output()?
         .stdout;
 
-    Ok(str::from_utf8(&out)?.parse()?)
+    str::from_utf8(&out)?.parse()
 }
 
 fn run_git_no_parse(dir: &Path, args: &[&str], meta_args: &[&str]) -> Res<String> {

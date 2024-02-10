@@ -11,7 +11,7 @@ use ratatui::{
     style::{Style, Stylize},
     text::Text,
 };
-use std::iter;
+
 
 pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
     let config = config.clone();

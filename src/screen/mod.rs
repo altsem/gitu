@@ -222,7 +222,7 @@ impl Widget for &Screen {
             let mut x = 1;
             let mut overflow = false;
             for span in line.spans.iter() {
-                buf.set_span(x, line_i as u16, &span, span.width() as u16);
+                buf.set_span(x, line_i as u16, span, span.width() as u16);
                 overflow = x + span.width() as u16 >= area.width;
                 if overflow {
                     x = area.width - 1;
@@ -231,7 +231,7 @@ impl Widget for &Screen {
                 x += span.width() as u16;
             }
 
-            if self.is_collapsed(&item) && line.width() > 0 || overflow {
+            if self.is_collapsed(item) && line.width() > 0 || overflow {
                 buf.get_mut(x, line_i as u16).set_char('…');
             }
             if self.cursor == item_i {
