@@ -61,33 +61,49 @@ pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
                 })
                 .into_iter()
                 .chain(if untracked.is_empty() {
-                    None
+                    vec![]
                 } else {
-                    Some(Item {
-                        id: "untracked".into(),
-                        display: Text::styled(
-                            "\nUntracked files".to_string(),
-                            Style::new().fg(CURRENT_THEME.section).bold(),
-                        ),
-                        section: true,
-                        depth: 0,
-                        ..Default::default()
-                    })
+                    vec![
+                        Item {
+                            display: Text::raw(""),
+                            depth: 0,
+                            unselectable: true,
+                            ..Default::default()
+                        },
+                        Item {
+                            id: "untracked".into(),
+                            display: Text::styled(
+                                "Untracked files".to_string(),
+                                Style::new().fg(CURRENT_THEME.section).bold(),
+                            ),
+                            section: true,
+                            depth: 0,
+                            ..Default::default()
+                        },
+                    ]
                 })
                 .chain(untracked)
                 .chain(if unmerged.is_empty() {
-                    None
+                    vec![]
                 } else {
-                    Some(Item {
-                        id: "unmerged".into(),
-                        display: Text::styled(
-                            "\nUnmerged".to_string(),
-                            Style::new().fg(CURRENT_THEME.section).bold(),
-                        ),
-                        section: true,
-                        depth: 0,
-                        ..Default::default()
-                    })
+                    vec![
+                        Item {
+                            display: Text::raw(""),
+                            depth: 0,
+                            unselectable: true,
+                            ..Default::default()
+                        },
+                        Item {
+                            id: "unmerged".into(),
+                            display: Text::styled(
+                                "Unmerged".to_string(),
+                                Style::new().fg(CURRENT_THEME.section).bold(),
+                            ),
+                            section: true,
+                            depth: 0,
+                            ..Default::default()
+                        },
+                    ]
                 })
                 .chain(unmerged)
                 .chain(create_status_section_items(
