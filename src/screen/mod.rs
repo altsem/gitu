@@ -241,7 +241,7 @@ impl Widget for &Screen {
 
             let mut x = 0;
             for span in line.spans.iter() {
-                buf.set_stringn(x, line_i as u16, &span.content, span.width(), span.style);
+                buf.set_span(x, line_i as u16, &span, span.width() as u16);
                 x += span.width() as u16;
             }
         }
