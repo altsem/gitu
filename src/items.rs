@@ -1,9 +1,9 @@
-use crate::diff;
+use crate::git::diff::Delta;
+use crate::git::diff::Diff;
+use crate::git::diff::Hunk;
 use crate::theme;
 use crate::theme::CURRENT_THEME;
 use ansi_to_tui::IntoText;
-use diff::Delta;
-use diff::Hunk;
 use ratatui::style::Color;
 use ratatui::style::Modifier;
 use ratatui::style::Style;
@@ -36,7 +36,7 @@ pub(crate) enum TargetData {
 }
 
 pub(crate) fn create_diff_items<'a>(
-    diff: &'a diff::Diff,
+    diff: &'a Diff,
     depth: &'a usize,
 ) -> impl Iterator<Item = Item> + 'a {
     diff.deltas.iter().flat_map(|delta| {

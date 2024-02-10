@@ -1,5 +1,11 @@
-use crate::{diff::Diff, status::Status, Res};
 use std::{path::Path, process::Command, str};
+
+use crate::Res;
+
+use self::{diff::Diff, status::Status};
+
+pub(crate) mod diff;
+pub(crate) mod status;
 
 // TODO Check for.git/index.lock and block if it exists
 // TODO Use only plumbing commands

@@ -1,7 +1,6 @@
 use super::Screen;
 use crate::{
-    diff::Diff,
-    git,
+    git::{self, diff::Diff},
     items::{self, Item},
     theme::CURRENT_THEME,
     Config, Res,

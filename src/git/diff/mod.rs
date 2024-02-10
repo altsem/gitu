@@ -20,7 +20,7 @@ impl Display for Diff {
 }
 
 #[derive(Parser)]
-#[grammar = "diff/diff.pest"]
+#[grammar = "git/diff/diff.pest"]
 struct DiffParser;
 
 impl Diff {

@@ -1,10 +1,8 @@
 pub mod cli;
-mod diff;
 mod git;
 mod items;
 mod keybinds;
 mod screen;
-mod status;
 mod theme;
 mod ui;
 mod util;
