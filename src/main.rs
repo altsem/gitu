@@ -452,7 +452,10 @@ mod tests {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
         assert!(run(&dir, Command::new("git").arg("init"))?);
         assert!(run(&dir, Command::new("touch").arg("new-file"))?);
-        update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_debug_snapshot!(terminal.backend().buffer());
+
+        update(terminal, state, &[key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
     }
