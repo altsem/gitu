@@ -141,10 +141,13 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    run(cli::Args::parse(), &mut terminal)?;
+    let result = run(cli::Args::parse(), &mut terminal);
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
+
+    result?;
+
     Ok(())
 }
 
