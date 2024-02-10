@@ -12,7 +12,6 @@ use ratatui::{
     text::Text,
 };
 
-
 pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
     let config = config.clone();
     Screen::new(
