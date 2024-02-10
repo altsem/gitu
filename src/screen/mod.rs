@@ -242,6 +242,11 @@ impl Widget for &Screen {
             let mut x = 0;
             for span in line.spans.iter() {
                 buf.set_span(x, line_i as u16, &span, span.width() as u16);
+                let overflow = x + span.width() as u16 >= area.width;
+                if overflow {
+                    buf.get_mut(area.width - 1, line_i as u16).set_char('…');
+                    break;
+                }
                 x += span.width() as u16;
             }
         }
