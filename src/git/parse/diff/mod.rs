@@ -1,6 +1,9 @@
 use pest::Parser;
 use pest_derive::Parser;
-use std::str::{self, FromStr};
+use std::{
+    error::Error,
+    str::{self, FromStr},
+};
 
 use crate::git::diff::{Delta, Diff, Hunk};
 
@@ -9,7 +12,7 @@ use crate::git::diff::{Delta, Diff, Hunk};
 struct DiffParser;
 
 impl FromStr for Diff {
-    type Err = pest::error::Error<Rule>;
+    type Err = Box<dyn Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut deltas = vec![];

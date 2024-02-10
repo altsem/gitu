@@ -1,8 +1,9 @@
 use crate::Res;
 use std::{
+    error::Error,
     path::Path,
     process::Command,
-    str::{self},
+    str::{self, FromStr},
 };
 
 use self::diff::Diff;
@@ -15,87 +16,47 @@ pub(crate) mod status;
 // TODO Use only plumbing commands
 
 pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
-    let out = Command::new("git")
-        .args(&[&["diff"], args].concat())
-        .current_dir(dir)
-        .output()?
-        .stdout;
-
-    Ok(str::from_utf8(&out)?.parse()?)
+    run_git(dir, &["diff"], args)
 }
 
 pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
-    let out = Command::new("git")
-        .arg("diff")
-        .current_dir(dir)
-        .output()?
-        .stdout;
-
-    Ok(str::from_utf8(&out)?.parse()?)
+    run_git(dir, &["diff"], &[])
 }
 
 pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
-    let out = Command::new("git")
-        .args(["diff", "--staged"])
-        .current_dir(dir)
-        .output()?
-        .stdout;
-
-    Ok(str::from_utf8(&out)?.parse()?)
+    run_git(dir, &["diff", "--staged"], &[])
 }
 
 pub(crate) fn status(dir: &Path) -> Res<status::Status> {
-    let out = Command::new("git")
-        .args(["status", "--porcelain", "--branch"])
-        .current_dir(dir)
-        .output()?
-        .stdout;
-    Ok(str::from_utf8(&out)?.parse()?)
+    run_git(dir, &["status", "--porcelain", "--branch"], &[])
 }
+
 pub(crate) fn status_simple(dir: &Path) -> Res<String> {
-    let out = Command::new("git")
-        .args(["-c", "color.status=always", "status"])
-        .current_dir(dir)
-        .output()?
-        .stdout;
-    Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
+    run_git_no_parse(dir, &["-c", "color.status=always", "status"], &[])
 }
 
 pub(crate) fn show(dir: &Path, args: &[&str]) -> Res<Diff> {
-    let out = Command::new("git")
-        .args(&[&["show"], args].concat())
-        .current_dir(dir)
-        .output()?
-        .stdout;
-    Ok(str::from_utf8(&out)?.parse()?)
+    run_git(dir, &["show"], args)
 }
+
 pub(crate) fn show_summary(dir: &Path, args: &[&str]) -> Res<String> {
-    let out = Command::new("git")
-        .args(&[&["show", "--summary", "--decorate", "--color"], args].concat())
-        .current_dir(dir)
-        .output()?
-        .stdout;
-    Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
+    run_git_no_parse(dir, &["show", "--summary", "--decorate", "--color"], args)
 }
 
 // TODO Make this return a more useful type. Vec<Log>?
 pub(crate) fn log_recent(dir: &Path) -> Res<String> {
-    let out = Command::new("git")
-        .args(["log", "-n", "5", "--oneline", "--decorate", "--color"])
-        .current_dir(dir)
-        .output()?
-        .stdout;
-    Ok(String::from_utf8(out)?.replace("[m", "[0m"))
+    run_git_no_parse(
+        dir,
+        &["log", "-n", "5", "--oneline", "--decorate", "--color"],
+        &[],
+    )
 }
 // TODO Make this return a more useful type. Vec<Log>?
 pub(crate) fn log(dir: &Path, args: &[&str]) -> Res<String> {
-    let out = Command::new("git")
-        .args(&[&["log", "--oneline", "--decorate", "--color"], args].concat())
-        .current_dir(dir)
-        .output()?
-        .stdout;
-    Ok(str::from_utf8(&out)?.replace("[m", "[0m"))
+    run_git_no_parse(dir, &["log", "--oneline", "--decorate", "--color"], args)
 }
+
+// TODO Clean this up
 pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
     let out = Command::new("git")
         .args([
@@ -191,6 +152,30 @@ pub(crate) fn checkout_file_cmd(file: &str) -> Command {
 
 pub(crate) fn checkout_ref_cmd(reference: &str) -> Command {
     git(&["checkout", reference])
+}
+
+fn run_git<T: FromStr<Err = Box<dyn Error>>>(
+    dir: &Path,
+    args: &[&str],
+    meta_args: &[&str],
+) -> Res<T> {
+    let out = Command::new("git")
+        .args(&[args, meta_args].concat())
+        .current_dir(dir)
+        .output()?
+        .stdout;
+
+    Ok(str::from_utf8(&out)?.parse()?)
+}
+
+fn run_git_no_parse(dir: &Path, args: &[&str], meta_args: &[&str]) -> Res<String> {
+    let out = Command::new("git")
+        .args(&[args, meta_args].concat())
+        .current_dir(dir)
+        .output()?
+        .stdout;
+
+    Ok(String::from_utf8(out)?)
 }
 
 fn git(args: &[&str]) -> Command {

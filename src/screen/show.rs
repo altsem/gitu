@@ -19,7 +19,7 @@ pub(crate) fn create(config: &Config, size: Rect, args: Vec<String>) -> Res<Scre
             let show = git::show(&config.dir.clone(), &str_args)?;
 
             Ok(iter::once(Item {
-                display: summary.into_text()?,
+                display: summary.replace("[m", "[0m").into_text()?,
                 ..Default::default()
             })
             .chain(items::create_diff_items(&show, &0))

@@ -146,7 +146,7 @@ pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
         Item {
             id: log_line.to_string().into(),
             display: log_line
-                .to_string()
+                .replace("[m", "[0m")
                 .into_text()
                 .expect("Error creating log text"),
             depth: 1,

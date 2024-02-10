@@ -54,6 +54,7 @@ pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
                 .then_some(Item {
                     id: "status".into(),
                     display: git::status_simple(&config.dir)?
+                        .replace("[m", "[0m")
                         .into_text()
                         .expect("Error parsing status ansi"),
                     unselectable: true,

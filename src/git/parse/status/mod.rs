@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{error::Error, str::FromStr};
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -10,7 +10,7 @@ use crate::git::status::{BranchStatus, Status, StatusFile};
 struct StatusParser;
 
 impl FromStr for Status {
-    type Err = pest::error::Error<Rule>;
+    type Err = Box<dyn Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut local = None;
