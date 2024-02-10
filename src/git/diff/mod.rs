@@ -9,16 +9,6 @@ pub struct Diff {
     pub deltas: Vec<Delta>,
 }
 
-impl Display for Diff {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for delta in self.deltas.iter() {
-            f.write_str(&delta.to_string())?;
-        }
-
-        Ok(())
-    }
-}
-
 #[derive(Parser)]
 #[grammar = "git/diff/diff.pest"]
 struct DiffParser;
