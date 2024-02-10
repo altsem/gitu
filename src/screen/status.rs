@@ -92,15 +92,15 @@ pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
                 })
                 .chain(unmerged)
                 .chain(create_status_section_items(
-                    "\nUnstaged changes",
+                    "Unstaged changes",
                     &git::diff_unstaged(&config.dir)?,
                 ))
                 .chain(create_status_section_items(
-                    "\nStaged changes",
+                    "Staged changes",
                     &git::diff_staged(&config.dir)?,
                 ))
                 .chain(create_log_section_items(
-                    "\nRecent commits",
+                    "Recent commits",
                     &git::log_recent(&config.dir)?,
                 ))
                 .collect();
@@ -140,33 +140,50 @@ fn create_status_section_items<'a>(
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
     if diff.deltas.is_empty() {
-        None
+        vec![]
     } else {
-        Some(Item {
-            id: header.to_string().into(),
-            display: Text::styled(
-                format!("{} ({})", header, diff.deltas.len()),
-                Style::new().fg(CURRENT_THEME.section).bold(),
-            ),
-            section: true,
-            depth: 0,
-            ..Default::default()
-        })
+        vec![
+            Item {
+                display: Text::raw(""),
+                unselectable: true,
+                depth: 0,
+                ..Default::default()
+            },
+            Item {
+                id: header.to_string().into(),
+                display: Text::styled(
+                    format!("{} ({})", header, diff.deltas.len()),
+                    Style::new().fg(CURRENT_THEME.section).bold(),
+                ),
+                section: true,
+                depth: 0,
+                ..Default::default()
+            },
+        ]
     }
     .into_iter()
     .chain(items::create_diff_items(diff, &1))
 }
 
 fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {
-    iter::once(Item {
-        id: header.to_string().into(),
-        display: Text::styled(
-            header.to_string(),
-            Style::new().fg(CURRENT_THEME.section).bold(),
-        ),
-        section: true,
-        depth: 0,
-        ..Default::default()
-    })
+    [
+        Item {
+            display: Text::raw(""),
+            depth: 0,
+            unselectable: true,
+            ..Default::default()
+        },
+        Item {
+            id: header.to_string().into(),
+            display: Text::styled(
+                header.to_string(),
+                Style::new().fg(CURRENT_THEME.section).bold(),
+            ),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        },
+    ]
+    .into_iter()
     .chain(items::create_log_items(log))
 }

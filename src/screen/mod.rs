@@ -219,7 +219,7 @@ impl Widget for &Screen {
                 );
             }
 
-            let mut x = 0;
+            let mut x = 1;
             let mut overflow = false;
             for span in line.spans.iter() {
                 buf.set_span(x, line_i as u16, &span, span.width() as u16);
@@ -233,6 +233,9 @@ impl Widget for &Screen {
 
             if self.is_collapsed(&item) && line.width() > 0 || overflow {
                 buf.get_mut(x, line_i as u16).set_char('…');
+            }
+            if self.cursor == item_i {
+                buf.get_mut(0, line_i as u16).set_char('🢒');
             }
         }
     }
