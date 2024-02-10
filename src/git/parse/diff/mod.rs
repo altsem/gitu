@@ -1,24 +1,21 @@
-use itertools::Itertools;
 use pest::Parser;
 use pest_derive::Parser;
-use std::fmt::Display;
+use std::str::{self, FromStr};
 
-#[derive(Debug, Clone)]
-pub struct Diff {
-    pub commit: Option<String>,
-    pub deltas: Vec<Delta>,
-}
+use crate::git::diff::{Delta, Diff, Hunk};
 
 #[derive(Parser)]
-#[grammar = "git/diff/diff.pest"]
+#[grammar = "git/parse/diff/diff.pest"]
 struct DiffParser;
 
-impl Diff {
-    pub fn parse(input: &str) -> Self {
+impl FromStr for Diff {
+    type Err = pest::error::Error<Rule>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut commit = None;
         let mut deltas = vec![];
 
-        for diff in DiffParser::parse(Rule::diffs, input).expect("Error parsing diff") {
+        for diff in DiffParser::parse(Rule::diffs, s)? {
             match diff.as_rule() {
                 Rule::commit => commit = Some(diff.as_str().to_string()),
                 Rule::diff => deltas.push(parse_diff(diff)),
@@ -26,7 +23,7 @@ impl Diff {
             }
         }
 
-        Self { commit, deltas }
+        Ok(Self { commit, deltas })
     }
 }
 
@@ -147,101 +144,16 @@ fn parse_range(hunk_field: pest::iterators::Pair<'_, Rule>) -> (u32, u32) {
     )
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Delta {
-    pub file_header: String,
-    pub old_file: String,
-    pub new_file: String,
-    pub hunks: Vec<Hunk>,
-}
-
-impl Display for Delta {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.file_header)?;
-        for hunk in self.hunks.iter() {
-            f.write_str(&hunk.to_string())?;
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Hunk {
-    pub file_header: String,
-    pub old_file: String,
-    pub new_file: String,
-    pub old_start: u32,
-    pub old_lines: u32,
-    pub new_start: u32,
-    pub new_lines: u32,
-    header_suffix: String,
-    pub content: String,
-}
-
-impl Hunk {
-    pub fn display_header(&self) -> String {
-        format!(
-            "@@ -{},{} +{},{} @@",
-            self.old_start, self.old_lines, self.new_start, self.new_lines
-        )
-    }
-
-    pub fn header(&self) -> String {
-        format!(
-            "@@ -{},{} +{},{} @@{}",
-            self.old_start, self.old_lines, self.new_start, self.new_lines, self.header_suffix
-        )
-    }
-
-    pub fn format_patch(&self) -> String {
-        format!("{}{}\n{}", &self.file_header, self.header(), &self.content)
-    }
-
-    pub fn old_content(&self) -> String {
-        self.content
-            .lines()
-            .filter(|line| !line.starts_with('+'))
-            .map(|line| &line[1..])
-            .join("\n")
-    }
-
-    pub fn new_content(&self) -> String {
-        self.content
-            .lines()
-            .filter(|line| !line.starts_with('-'))
-            .map(|line| &line[1..])
-            .join("\n")
-    }
-
-    pub fn first_diff_line(&self) -> u32 {
-        self.content
-            .lines()
-            .enumerate()
-            .filter(|(_, line)| line.starts_with('+') || line.starts_with('-'))
-            .map(|(i, _)| i)
-            .next()
-            .unwrap_or(0) as u32
-            + self.new_start
-    }
-}
-
-impl Display for Hunk {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.display_header())?;
-        f.write_str(&self.content)?;
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::Diff;
+    use std::str::FromStr;
+
+    use crate::git::diff::Diff;
     use pretty_assertions::assert_eq;
 
     #[test]
     fn parse_example() {
-        let diff = Diff::parse(include_str!("example.patch"));
+        let diff = Diff::from_str(include_str!("example.patch")).unwrap();
         assert_eq!(diff.deltas.len(), 2);
         assert_eq!(diff.deltas[0].hunks.len(), 2);
         assert_eq!(diff.deltas[1].hunks.len(), 2);
@@ -249,7 +161,7 @@ mod tests {
 
     #[test]
     fn format_hunk_patch() {
-        let diff = Diff::parse(include_str!("example.patch"));
+        let diff = Diff::from_str(include_str!("example.patch")).unwrap();
         assert_eq!(
             diff.deltas[0].hunks[0].format_patch(),
             r#"diff --git a/src/diff.rs b/src/diff.rs
@@ -279,7 +191,7 @@ index 3757767..0aeba60 100644
 
     #[test]
     fn parse_example_empty_file() {
-        let diff = Diff::parse(include_str!("example_empty_file.patch"));
+        let diff = Diff::from_str(include_str!("example_empty_file.patch")).unwrap();
         assert_eq!(diff.deltas.len(), 1);
         assert_eq!(diff.deltas[0].hunks.len(), 0);
     }

@@ -1,59 +1,25 @@
+use std::str::FromStr;
+
 use pest::Parser;
 use pest_derive::Parser;
 
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Status {
-    pub branch_status: BranchStatus,
-    pub files: Vec<StatusFile>,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct BranchStatus {
-    pub local: Option<String>,
-    pub remote: Option<String>,
-    pub ahead: u32,
-    pub behind: u32,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct StatusFile {
-    pub status_code: [char; 2],
-    pub path: String,
-    pub new_path: Option<String>,
-}
-
-impl StatusFile {
-    pub fn is_unmerged(&self) -> bool {
-        matches!(
-            self.status_code,
-            ['D', 'D']
-                | ['A', 'U']
-                | ['U', 'D']
-                | ['U', 'A']
-                | ['D', 'U']
-                | ['A', 'A']
-                | ['U', 'U']
-        )
-    }
-
-    pub fn is_untracked(&self) -> bool {
-        self.status_code == ['?', '?']
-    }
-}
+use crate::git::status::{BranchStatus, Status, StatusFile};
 
 #[derive(Parser)]
-#[grammar = "git/status/status.pest"] // relative to src
+#[grammar = "git/parse/status/status.pest"] // relative to src
 struct StatusParser;
 
-impl Status {
-    pub fn parse(input: &str) -> Self {
+impl FromStr for Status {
+    type Err = pest::error::Error<Rule>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut local = None;
         let mut remote = None;
         let mut ahead = 0;
         let mut behind = 0;
         let mut files = vec![];
 
-        for line in StatusParser::parse(Rule::status_lines, input).expect("Error parsing status") {
+        for line in StatusParser::parse(Rule::status_lines, s)? {
             match line.as_rule() {
                 Rule::no_repo => (),
                 Rule::branch_status => {
@@ -96,7 +62,7 @@ impl Status {
             }
         }
 
-        Self {
+        Ok(Status {
             branch_status: BranchStatus {
                 local,
                 remote,
@@ -104,20 +70,22 @@ impl Status {
                 behind,
             },
             files,
-        }
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::str::FromStr;
+
+    use crate::git::{status::BranchStatus, status::Status, status::StatusFile};
 
     #[test]
     fn parse_simple() {
         let input = "## master...origin/master\n M src/git.rs\n R foo -> bar\n?? spaghet\n";
 
         assert_eq!(
-            Status::parse(input),
+            Status::from_str(input).unwrap(),
             Status {
                 branch_status: BranchStatus {
                     local: Some("master".to_string()),
@@ -151,7 +119,7 @@ mod tests {
         let input = "## master...origin/master [ahead 1]\n";
 
         assert_eq!(
-            Status::parse(input),
+            Status::from_str(input).unwrap(),
             Status {
                 branch_status: BranchStatus {
                     local: Some("master".to_string()),
@@ -169,7 +137,7 @@ mod tests {
         let input = "## master...origin/master [behind 1]\n";
 
         assert_eq!(
-            Status::parse(input),
+            Status::from_str(input).unwrap(),
             Status {
                 branch_status: BranchStatus {
                     local: Some("master".to_string()),
@@ -187,7 +155,7 @@ mod tests {
         let input = "## master...origin/master [ahead 1, behind 1]\n";
 
         assert_eq!(
-            Status::parse(input),
+            Status::from_str(input).unwrap(),
             Status {
                 branch_status: BranchStatus {
                     local: Some("master".to_string()),
@@ -205,7 +173,7 @@ mod tests {
         let input = "## test.lol\n";
 
         assert_eq!(
-            Status::parse(input),
+            Status::from_str(input).unwrap(),
             Status {
                 branch_status: BranchStatus {
                     local: Some("test.lol".to_string()),
@@ -221,7 +189,7 @@ mod tests {
     #[test]
     fn unmerged() {
         let input = "## mergetest...origin/mergetest\nUU src/main.rs\n";
-        assert!(Status::parse(input).files[0].is_unmerged());
+        assert!(Status::from_str(input).unwrap().files[0].is_unmerged());
     }
 
     #[test]
@@ -230,13 +198,13 @@ mod tests {
 ?? "spaghet lol.testing !@#$%^&*()"
 ?? src/diff.pest
 "#;
-        assert_eq!(Status::parse(input).files.len(), 2);
+        assert_eq!(Status::from_str(input).unwrap().files.len(), 2);
     }
 
     #[test]
     fn no_branch() {
         assert_eq!(
-            Status::parse("## HEAD (no branch)\n"),
+            Status::from_str("## HEAD (no branch)\n").unwrap(),
             Status {
                 branch_status: BranchStatus {
                     local: None,
