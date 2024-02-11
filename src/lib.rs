@@ -430,7 +430,8 @@ mod tests {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
         run(&dir, &["git", "init", "--initial-branch", "master"]);
         run(&dir, &["touch", "new-file"]);
-        update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
+        run(&dir, &["git", "add", "new-file"]);
+        update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 

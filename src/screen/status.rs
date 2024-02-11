@@ -1,3 +1,5 @@
+use std::iter;
+
 use super::Screen;
 use crate::{
     git::{self, diff::Diff, status::BranchStatus},
@@ -18,64 +20,81 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
         size,
         Box::new(move || {
             let status = git::status(&config.dir)?;
-            let rebase_status = git::rebase_status(&config.dir)?;
-            let merge_status = git::merge_status(&config.dir)?;
             let untracked = untracked(&status);
             let unmerged = unmerged(&status);
 
-            let items = rebase(rebase_status)
-                .or_else(|| merge(merge_status))
-                .or_else(|| branch(status))
+            let items = if let Some(rebase) = git::rebase_status(&config.dir)? {
+                vec![Item {
+                    id: "rebase_status".into(),
+                    display: Text::styled(
+                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
+                        Style::new().fg(CURRENT_THEME.section).bold(),
+                    ),
+                    ..Default::default()
+                }]
                 .into_iter()
-                .chain(if untracked.is_empty() {
-                    vec![]
-                } else {
-                    vec![
-                        blank_line(),
-                        Item {
-                            id: "untracked".into(),
-                            display: Text::styled(
-                                "Untracked files".to_string(),
-                                Style::new().fg(CURRENT_THEME.section).bold(),
-                            ),
-                            section: true,
-                            depth: 0,
-                            ..Default::default()
-                        },
-                    ]
-                })
-                .chain(untracked)
-                .chain(if unmerged.is_empty() {
-                    vec![]
-                } else {
-                    vec![
-                        blank_line(),
-                        Item {
-                            id: "unmerged".into(),
-                            display: Text::styled(
-                                "Unmerged".to_string(),
-                                Style::new().fg(CURRENT_THEME.section).bold(),
-                            ),
-                            section: true,
-                            depth: 0,
-                            ..Default::default()
-                        },
-                    ]
-                })
-                .chain(unmerged)
-                .chain(create_status_section_items(
-                    "Unstaged changes",
-                    &git::diff_unstaged(&config.dir)?,
-                ))
-                .chain(create_status_section_items(
-                    "Staged changes",
-                    &git::diff_staged(&config.dir)?,
-                ))
-                .chain(create_log_section_items(
-                    "Recent commits",
-                    &git::log_recent(&config.dir)?,
-                ))
-                .collect();
+            } else if let Some(merge) = git::merge_status(&config.dir)? {
+                vec![Item {
+                    id: "merge_status".into(),
+                    display: Text::styled(
+                        format!("Merging {}", &merge.head),
+                        Style::new().fg(CURRENT_THEME.section).bold(),
+                    ),
+                    ..Default::default()
+                }]
+                .into_iter()
+            } else {
+                branch_status_items(&status.branch_status).into_iter()
+            }
+            .chain(if untracked.is_empty() {
+                vec![]
+            } else {
+                vec![
+                    blank_line(),
+                    Item {
+                        id: "untracked".into(),
+                        display: Text::styled(
+                            "Untracked files".to_string(),
+                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        ),
+                        section: true,
+                        depth: 0,
+                        ..Default::default()
+                    },
+                ]
+            })
+            .chain(untracked)
+            .chain(if unmerged.is_empty() {
+                vec![]
+            } else {
+                vec![
+                    blank_line(),
+                    Item {
+                        id: "unmerged".into(),
+                        display: Text::styled(
+                            "Unmerged".to_string(),
+                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        ),
+                        section: true,
+                        depth: 0,
+                        ..Default::default()
+                    },
+                ]
+            })
+            .chain(unmerged)
+            .chain(create_status_section_items(
+                "Unstaged changes",
+                &git::diff_unstaged(&config.dir)?,
+            ))
+            .chain(create_status_section_items(
+                "Staged changes",
+                &git::diff_staged(&config.dir)?,
+            ))
+            .chain(create_log_section_items(
+                "Recent commits",
+                &git::log_recent(&config.dir)?,
+            ))
+            .collect();
 
             Ok(items)
         }),
@@ -90,38 +109,6 @@ fn blank_line() -> Item {
         ..Default::default()
     }
 }
-
-fn rebase(rebase_status: Option<git::rebase_status::RebaseStatus>) -> Option<Item> {
-    rebase_status.map(|rebase| Item {
-        id: "rebase_status".into(),
-        display: Text::styled(
-            format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
-            Style::new().fg(CURRENT_THEME.section).bold(),
-        ),
-        ..Default::default()
-    })
-}
-
-fn merge(merge_status: Option<git::merge_status::MergeStatus>) -> Option<Item> {
-    merge_status.map(|merge| Item {
-        id: "merge_status".into(),
-        display: Text::styled(
-            format!("Merging {}", &merge.head),
-            Style::new().fg(CURRENT_THEME.section).bold(),
-        ),
-        ..Default::default()
-    })
-}
-
-fn branch(status: git::status::Status) -> Option<Item> {
-    Some(Item {
-        id: "branch_status".into(),
-        display: format_branch_status(&status.branch_status),
-        unselectable: true,
-        ..Default::default()
-    })
-}
-
 fn untracked(status: &git::status::Status) -> Vec<Item> {
     status
         .files
@@ -158,31 +145,57 @@ fn unmerged(status: &git::status::Status) -> Vec<Item> {
         .collect::<Vec<_>>()
 }
 
-fn format_branch_status(status: &BranchStatus) -> Text<'static> {
+fn branch_status_items(status: &BranchStatus) -> Vec<Item> {
     match (&status.local, &status.remote) {
-        (None, None) => Text::raw("No branch"),
-        (Some(local), None) => Text::raw(format!("On branch {}.", local)),
-        (Some(local), Some(remote)) => {
-            if status.ahead == 0 && status.behind == 0 {
-                Text::raw(format!(
-                    "On branch {}\nYour branch is up to date with '{}'.",
-                    local, remote
-                ))
-            } else if status.ahead > 0 && status.behind == 0 {
-                Text::raw(format!(
-                    "On branch {}\nYour branch is ahead of '{}' by {} commit.",
-                    local, remote, status.ahead
-                ))
-            } else if status.ahead == 0 && status.behind > 0 {
-                Text::raw(format!(
-                    "On branch {}\nYour branch is behind '{}' by {} commit.",
-                    local, remote, status.behind
-                ))
-            } else {
-                Text::raw(format!("On branch {}\nYour branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", local, remote, status.ahead, status.behind))
-            }
-        }
+        (None, None) => vec![Item {
+            id: "branch_status".into(),
+            display: Text::styled("No branch", Style::new().fg(CURRENT_THEME.section).bold()),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        }],
+        (Some(local), maybe_remote) => Vec::from_iter(
+            iter::once(Item {
+                id: "branch_status".into(),
+                display: Text::styled(
+                    format!("On branch {}", local),
+                    Style::new().fg(CURRENT_THEME.section).bold(),
+                ),
+                section: true,
+                depth: 0,
+                ..Default::default()
+            })
+            .chain(
+                maybe_remote
+                    .as_ref()
+                    .map(|remote| branch_status_remote_description(status, remote)),
+            ),
+        ),
         (None, Some(_)) => unreachable!(),
+    }
+}
+
+fn branch_status_remote_description(status: &BranchStatus, remote: &str) -> Item {
+    Item {
+        id: "branch_status".into(),
+        display: if status.ahead == 0 && status.behind == 0 {
+            Text::raw(format!("Your branch is up to date with '{}'.", remote))
+        } else if status.ahead > 0 && status.behind == 0 {
+            Text::raw(format!(
+                "Your branch is ahead of '{}' by {} commit.",
+                remote, status.ahead
+            ))
+        } else if status.ahead == 0 && status.behind > 0 {
+            Text::raw(format!(
+                "Your branch is behind '{}' by {} commit.",
+                remote, status.behind
+            ))
+        } else {
+            Text::raw(format!("Your branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", remote, status.ahead, status.behind))
+        },
+        depth: 1,
+        unselectable: true,
+        ..Default::default()
     }
 }
 
