@@ -76,7 +76,12 @@ impl State {
         self.screens.last().expect("No screen")
     }
 
-    pub(crate) fn issue_command(&mut self, input: &[u8], mut cmd: Command) -> Res<()> {
+    pub(crate) fn issue_command<B: Backend>(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        input: &[u8],
+        mut cmd: Command,
+    ) -> Res<()> {
         cmd.current_dir(&self.config.dir);
 
         cmd.stdin(Stdio::piped());
@@ -88,8 +93,7 @@ impl State {
             out: None,
         });
 
-        // TODO draw
-        // terminal.draw(|frame| ui::ui::<B>(frame, &*state))?;
+        terminal.draw(|frame| ui::ui::<B>(frame, &*self))?;
 
         let mut child = cmd.spawn()?;
 
@@ -256,10 +260,10 @@ fn handle_op<B: Backend>(
             Submenu(op) => state.pending_submenu_op = op,
             LogCurrent => goto_log_screen(&state.config, &mut state.screens),
             FetchAll => {
-                state.issue_command(&[], git::fetch_all_cmd())?;
+                state.issue_command(terminal, &[], git::fetch_all_cmd())?;
             }
-            PullRemote => state.issue_command(&[], git::pull_cmd())?,
-            PushRemote => state.issue_command(&[], git::push_cmd())?,
+            PullRemote => state.issue_command(terminal, &[], git::pull_cmd())?,
+            PushRemote => state.issue_command(terminal, &[], git::push_cmd())?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
                     if let Some(mut closure) = closure_by_target_op(act, &target_op) {
@@ -268,10 +272,10 @@ fn handle_op<B: Backend>(
                 }
             }
             RebaseAbort => {
-                state.issue_command(&[], git::rebase_abort_cmd())?;
+                state.issue_command(terminal, &[], git::rebase_abort_cmd())?;
             }
             RebaseContinue => {
-                state.issue_command(&[], git::rebase_continue_cmd())?;
+                state.issue_command(terminal, &[], git::rebase_continue_cmd())?;
             }
             ShowRefs => goto_refs_screen(&state.config, &mut state.screens),
         }
@@ -376,14 +380,14 @@ fn editor<'a, B: Backend>(file: String, line: Option<u32>) -> Option<OpClosure<'
 }
 
 fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClosure<'a, B>> {
-    Some(Box::new(move |_terminal, state| {
-        state.issue_command(&input, command())
+    Some(Box::new(move |terminal, state| {
+        state.issue_command(terminal, &input, command())
     }))
 }
 
 fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
-    Some(Box::new(move |_terminal, state| {
-        state.issue_command(&[], command(arg))
+    Some(Box::new(move |terminal, state| {
+        state.issue_command(terminal, &[], command(arg))
     }))
 }
 
