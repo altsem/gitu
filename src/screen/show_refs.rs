@@ -7,7 +7,7 @@ use crate::{
 };
 use ratatui::{
     prelude::Rect,
-    style::Style,
+    style::{Style, Stylize},
     text::{Line, Span, Text},
 };
 
@@ -22,10 +22,12 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                     let columns = [
                         Some(Span::styled(
                             local.clone(),
-                            Style::new().fg(CURRENT_THEME.branch),
+                            Style::new().fg(CURRENT_THEME.branch).bold(),
                         )),
-                        (!remote.is_empty())
-                            .then_some(Span::styled(remote, Style::new().fg(CURRENT_THEME.remote))),
+                        (!remote.is_empty()).then_some(Span::styled(
+                            remote,
+                            Style::new().fg(CURRENT_THEME.remote).bold(),
+                        )),
                         Some(Span::raw(subject)),
                     ]
                     .into_iter()

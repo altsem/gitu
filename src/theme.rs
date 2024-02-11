@@ -21,29 +21,28 @@ pub struct Theme {
 }
 
 // https://github.com/sainnhe/gruvbox-material-vscode
-pub const DEFAULT_THEME: Theme = Theme {
-    section: Color::Rgb(0xd8, 0xa6, 0x57),
-    unstaged_file: Color::Rgb(0xea, 0x69, 0x62),
-    unmerged_file: Color::Rgb(0xea, 0x69, 0x62),
-    file: Color::Rgb(0xd3, 0x86, 0x9b),
-    hunk_header: Color::Rgb(0x7d, 0xae, 0xa3),
-    highlight: Color::Rgb(0x50, 0x49, 0x45),
-    dim_highlight: Color::Rgb(0x2a, 0x28, 0x27),
-    command: Color::Rgb(0x7d, 0xae, 0xa3),
-    hotkey: Color::Rgb(0xd3, 0x86, 0x9b),
-    branch: Color::Rgb(0x7d, 0xae, 0xa3),
-    remote: Color::Rgb(0xd3, 0x86, 0x9b),
-    added: Color::Rgb(0xa9, 0xb6, 0x65),
-    removed: Color::Rgb(0xea, 0x69, 0x62),
-};
+pub const DEFAULT_THEME: Theme = {
+    let red = Color::Rgb(0xea, 0x69, 0x62);
+    let green = Color::Rgb(0xa9, 0xb6, 0x65);
+    let blue = Color::Rgb(0x7d, 0xae, 0xa3);
+    let yellow = Color::Rgb(0xd8, 0xa6, 0x57);
+    let magenta = Color::Rgb(0xd3, 0x86, 0x9b);
+    let gray = Color::Rgb(0x50, 0x49, 0x45);
+    let dark_gray = Color::Rgb(0x2a, 0x28, 0x27);
 
-// pub const BASE16_THEME: Theme = Theme {
-//     section: Color::Yellow,
-//     unstaged_file: Color::Red,
-//     unmerged_file: Color::Red,
-//     file: Color::Magenta,
-//     hunk_header: Color::Blue,
-//     highlight: Color::DarkGray,
-//     dim_highlight: Color::LightGreen,
-//     command: Color::Blue,
-// };
+    Theme {
+        section: yellow,
+        unstaged_file: red,
+        unmerged_file: red,
+        file: magenta,
+        hunk_header: blue,
+        highlight: gray,
+        dim_highlight: dark_gray,
+        command: blue,
+        hotkey: magenta,
+        branch: green,
+        remote: red,
+        added: green,
+        removed: red,
+    }
+};
