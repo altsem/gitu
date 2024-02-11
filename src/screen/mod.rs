@@ -1,6 +1,6 @@
 use ratatui::{prelude::*, widgets::Widget};
 
-use crate::{theme::CURRENT_THEME, Res};
+use crate::{items::TargetData, theme::CURRENT_THEME, Res};
 
 use super::Item;
 use std::{borrow::Cow, collections::HashSet};
@@ -33,11 +33,26 @@ impl<'a> Screen {
             collapsed: HashSet::new(),
         };
 
-        // Sets cursor to first selectable item
-        screen.select_next();
-        screen.select_previous();
+        screen.cursor = screen
+            .find_first_hunk()
+            .or_else(|| screen.find_first_selectable())
+            .unwrap_or(0);
 
         Ok(screen)
+    }
+
+    fn find_first_hunk(&mut self) -> Option<usize> {
+        self.collapsed_items_iter()
+            .find(|(_i, item)| {
+                !item.unselectable && matches!(item.target_data, Some(TargetData::Hunk(_)))
+            })
+            .map(|(i, _item)| i)
+    }
+
+    fn find_first_selectable(&mut self) -> Option<usize> {
+        self.collapsed_items_iter()
+            .find(|(_i, item)| !item.unselectable)
+            .map(|(i, _item)| i)
     }
 
     pub(crate) fn select_next(&mut self) {
