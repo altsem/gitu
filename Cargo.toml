@@ -3,11 +3,6 @@ name = "gitu"
 version = "0.1.0"
 edition = "2021"
 
-# Criterion needs this
-[lib]
-name = "gitu"
-path = "src/main.rs"
-
 [[bench]]
 name = "show"
 harness = false
