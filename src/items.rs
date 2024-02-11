@@ -104,24 +104,19 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
         .flat_map(|group| {
             group.iter().flat_map(|op| {
                 diff.iter_inline_changes(op).map(|change| {
-                    let color = match change.tag() {
-                        ChangeTag::Equal => Color::Reset,
-                        ChangeTag::Delete => CURRENT_THEME.removed,
-                        ChangeTag::Insert => CURRENT_THEME.added,
+                    let style = match change.tag() {
+                        ChangeTag::Equal => Style::new(),
+                        ChangeTag::Delete => Style::new().fg(CURRENT_THEME.removed),
+                        ChangeTag::Insert => Style::new().fg(CURRENT_THEME.added),
                     };
 
                     Line::from(
                         change
-                            .values()
-                            .iter()
+                            .iter_strings_lossy()
                             .map(|(emph, value)| {
                                 Span::styled(
                                     value.to_string(),
-                                    if *emph {
-                                        Style::new().fg(color).add_modifier(Modifier::REVERSED)
-                                    } else {
-                                        Style::new().fg(color)
-                                    },
+                                    if emph { style.reversed() } else { style },
                                 )
                             })
                             .collect::<Vec<_>>(),
