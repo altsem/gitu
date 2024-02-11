@@ -1,23 +1,26 @@
 use super::Screen;
 use crate::{
-    git::{self, diff::Diff},
+    git::{self, diff::Diff, status::BranchStatus},
     items::{self, Item},
     theme::CURRENT_THEME,
     Config, Res,
 };
-use ansi_to_tui::IntoText;
 use ratatui::{
     prelude::Rect,
     style::{Style, Stylize},
     text::Text,
 };
 
-pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
+pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
     let config = config.clone();
+
     Screen::new(
         size,
         Box::new(move || {
-            let untracked = git::status(&config.dir)?
+            let status = git::status(&config.dir)?;
+            let rebase_status = git::rebase_status(&config.dir)?;
+
+            let untracked = status
                 .files
                 .iter()
                 .filter(|file| file.is_untracked())
@@ -33,7 +36,7 @@ pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
                 })
                 .collect::<Vec<_>>();
 
-            let unmerged = git::status(&config.dir)?
+            let unmerged = status
                 .files
                 .iter()
                 .filter(|file| file.is_unmerged())
@@ -49,15 +52,25 @@ pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
                 })
                 .collect::<Vec<_>>();
 
-            let items = status
-                .then_some(Item {
-                    id: "status".into(),
-                    display: git::status_simple(&config.dir)?
-                        .replace("[m", "[0m")
-                        .into_text()
-                        .expect("Error parsing status ansi"),
-                    unselectable: true,
-                    ..Default::default()
+            let items = rebase_status
+                .map(|rebase| {
+                    let rebase = rebase;
+                    Item {
+                        id: "rebase_status".into(),
+                        display: Text::raw(format!(
+                            "Rebasing {} onto {}",
+                            rebase.head_name, &rebase.onto
+                        )),
+                        ..Default::default()
+                    }
+                })
+                .or_else(|| {
+                    Some(Item {
+                        id: "branch_status".into(),
+                        display: format_branch_status(&status.branch_status),
+                        unselectable: true,
+                        ..Default::default()
+                    })
                 })
                 .into_iter()
                 .chain(if untracked.is_empty() {
@@ -125,30 +138,33 @@ pub(crate) fn create(config: &Config, size: Rect, status: bool) -> Res<Screen> {
     )
 }
 
-// fn format_branch_status(status: &BranchStatus) -> String {
-//     let Some(ref remote) = status.remote else {
-//         return format!("On branch {}.", status.local);
-//     };
-
-//     if status.ahead == 0 && status.behind == 0 {
-//         format!(
-//             "On branch {}\nYour branch is up to date with '{}'.",
-//             status.local, remote
-//         )
-//     } else if status.ahead > 0 && status.behind == 0 {
-//         format!(
-//             "On branch {}\nYour branch is ahead of '{}' by {} commit.",
-//             status.local, remote, status.ahead
-//         )
-//     } else if status.ahead == 0 && status.behind > 0 {
-//         format!(
-//             "On branch {}\nYour branch is behind '{}' by {} commit.",
-//             status.local, remote, status.behind
-//         )
-//     } else {
-//         format!("On branch {}\nYour branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", status.local, remote, status.ahead, status.behind)
-//     }
-// }
+fn format_branch_status(status: &BranchStatus) -> Text<'static> {
+    match (&status.local, &status.remote) {
+        (None, None) => Text::raw("No branch"),
+        (Some(local), None) => Text::raw(format!("On branch {}.", local)),
+        (Some(local), Some(remote)) => {
+            if status.ahead == 0 && status.behind == 0 {
+                Text::raw(format!(
+                    "On branch {}\nYour branch is up to date with '{}'.",
+                    local, remote
+                ))
+            } else if status.ahead > 0 && status.behind == 0 {
+                Text::raw(format!(
+                    "On branch {}\nYour branch is ahead of '{}' by {} commit.",
+                    local, remote, status.ahead
+                ))
+            } else if status.ahead == 0 && status.behind > 0 {
+                Text::raw(format!(
+                    "On branch {}\nYour branch is behind '{}' by {} commit.",
+                    local, remote, status.behind
+                ))
+            } else {
+                Text::raw(format!("On branch {}\nYour branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", local, remote, status.ahead, status.behind))
+            }
+        }
+        (None, Some(_)) => unreachable!(),
+    }
+}
 
 fn create_status_section_items<'a>(
     header: &str,

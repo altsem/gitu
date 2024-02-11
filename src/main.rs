@@ -56,7 +56,7 @@ impl State {
             Some(cli::Commands::Diff { git_diff_args }) => {
                 vec![screen::diff::create(&config, size, git_diff_args)?]
             }
-            None => vec![screen::status::create(&config, size, args.status)?],
+            None => vec![screen::status::create(&config, size)?],
         };
 
         Ok(Self {

@@ -1,19 +1,64 @@
 use crate::Res;
 use std::{
     error::Error,
+    fs,
+    io::ErrorKind,
     path::Path,
     process::Command,
     str::{self, FromStr},
 };
 
-use self::diff::Diff;
+use self::{diff::Diff, rebase_status::RebaseStatus};
 
 pub(crate) mod diff;
 mod parse;
+pub(crate) mod rebase_status;
 pub(crate) mod status;
 
 // TODO Check for.git/index.lock and block if it exists
 // TODO Use only plumbing commands
+
+pub(crate) fn rebase_status(dir: &Path) -> Res<Option<RebaseStatus>> {
+    let mut rebase_onto_file = dir.to_path_buf();
+    rebase_onto_file.push(".git/rebase-merge/onto");
+
+    let mut rebase_head_name_file = dir.to_path_buf();
+    rebase_head_name_file.push(".git/rebase-merge/head-name");
+
+    match fs::read_to_string(&rebase_onto_file) {
+        Ok(content) => {
+            let onto_hash = content.trim().to_string();
+            Ok(Some(RebaseStatus {
+                onto: branch_name(dir, &onto_hash)?.unwrap_or_else(|| onto_hash[..7].to_string()),
+                head_name: fs::read_to_string(rebase_head_name_file)?
+                    .strip_prefix("refs/heads/")
+                    .unwrap()
+                    .to_string(),
+                // TODO include log of 'done' items
+            }))
+        }
+        Err(err) => {
+            if err.kind() == ErrorKind::NotFound {
+                Ok(None)
+            } else {
+                Err(Box::new(err))
+            }
+        }
+    }
+}
+
+fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
+    let out = Command::new("git")
+        .args(["for-each-ref", "--format", "%(objectname) %(refname:short)"])
+        .current_dir(dir)
+        .output()?
+        .stdout;
+
+    Ok(str::from_utf8(&out)?
+        .lines()
+        .find(|line| line.starts_with(hash))
+        .map(|line| line.split(" ").skip(1).next().unwrap().to_string()))
+}
 
 pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
     run_git(dir, &["diff"], args)
@@ -29,10 +74,6 @@ pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
 
 pub(crate) fn status(dir: &Path) -> Res<status::Status> {
     run_git(dir, &["status", "--porcelain", "--branch"], &[])
-}
-
-pub(crate) fn status_simple(dir: &Path) -> Res<String> {
-    run_git_no_parse(dir, &["-c", "color.status=always", "status"], &[])
 }
 
 pub(crate) fn show(dir: &Path, args: &[&str]) -> Res<Diff> {
@@ -64,7 +105,7 @@ pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
             "--sort",
             "-creatordate",
             "--format",
-            "%(refname) %(upstream) %(subject)",
+            "%(refname:short) %(upstream:short) %(subject)",
             "refs/heads",
         ])
         .current_dir(dir)
@@ -79,14 +120,7 @@ pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
             let remote = columns.next().unwrap().to_string();
             let subject = columns.next().unwrap().to_string();
 
-            (
-                local.strip_prefix("refs/heads/").unwrap().to_string(),
-                remote
-                    .strip_prefix("refs/remotes/")
-                    .unwrap_or("")
-                    .to_string(),
-                subject,
-            )
+            (local, remote, subject)
         })
         .collect())
 }
