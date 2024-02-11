@@ -4,8 +4,6 @@ use crate::git::diff::Hunk;
 use crate::theme;
 use crate::theme::CURRENT_THEME;
 use ansi_to_tui::IntoText;
-use ratatui::style::Color;
-use ratatui::style::Modifier;
 use ratatui::style::Style;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
