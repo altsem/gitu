@@ -31,6 +31,7 @@ pub(crate) fn rebase_status(dir: &Path) -> Res<Option<RebaseStatus>> {
             Ok(Some(RebaseStatus {
                 onto: branch_name(dir, &onto_hash)?.unwrap_or_else(|| onto_hash[..7].to_string()),
                 head_name: fs::read_to_string(rebase_head_name_file)?
+                    .trim()
                     .strip_prefix("refs/heads/")
                     .unwrap()
                     .to_string(),

@@ -57,10 +57,10 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                     let rebase = rebase;
                     Item {
                         id: "rebase_status".into(),
-                        display: Text::raw(format!(
-                            "Rebasing {} onto {}",
-                            rebase.head_name, &rebase.onto
-                        )),
+                        display: Text::styled(
+                            format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
+                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        ),
                         ..Default::default()
                     }
                 })
