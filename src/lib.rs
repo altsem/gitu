@@ -491,7 +491,7 @@ mod tests {
                 .args(&cmd[1..])
                 .current_dir(dir.path())
                 .output()
-                .expect(&format!("failed to execute {:?}", cmd))
+                .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd))
                 .stdout,
         )
         .expect("failed converting output to String")

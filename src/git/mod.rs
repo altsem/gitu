@@ -58,7 +58,7 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
     Ok(str::from_utf8(&out)?
         .lines()
         .find(|line| line.starts_with(hash))
-        .map(|line| line.split(" ").skip(1).next().unwrap().to_string()))
+        .map(|line| line.split(' ').nth(1).unwrap().to_string()))
 }
 
 pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
