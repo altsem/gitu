@@ -421,20 +421,20 @@ mod tests {
 
     #[test]
     fn no_repo() {
-        let (terminal, _state, _dir) = setup(70, 5);
+        let (terminal, _state, _dir) = setup(80, 30);
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
     #[test]
     fn help_menu() {
-        let (ref mut terminal, ref mut state, _dir) = setup(70, 12);
+        let (ref mut terminal, ref mut state, _dir) = setup(80, 30);
         update(terminal, state, &[key('h')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
     }
 
     #[test]
     fn fresh_init() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        let (ref mut terminal, ref mut state, dir) = setup(80, 30);
         assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn new_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        let (ref mut terminal, ref mut state, dir) = setup(80, 30);
         assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
         assert!(run(&dir, &["touch", "new-file"])?);
         update(terminal, state, &[key('g')]).unwrap();
@@ -453,13 +453,10 @@ mod tests {
 
     #[test]
     fn stage_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(70, 5);
+        let (ref mut terminal, ref mut state, dir) = setup(80, 30);
         assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
         assert!(run(&dir, &["touch", "new-file"])?);
-        update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
-
-        update(terminal, state, &[key('j'), key('s'), key('g')]).unwrap();
+        update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
     }
@@ -487,7 +484,7 @@ mod tests {
             Rect::new(0, 0, width, height),
             Args {
                 command: None,
-                status: false,
+                status: true,
                 exit_immediately: false,
             },
         )
