@@ -91,16 +91,21 @@ fn format_keybinds_menu<'b, B: Backend>(
         format!("{:?}", pending),
         Style::new().fg(CURRENT_THEME.command).bold(),
     ));
-    for bind in non_target_binds
+    for (op, binds) in non_target_binds
         .iter()
-        .filter(|bind| !matches!(bind.op, Op::Submenu(_)))
+        .group_by(|bind| bind.op)
+        .into_iter()
+        .filter(|(op, _binds)| !matches!(op, Op::Submenu(_)))
     {
         pending_binds_column.push(Line::from(vec![
             Span::styled(
-                Keybind::format_key(bind),
+                binds
+                    .into_iter()
+                    .map(|bind| Keybind::format_key(bind))
+                    .join(" "),
                 Style::new().fg(CURRENT_THEME.hotkey),
             ),
-            Span::styled(format!(" {:?}", bind.op), Style::new()),
+            Span::styled(format!(" {:?}", op), Style::new()),
         ]));
     }
 
@@ -179,9 +184,9 @@ fn format_keybinds_menu<'b, B: Backend>(
         .collect::<Vec<_>>();
 
     let widths = [
-        Constraint::Length(20),
-        Constraint::Length(20),
-        Constraint::Length(20),
+        Constraint::Length(25),
+        Constraint::Length(15),
+        Constraint::Length(80),
     ];
     (
         rows.len(),
