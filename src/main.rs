@@ -411,66 +411,69 @@ fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
 
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
-
+    use crate::{cli::Args, update, State};
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
+    use std::{fs, process::Command};
     use temp_dir::TempDir;
-
-    use crate::{cli::Args, update, Res, State};
 
     #[test]
     fn no_repo() {
-        let (terminal, _state, _dir) = setup(80, 30);
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
+        let (ref mut terminal, _state, dir) = setup(60, 20);
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
     #[test]
     fn help_menu() {
-        let (ref mut terminal, ref mut state, _dir) = setup(80, 30);
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
         update(terminal, state, &[key('h')]).unwrap();
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
     #[test]
-    fn fresh_init() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(80, 30);
-        assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
+    fn fresh_init() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        run(&dir, &["git", "init", "--initial-branch", "master"]);
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
-        Ok(())
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
     #[test]
-    fn new_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(80, 30);
-        assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
-        assert!(run(&dir, &["touch", "new-file"])?);
+    fn new_file() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        run(&dir, &["git", "init", "--initial-branch", "master"]);
+        run(&dir, &["touch", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
-        Ok(())
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
     #[test]
-    fn stage_file() -> Res<()> {
-        let (ref mut terminal, ref mut state, dir) = setup(80, 30);
-        assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
-        assert!(run(&dir, &["touch", "new-file"])?);
+    fn staged_file() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        run(&dir, &["git", "init", "--initial-branch", "master"]);
+        run(&dir, &["touch", "new-file"]);
         update(terminal, state, &[key('g'), key('j'), key('s'), key('g')]).unwrap();
-        insta::assert_debug_snapshot!(terminal.backend().buffer());
-        Ok(())
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
-    fn run(dir: &TempDir, cmd: &[&str]) -> Res<bool> {
-        Ok(Command::new(cmd[0])
-            .args(&cmd[1..])
-            .current_dir(dir.path())
-            .status()?
-            .success())
-    }
+    #[test]
+    fn rebase_conflict() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        run(&dir, &["git", "init", "--initial-branch", "master"]);
 
-    fn key(char: char) -> Event {
-        Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
+        commit(&dir, "new-file", "hello");
+
+        run(&dir, &["git", "checkout", "-b", "other-branch"]);
+        commit(&dir, "new-file", "hey");
+
+        run(&dir, &["git", "checkout", "master"]);
+        commit(&dir, "new-file", "hi");
+
+        run(&dir, &["git", "checkout", "other-branch"]);
+        run(&dir, &["git", "rebase", "master"]);
+
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
@@ -484,12 +487,47 @@ mod tests {
             Rect::new(0, 0, width, height),
             Args {
                 command: None,
-                status: true,
+                status: false,
                 exit_immediately: false,
             },
         )
         .unwrap();
 
         (terminal, state, dir)
+    }
+
+    fn commit(dir: &TempDir, file_name: &str, contents: &str) {
+        let path = dir.child(file_name);
+        let message = match path.try_exists() {
+            Ok(true) => format!("modify {}", file_name),
+            _ => format!("add {}", file_name),
+        };
+        fs::write(path, contents).expect("error writing to file");
+        run(dir, &["git", "add", file_name]);
+        run(dir, &["git", "commit", "-m", &message]);
+    }
+
+    fn run(dir: &TempDir, cmd: &[&str]) -> String {
+        String::from_utf8(
+            Command::new(cmd[0])
+                .args(&cmd[1..])
+                .current_dir(dir.path())
+                .output()
+                .expect(&format!("failed to execute {:?}", cmd))
+                .stdout,
+        )
+        .expect("failed converting output to String")
+    }
+
+    fn key(char: char) -> Event {
+        Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
+    }
+
+    fn redact_hashes(terminal: &mut Terminal<TestBackend>, dir: TempDir) -> String {
+        let mut debug_output = format!("{:#?}", terminal.backend().buffer());
+        for hash in run(&dir, &["git", "log", "--all", "--format=%h", "HEAD"]).lines() {
+            debug_output = debug_output.replace(hash, "_______");
+        }
+        debug_output
     }
 }
