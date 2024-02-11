@@ -435,7 +435,7 @@ mod tests {
     #[test]
     fn fresh_init() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(run(&dir, Command::new("git").arg("init"))?);
+        assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
@@ -444,8 +444,8 @@ mod tests {
     #[test]
     fn new_file() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(run(&dir, Command::new("git").arg("init"))?);
-        assert!(run(&dir, Command::new("touch").arg("new-file"))?);
+        assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
+        assert!(run(&dir, &["touch", "new-file"])?);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
         Ok(())
@@ -454,8 +454,8 @@ mod tests {
     #[test]
     fn stage_file() -> Res<()> {
         let (ref mut terminal, ref mut state, dir) = setup(70, 5);
-        assert!(run(&dir, Command::new("git").arg("init"))?);
-        assert!(run(&dir, Command::new("touch").arg("new-file"))?);
+        assert!(run(&dir, &["git", "init", "--initial-branch", "master"])?);
+        assert!(run(&dir, &["touch", "new-file"])?);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_debug_snapshot!(terminal.backend().buffer());
 
@@ -464,8 +464,12 @@ mod tests {
         Ok(())
     }
 
-    fn run(dir: &TempDir, command: &mut Command) -> Res<bool> {
-        Ok(command.current_dir(dir.path()).status()?.success())
+    fn run(dir: &TempDir, cmd: &[&str]) -> Res<bool> {
+        Ok(Command::new(cmd[0])
+            .args(&cmd[1..])
+            .current_dir(dir.path())
+            .status()?
+            .success())
     }
 
     fn key(char: char) -> Event {

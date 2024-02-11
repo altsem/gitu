@@ -25,14 +25,4 @@ jobs:
             target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: |
-        git config --global init.defaultBranch master
-        cargo test --verbose
-    - name: Lint
-      run: cargo clippy
-    - name: Check format
-      run: cargo fmt --check
-    - name: Bench
-      run: cargo bench
+      run: ./build.sh
