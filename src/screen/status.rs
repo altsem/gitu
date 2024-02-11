@@ -53,16 +53,13 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                 .collect::<Vec<_>>();
 
             let items = rebase_status
-                .map(|rebase| {
-                    let rebase = rebase;
-                    Item {
-                        id: "rebase_status".into(),
-                        display: Text::styled(
-                            format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
-                            Style::new().fg(CURRENT_THEME.section).bold(),
-                        ),
-                        ..Default::default()
-                    }
+                .map(|rebase| Item {
+                    id: "rebase_status".into(),
+                    display: Text::styled(
+                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
+                        Style::new().fg(CURRENT_THEME.section).bold(),
+                    ),
+                    ..Default::default()
                 })
                 .or_else(|| {
                     Some(Item {
