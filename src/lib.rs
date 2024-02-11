@@ -454,6 +454,25 @@ mod tests {
         insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
+    #[test]
+    fn merge_conflict() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        run(&dir, &["git", "init", "--initial-branch", "master"]);
+
+        commit(&dir, "new-file", "hello");
+
+        run(&dir, &["git", "checkout", "-b", "other-branch"]);
+        commit(&dir, "new-file", "hey");
+
+        run(&dir, &["git", "checkout", "master"]);
+        commit(&dir, "new-file", "hi");
+
+        run(&dir, &["git", "merge", "other-branch"]);
+
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
+    }
+
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
         let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         let dir = TempDir::new().unwrap();

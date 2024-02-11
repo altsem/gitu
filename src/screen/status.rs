@@ -19,67 +19,19 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
         Box::new(move || {
             let status = git::status(&config.dir)?;
             let rebase_status = git::rebase_status(&config.dir)?;
+            let merge_status = git::merge_status(&config.dir)?;
+            let untracked = untracked(&status);
+            let unmerged = unmerged(&status);
 
-            let untracked = status
-                .files
-                .iter()
-                .filter(|file| file.is_untracked())
-                .map(|file| Item {
-                    id: file.path.clone().into(),
-                    display: Text::styled(
-                        file.path.clone(),
-                        Style::new().fg(CURRENT_THEME.unstaged_file).bold(),
-                    ),
-                    depth: 1,
-                    target_data: Some(items::TargetData::File(file.path.clone())),
-                    ..Default::default()
-                })
-                .collect::<Vec<_>>();
-
-            let unmerged = status
-                .files
-                .iter()
-                .filter(|file| file.is_unmerged())
-                .map(|file| Item {
-                    id: file.path.clone().into(),
-                    display: Text::styled(
-                        file.path.clone(),
-                        Style::new().fg(CURRENT_THEME.unmerged_file).bold(),
-                    ),
-                    depth: 1,
-                    target_data: Some(items::TargetData::File(file.path.clone())),
-                    ..Default::default()
-                })
-                .collect::<Vec<_>>();
-
-            let items = rebase_status
-                .map(|rebase| Item {
-                    id: "rebase_status".into(),
-                    display: Text::styled(
-                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
-                        Style::new().fg(CURRENT_THEME.section).bold(),
-                    ),
-                    ..Default::default()
-                })
-                .or_else(|| {
-                    Some(Item {
-                        id: "branch_status".into(),
-                        display: format_branch_status(&status.branch_status),
-                        unselectable: true,
-                        ..Default::default()
-                    })
-                })
+            let items = rebase(rebase_status)
+                .or_else(|| merge(merge_status))
+                .or_else(|| branch(status))
                 .into_iter()
                 .chain(if untracked.is_empty() {
                     vec![]
                 } else {
                     vec![
-                        Item {
-                            display: Text::raw(""),
-                            depth: 0,
-                            unselectable: true,
-                            ..Default::default()
-                        },
+                        blank_line(),
                         Item {
                             id: "untracked".into(),
                             display: Text::styled(
@@ -97,12 +49,7 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                     vec![]
                 } else {
                     vec![
-                        Item {
-                            display: Text::raw(""),
-                            depth: 0,
-                            unselectable: true,
-                            ..Default::default()
-                        },
+                        blank_line(),
                         Item {
                             id: "unmerged".into(),
                             display: Text::styled(
@@ -133,6 +80,82 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
             Ok(items)
         }),
     )
+}
+
+fn blank_line() -> Item {
+    Item {
+        display: Text::raw(""),
+        depth: 0,
+        unselectable: true,
+        ..Default::default()
+    }
+}
+
+fn rebase(rebase_status: Option<git::rebase_status::RebaseStatus>) -> Option<Item> {
+    rebase_status.map(|rebase| Item {
+        id: "rebase_status".into(),
+        display: Text::styled(
+            format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
+            Style::new().fg(CURRENT_THEME.section).bold(),
+        ),
+        ..Default::default()
+    })
+}
+
+fn merge(merge_status: Option<git::merge_status::MergeStatus>) -> Option<Item> {
+    merge_status.map(|merge| Item {
+        id: "merge_status".into(),
+        display: Text::styled(
+            format!("Merging {}", &merge.head),
+            Style::new().fg(CURRENT_THEME.section).bold(),
+        ),
+        ..Default::default()
+    })
+}
+
+fn branch(status: git::status::Status) -> Option<Item> {
+    Some(Item {
+        id: "branch_status".into(),
+        display: format_branch_status(&status.branch_status),
+        unselectable: true,
+        ..Default::default()
+    })
+}
+
+fn untracked(status: &git::status::Status) -> Vec<Item> {
+    status
+        .files
+        .iter()
+        .filter(|file| file.is_untracked())
+        .map(|file| Item {
+            id: file.path.clone().into(),
+            display: Text::styled(
+                file.path.clone(),
+                Style::new().fg(CURRENT_THEME.unstaged_file).bold(),
+            ),
+            depth: 1,
+            target_data: Some(items::TargetData::File(file.path.clone())),
+            ..Default::default()
+        })
+        .collect::<Vec<_>>()
+}
+
+fn unmerged(status: &git::status::Status) -> Vec<Item> {
+    status
+        .files
+        .iter()
+        .filter(|file| file.is_unmerged())
+        .map(|file| Item {
+            id: file.path.clone().into(),
+            display: Text::styled(
+                file.path.clone(),
+                Style::new().fg(CURRENT_THEME.unmerged_file).bold(),
+            ),
+            depth: 1,
+            target_data: Some(items::TargetData::File(file.path.clone())),
+            ..Default::default()
+        })
+        .collect::<Vec<_>>()
 }
 
 fn format_branch_status(status: &BranchStatus) -> Text<'static> {

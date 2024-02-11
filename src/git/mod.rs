@@ -8,9 +8,10 @@ use std::{
     str::{self, FromStr},
 };
 
-use self::{diff::Diff, rebase_status::RebaseStatus};
+use self::{diff::Diff, merge_status::MergeStatus, rebase_status::RebaseStatus};
 
 pub(crate) mod diff;
+pub(crate) mod merge_status;
 mod parse;
 pub(crate) mod rebase_status;
 pub(crate) mod status;
@@ -36,6 +37,27 @@ pub(crate) fn rebase_status(dir: &Path) -> Res<Option<RebaseStatus>> {
                     .unwrap()
                     .to_string(),
                 // TODO include log of 'done' items
+            }))
+        }
+        Err(err) => {
+            if err.kind() == ErrorKind::NotFound {
+                Ok(None)
+            } else {
+                Err(Box::new(err))
+            }
+        }
+    }
+}
+
+pub(crate) fn merge_status(dir: &Path) -> Res<Option<MergeStatus>> {
+    let mut merge_head_file = dir.to_path_buf();
+    merge_head_file.push(".git/MERGE_HEAD");
+
+    match fs::read_to_string(&merge_head_file) {
+        Ok(content) => {
+            let head = content.trim().to_string();
+            Ok(Some(MergeStatus {
+                head: branch_name(dir, &head)?.unwrap_or(head[..7].to_string()),
             }))
         }
         Err(err) => {
