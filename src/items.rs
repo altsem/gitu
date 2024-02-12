@@ -42,14 +42,14 @@ pub(crate) fn create_diff_items<'a>(
 
         iter::once(Item {
             id: delta.file_header.to_string().into(),
-            display: Text::styled(
-                if delta.old_file == delta.new_file {
-                    delta.new_file.clone()
-                } else {
-                    format!("{} -> {}", delta.old_file, delta.new_file)
-                },
-                Style::new().fg(CURRENT_THEME.file).bold(),
-            ),
+            display: if delta.old_file == delta.new_file {
+                delta.new_file.clone().fg(CURRENT_THEME.file).bold()
+            } else {
+                format!("{} -> {}", delta.old_file, delta.new_file)
+                    .fg(CURRENT_THEME.file)
+                    .bold()
+            }
+            .into(),
             section: true,
             depth: *depth,
             target_data: Some(target_data),
@@ -69,10 +69,7 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
 
     iter::once(Item {
         id: hunk.format_patch().into(),
-        display: Text::styled(
-            hunk.header(),
-            Style::new().fg(theme::CURRENT_THEME.hunk_header),
-        ),
+        display: hunk.header().fg(theme::CURRENT_THEME.hunk_header).into(),
         section: true,
         depth: depth + 1,
         target_data: Some(target_data),

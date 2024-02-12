@@ -7,11 +7,7 @@ use crate::{
     theme::CURRENT_THEME,
     Config, Res,
 };
-use ratatui::{
-    prelude::Rect,
-    style::{Style, Stylize},
-    text::Text,
-};
+use ratatui::{prelude::Rect, style::Stylize, text::Text};
 
 pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
     let config = config.clone();
@@ -26,9 +22,10 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
             let items = if let Some(rebase) = git::rebase_status(&config.dir)? {
                 vec![Item {
                     id: "rebase_status".into(),
-                    display: Text::styled(
-                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
-                        Style::new().fg(CURRENT_THEME.section).bold(),
+                    display: Text::from(
+                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto)
+                            .fg(CURRENT_THEME.section)
+                            .bold(),
                     ),
                     ..Default::default()
                 }]
@@ -36,9 +33,10 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
             } else if let Some(merge) = git::merge_status(&config.dir)? {
                 vec![Item {
                     id: "merge_status".into(),
-                    display: Text::styled(
-                        format!("Merging {}", &merge.head),
-                        Style::new().fg(CURRENT_THEME.section).bold(),
+                    display: Text::from(
+                        format!("Merging {}", &merge.head)
+                            .fg(CURRENT_THEME.section)
+                            .bold(),
                     ),
                     ..Default::default()
                 }]
@@ -53,9 +51,11 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                     blank_line(),
                     Item {
                         id: "untracked".into(),
-                        display: Text::styled(
-                            "Untracked files".to_string(),
-                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        display: Text::from(
+                            "Untracked files"
+                                .to_string()
+                                .fg(CURRENT_THEME.section)
+                                .bold(),
                         ),
                         section: true,
                         depth: 0,
@@ -71,9 +71,8 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                     blank_line(),
                     Item {
                         id: "unmerged".into(),
-                        display: Text::styled(
-                            "Unmerged".to_string(),
-                            Style::new().fg(CURRENT_THEME.section).bold(),
+                        display: Text::from(
+                            "Unmerged".to_string().fg(CURRENT_THEME.section).bold(),
                         ),
                         section: true,
                         depth: 0,
@@ -116,10 +115,7 @@ fn untracked(status: &git::status::Status) -> Vec<Item> {
         .filter(|file| file.is_untracked())
         .map(|file| Item {
             id: file.path.clone().into(),
-            display: Text::styled(
-                file.path.clone(),
-                Style::new().fg(CURRENT_THEME.unstaged_file).bold(),
-            ),
+            display: Text::from(file.path.clone().fg(CURRENT_THEME.unstaged_file).bold()),
             depth: 1,
             target_data: Some(items::TargetData::File(file.path.clone())),
             ..Default::default()
@@ -134,10 +130,7 @@ fn unmerged(status: &git::status::Status) -> Vec<Item> {
         .filter(|file| file.is_unmerged())
         .map(|file| Item {
             id: file.path.clone().into(),
-            display: Text::styled(
-                file.path.clone(),
-                Style::new().fg(CURRENT_THEME.unmerged_file).bold(),
-            ),
+            display: Text::from(file.path.clone().fg(CURRENT_THEME.unmerged_file).bold()),
             depth: 1,
             target_data: Some(items::TargetData::File(file.path.clone())),
             ..Default::default()
@@ -149,7 +142,7 @@ fn branch_status_items(status: &BranchStatus) -> Vec<Item> {
     match (&status.local, &status.remote) {
         (None, None) => vec![Item {
             id: "branch_status".into(),
-            display: Text::styled("No branch", Style::new().fg(CURRENT_THEME.section).bold()),
+            display: Text::from("No branch".fg(CURRENT_THEME.section).bold()),
             section: true,
             depth: 0,
             ..Default::default()
@@ -157,9 +150,10 @@ fn branch_status_items(status: &BranchStatus) -> Vec<Item> {
         (Some(local), maybe_remote) => Vec::from_iter(
             iter::once(Item {
                 id: "branch_status".into(),
-                display: Text::styled(
-                    format!("On branch {}", local),
-                    Style::new().fg(CURRENT_THEME.section).bold(),
+                display: Text::from(
+                    format!("On branch {}", local)
+                        .fg(CURRENT_THEME.section)
+                        .bold(),
                 ),
                 section: true,
                 depth: 0,
@@ -215,9 +209,10 @@ fn create_status_section_items<'a>(
             },
             Item {
                 id: header.to_string().into(),
-                display: Text::styled(
-                    format!("{} ({})", header, diff.deltas.len()),
-                    Style::new().fg(CURRENT_THEME.section).bold(),
+                display: Text::from(
+                    format!("{} ({})", header, diff.deltas.len())
+                        .fg(CURRENT_THEME.section)
+                        .bold(),
                 ),
                 section: true,
                 depth: 0,
@@ -239,10 +234,7 @@ fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Ite
         },
         Item {
             id: header.to_string().into(),
-            display: Text::styled(
-                header.to_string(),
-                Style::new().fg(CURRENT_THEME.section).bold(),
-            ),
+            display: Text::from(header.to_string().fg(CURRENT_THEME.section).bold()),
             section: true,
             depth: 0,
             ..Default::default()

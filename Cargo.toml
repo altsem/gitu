@@ -23,6 +23,6 @@ itertools = "0.12.0"
 lazy_static = "1.4.0"
 pest = "2.7.6"
 pest_derive = "2.7.6"
-ratatui = "0.25.0"
+ratatui = "0.26.1"
 similar = { version = "2.4.0", features = ["unicode"] }
 strip-ansi-escapes = "0.2.0"

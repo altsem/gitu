@@ -59,13 +59,13 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
 }
 
 fn format_command<'b>(cmd: &CmdMeta) -> Vec<Line<'b>> {
-    Text::styled(
+    Text::from(
         format!(
             "$ {}{}",
             cmd.args.join(" "),
             if cmd.out.is_some() { "" } else { "..." }
-        ),
-        Style::new().fg(CURRENT_THEME.command),
+        )
+        .fg(CURRENT_THEME.command),
     )
     .lines
     .into_iter()
@@ -185,8 +185,8 @@ fn format_keybinds_menu<'b, B: Backend>(
 
     let widths = [
         Constraint::Length(25),
-        Constraint::Length(15),
-        Constraint::Length(80),
+        Constraint::Length(20),
+        Constraint::Length(60),
     ];
     (
         rows.len(),
