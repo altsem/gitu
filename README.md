@@ -45,9 +45,6 @@ Clone the repo and run:
 `cargo install --path . --locked`
 
 ### Development
-#### Benchmarking
-`cargo bench`
-
 #### Profiling
 This project comes with pprof as a dev-dependency. You can run it with:
 `cargo bench --bench show -- --profile-time 5`
