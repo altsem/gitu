@@ -411,7 +411,6 @@ mod tests {
     #[test]
     fn fresh_init() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
-        run(&dir, &["git", "init", "--initial-branch", "master"]);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
@@ -419,7 +418,6 @@ mod tests {
     #[test]
     fn new_file() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
-        run(&dir, &["git", "init", "--initial-branch", "master"]);
         run(&dir, &["touch", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, dir));
@@ -428,7 +426,6 @@ mod tests {
     #[test]
     fn staged_file() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
-        run(&dir, &["git", "init", "--initial-branch", "master"]);
         run(&dir, &["touch", "new-file"]);
         run(&dir, &["git", "add", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
@@ -438,8 +435,6 @@ mod tests {
     #[test]
     fn rebase_conflict() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
-        run(&dir, &["git", "init", "--initial-branch", "master"]);
-
         commit(&dir, "new-file", "hello");
 
         run(&dir, &["git", "checkout", "-b", "other-branch"]);
@@ -458,8 +453,6 @@ mod tests {
     #[test]
     fn merge_conflict() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
-        run(&dir, &["git", "init", "--initial-branch", "master"]);
-
         commit(&dir, "new-file", "hello");
 
         run(&dir, &["git", "checkout", "-b", "other-branch"]);
@@ -477,6 +470,10 @@ mod tests {
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
         let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         let dir = TempDir::new().unwrap();
+
+        run(&dir, &["git", "init", "--initial-branch", "master"]);
+        run(&dir, &["git", "config", "user.email", "ci@example.com"]);
+        run(&dir, &["git", "config", "user.name", "CI"]);
 
         let state = State::create(
             crate::Config {
