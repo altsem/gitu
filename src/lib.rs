@@ -424,6 +424,16 @@ mod tests {
     }
 
     #[test]
+    fn unstaged_changes() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        commit(&dir, "testfile", "testing\ntesttest");
+        fs::write(dir.child("testfile"), "test\ntesttest").expect("error writing to file");
+
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
+    }
+
+    #[test]
     fn staged_file() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
         run(&dir, &["touch", "new-file"]);

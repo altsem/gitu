@@ -105,15 +105,20 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
                         ChangeTag::Insert => Style::new().fg(CURRENT_THEME.added),
                     };
 
+                    let prefix = match change.tag() {
+                        ChangeTag::Equal => " ",
+                        ChangeTag::Delete => "-",
+                        ChangeTag::Insert => "+",
+                    };
+
                     Line::from(
-                        change
-                            .iter_strings_lossy()
-                            .map(|(emph, value)| {
+                        iter::once(Span::styled(prefix, style))
+                            .chain(change.iter_strings_lossy().map(|(emph, value)| {
                                 Span::styled(
                                     value.to_string(),
                                     if emph { style.reversed() } else { style },
                                 )
-                            })
+                            }))
                             .collect::<Vec<_>>(),
                     )
                 })
