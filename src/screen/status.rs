@@ -48,7 +48,7 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                 vec![]
             } else {
                 vec![
-                    blank_line(),
+                    items::blank_line(),
                     Item {
                         id: "untracked".into(),
                         display: Text::from(
@@ -68,7 +68,7 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                 vec![]
             } else {
                 vec![
-                    blank_line(),
+                    items::blank_line(),
                     Item {
                         id: "unmerged".into(),
                         display: Text::from(
@@ -100,14 +100,6 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
     )
 }
 
-fn blank_line() -> Item {
-    Item {
-        display: Text::raw(""),
-        depth: 0,
-        unselectable: true,
-        ..Default::default()
-    }
-}
 fn untracked(status: &git::status::Status) -> Vec<Item> {
     status
         .files

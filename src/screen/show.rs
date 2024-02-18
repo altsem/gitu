@@ -1,10 +1,14 @@
 use crate::{
     git,
     items::{self, Item},
-    util, Config, Res,
+    theme::CURRENT_THEME,
+    Config, Res,
 };
-use ansi_to_tui::IntoText;
-use ratatui::{prelude::Rect, text::Text};
+use ratatui::{
+    prelude::Rect,
+    style::Stylize,
+    text::{Line, Text},
+};
 
 use super::Screen;
 
@@ -14,18 +18,25 @@ pub(crate) fn create(config: &Config, size: Rect, reference: String) -> Res<Scre
     Screen::new(
         size,
         Box::new(move || {
-            let summary = git::show_summary(&config.dir, &reference)?;
+            let commit = git::show_summary(&config.dir, &reference)?;
             let show = git::show(&config.dir.clone(), &reference)?;
+            let mut details = Text::from(commit.details);
+            details.lines.push(Line::raw(""));
 
-            let commit_text = summary.replace("[m", "[0m").into_text()?;
-
-            Ok([
+            Ok(vec![
                 Item {
-                    display: Text::from(commit_text.lines[0].clone()),
+                    id: format!("commit_section_{}", commit.hash).into(),
+                    display: Text::from(
+                        format!("commit {}", commit.hash).fg(CURRENT_THEME.section),
+                    ),
+                    section: true,
+                    depth: 0,
                     ..Default::default()
                 },
                 Item {
-                    display: Text::from(commit_text.lines[1..].to_vec()),
+                    id: format!("commit_{}", commit.hash).into(),
+                    display: details,
+                    depth: 1,
                     unselectable: true,
                     ..Default::default()
                 },

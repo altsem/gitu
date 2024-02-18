@@ -154,3 +154,12 @@ pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
         }
     })
 }
+
+pub(crate) fn blank_line() -> Item {
+    Item {
+        display: Text::raw(""),
+        depth: 0,
+        unselectable: true,
+        ..Default::default()
+    }
+}

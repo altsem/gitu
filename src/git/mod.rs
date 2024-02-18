@@ -1,5 +1,12 @@
 use git2::{DiffLineType::*, Repository};
+use itertools::Itertools;
 
+use self::{
+    commit::Commit,
+    diff::{Delta, Diff, Hunk},
+    merge_status::MergeStatus,
+    rebase_status::RebaseStatus,
+};
 use crate::Res;
 use std::{
     error::Error,
@@ -10,12 +17,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use self::{
-    diff::{Delta, Diff, Hunk},
-    merge_status::MergeStatus,
-    rebase_status::RebaseStatus,
-};
-
+pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
 mod parse;
@@ -90,6 +92,7 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
 }
 
 pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
+    assert!(args.is_empty(), "TODO handle args");
     // TODO handle args?
     let repo = &Repository::open(dir)?;
     let diff = repo.diff_index_to_workdir(None, None)?;
@@ -97,7 +100,7 @@ pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
 }
 
 // TODO Move elsewhere
-pub(crate) fn convert_diff<'a>(diff: git2::Diff) -> Res<Diff> {
+pub(crate) fn convert_diff(diff: git2::Diff) -> Res<Diff> {
     let mut deltas = vec![];
     let mut lines = String::new();
 
@@ -126,7 +129,7 @@ pub(crate) fn convert_diff<'a>(diff: git2::Diff) -> Res<Diff> {
                 if is_new_hunk {
                     let delta = deltas.last_mut().unwrap();
 
-                    (*delta).hunks.push(Hunk {
+                    delta.hunks.push(Hunk {
                         file_header: delta.file_header.clone(),
                         old_file: delta.old_file.clone(),
                         new_file: delta.new_file.clone(),
@@ -149,7 +152,6 @@ pub(crate) fn convert_diff<'a>(diff: git2::Diff) -> Res<Diff> {
                         }
                         ContextEOFNL => {
                             // TODO Handle '\ No newline at the end of file'
-                            ()
                         }
                         _ => (),
                     };
@@ -188,26 +190,54 @@ pub(crate) fn status(dir: &Path) -> Res<status::Status> {
 }
 
 pub(crate) fn show(dir: &Path, reference: &str) -> Res<Diff> {
-    // TODO Use libigt2
     let repo = Repository::open(dir)?;
     let object = &repo.revparse_single(reference)?;
-    let tree = object.peel_to_tree()?;
-    let prev = tree.iter().skip(1).next().unwrap();
 
-    let diff = repo.diff_tree_to_tree(
-        Some(&prev.to_object(&repo)?.into_tree().unwrap()),
-        Some(&object.peel_to_tree()?),
-        None,
-    )?;
+    let commit = object.peel_to_commit()?;
+    let tree = commit.tree()?;
+    let parent_tree = commit.parent(0)?.tree()?;
+    let diff = repo.diff_tree_to_tree(Some(&parent_tree), Some(&tree), None)?;
     convert_diff(diff)
 }
 
-pub(crate) fn show_summary(dir: &Path, reference: &str) -> Res<String> {
+pub(crate) fn show_summary(dir: &Path, reference: &str) -> Res<Commit> {
     let repo = Repository::open(dir)?;
     let object = &repo.revparse_single(reference)?;
     let commit = object.peel_to_commit()?;
 
-    Ok(commit.message().unwrap_or("").to_string())
+    let author = commit.author();
+    let name = author.name().unwrap_or("");
+    let email = commit
+        .author()
+        .email()
+        .map(|email| format!("<{}>", email))
+        .unwrap_or("".to_string());
+
+    let message = commit
+        .message()
+        .unwrap_or("")
+        .to_string()
+        .lines()
+        .map(|line| format!("    {}", line))
+        .join("\n");
+
+    let offset = chrono::FixedOffset::east_opt(commit.time().offset_minutes() * 60).unwrap();
+    let time = chrono::DateTime::with_timezone(
+        &chrono::DateTime::from_timestamp(commit.time().seconds(), 0).unwrap(),
+        &offset,
+    );
+
+    let details = format!(
+        "Author: {}\nDate:   {}\n\n{}",
+        [name, &email].join(" "),
+        time.to_rfc2822(),
+        message
+    );
+
+    Ok(Commit {
+        hash: commit.id().to_string(),
+        details,
+    })
 }
 
 // TODO Make this return a more useful type. Vec<Log>?

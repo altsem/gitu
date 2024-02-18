@@ -443,6 +443,29 @@ mod tests {
     }
 
     #[test]
+    fn log() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        commit(&dir, "firstfile", "testing\ntesttest\n");
+        commit(&dir, "secondfile", "testing\ntesttest\n");
+        update(terminal, state, &[key('g'), key('l'), key('l')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
+    }
+
+    #[test]
+    fn show() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        commit(&dir, "firstfile", "This should not be visible\n");
+        commit(&dir, "secondfile", "This should be visible\n");
+        update(
+            terminal,
+            state,
+            &[key('g'), key('l'), key('l'), key_code(KeyCode::Enter)],
+        )
+        .unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
+    }
+
+    #[test]
     fn rebase_conflict() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
         commit(&dir, "new-file", "hello");
@@ -504,8 +527,8 @@ mod tests {
     fn commit(dir: &TempDir, file_name: &str, contents: &str) {
         let path = dir.child(file_name);
         let message = match path.try_exists() {
-            Ok(true) => format!("modify {}", file_name),
-            _ => format!("add {}", file_name),
+            Ok(true) => format!("modify {}\n\nCommit body goes here\n", file_name),
+            _ => format!("add {}\n\nCommit body goes here\n", file_name),
         };
         fs::write(path, contents).expect("error writing to file");
         run(dir, &["git", "add", file_name]);
@@ -516,6 +539,7 @@ mod tests {
         String::from_utf8(
             Command::new(cmd[0])
                 .args(&cmd[1..])
+                .env("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100")
                 .current_dir(dir.path())
                 .output()
                 .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd))
@@ -528,11 +552,20 @@ mod tests {
         Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
     }
 
+    fn key_code(code: KeyCode) -> Event {
+        Event::Key(KeyEvent::new(code, KeyModifiers::empty()))
+    }
+
     fn redact_hashes(terminal: &mut Terminal<TestBackend>, dir: TempDir) -> String {
         let mut debug_output = format!("{:#?}", terminal.backend().buffer());
-        for hash in run(&dir, &["git", "log", "--all", "--format=%h", "HEAD"]).lines() {
-            debug_output = debug_output.replace(hash, "_______");
+
+        for hash in run(&dir, &["git", "log", "--all", "--format=%H", "HEAD"]).lines() {
+            debug_output = debug_output.replace(hash, &"_".repeat(hash.len()));
         }
+        for hash in run(&dir, &["git", "log", "--all", "--format=%h", "HEAD"]).lines() {
+            debug_output = debug_output.replace(hash, &"_".repeat(hash.len()));
+        }
+
         debug_output
     }
 }
