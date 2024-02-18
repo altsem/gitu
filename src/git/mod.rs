@@ -94,9 +94,15 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
 pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
     assert!(args.is_empty(), "TODO handle args");
     // TODO handle args?
-    let repo = &Repository::open(dir)?;
+    let repo = repo(dir)?;
     let diff = repo.diff_index_to_workdir(None, None)?;
     convert_diff(diff)
+}
+
+fn repo(dir: &Path) -> Result<Repository, Box<dyn Error>> {
+    let repo = Repository::open_from_env()?;
+    repo.set_workdir(dir, false)?;
+    Ok(repo)
 }
 
 // TODO Move elsewhere
@@ -171,13 +177,13 @@ fn path(file: &git2::DiffFile) -> String {
 }
 
 pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
-    let repo = &Repository::open(dir)?;
+    let repo = repo(dir)?;
     let diff = repo.diff_index_to_workdir(None, None)?;
     convert_diff(diff)
 }
 
 pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
-    let repo = &Repository::open(dir)?;
+    let repo = repo(dir)?;
     let diff = match repo.head() {
         Ok(head) => repo.diff_tree_to_index(Some(&head.peel_to_tree()?), None, None)?,
         Err(_) => repo.diff_tree_to_index(None, None, None)?,
@@ -190,7 +196,7 @@ pub(crate) fn status(dir: &Path) -> Res<status::Status> {
 }
 
 pub(crate) fn show(dir: &Path, reference: &str) -> Res<Diff> {
-    let repo = Repository::open(dir)?;
+    let repo = repo(dir)?;
     let object = &repo.revparse_single(reference)?;
 
     let commit = object.peel_to_commit()?;
@@ -201,7 +207,7 @@ pub(crate) fn show(dir: &Path, reference: &str) -> Res<Diff> {
 }
 
 pub(crate) fn show_summary(dir: &Path, reference: &str) -> Res<Commit> {
-    let repo = Repository::open(dir)?;
+    let repo = repo(dir)?;
     let object = &repo.revparse_single(reference)?;
     let commit = object.peel_to_commit()?;
 
