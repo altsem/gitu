@@ -103,8 +103,10 @@ pub(crate) fn convert_diff<'a>(diff: git2::Diff) -> Res<Diff> {
 
     diff.print(git2::DiffFormat::Patch, |delta, maybe_hunk, line| {
         let line_content = str::from_utf8(line.content()).unwrap();
-        let is_new_header = line_content.starts_with("diff");
-        let is_new_hunk = line_content.starts_with("@@");
+        let is_new_header = line_content.starts_with("diff")
+            && line.origin_value() == git2::DiffLineType::FileHeader;
+        let is_new_hunk =
+            line_content.starts_with("@@") && line.origin_value() == git2::DiffLineType::HunkHeader;
 
         match maybe_hunk {
             None => {
