@@ -388,11 +388,12 @@ fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
 }
 
 #[cfg(test)]
+#[serial_test::serial]
 mod tests {
     use crate::{cli::Args, update, State};
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
-    use std::{fs, process::Command};
+    use std::{env, fs, process::Command};
     use temp_dir::TempDir;
 
     #[test]
@@ -503,6 +504,7 @@ mod tests {
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
         let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         let dir = TempDir::new().unwrap();
+        env::set_var("GIT_DIR", dir.child(".git"));
 
         run(&dir, &["git", "init", "--initial-branch", "master"]);
         run(&dir, &["git", "config", "user.email", "ci@example.com"]);
