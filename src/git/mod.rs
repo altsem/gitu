@@ -1,17 +1,13 @@
-use git2::{DiffFile, DiffLineType::*, Repository};
+use git2::{DiffLineType::*, Repository};
 
-use crate::{items::create_diff_items, Res};
+use crate::Res;
 use std::{
-    borrow::Cow,
-    cell::RefCell,
     error::Error,
     fs,
     io::ErrorKind,
-    iter,
     path::Path,
     process::Command,
     str::{self, FromStr},
-    sync::Arc,
 };
 
 use self::{
