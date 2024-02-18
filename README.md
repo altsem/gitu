@@ -32,13 +32,6 @@ A help-menu can be shown by pressing the `h` key.
 
 <img src="doc/help.png" width="400" />
 
-### CLI
-Gitu can drop you right into a log, or to the display of a commit:
-```
-gitu log <git_log_args>
-gitu show <git_show_args>
-```
-
 ### Install
 #### Using Cargo
 Clone the repo and run:
