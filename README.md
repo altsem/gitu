@@ -2,7 +2,7 @@
 [![CI](https://github.com/altsem/gitu/actions/workflows/ci.yml/badge.svg)](https://github.com/altsem/gitu/actions/workflows/ci.yml)
 
 A terminal user interface for Git. Heavily inspired by Magit.
-Gitu launches launches straight from the terminal.
+Gitu launches straight from the terminal.
 
 <img src="doc/gitu.png" width="600" />
 
