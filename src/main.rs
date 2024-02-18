@@ -11,12 +11,14 @@ use crossterm::{
 use ratatui::{prelude::CrosstermBackend, Terminal};
 
 pub fn main() -> Result<(), Box<dyn Error>> {
+    let args = gitu::cli::Args::parse();
+
     let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
     terminal.hide_cursor()?;
     enable_raw_mode()?;
     stderr().execute(EnterAlternateScreen)?;
 
-    let result = gitu::run(gitu::cli::Args::parse(), &mut terminal);
+    let result = gitu::run(args, &mut terminal);
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
