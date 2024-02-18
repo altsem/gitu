@@ -8,14 +8,14 @@ use ratatui::{prelude::Rect, text::Text};
 
 use super::Screen;
 
-pub(crate) fn create(config: &Config, size: Rect, args: Vec<String>) -> Res<Screen> {
+pub(crate) fn create(config: &Config, size: Rect, reference: String) -> Res<Screen> {
     let config = config.clone();
+
     Screen::new(
         size,
         Box::new(move || {
-            let str_args = util::str_vec(&args);
-            let summary = git::show_summary(&config.dir, &str_args)?;
-            let show = git::show(&config.dir.clone(), &str_args)?;
+            let summary = git::show_summary(&config.dir, &reference)?;
+            let show = git::show(&config.dir.clone(), &reference)?;
 
             let commit_text = summary.replace("[m", "[0m").into_text()?;
 

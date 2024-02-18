@@ -41,8 +41,8 @@ struct State {
 impl State {
     fn create(config: Config, size: Rect, args: cli::Args) -> Res<Self> {
         let screens = match args.command {
-            Some(cli::Commands::Show { git_show_args }) => {
-                vec![screen::show::create(&config, size, git_show_args)?]
+            Some(cli::Commands::Show { reference }) => {
+                vec![screen::show::create(&config, size, reference)?]
             }
             Some(cli::Commands::Log { git_log_args }) => {
                 vec![screen::log::create(&config, size, git_log_args)?]
@@ -325,7 +325,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
 fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |terminal, state| {
         state.screens.push(
-            screen::show::create(&state.config, terminal.size()?, vec![r.clone()])
+            screen::show::create(&state.config, terminal.size()?, r.clone())
                 .expect("Couldn't create screen"),
         );
         Ok(())

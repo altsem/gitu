@@ -10,7 +10,7 @@ fn show(c: &mut Criterion) {
             gitu::run(
                 gitu::cli::Args {
                     command: Some(Commands::Show {
-                        git_show_args: vec!["f4de01c0a12794d7b42a77b2138aa64119b90ea5".into()],
+                        reference: "f4de01c0a12794d7b42a77b2138aa64119b90ea5".into(),
                     }),
                     status: false,
                     exit_immediately: true,

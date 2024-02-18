@@ -185,13 +185,27 @@ pub(crate) fn status(dir: &Path) -> Res<status::Status> {
     run_git(dir, &["status", "--porcelain", "--branch"], &[])
 }
 
-pub(crate) fn show(dir: &Path, args: &[&str]) -> Res<Diff> {
+pub(crate) fn show(dir: &Path, reference: &str) -> Res<Diff> {
     // TODO Use libigt2
-    run_git(dir, &["show"], args)
+    let repo = Repository::open(dir)?;
+    let object = &repo.revparse_single(reference)?;
+    let tree = object.peel_to_tree()?;
+    let prev = tree.iter().skip(1).next().unwrap();
+
+    let diff = repo.diff_tree_to_tree(
+        Some(&prev.to_object(&repo)?.into_tree().unwrap()),
+        Some(&object.peel_to_tree()?),
+        None,
+    )?;
+    convert_diff(diff)
 }
 
-pub(crate) fn show_summary(dir: &Path, args: &[&str]) -> Res<String> {
-    run_git_no_parse(dir, &["show", "--summary", "--decorate", "--color"], args)
+pub(crate) fn show_summary(dir: &Path, reference: &str) -> Res<String> {
+    let repo = Repository::open(dir)?;
+    let object = &repo.revparse_single(reference)?;
+    let commit = object.peel_to_commit()?;
+
+    Ok(commit.message().unwrap_or("").to_string())
 }
 
 // TODO Make this return a more useful type. Vec<Log>?
