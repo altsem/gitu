@@ -1,14 +1,24 @@
-use crate::Res;
+use git2::{DiffFile, DiffLineType::*, Repository};
+
+use crate::{items::create_diff_items, Res};
 use std::{
+    borrow::Cow,
+    cell::RefCell,
     error::Error,
     fs,
     io::ErrorKind,
+    iter,
     path::Path,
     process::Command,
     str::{self, FromStr},
+    sync::Arc,
 };
 
-use self::{diff::Diff, merge_status::MergeStatus, rebase_status::RebaseStatus};
+use self::{
+    diff::{Delta, Diff, Hunk},
+    merge_status::MergeStatus,
+    rebase_status::RebaseStatus,
+};
 
 pub(crate) mod diff;
 pub(crate) mod merge_status;
@@ -84,15 +94,87 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
 }
 
 pub(crate) fn diff(dir: &Path, args: &[&str]) -> Res<Diff> {
-    run_git(dir, &["diff"], args)
+    // TODO handle args?
+    let repo = &Repository::open(dir)?;
+    let diff = repo.diff_index_to_workdir(None, None)?;
+    convert_diff(diff)
+}
+
+// TODO Move elsewhere
+pub(crate) fn convert_diff<'a>(diff: git2::Diff) -> Res<Diff> {
+    let mut deltas = vec![];
+    let mut lines = String::new();
+
+    diff.print(git2::DiffFormat::Patch, |delta, maybe_hunk, line| {
+        let line_content = str::from_utf8(line.content()).unwrap();
+        let is_new_header = line_content.starts_with("diff");
+        let is_new_hunk = line_content.starts_with("@@");
+
+        match maybe_hunk {
+            None => {
+                if is_new_header {
+                    deltas.push(Delta {
+                        file_header: line_content.to_string(),
+                        old_file: path(&delta.old_file()),
+                        new_file: path(&delta.new_file()),
+                        hunks: vec![],
+                    });
+                } else {
+                    let delta = deltas.last_mut().unwrap();
+                    delta.file_header.push_str(line_content);
+                }
+            }
+            Some(hunk) => {
+                if is_new_hunk {
+                    let delta = deltas.last_mut().unwrap();
+
+                    (*delta).hunks.push(Hunk {
+                        file_header: delta.file_header.clone(),
+                        old_file: delta.old_file.clone(),
+                        new_file: delta.new_file.clone(),
+                        old_start: hunk.old_start(),
+                        old_lines: hunk.old_lines(),
+                        new_start: hunk.new_start(),
+                        new_lines: hunk.new_lines(),
+                        header: line_content.to_string(),
+                        content: String::new(),
+                    });
+                } else {
+                    lines.push_str(line_content);
+                    let mut buffer = [0; 1];
+                    let prefix = match line.origin_value() {
+                        Context | Addition | Deletion => line.origin().encode_utf8(&mut buffer),
+                        _ => "",
+                    };
+
+                    let line_str = format!("{}{}", prefix, line_content);
+                    let h = deltas.last_mut().unwrap().hunks.last_mut().unwrap();
+                    h.content.push_str(&line_str);
+                }
+            }
+        }
+
+        true
+    })?;
+
+    Ok(Diff { deltas })
+}
+
+// TODO Store PathBuf's instead?
+fn path(file: &git2::DiffFile) -> String {
+    file.path().unwrap().to_str().unwrap().to_string()
 }
 
 pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
-    run_git(dir, &["diff"], &[])
+    let repo = &Repository::open(dir)?;
+    let diff = repo.diff_index_to_workdir(None, None)?;
+    convert_diff(diff)
 }
 
 pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
-    run_git(dir, &["diff", "--staged"], &[])
+    let repo = &Repository::open(dir)?;
+    let diff = repo.diff_tree_to_index(Some(&repo.head()?.peel_to_tree()?), None, None)?;
+    convert_diff(diff)
 }
 
 pub(crate) fn status(dir: &Path) -> Res<status::Status> {
@@ -100,6 +182,7 @@ pub(crate) fn status(dir: &Path) -> Res<status::Status> {
 }
 
 pub(crate) fn show(dir: &Path, args: &[&str]) -> Res<Diff> {
+    // TODO Use libigt2
     run_git(dir, &["show"], args)
 }
 

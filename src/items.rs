@@ -69,7 +69,11 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
 
     iter::once(Item {
         id: hunk.format_patch().into(),
-        display: hunk.header().fg(theme::CURRENT_THEME.hunk_header).into(),
+        display: hunk
+            .header
+            .clone()
+            .fg(theme::CURRENT_THEME.hunk_header)
+            .into(),
         section: true,
         depth: depth + 1,
         target_data: Some(target_data),

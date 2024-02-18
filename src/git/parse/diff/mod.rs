@@ -109,7 +109,7 @@ fn parse_hunk(
         old_lines: old_range.unwrap().1,
         new_start: new_range.unwrap().0,
         new_lines: new_range.unwrap().1,
-        header_suffix: context.unwrap(),
+        header: context.unwrap(),
         content: body.unwrap(),
     }
 }

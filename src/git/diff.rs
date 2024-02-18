@@ -24,27 +24,13 @@ pub(crate) struct Hunk {
     pub old_lines: u32,
     pub new_start: u32,
     pub new_lines: u32,
-    pub header_suffix: String,
+    pub header: String,
     pub content: String,
 }
 
 impl Hunk {
-    pub(crate) fn display_header(&self) -> String {
-        format!(
-            "@@ -{},{} +{},{} @@",
-            self.old_start, self.old_lines, self.new_start, self.new_lines
-        )
-    }
-
-    pub(crate) fn header(&self) -> String {
-        format!(
-            "@@ -{},{} +{},{} @@{}",
-            self.old_start, self.old_lines, self.new_start, self.new_lines, self.header_suffix
-        )
-    }
-
     pub(crate) fn format_patch(&self) -> String {
-        format!("{}{}\n{}", &self.file_header, self.header(), &self.content)
+        format!("{}{}", &self.file_header, self)
     }
 
     pub(crate) fn old_content(&self) -> String {
@@ -77,7 +63,7 @@ impl Hunk {
 
 impl Display for Hunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.display_header())?;
+        f.write_str(&self.header)?;
         f.write_str(&self.content)?;
         Ok(())
     }
