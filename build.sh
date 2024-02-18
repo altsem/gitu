@@ -7,3 +7,4 @@ cargo test --verbose
 cargo bench --no-run
 cargo clippy
 cargo fmt --check
+cargo deny check
