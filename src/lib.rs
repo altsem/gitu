@@ -8,6 +8,7 @@ mod ui;
 mod util;
 
 use crossterm::event::{self, Event, KeyEventKind};
+use git2::Repository;
 use items::{Item, TargetData};
 use keybinds::{Op, SubmenuOp, TargetOp};
 use ratatui::{prelude::*, Terminal};
@@ -16,6 +17,7 @@ use std::{
     error::Error,
     path::PathBuf,
     process::{Command, Output, Stdio},
+    rc::Rc,
 };
 
 type Res<T> = Result<T, Box<dyn Error>>;
@@ -31,6 +33,7 @@ pub(crate) struct CmdMeta {
 }
 
 struct State {
+    repo: Rc<Repository>,
     config: Config,
     quit: bool,
     screens: Vec<Screen>,
@@ -40,20 +43,24 @@ struct State {
 
 impl State {
     fn create(config: Config, size: Rect, args: cli::Args) -> Res<Self> {
+        let repo = Rc::new(Repository::open_from_env()?);
+        repo.set_workdir(&config.dir, false)?;
+
         let screens = match args.command {
             Some(cli::Commands::Show { reference }) => {
-                vec![screen::show::create(&config, size, reference)?]
+                vec![screen::show::create(Rc::clone(&repo), size, reference)?]
             }
             Some(cli::Commands::Log { git_log_args }) => {
                 vec![screen::log::create(&config, size, git_log_args)?]
             }
             Some(cli::Commands::Diff { git_diff_args }) => {
-                vec![screen::diff::create(&config, size, git_diff_args)?]
+                vec![screen::diff::create(Rc::clone(&repo), size, git_diff_args)?]
             }
-            None => vec![screen::status::create(&config, size)?],
+            None => vec![screen::status::create(Rc::clone(&repo), &config, size)?],
         };
 
         Ok(Self {
+            repo,
             config,
             quit: args.exit_immediately,
             screens,
@@ -325,7 +332,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
 fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |terminal, state| {
         state.screens.push(
-            screen::show::create(&state.config, terminal.size()?, r.clone())
+            screen::show::create(Rc::clone(&state.repo), terminal.size()?, r.clone())
                 .expect("Couldn't create screen"),
         );
         Ok(())

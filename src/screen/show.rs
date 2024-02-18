@@ -1,9 +1,12 @@
+use std::rc::Rc;
+
 use crate::{
     git,
     items::{self, Item},
     theme::CURRENT_THEME,
-    Config, Res,
+    Res,
 };
+use git2::Repository;
 use ratatui::{
     prelude::Rect,
     style::Stylize,
@@ -12,14 +15,12 @@ use ratatui::{
 
 use super::Screen;
 
-pub(crate) fn create(config: &Config, size: Rect, reference: String) -> Res<Screen> {
-    let config = config.clone();
-
+pub(crate) fn create(repo: Rc<Repository>, size: Rect, reference: String) -> Res<Screen> {
     Screen::new(
         size,
         Box::new(move || {
-            let commit = git::show_summary(&config.dir, &reference)?;
-            let show = git::show(&config.dir.clone(), &reference)?;
+            let commit = git::show_summary(repo.as_ref(), &reference)?;
+            let show = git::show(repo.as_ref(), &reference)?;
             let mut details = Text::from(commit.details);
             details.lines.push(Line::raw(""));
 

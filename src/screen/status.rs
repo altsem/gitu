@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, rc::Rc};
 
 use super::Screen;
 use crate::{
@@ -7,9 +7,10 @@ use crate::{
     theme::CURRENT_THEME,
     Config, Res,
 };
+use git2::Repository;
 use ratatui::{prelude::Rect, style::Stylize, text::Text};
 
-pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
+pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<Screen> {
     let config = config.clone();
 
     Screen::new(
@@ -83,11 +84,11 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
             .chain(unmerged)
             .chain(create_status_section_items(
                 "Unstaged changes",
-                &git::diff_unstaged(&config.dir)?,
+                &git::diff_unstaged(repo.as_ref())?,
             ))
             .chain(create_status_section_items(
                 "Staged changes",
-                &git::diff_staged(&config.dir)?,
+                &git::diff_staged(repo.as_ref())?,
             ))
             .chain(create_log_section_items(
                 "Recent commits",
