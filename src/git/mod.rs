@@ -137,15 +137,20 @@ pub(crate) fn convert_diff<'a>(diff: git2::Diff) -> Res<Diff> {
                     });
                 } else {
                     lines.push_str(line_content);
-                    let mut buffer = [0; 1];
-                    let prefix = match line.origin_value() {
-                        Context | Addition | Deletion => line.origin().encode_utf8(&mut buffer),
-                        _ => "",
-                    };
+                    let last_hunk = deltas.last_mut().unwrap().hunks.last_mut().unwrap();
 
-                    let line_str = format!("{}{}", prefix, line_content);
-                    let h = deltas.last_mut().unwrap().hunks.last_mut().unwrap();
-                    h.content.push_str(&line_str);
+                    match line.origin_value() {
+                        Context | Addition | Deletion => {
+                            last_hunk
+                                .content
+                                .push_str(&(format!("{}{}", line.origin(), line_content)));
+                        }
+                        ContextEOFNL => {
+                            // TODO Handle '\ No newline at the end of file'
+                            ()
+                        }
+                        _ => (),
+                    };
                 }
             }
         }
@@ -169,7 +174,10 @@ pub(crate) fn diff_unstaged(dir: &Path) -> Res<Diff> {
 
 pub(crate) fn diff_staged(dir: &Path) -> Res<Diff> {
     let repo = &Repository::open(dir)?;
-    let diff = repo.diff_tree_to_index(Some(&repo.head()?.peel_to_tree()?), None, None)?;
+    let diff = match repo.head() {
+        Ok(head) => repo.diff_tree_to_index(Some(&head.peel_to_tree()?), None, None)?,
+        Err(_) => repo.diff_tree_to_index(None, None, None)?,
+    };
     convert_diff(diff)
 }
 
