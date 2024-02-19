@@ -16,9 +16,11 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
     Screen::new(
         size,
         Box::new(move || {
+            let statuses = repo.statuses(None)?;
             let status = git::status(&config.dir)?;
-            let untracked = untracked(&status);
-            let unmerged = unmerged(&status);
+
+            let untracked = untracked(&statuses);
+            let unmerged = unmerged(&statuses);
 
             let items = if let Some(rebase) = git::rebase_status(&config.dir)? {
                 vec![Item {
@@ -101,34 +103,64 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
     )
 }
 
-fn untracked(status: &git::status::Status) -> Vec<Item> {
-    status
-        .files
+fn untracked(statuses: &git2::Statuses<'_>) -> Vec<Item> {
+    statuses
         .iter()
-        .filter(|file| file.is_untracked())
-        .map(|file| Item {
-            id: file.path.clone().into(),
-            display: Text::from(file.path.clone().fg(CURRENT_THEME.unstaged_file).bold()),
-            depth: 1,
-            target_data: Some(items::TargetData::File(file.path.clone())),
-            ..Default::default()
+        .filter_map(|status| {
+            let Some(delta) = status.index_to_workdir() else {
+                return None;
+            };
+
+            if delta.status() != git2::Delta::Untracked {
+                return None;
+            }
+
+            // TODO Handle both old_file & new_file
+            Some(Item {
+                id: delta.new_file().id().to_string().into(),
+                display: Text::from(
+                    path(&delta.new_file())
+                        .fg(CURRENT_THEME.unstaged_file)
+                        .bold(),
+                ),
+                depth: 1,
+                target_data: Some(items::TargetData::File(path(&delta.new_file()))),
+                ..Default::default()
+            })
         })
         .collect::<Vec<_>>()
 }
 
-fn unmerged(status: &git::status::Status) -> Vec<Item> {
-    status
-        .files
+fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
+    statuses
         .iter()
-        .filter(|file| file.is_unmerged())
-        .map(|file| Item {
-            id: file.path.clone().into(),
-            display: Text::from(file.path.clone().fg(CURRENT_THEME.unmerged_file).bold()),
-            depth: 1,
-            target_data: Some(items::TargetData::File(file.path.clone())),
-            ..Default::default()
+        .filter_map(|status| {
+            let Some(delta) = status.index_to_workdir() else {
+                return None;
+            };
+
+            if delta.status() != git2::Delta::Conflicted {
+                return None;
+            }
+
+            // TODO Handle both old_file & new_file
+            Some(Item {
+                id: delta.new_file().id().to_string().into(),
+                display: Text::from(
+                    path(&delta.new_file())
+                        .fg(CURRENT_THEME.unstaged_file)
+                        .bold(),
+                ),
+                depth: 1,
+                target_data: Some(items::TargetData::File(path(&delta.new_file()))),
+                ..Default::default()
+            })
         })
         .collect::<Vec<_>>()
+}
+
+fn path(new_file: &git2::DiffFile<'_>) -> String {
+    new_file.path().unwrap().to_str().unwrap().to_string()
 }
 
 fn branch_status_items(status: &BranchStatus) -> Vec<Item> {

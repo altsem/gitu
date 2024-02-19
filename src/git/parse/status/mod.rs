@@ -187,12 +187,6 @@ mod tests {
     }
 
     #[test]
-    fn unmerged() {
-        let input = "## mergetest...origin/mergetest\nUU src/main.rs\n";
-        assert!(Status::from_str(input).unwrap().files[0].is_unmerged());
-    }
-
-    #[test]
     fn messy_file_name() {
         let input = r#"## master...origin/master
 ?? "spaghet lol.testing !@#$%^&*()"
