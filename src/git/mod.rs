@@ -233,7 +233,6 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     })
 }
 
-// TODO Make this return a more useful type. Vec<Log>?
 pub(crate) fn log_recent(dir: &Path) -> Res<String> {
     run_git_no_parse(
         dir,
@@ -241,12 +240,11 @@ pub(crate) fn log_recent(dir: &Path) -> Res<String> {
         &[],
     )
 }
-// TODO Make this return a more useful type. Vec<Log>?
+
 pub(crate) fn log(dir: &Path, args: &[&str]) -> Res<String> {
     run_git_no_parse(dir, &["log", "--oneline", "--decorate", "--color"], args)
 }
 
-// TODO Clean this up
 pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
     let out = Command::new("git")
         .args([
@@ -308,11 +306,9 @@ pub(crate) fn fetch_all_cmd() -> Command {
     git(&["fetch", "--all"])
 }
 pub(crate) fn rebase_interactive_cmd(reference: &str) -> Command {
-    // TODO autostash flag should be visible as a flag (though set as default)
     git(&["rebase", "-i", "--autostash", reference])
 }
 pub(crate) fn rebase_autosquash_cmd(reference: &str) -> Command {
-    // TODO autostash flag should be visible as a flag (though set as default)
     git(&[
         "rebase",
         "-i",

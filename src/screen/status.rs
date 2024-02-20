@@ -95,6 +95,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
             ))
             .chain(create_log_section_items(
                 "Recent commits",
+                // TODO Replace with libgit2
                 &git::log_recent(&config.dir)?,
             ))
             .collect();

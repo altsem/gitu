@@ -16,6 +16,7 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
     Screen::new(
         size,
         Box::new(move || {
+            // TODO Replace with libgit2
             Ok(git::show_refs(&path_buf)?
                 .into_iter()
                 .map(|(local, remote, subject)| {
