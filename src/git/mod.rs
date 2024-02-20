@@ -78,6 +78,7 @@ pub(crate) fn merge_status(dir: &Path) -> Res<Option<MergeStatus>> {
     }
 }
 
+// TODO replace with libgit2
 fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
     let out = Command::new("git")
         .args(["for-each-ref", "--format", "%(objectname) %(refname:short)"])

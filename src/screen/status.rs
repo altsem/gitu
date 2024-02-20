@@ -17,6 +17,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
         size,
         Box::new(move || {
             let statuses = repo.statuses(None)?;
+            // TODO Replace with libgit2
             let status = git::status(&config.dir)?;
 
             let untracked = untracked(&statuses);
