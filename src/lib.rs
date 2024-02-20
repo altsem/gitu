@@ -53,9 +53,6 @@ impl State {
             Some(cli::Commands::Log { git_log_args }) => {
                 vec![screen::log::create(&config, size, git_log_args)?]
             }
-            Some(cli::Commands::Diff { git_diff_args }) => {
-                vec![screen::diff::create(Rc::clone(&repo), size, git_diff_args)?]
-            }
             None => vec![screen::status::create(Rc::clone(&repo), &config, size)?],
         };
 

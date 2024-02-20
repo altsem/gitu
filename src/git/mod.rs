@@ -92,13 +92,6 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
         .map(|line| line.split(' ').nth(1).unwrap().to_string()))
 }
 
-pub(crate) fn diff(repo: &Repository, args: &[&str]) -> Res<Diff> {
-    assert!(args.is_empty(), "TODO handle args");
-    // TODO handle args?
-    let diff = repo.diff_index_to_workdir(None, None)?;
-    convert_diff(diff)
-}
-
 // TODO Move elsewhere
 pub(crate) fn convert_diff(diff: git2::Diff) -> Res<Diff> {
     let mut deltas = vec![];

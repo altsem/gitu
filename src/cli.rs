@@ -16,5 +16,4 @@ pub struct Args {
 pub enum Commands {
     Show { reference: String },
     Log { git_log_args: Vec<String> },
-    Diff { git_diff_args: Vec<String> },
 }
