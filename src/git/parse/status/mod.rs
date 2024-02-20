@@ -5,6 +5,7 @@ use pest_derive::Parser;
 
 use crate::git::status::{BranchStatus, Status, StatusFile};
 
+// TODO Get rid of this, use libgit2 instead
 #[derive(Parser)]
 #[grammar = "git/parse/status/status.pest"] // relative to src
 struct StatusParser;
