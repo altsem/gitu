@@ -185,8 +185,12 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 
     let commit = object.peel_to_commit()?;
     let tree = commit.tree()?;
-    let parent_tree = commit.parent(0)?.tree()?;
-    let diff = repo.diff_tree_to_tree(Some(&parent_tree), Some(&tree), None)?;
+    let parent_tree = commit
+        .parents()
+        .next()
+        .and_then(|parent| parent.tree().ok());
+
+    let diff = repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)?;
     convert_diff(diff)
 }
 

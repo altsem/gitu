@@ -459,8 +459,7 @@ mod tests {
     #[test]
     fn show() {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
-        commit(&dir, "firstfile", "This should not be visible\n");
-        commit(&dir, "secondfile", "This should be visible\n");
+        commit(&dir, "firstfile", "This should be visible\n");
         update(
             terminal,
             state,
