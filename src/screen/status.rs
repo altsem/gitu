@@ -109,24 +109,19 @@ fn untracked(statuses: &git2::Statuses<'_>) -> Vec<Item> {
     statuses
         .iter()
         .filter_map(|status| {
-            let Some(delta) = status.index_to_workdir() else {
-                return None;
-            };
-
-            if delta.status() != git2::Delta::Untracked {
+            if !status.status().is_wt_new() {
                 return None;
             }
 
-            // TODO Handle both old_file & new_file
+            let Some(path) = status.path() else {
+                return None;
+            };
+
             Some(Item {
-                id: delta.new_file().id().to_string().into(),
-                display: Text::from(
-                    path(&delta.new_file())
-                        .fg(CURRENT_THEME.unstaged_file)
-                        .bold(),
-                ),
+                id: path.to_string().into(),
+                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file).bold()),
                 depth: 1,
-                target_data: Some(items::TargetData::File(path(&delta.new_file()))),
+                target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
             })
         })
@@ -137,32 +132,23 @@ fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
     statuses
         .iter()
         .filter_map(|status| {
-            let Some(delta) = status.index_to_workdir() else {
-                return None;
-            };
-
-            if delta.status() != git2::Delta::Conflicted {
+            if !status.status().is_conflicted() {
                 return None;
             }
 
-            // TODO Handle both old_file & new_file
+            let Some(path) = status.path() else {
+                return None;
+            };
+
             Some(Item {
-                id: delta.new_file().id().to_string().into(),
-                display: Text::from(
-                    path(&delta.new_file())
-                        .fg(CURRENT_THEME.unstaged_file)
-                        .bold(),
-                ),
+                id: path.to_string().into(),
+                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file).bold()),
                 depth: 1,
-                target_data: Some(items::TargetData::File(path(&delta.new_file()))),
+                target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
             })
         })
         .collect::<Vec<_>>()
-}
-
-fn path(new_file: &git2::DiffFile<'_>) -> String {
-    new_file.path().unwrap().to_str().unwrap().to_string()
 }
 
 fn branch_status_items(status: &BranchStatus) -> Vec<Item> {
