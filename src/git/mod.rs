@@ -124,12 +124,8 @@ pub(crate) fn convert_diff(diff: git2::Diff) -> Res<Diff> {
 
                     delta.hunks.push(Hunk {
                         file_header: delta.file_header.clone(),
-                        old_file: delta.old_file.clone(),
                         new_file: delta.new_file.clone(),
-                        old_start: hunk.old_start(),
-                        old_lines: hunk.old_lines(),
                         new_start: hunk.new_start(),
-                        new_lines: hunk.new_lines(),
                         header: line_content.to_string(),
                         content: String::new(),
                     });
