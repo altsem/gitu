@@ -3,7 +3,9 @@ use crate::git::diff::Diff;
 use crate::git::diff::Hunk;
 use crate::theme;
 use crate::theme::CURRENT_THEME;
-use ansi_to_tui::IntoText;
+use crate::Res;
+use git2::Oid;
+use git2::Repository;
 use ratatui::style::Style;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
@@ -133,26 +135,70 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
     Text::from(lines)
 }
 
-pub(crate) fn create_log_items(log: &str) -> impl Iterator<Item = Item> + '_ {
-    log.lines().map(|log_line| {
-        let target_data = TargetData::Ref(strip_ansi_escapes::strip_str(
-            log_line
-                .split_whitespace()
-                .next()
-                .expect("Error extracting ref"),
-        ));
+pub(crate) fn log(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
+    let mut revwalk = repo.revwalk()?;
+    if revwalk.push_head().is_err() {
+        return Ok(vec![]);
+    }
 
-        Item {
-            id: log_line.to_string().into(),
-            display: log_line
-                .replace("[m", "[0m")
-                .into_text()
-                .expect("Error creating log text"),
-            depth: 1,
-            target_data: Some(target_data),
-            ..Default::default()
-        }
-    })
+    let references = repo
+        .references()?
+        .filter_map(Result::ok)
+        .filter_map(
+            |reference| match (reference.target(), reference.shorthand()) {
+                (Some(target), Some(name)) => {
+                    let style = if reference.is_remote() {
+                        CURRENT_THEME.remote
+                    } else if reference.is_tag() {
+                        CURRENT_THEME.tag
+                    } else {
+                        CURRENT_THEME.branch
+                    };
+
+                    Some((target, Span::styled(name.to_string(), style)))
+                }
+                _ => None,
+            },
+        )
+        .collect::<Vec<(Oid, Span)>>();
+
+    Ok(revwalk
+        .map(|oid_result| -> Res<Item> {
+            let oid = oid_result?;
+            let commit = repo.find_commit(oid)?;
+            let short_id = commit.as_object().short_id()?.as_str().unwrap().to_string();
+
+            let spans = itertools::intersperse(
+                iter::once(short_id.fg(CURRENT_THEME.oid))
+                    .chain(
+                        references
+                            .iter()
+                            .filter(|(ref_oid, _)| ref_oid == &oid)
+                            .map(|(_, name)| name.clone()),
+                    )
+                    .chain([commit.summary().unwrap_or("").to_string().into()]),
+                Span::raw(" "),
+            )
+            .collect::<Vec<_>>();
+
+            Ok(Item {
+                id: oid.to_string().into(),
+                display: Line::from(spans).into(),
+                depth: 1,
+                target_data: Some(TargetData::Ref(oid.to_string())),
+                ..Default::default()
+            })
+        })
+        .map(|result| match result {
+            Ok(item) => item,
+            Err(err) => Item {
+                id: err.to_string().into(),
+                display: err.to_string().into(),
+                ..Default::default()
+            },
+        })
+        .take(limit)
+        .collect())
 }
 
 pub(crate) fn blank_line() -> Item {

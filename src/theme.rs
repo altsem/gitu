@@ -16,8 +16,10 @@ pub struct Theme {
     pub hotkey: Color,
     pub branch: Color,
     pub remote: Color,
+    pub tag: Color,
     pub added: Color,
     pub removed: Color,
+    pub oid: Color,
 }
 
 // https://github.com/sainnhe/gruvbox-material-vscode
@@ -42,7 +44,9 @@ pub const DEFAULT_THEME: Theme = {
         hotkey: magenta,
         branch: green,
         remote: red,
+        tag: yellow,
         added: green,
         removed: red,
+        oid: yellow,
     }
 };

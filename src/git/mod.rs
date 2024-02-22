@@ -229,18 +229,6 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     })
 }
 
-pub(crate) fn log_recent(dir: &Path) -> Res<String> {
-    run_git_no_parse(
-        dir,
-        &["log", "-n", "5", "--oneline", "--decorate", "--color"],
-        &[],
-    )
-}
-
-pub(crate) fn log(dir: &Path, args: &[&str]) -> Res<String> {
-    run_git_no_parse(dir, &["log", "--oneline", "--decorate", "--color"], args)
-}
-
 pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
     let out = Command::new("git")
         .args([
@@ -341,16 +329,6 @@ fn run_git<T: FromStr<Err = Box<dyn Error>>>(
         .stdout;
 
     str::from_utf8(&out)?.parse()
-}
-
-fn run_git_no_parse(dir: &Path, args: &[&str], meta_args: &[&str]) -> Res<String> {
-    let out = Command::new("git")
-        .args(&[args, meta_args].concat())
-        .current_dir(dir)
-        .output()?
-        .stdout;
-
-    Ok(String::from_utf8(out)?)
 }
 
 fn git(args: &[&str]) -> Command {

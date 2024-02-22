@@ -5,7 +5,6 @@ mod keybinds;
 mod screen;
 mod theme;
 mod ui;
-mod util;
 
 use crossterm::event::{self, Event, KeyEventKind};
 use git2::Repository;
@@ -49,9 +48,6 @@ impl State {
         let screens = match args.command {
             Some(cli::Commands::Show { reference }) => {
                 vec![screen::show::create(Rc::clone(&repo), size, reference)?]
-            }
-            Some(cli::Commands::Log { git_log_args }) => {
-                vec![screen::log::create(&config, size, git_log_args)?]
             }
             None => vec![screen::status::create(Rc::clone(&repo), &config, size)?],
         };
@@ -240,7 +236,7 @@ fn handle_op<B: Backend>(
                 state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
             }
             Submenu(op) => state.pending_submenu_op = op,
-            LogCurrent => goto_log_screen(&state.config, &mut state.screens),
+            LogCurrent => goto_log_screen(Rc::clone(&state.repo), &mut state.screens),
             FetchAll => {
                 state.issue_command(terminal, &[], git::fetch_all_cmd())?;
             }
@@ -379,10 +375,10 @@ fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<
     }))
 }
 
-fn goto_log_screen(config: &Config, screens: &mut Vec<Screen>) {
+fn goto_log_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>) {
     screens.drain(1..);
     let size = screens.last().unwrap().size;
-    screens.push(screen::log::create(config, size, vec![]).expect("Couldn't create screen"));
+    screens.push(screen::log::create(repo, size).expect("Couldn't create screen"));
 }
 
 fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {

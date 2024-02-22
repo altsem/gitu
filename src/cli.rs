@@ -15,5 +15,4 @@ pub struct Args {
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     Show { reference: String },
-    Log { git_log_args: Vec<String> },
 }

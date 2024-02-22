@@ -93,11 +93,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                 "Staged changes",
                 &git::diff_staged(repo.as_ref())?,
             ))
-            .chain(create_log_section_items(
-                "Recent commits",
-                // TODO Replace with libgit2
-                &git::log_recent(&config.dir)?,
-            ))
+            .chain(create_log_section_items(repo.as_ref(), "Recent commits"))
             .collect();
 
             Ok(items)
@@ -237,7 +233,10 @@ fn create_status_section_items<'a>(
     .chain(items::create_diff_items(diff, &1))
 }
 
-fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Item = Item> + 'a {
+fn create_log_section_items<'a>(
+    repo: &Repository,
+    header: &str,
+) -> impl Iterator<Item = Item> + 'a {
     [
         Item {
             display: Text::raw(""),
@@ -254,5 +253,5 @@ fn create_log_section_items<'a>(header: &str, log: &'a str) -> impl Iterator<Ite
         },
     ]
     .into_iter()
-    .chain(items::create_log_items(log))
+    .chain(items::log(repo, 5).unwrap())
 }

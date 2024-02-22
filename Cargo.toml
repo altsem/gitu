@@ -15,7 +15,6 @@ criterion = "0.5.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion"] }
 
 [dependencies]
-ansi-to-tui = "3.1.0"
 chrono = "0.4.34"
 clap = { version = "4.5.1", features = ["derive"] }
 crossterm = "0.27.0"
