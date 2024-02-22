@@ -504,6 +504,16 @@ mod tests {
         insta::assert_snapshot!(redact_hashes(terminal, dir));
     }
 
+    #[test]
+    fn moved_file() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        commit(&dir, "new-file", "hello");
+        run(&dir, &["git", "mv", "new-file", "moved-file"]);
+
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
+    }
+
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
         let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         let dir = TempDir::new().unwrap();
