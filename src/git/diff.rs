@@ -7,7 +7,7 @@ pub(crate) struct Diff {
     pub deltas: Vec<Delta>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub(crate) struct Delta {
     pub file_header: String,
     pub old_file: String,
@@ -15,7 +15,7 @@ pub(crate) struct Delta {
     pub hunks: Vec<Hunk>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub(crate) struct Hunk {
     pub file_header: String,
     pub old_file: String,

@@ -15,7 +15,7 @@ use similar::TextDiff;
 use std::borrow::Cow;
 use std::iter;
 
-#[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, Debug)]
 pub(crate) struct Item {
     pub(crate) id: Cow<'static, str>,
     pub(crate) display: Text<'static>,
@@ -25,7 +25,7 @@ pub(crate) struct Item {
     pub(crate) target_data: Option<TargetData>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug)]
 pub(crate) enum TargetData {
     Ref(String),
     File(String),
