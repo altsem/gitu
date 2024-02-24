@@ -1,5 +1,6 @@
 pub mod cli;
 mod git;
+mod git2_opts;
 mod items;
 mod keybinds;
 mod screen;
@@ -505,6 +506,16 @@ mod tests {
         let (ref mut terminal, ref mut state, dir) = setup(60, 20);
         commit(&dir, "new-file", "hello");
         run(&dir, &["git", "mv", "new-file", "moved-file"]);
+
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, dir));
+    }
+
+    #[test]
+    fn hide_untracked() {
+        let (ref mut terminal, ref mut state, dir) = setup(60, 10);
+        run(&dir, &["git", "config", "status.showUntrackedFiles", "off"]);
+        run(&dir, &["touch", "i-am-untracked"]);
 
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, dir));

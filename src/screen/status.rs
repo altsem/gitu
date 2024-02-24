@@ -3,6 +3,7 @@ use std::{iter, rc::Rc};
 use super::Screen;
 use crate::{
     git::{self, diff::Diff, status::BranchStatus},
+    git2_opts,
     items::{self, Item},
     theme::CURRENT_THEME,
     Config, Res,
@@ -16,7 +17,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
     Screen::new(
         size,
         Box::new(move || {
-            let statuses = repo.statuses(None)?;
+            let statuses = repo.statuses(Some(&mut git2_opts::status(&repo)?))?;
             // TODO Replace with libgit2
             let status = git::status(&config.dir)?;
 
