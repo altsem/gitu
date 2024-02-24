@@ -553,11 +553,11 @@ mod tests {
 
     #[test]
     fn push() {
-        let (ref mut terminal2, ref mut state2, dir2, _remote_dir) = setup(60, 10);
-        commit(&dir2, "second-file", "");
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
+        commit(&dir, "second-file", "");
 
-        update(terminal2, state2, &[key('P'), key('p')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal2, &state2.repo));
+        update(terminal, state, &[key('P'), key('p')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir, TempDir) {
