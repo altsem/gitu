@@ -565,8 +565,18 @@ mod tests {
         let remote_dir = TempDir::new().unwrap();
         let dir = TempDir::new().unwrap();
 
-        Repository::init_bare(remote_dir.path()).unwrap();
-        Repository::clone(remote_dir.path().to_str().unwrap(), dir.path()).unwrap();
+        env::set_var("GIT_CONFIG_GLOBAL", "/dev/null");
+        env::set_var("GIT_CONFIG_SYSTEM", "/dev/null");
+        env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
+
+        run(
+            &remote_dir,
+            &["git", "init", "--bare", "--initial-branch=main"],
+        );
+        run(
+            &dir,
+            &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
+        );
 
         let state = State::create(
             Repository::open(dir.path()).unwrap(),
@@ -603,7 +613,6 @@ mod tests {
     fn run(dir: &TempDir, cmd: &[&str]) {
         Command::new(cmd[0])
             .args(&cmd[1..])
-            .env("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100")
             .current_dir(dir.path())
             .output()
             .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd));
