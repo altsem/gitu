@@ -1,4 +1,4 @@
-use git2::{DiffLineType::*, Repository};
+use git2::{DiffLineType::*, Remote, Repository};
 use itertools::Itertools;
 
 use self::{
@@ -259,6 +259,44 @@ pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
         .collect())
 }
 
+pub(crate) fn push_to_matching_remote(repo: &Repository) -> Result<String, Box<dyn Error>> {
+    match find_remote(repo) {
+        Ok(mut remote) => match remote.push::<&str>(&[], Some(&mut git2_opts::push(repo)?)) {
+            Ok(_) => Ok(format!("Pushed to {}", remote.name().unwrap())),
+            Err(err) => Ok(err.message().to_string()),
+        },
+        Err(err) => Ok(err.to_string()),
+    }
+}
+
+pub(crate) fn find_remote(repo: &Repository) -> Result<Remote<'_>, FindRemoteError> {
+    let Ok(head) = repo.head() else {
+        return Err(FindRemoteError::NoHead);
+    };
+    let Ok(upstream) = repo.branch_upstream_remote(head.name().unwrap()) else {
+        return Err(FindRemoteError::NoMatchingRemote);
+    };
+
+    Ok(repo.find_remote(upstream.as_str().unwrap()).unwrap())
+}
+
+#[derive(Debug)]
+pub(crate) enum FindRemoteError {
+    NoHead,
+    NoMatchingRemote,
+}
+
+impl std::fmt::Display for FindRemoteError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            FindRemoteError::NoHead => "No head",
+            FindRemoteError::NoMatchingRemote => "No matching remote",
+        })
+    }
+}
+
+impl std::error::Error for FindRemoteError {}
+
 pub(crate) fn stage_file_cmd(file: &str) -> Command {
     git(&["add", file])
 }
@@ -282,9 +320,6 @@ pub(crate) fn commit_amend_cmd() -> Command {
 }
 pub(crate) fn commit_fixup_cmd(reference: &str) -> Command {
     git(&["commit", "--fixup", reference])
-}
-pub(crate) fn push_cmd() -> Command {
-    git(&["push"])
 }
 pub(crate) fn pull_cmd() -> Command {
     git(&["pull"])

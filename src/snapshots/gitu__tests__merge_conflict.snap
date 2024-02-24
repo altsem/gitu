@@ -1,6 +1,6 @@
 ---
 source: src/lib.rs
-expression: "redact_hashes(terminal, dir)"
+expression: "redact_hashes(terminal, &state.repo)"
 ---
 Buffer {
     area: Rect { x: 0, y: 0, width: 60, height: 20 },
@@ -17,7 +17,7 @@ Buffer {
         " new-file                                                   ",
         "                                                            ",
         " Recent commits                                             ",
-        " _______ master modify new-file                             ",
+        " _______ main modify new-file                               ",
         " _______ add new-file                                       ",
         "                                                            ",
         "                                                            ",
@@ -48,7 +48,7 @@ Buffer {
         x: 1, y: 12, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
         x: 8, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 9, y: 12, fg: Rgb(169, 182, 101), bg: Reset, underline: Reset, modifier: NONE,
-        x: 15, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 13, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 13, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
         x: 8, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]

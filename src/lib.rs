@@ -10,13 +10,16 @@ mod ui;
 use crossterm::event::{self, Event, KeyEventKind};
 use git2::Repository;
 use items::{Item, TargetData};
+use itertools::Itertools;
 use keybinds::{Op, SubmenuOp, TargetOp};
 use ratatui::{prelude::*, Terminal};
 use screen::Screen;
 use std::{
+    borrow::Cow,
     error::Error,
+    iter,
     path::PathBuf,
-    process::{Command, Output, Stdio},
+    process::{Command, Stdio},
     rc::Rc,
 };
 
@@ -28,8 +31,8 @@ struct Config {
 }
 
 pub(crate) struct CmdMeta {
-    pub(crate) args: Vec<String>,
-    pub(crate) out: Option<Output>,
+    pub(crate) args: Cow<'static, str>,
+    pub(crate) out: Option<String>,
 }
 
 struct State {
@@ -42,8 +45,8 @@ struct State {
 }
 
 impl State {
-    fn create(config: Config, size: Rect, args: cli::Args) -> Res<Self> {
-        let repo = Rc::new(Repository::open_from_env()?);
+    fn create(repo: Repository, config: Config, size: Rect, args: cli::Args) -> Res<Self> {
+        let repo = Rc::new(repo);
         repo.set_workdir(&config.dir, false)?;
 
         let screens = match args.command {
@@ -71,7 +74,7 @@ impl State {
         self.screens.last().expect("No screen")
     }
 
-    pub(crate) fn issue_command<B: Backend>(
+    pub(crate) fn run_external_cmd<B: Backend>(
         &mut self,
         terminal: &mut Terminal<B>,
         input: &[u8],
@@ -83,19 +86,38 @@ impl State {
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
+        self.run_cmd(terminal, command_args(&cmd), |_state| {
+            let mut child = cmd.spawn()?;
+
+            use std::io::Write;
+            child.stdin.take().unwrap().write_all(input)?;
+
+            let out = String::from_utf8(child.wait_with_output()?.stderr.clone())
+                .expect("Error turning command output to String");
+
+            Ok(out)
+        })?;
+
+        Ok(())
+    }
+
+    pub(crate) fn run_cmd<
+        B: Backend,
+        S: Into<Cow<'static, str>>,
+        F: FnMut(&mut Self) -> Res<String>,
+    >(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        display: S,
+        mut cmd: F,
+    ) -> Res<()> {
         self.cmd_meta = Some(CmdMeta {
-            args: command_args(&cmd),
+            args: display.into(),
             out: None,
         });
-
         terminal.draw(|frame| ui::ui::<B>(frame, &*self))?;
 
-        let mut child = cmd.spawn()?;
-
-        use std::io::Write;
-        child.stdin.take().unwrap().write_all(input)?;
-
-        self.cmd_meta.as_mut().unwrap().out = Some(child.wait_with_output()?);
+        self.cmd_meta.as_mut().unwrap().out = Some(cmd(self)?);
         self.screen_mut().update()?;
 
         Ok(())
@@ -115,7 +137,10 @@ impl State {
 
         self.cmd_meta = Some(CmdMeta {
             args: command_args(&cmd),
-            out: Some(out),
+            out: Some(
+                String::from_utf8(out.stderr.clone())
+                    .expect("Error turning command output to String"),
+            ),
         });
 
         terminal.hide_cursor()?;
@@ -127,15 +152,16 @@ impl State {
     }
 }
 
-fn command_args(cmd: &Command) -> Vec<String> {
-    let mut args = vec![];
-    args.push(cmd.get_program().to_string_lossy().to_string());
-    args.extend(cmd.get_args().map(|arg| arg.to_string_lossy().to_string()));
-    args
+fn command_args(cmd: &Command) -> Cow<'static, str> {
+    iter::once(cmd.get_program().to_string_lossy())
+        .chain(cmd.get_args().map(|arg| arg.to_string_lossy()))
+        .join(" ")
+        .into()
 }
 
 pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
     let mut state = State::create(
+        Repository::open_from_env()?,
         Config {
             dir: String::from_utf8(
                 Command::new("git")
@@ -239,10 +265,12 @@ fn handle_op<B: Backend>(
             Submenu(op) => state.pending_submenu_op = op,
             LogCurrent => goto_log_screen(Rc::clone(&state.repo), &mut state.screens),
             FetchAll => {
-                state.issue_command(terminal, &[], git::fetch_all_cmd())?;
+                state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?;
             }
-            PullRemote => state.issue_command(terminal, &[], git::pull_cmd())?,
-            PushRemote => state.issue_command(terminal, &[], git::push_cmd())?,
+            PullRemote => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
+            PushRemote => state.run_cmd(terminal, "git push", |state| {
+                git::push_to_matching_remote(&state.repo)
+            })?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
                     if let Some(mut closure) = closure_by_target_op(act, &target_op) {
@@ -251,10 +279,10 @@ fn handle_op<B: Backend>(
                 }
             }
             RebaseAbort => {
-                state.issue_command(terminal, &[], git::rebase_abort_cmd())?;
+                state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?;
             }
             RebaseContinue => {
-                state.issue_command(terminal, &[], git::rebase_continue_cmd())?;
+                state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?;
             }
             ShowRefs => goto_refs_screen(&state.config, &mut state.screens),
         }
@@ -360,13 +388,13 @@ fn editor<'a, B: Backend>(file: String, line: Option<u32>) -> Option<OpClosure<'
 
 fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |terminal, state| {
-        state.issue_command(terminal, &input, command())
+        state.run_external_cmd(terminal, &input, command())
     }))
 }
 
 fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
     Some(Box::new(move |terminal, state| {
-        state.issue_command(terminal, &[], command(arg))
+        state.run_external_cmd(terminal, &[], command(arg))
     }))
 }
 
@@ -393,69 +421,70 @@ fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
 mod tests {
     use crate::{cli::Args, update, State};
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+    use git2::Repository;
     use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
     use std::{env, fs, process::Command};
     use temp_dir::TempDir;
 
     #[test]
     fn no_repo() {
-        let (ref mut terminal, _state, dir) = setup(60, 20);
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        let (ref mut terminal, state, _dir, _remote_dir) = setup(60, 20);
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn help_menu() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, _dir, _remote_dir) = setup(60, 20);
         update(terminal, state, &[key('h')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn fresh_init() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, _dir, _remote_dir) = setup(60, 20);
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn new_file() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         run(&dir, &["touch", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn unstaged_changes() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         commit(&dir, "testfile", "testing\ntesttest");
         fs::write(dir.child("testfile"), "test\ntesttest").expect("error writing to file");
 
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn staged_file() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         run(&dir, &["touch", "new-file"]);
         run(&dir, &["git", "add", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn log() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         commit(&dir, "firstfile", "testing\ntesttest\n");
         commit(&dir, "secondfile", "testing\ntesttest\n");
         update(terminal, state, &[key('g'), key('l'), key('l')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn show() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         commit(&dir, "firstfile", "This should be visible\n");
         update(
             terminal,
@@ -463,74 +492,84 @@ mod tests {
             &[key('g'), key('l'), key('l'), key_code(KeyCode::Enter)],
         )
         .unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn rebase_conflict() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         commit(&dir, "new-file", "hello");
 
         run(&dir, &["git", "checkout", "-b", "other-branch"]);
         commit(&dir, "new-file", "hey");
 
-        run(&dir, &["git", "checkout", "master"]);
+        run(&dir, &["git", "checkout", "main"]);
         commit(&dir, "new-file", "hi");
 
         run(&dir, &["git", "checkout", "other-branch"]);
-        run(&dir, &["git", "rebase", "master"]);
+        run(&dir, &["git", "rebase", "main"]);
 
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn merge_conflict() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         commit(&dir, "new-file", "hello");
 
         run(&dir, &["git", "checkout", "-b", "other-branch"]);
         commit(&dir, "new-file", "hey");
 
-        run(&dir, &["git", "checkout", "master"]);
+        run(&dir, &["git", "checkout", "main"]);
         commit(&dir, "new-file", "hi");
 
         run(&dir, &["git", "merge", "other-branch"]);
 
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn moved_file() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
         commit(&dir, "new-file", "hello");
         run(&dir, &["git", "mv", "new-file", "moved-file"]);
 
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn hide_untracked() {
-        let (ref mut terminal, ref mut state, dir) = setup(60, 10);
-        run(&dir, &["git", "config", "status.showUntrackedFiles", "off"]);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
+        let mut config = state.repo.config().unwrap();
+        config.set_str("status.showUntrackedFiles", "off").unwrap();
         run(&dir, &["touch", "i-am-untracked"]);
 
         update(terminal, state, &[key('g')]).unwrap();
-        insta::assert_snapshot!(redact_hashes(terminal, dir));
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
-    fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
-        let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
-        let dir = TempDir::new().unwrap();
-        env::set_var("GIT_DIR", dir.child(".git"));
+    #[test]
+    fn push() {
+        let (ref mut terminal2, ref mut state2, dir2, _remote_dir) = setup(60, 10);
+        commit(&dir2, "second-file", "");
 
-        run(&dir, &["git", "init", "--initial-branch", "master"]);
-        run(&dir, &["git", "config", "user.email", "ci@example.com"]);
-        run(&dir, &["git", "config", "user.name", "CI"]);
+        update(terminal2, state2, &[key('P'), key('p')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal2, &state2.repo));
+    }
+
+    fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir, TempDir) {
+        let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+        let remote_dir = TempDir::new().unwrap();
+        let dir = TempDir::new().unwrap();
+
+        Repository::init_bare(remote_dir.path()).unwrap();
+        Repository::clone(remote_dir.path().to_str().unwrap(), dir.path()).unwrap();
 
         let state = State::create(
+            Repository::open(dir.path()).unwrap(),
             crate::Config {
                 dir: dir.path().into(),
             },
@@ -543,7 +582,11 @@ mod tests {
         )
         .unwrap();
 
-        (terminal, state, dir)
+        let mut config = state.repo.config().unwrap();
+        config.set_str("user.email", "ci@example.com").unwrap();
+        config.set_str("user.name", "CI").unwrap();
+
+        (terminal, state, dir, remote_dir)
     }
 
     fn commit(dir: &TempDir, file_name: &str, contents: &str) {
@@ -557,36 +600,44 @@ mod tests {
         run(dir, &["git", "commit", "-m", &message]);
     }
 
-    fn run(dir: &TempDir, cmd: &[&str]) -> String {
-        String::from_utf8(
-            Command::new(cmd[0])
-                .args(&cmd[1..])
-                .env("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100")
-                .current_dir(dir.path())
-                .output()
-                .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd))
-                .stdout,
-        )
-        .expect("failed converting output to String")
+    fn run(dir: &TempDir, cmd: &[&str]) {
+        Command::new(cmd[0])
+            .args(&cmd[1..])
+            .env("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100")
+            .current_dir(dir.path())
+            .output()
+            .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd));
     }
 
     fn key(char: char) -> Event {
-        Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::empty()))
+        let mods = if char.is_uppercase() {
+            KeyModifiers::SHIFT
+        } else {
+            KeyModifiers::empty()
+        };
+
+        Event::Key(KeyEvent::new(KeyCode::Char(char), mods))
     }
 
     fn key_code(code: KeyCode) -> Event {
         Event::Key(KeyEvent::new(code, KeyModifiers::empty()))
     }
 
-    fn redact_hashes(terminal: &mut Terminal<TestBackend>, dir: TempDir) -> String {
+    fn redact_hashes(terminal: &mut Terminal<TestBackend>, repo: &Repository) -> String {
         let mut debug_output = format!("{:#?}", terminal.backend().buffer());
 
-        for hash in run(&dir, &["git", "log", "--all", "--format=%H", "HEAD"]).lines() {
-            debug_output = debug_output.replace(hash, &"_".repeat(hash.len()));
-        }
-        for hash in run(&dir, &["git", "log", "--all", "--format=%h", "HEAD"]).lines() {
-            debug_output = debug_output.replace(hash, &"_".repeat(hash.len()));
-        }
+        let mut revwalk = repo.revwalk().unwrap();
+        revwalk.push_head().ok();
+        revwalk
+            .flat_map(|maybe_oid| maybe_oid.and_then(|oid| repo.find_commit(oid)))
+            .for_each(|commit| {
+                let id = commit.as_object().id().to_string();
+                let short = commit.as_object().short_id().unwrap();
+                let short_id = short.as_str().unwrap();
+
+                debug_output = debug_output.replace(&id, &"_".repeat(id.len()));
+                debug_output = debug_output.replace(short_id, &"_".repeat(short_id.len()));
+            });
 
         debug_output
     }

@@ -58,23 +58,18 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
     }
 }
 
-fn format_command<'b>(cmd: &CmdMeta) -> Vec<Line<'b>> {
+fn format_command(cmd: &CmdMeta) -> Vec<Line> {
     Text::from(
         format!(
             "$ {}{}",
-            cmd.args.join(" "),
+            cmd.args,
             if cmd.out.is_some() { "" } else { "..." }
         )
         .fg(CURRENT_THEME.command),
     )
     .lines
     .into_iter()
-    .chain(cmd.out.iter().flat_map(|out| {
-        Text::raw(
-            String::from_utf8(out.stderr.clone()).expect("Error turning command output to String"),
-        )
-        .lines
-    }))
+    .chain(cmd.out.iter().flat_map(|out| Text::raw(out).lines))
     .collect::<Vec<Line>>()
 }
 
