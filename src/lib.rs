@@ -417,7 +417,6 @@ fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
 }
 
 #[cfg(test)]
-#[serial_test::serial]
 mod tests {
     use crate::{cli::Args, update, State};
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};

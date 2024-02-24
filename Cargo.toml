@@ -26,5 +26,4 @@ lazy_static = "1.4.0"
 pest = "2.7.6"
 pest_derive = "2.7.6"
 ratatui = "0.26.1"
-serial_test = "3.0.0"
 similar = { version = "2.4.0", features = ["unicode"] }
