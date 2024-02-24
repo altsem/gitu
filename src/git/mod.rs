@@ -7,7 +7,7 @@ use self::{
     merge_status::MergeStatus,
     rebase_status::RebaseStatus,
 };
-use crate::Res;
+use crate::{git2_opts, Res};
 use std::{
     error::Error,
     fs,
@@ -160,15 +160,18 @@ fn path(file: &git2::DiffFile) -> String {
 }
 
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
-    let diff = repo.diff_index_to_workdir(None, None)?;
+    let diff = repo.diff_index_to_workdir(None, Some(&mut git2_opts::diff(repo)?))?;
     convert_diff(diff)
 }
 
 pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
+    let opts = &mut git2_opts::diff(repo)?;
+
     let diff = match repo.head() {
-        Ok(head) => repo.diff_tree_to_index(Some(&head.peel_to_tree()?), None, None)?,
-        Err(_) => repo.diff_tree_to_index(None, None, None)?,
+        Ok(head) => repo.diff_tree_to_index(Some(&head.peel_to_tree()?), None, Some(opts))?,
+        Err(_) => repo.diff_tree_to_index(None, None, Some(opts))?,
     };
+
     convert_diff(diff)
 }
 
