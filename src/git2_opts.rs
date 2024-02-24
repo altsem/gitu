@@ -1,9 +1,8 @@
 use crate::Res;
-use git2;
-use git2::Repository;
+use git2::{self, Repository, StatusOptions};
 
-pub(crate) fn status(repo: &Repository) -> Res<git2::StatusOptions> {
-    let mut opts = git2::StatusOptions::new();
+pub(crate) fn status(repo: &Repository) -> Res<StatusOptions> {
+    let mut opts = StatusOptions::new();
 
     opts.include_untracked(
         repo.config()?
