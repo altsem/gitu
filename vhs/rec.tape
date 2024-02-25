@@ -1,18 +1,30 @@
+Sleep 2
 Type gitu
+Sleep 1
 Enter
-Sleep 1
-
-Type j
-Sleep 1
+Sleep 3
 
 Type h
-Sleep 1
+Sleep 3
+
+Type f
+Sleep 2
+Type a
+
+Sleep 3
 
 Type l
 Sleep 1
 Type l
-Sleep 1
+Sleep 2
 
+Enter
+Sleep 4
+
+Enter
+Sleep 4
+
+Type ":q"
 Enter
 Sleep 2
 
@@ -24,5 +36,8 @@ Sleep 1
 
 Type q
 Sleep 1
+
+Type q
+Sleep 3
 
 Type q
