@@ -20,7 +20,6 @@ pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
 pub(crate) mod rebase_status;
-pub(crate) mod remote;
 
 // TODO Use only plumbing commands
 
@@ -275,6 +274,12 @@ pub(crate) fn commit_amend_cmd() -> Command {
 }
 pub(crate) fn commit_fixup_cmd(reference: &str) -> Command {
     git(&["commit", "--fixup", reference])
+}
+pub(crate) fn fetch_all_cmd() -> Command {
+    git(&["fetch", "--all"])
+}
+pub(crate) fn push_cmd() -> Command {
+    git(&["push"])
 }
 pub(crate) fn pull_cmd() -> Command {
     git(&["pull"])
