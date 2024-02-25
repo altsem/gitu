@@ -1,4 +1,4 @@
-use git2::{DiffLineType::*, Remote, Repository};
+use git2::{DiffLineType::*, PushOptions, RemoteCallbacks, Repository};
 use itertools::Itertools;
 
 use self::{
@@ -259,43 +259,63 @@ pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
         .collect())
 }
 
-pub(crate) fn push_to_matching_remote(repo: &Repository) -> Result<String, Box<dyn Error>> {
-    match find_remote(repo) {
-        Ok(mut remote) => match remote.push::<&str>(&[], Some(&mut git2_opts::push(repo)?)) {
-            Ok(_) => Ok(format!("Pushed to {}", remote.name().unwrap())),
-            Err(err) => Ok(err.message().to_string()),
-        },
-        Err(err) => Ok(err.to_string()),
-    }
-}
-
-pub(crate) fn find_remote(repo: &Repository) -> Result<Remote<'_>, FindRemoteError> {
+pub(crate) fn push_upstream(repo: &Repository) -> Res<String> {
     let Ok(head) = repo.head() else {
-        return Err(FindRemoteError::NoHead);
+        return Err(Box::new(PushError::NoHead));
     };
     let Ok(upstream) = repo.branch_upstream_remote(head.name().unwrap()) else {
-        return Err(FindRemoteError::NoMatchingRemote);
+        return Err(Box::new(PushError::NoUpstreamRemote));
     };
 
-    Ok(repo.find_remote(upstream.as_str().unwrap()).unwrap())
+    let mut remote = repo.find_remote(upstream.as_str().unwrap()).unwrap();
+    let mut out_name = String::new();
+    let mut out_status: Option<String> = None;
+
+    {
+        let mut opts = PushOptions::new();
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(|url, username_from_url, allowed_types| {
+            auth_git2::GitAuthenticator::default().credentials(&repo.config()?)(
+                url,
+                username_from_url,
+                allowed_types,
+            )
+        });
+        callbacks.push_update_reference(|name, status| {
+            out_name.push_str(name);
+            out_status = status.map(|s| s.to_string());
+            Ok(())
+        });
+        opts.remote_callbacks(callbacks);
+
+        remote.push::<&str>(&[head.name().unwrap()], Some(&mut opts))?;
+    }
+
+    if let Some(status) = out_status {
+        return Err(Box::new(PushError::ResponseStatus(status)));
+    }
+
+    Ok(format!("Pushed {} to {}", out_name, remote.name().unwrap()))
 }
 
 #[derive(Debug)]
-pub(crate) enum FindRemoteError {
+pub(crate) enum PushError {
     NoHead,
-    NoMatchingRemote,
+    NoUpstreamRemote,
+    ResponseStatus(String),
 }
 
-impl std::fmt::Display for FindRemoteError {
+impl std::fmt::Display for PushError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            FindRemoteError::NoHead => "No head",
-            FindRemoteError::NoMatchingRemote => "No matching remote",
+            PushError::NoHead => "No head",
+            PushError::NoUpstreamRemote => "No upstream remote",
+            PushError::ResponseStatus(status) => status,
         })
     }
 }
 
-impl std::error::Error for FindRemoteError {}
+impl std::error::Error for PushError {}
 
 pub(crate) fn stage_file_cmd(file: &str) -> Command {
     git(&["add", file])

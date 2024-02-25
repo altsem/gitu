@@ -268,8 +268,8 @@ fn handle_op<B: Backend>(
                 state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?;
             }
             PullRemote => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
-            PushRemote => state.run_cmd(terminal, "git push", |state| {
-                git::push_to_matching_remote(&state.repo)
+            PushUpstreamRemote => state.run_cmd(terminal, "git push", |state| {
+                git::push_upstream(&state.repo)
             })?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
@@ -551,11 +551,31 @@ mod tests {
     }
 
     #[test]
+    fn commit_from_empty() {
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
+        commit(&dir, "new-file", "");
+
+        update(terminal, state, &[key('g')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
+    }
+
+    #[test]
     fn push() {
         let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
-        commit(&dir, "second-file", "");
+        commit(&dir, "new-file", "");
 
-        update(terminal, state, &[key('P'), key('p')]).unwrap();
+        update(terminal, state, &[key('P'), key('u')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
+    }
+
+    #[test]
+    fn unpushed() {
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
+        commit(&dir, "new-file", "");
+        update(terminal, state, &[key('P'), key('u')]).unwrap();
+        commit(&dir, "another-file", "");
+
+        update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 

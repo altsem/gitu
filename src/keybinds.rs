@@ -110,7 +110,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Pull, Char('p'), PullRemote),
     // Push
     Keybind::shift(None, Char('P'), Submenu(Push)),
-    Keybind::nomod(Push, Char('p'), PushRemote),
+    Keybind::nomod(Push, Char('u'), PushUpstreamRemote),
     // Rebase
     Keybind::nomod(None, Char('r'), Submenu(Rebase)),
     Keybind::nomod(Rebase, Char('i'), Target(RebaseInteractive)),
@@ -138,7 +138,7 @@ pub(crate) enum Op {
     ToggleSection,
     HalfPageUp,
     HalfPageDown,
-    PushRemote,
+    PushUpstreamRemote,
     PullRemote,
     Submenu(SubmenuOp),
     Commit,
