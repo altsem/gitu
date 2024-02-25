@@ -1,6 +1,6 @@
 ---
-source: src/lib.rs
-expression: "redact_hashes(terminal, &state.repo)"
+source: tests/mod.rs
+expression: ctx.redact_buffer()
 ---
 Buffer {
     area: Rect { x: 0, y: 0, width: 60, height: 20 },

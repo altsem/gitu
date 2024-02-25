@@ -1,5 +1,5 @@
 ---
-source: src/lib.rs
+source: tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
@@ -9,12 +9,12 @@ Buffer {
         " Your branch is up to date with 'origin/main'.              ",
         "                                                            ",
         " Recent commits                                             ",
-        " _______ main origin/main add new-file                      ",
-        " _______ add initial-file                                   ",
-        "────────────────────────────────────────────────────────────",
-        "$ git push                                                  ",
-        "To                                                          ",
-        "   _______.._______  main -> main                           ",
+        " _______ main origin/main add initial-file                  ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
@@ -30,10 +30,5 @@ Buffer {
         x: 13, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 14, y: 4, fg: Rgb(234, 105, 98), bg: Reset, underline: Reset, modifier: NONE,
         x: 25, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 5, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 6, fg: Rgb(80, 73, 69), bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 7, fg: Rgb(125, 174, 163), bg: Reset, underline: Reset, modifier: NONE,
-        x: 10, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]
 }

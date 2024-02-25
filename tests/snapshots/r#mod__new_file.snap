@@ -1,16 +1,16 @@
 ---
-source: src/lib.rs
-expression: "redact_hashes(terminal, &state.repo)"
+source: tests/mod.rs
+expression: ctx.redact_buffer()
 ---
 Buffer {
     area: Rect { x: 0, y: 0, width: 60, height: 20 },
     content: [
-        "🢒_______ main add secondfile                                ",
-        " _______ add firstfile                                      ",
-        " _______ origin/main add initial-file                       ",
+        "🢒No branch                                                  ",
         "                                                            ",
+        " Untracked files                                            ",
+        " new-file                                                   ",
         "                                                            ",
-        "                                                            ",
+        " Recent commits                                             ",
         "                                                            ",
         "                                                            ",
         "                                                            ",
@@ -28,16 +28,14 @@ Buffer {
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
-        x: 1, y: 0, fg: Rgb(216, 166, 87), bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
-        x: 8, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
-        x: 9, y: 0, fg: Rgb(169, 182, 101), bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
-        x: 13, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
+        x: 1, y: 0, fg: Rgb(216, 166, 87), bg: Rgb(80, 73, 69), underline: Reset, modifier: BOLD,
+        x: 10, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
         x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 1, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 2, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 2, fg: Rgb(234, 105, 98), bg: Reset, underline: Reset, modifier: NONE,
-        x: 20, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 2, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: BOLD,
+        x: 16, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 3, fg: Rgb(234, 105, 98), bg: Reset, underline: Reset, modifier: BOLD,
+        x: 9, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 5, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: BOLD,
+        x: 15, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]
 }
