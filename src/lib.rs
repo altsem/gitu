@@ -269,7 +269,7 @@ fn handle_op<B: Backend>(
             }
             PullRemote => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
             PushUpstreamRemote => state.run_cmd(terminal, "git push", |state| {
-                git::push_upstream(&state.repo)
+                git::remote::push_upstream(&state.repo)
             })?,
             Target(target_op) => {
                 if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
