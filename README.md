@@ -30,7 +30,7 @@ A rough list of so-far supported features:
 ### Keybinds
 A help-menu can be shown by pressing the `h` key.
 
-<img src="doc/help.png" width="400" />
+<img src="vhs/help.png"/>
 
 ### Install
 #### Using Cargo

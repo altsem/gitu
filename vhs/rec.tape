@@ -6,6 +6,7 @@ Sleep 3
 
 Type h
 Sleep 3
+Screenshot ../vhs/help.png
 
 Type f
 Sleep 2
