@@ -1,8 +1,8 @@
-use std::{iter, rc::Rc};
+use std::rc::Rc;
 
 use super::Screen;
 use crate::{
-    git::{self, diff::Diff, status::BranchStatus},
+    git::{self, diff::Diff},
     git2_opts,
     items::{self, Item},
     theme::CURRENT_THEME,
@@ -18,9 +18,6 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
         size,
         Box::new(move || {
             let statuses = repo.statuses(Some(&mut git2_opts::status(&repo)?))?;
-            // TODO Replace with libgit2
-            let status = git::status(&config.dir)?;
-
             let untracked = untracked(&statuses);
             let unmerged = unmerged(&statuses);
 
@@ -47,7 +44,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                 }]
                 .into_iter()
             } else {
-                branch_status_items(&status.branch_status).into_iter()
+                branch_status_items(&repo)?.into_iter()
             }
             .chain(if untracked.is_empty() {
                 vec![]
@@ -148,59 +145,78 @@ fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
         .collect::<Vec<_>>()
 }
 
-fn branch_status_items(status: &BranchStatus) -> Vec<Item> {
-    match (&status.local, &status.remote) {
-        (None, None) => vec![Item {
+fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
+    let Ok(head) = repo.head() else {
+        return Ok(vec![Item {
             id: "branch_status".into(),
             display: Text::from("No branch".fg(CURRENT_THEME.section).bold()),
             section: true,
             depth: 0,
             ..Default::default()
-        }],
-        (Some(local), maybe_remote) => Vec::from_iter(
-            iter::once(Item {
-                id: "branch_status".into(),
-                display: Text::from(
-                    format!("On branch {}", local)
-                        .fg(CURRENT_THEME.section)
-                        .bold(),
-                ),
-                section: true,
-                depth: 0,
-                ..Default::default()
-            })
-            .chain(
-                maybe_remote
-                    .as_ref()
-                    .map(|remote| branch_status_remote_description(status, remote)),
-            ),
-        ),
-        (None, Some(_)) => unreachable!(),
-    }
-}
+        }]);
+    };
 
-fn branch_status_remote_description(status: &BranchStatus, remote: &str) -> Item {
-    Item {
+    let mut items = vec![Item {
         id: "branch_status".into(),
-        display: if status.ahead == 0 && status.behind == 0 {
-            Text::raw(format!("Your branch is up to date with '{}'.", remote))
-        } else if status.ahead > 0 && status.behind == 0 {
+        display: Text::from(
+            format!("On branch {}", head.shorthand().unwrap())
+                .fg(CURRENT_THEME.section)
+                .bold(),
+        ),
+        section: true,
+        depth: 0,
+        ..Default::default()
+    }];
+
+    let Ok(upstream) = repo.branch_upstream_name(head.name().unwrap()) else {
+        return Ok(items);
+    };
+    let upstream_name = upstream.as_str().unwrap().to_string();
+    let upstream_shortname = upstream_name
+        .strip_prefix("refs/remotes/")
+        .unwrap_or(&upstream_name)
+        .to_string();
+
+    let Ok(upstream_id) = repo.refname_to_id(&upstream_name) else {
+        items.push(Item {
+            id: "branch_status".into(),
+            display: format!(
+                "Your branch is based on '{}', but the upstream is gone.",
+                upstream_shortname
+            )
+            .into(),
+            depth: 1,
+            unselectable: true,
+            ..Default::default()
+        });
+        return Ok(items);
+    };
+
+    let (ahead, behind) = repo.graph_ahead_behind(head.target().unwrap(), upstream_id)?;
+
+    items.push(Item {
+        id: "branch_status".into(),
+        display: if ahead == 0 && behind == 0 {
+            Text::raw(format!("Your branch is up to date with '{}'.", upstream_shortname))
+        } else if ahead > 0 && behind == 0 {
             Text::raw(format!(
                 "Your branch is ahead of '{}' by {} commit.",
-                remote, status.ahead
+                upstream_shortname, ahead
             ))
-        } else if status.ahead == 0 && status.behind > 0 {
+        } else if ahead == 0 && behind > 0 {
             Text::raw(format!(
                 "Your branch is behind '{}' by {} commit.",
-                remote, status.behind
+                upstream_shortname, behind
             ))
         } else {
-            Text::raw(format!("Your branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", remote, status.ahead, status.behind))
+            Text::raw(format!("Your branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", upstream_shortname, ahead, behind))
         },
         depth: 1,
         unselectable: true,
         ..Default::default()
-    }
+    });
+
+    Ok(items)
 }
 
 fn create_status_section_items<'a>(

@@ -9,21 +9,18 @@ use self::{
 };
 use crate::{git2_opts, Res};
 use std::{
-    error::Error,
     fs,
     io::ErrorKind,
     path::Path,
     process::Command,
-    str::{self, FromStr},
+    str::{self},
 };
 
 pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
-mod parse;
 pub(crate) mod rebase_status;
 pub(crate) mod remote;
-pub(crate) mod status;
 
 // TODO Check for.git/index.lock and block if it exists
 // TODO Use only plumbing commands
@@ -176,10 +173,6 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
     convert_diff(diff)
 }
 
-pub(crate) fn status(dir: &Path) -> Res<status::Status> {
-    run_git(dir, &["status", "--porcelain", "--branch"], &[])
-}
-
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     let object = &repo.revparse_single(reference)?;
 
@@ -316,20 +309,6 @@ pub(crate) fn checkout_file_cmd(file: &str) -> Command {
 
 pub(crate) fn checkout_ref_cmd(reference: &str) -> Command {
     git(&["checkout", reference])
-}
-
-fn run_git<T: FromStr<Err = Box<dyn Error>>>(
-    dir: &Path,
-    args: &[&str],
-    meta_args: &[&str],
-) -> Res<T> {
-    let out = Command::new("git")
-        .args(&[args, meta_args].concat())
-        .current_dir(dir)
-        .output()?
-        .stdout;
-
-    str::from_utf8(&out)?.parse()
 }
 
 fn git(args: &[&str]) -> Command {
