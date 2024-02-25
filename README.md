@@ -4,7 +4,7 @@
 A terminal user interface for Git. Heavily inspired by Magit.
 Gitu launches straight from the terminal.
 
-<img src="doc/gitu.png" width="600" />
+<img src="vhs/rec.gif"/>
 
 ### Features
 Gitu aims to implement many of the core features of Magit over time. 
