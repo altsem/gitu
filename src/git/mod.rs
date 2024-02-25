@@ -22,7 +22,6 @@ pub(crate) mod merge_status;
 pub(crate) mod rebase_status;
 pub(crate) mod remote;
 
-// TODO Check for.git/index.lock and block if it exists
 // TODO Use only plumbing commands
 
 pub(crate) fn rebase_status(dir: &Path) -> Res<Option<RebaseStatus>> {
