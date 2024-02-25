@@ -264,11 +264,14 @@ fn handle_op<B: Backend>(
             }
             Submenu(op) => state.pending_submenu_op = op,
             LogCurrent => goto_log_screen(Rc::clone(&state.repo), &mut state.screens),
-            FetchAll => {
-                state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?;
-            }
-            PullRemote => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
-            PushUpstreamRemote => state.run_cmd(terminal, "git push", |state| {
+            FetchAll => state.run_cmd(terminal, "git fetch --all", |state| {
+                git::remote::fetch_all(&state.repo)
+            })?,
+            FetchUpstream => state.run_cmd(terminal, "git fetch", |state| {
+                git::remote::fetch_upstream(&state.repo)
+            })?,
+            PullUpstream => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
+            PushUpstream => state.run_cmd(terminal, "git push", |state| {
                 git::remote::push_upstream(&state.repo)
             })?,
             Target(target_op) => {
@@ -422,41 +425,41 @@ mod tests {
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use git2::Repository;
     use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
-    use std::{env, fs, process::Command};
+    use std::{env, fs, path::Path, process::Command};
     use temp_dir::TempDir;
 
     #[test]
     fn no_repo() {
-        let (ref mut terminal, state, _dir, _remote_dir) = setup(60, 20);
+        let (ref mut terminal, state, _dir) = setup_init(60, 20);
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn help_menu() {
-        let (ref mut terminal, ref mut state, _dir, _remote_dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, _dir) = setup_init(60, 20);
         update(terminal, state, &[key('h')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn fresh_init() {
-        let (ref mut terminal, ref mut state, _dir, _remote_dir) = setup(60, 20);
+        let (ref mut terminal, ref mut state, _dir) = setup_init(60, 20);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn new_file() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        run(&dir, &["touch", "new-file"]);
+        let (ref mut terminal, ref mut state, dir) = setup_init(60, 20);
+        run(dir.path(), &["touch", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn unstaged_changes() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        commit(&dir, "testfile", "testing\ntesttest");
+        let (ref mut terminal, ref mut state, dir) = setup_init(60, 20);
+        commit(dir.path(), "testfile", "testing\ntesttest");
         fs::write(dir.child("testfile"), "test\ntesttest").expect("error writing to file");
 
         update(terminal, state, &[key('g')]).unwrap();
@@ -465,26 +468,26 @@ mod tests {
 
     #[test]
     fn staged_file() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        run(&dir, &["touch", "new-file"]);
-        run(&dir, &["git", "add", "new-file"]);
+        let (ref mut terminal, ref mut state, dir) = setup_init(60, 20);
+        run(dir.path(), &["touch", "new-file"]);
+        run(dir.path(), &["git", "add", "new-file"]);
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn log() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        commit(&dir, "firstfile", "testing\ntesttest\n");
-        commit(&dir, "secondfile", "testing\ntesttest\n");
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 20);
+        commit(dir.path(), "firstfile", "testing\ntesttest\n");
+        commit(dir.path(), "secondfile", "testing\ntesttest\n");
         update(terminal, state, &[key('g'), key('l'), key('l')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
     fn show() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        commit(&dir, "firstfile", "This should be visible\n");
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 20);
+        commit(dir.path(), "firstfile", "This should be visible\n");
         update(
             terminal,
             state,
@@ -496,17 +499,17 @@ mod tests {
 
     #[test]
     fn rebase_conflict() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        commit(&dir, "new-file", "hello");
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 20);
+        commit(dir.path(), "new-file", "hello");
 
-        run(&dir, &["git", "checkout", "-b", "other-branch"]);
-        commit(&dir, "new-file", "hey");
+        run(dir.path(), &["git", "checkout", "-b", "other-branch"]);
+        commit(dir.path(), "new-file", "hey");
 
-        run(&dir, &["git", "checkout", "main"]);
-        commit(&dir, "new-file", "hi");
+        run(dir.path(), &["git", "checkout", "main"]);
+        commit(dir.path(), "new-file", "hi");
 
-        run(&dir, &["git", "checkout", "other-branch"]);
-        run(&dir, &["git", "rebase", "main"]);
+        run(dir.path(), &["git", "checkout", "other-branch"]);
+        run(dir.path(), &["git", "rebase", "main"]);
 
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
@@ -514,16 +517,16 @@ mod tests {
 
     #[test]
     fn merge_conflict() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        commit(&dir, "new-file", "hello");
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 20);
+        commit(dir.path(), "new-file", "hello");
 
-        run(&dir, &["git", "checkout", "-b", "other-branch"]);
-        commit(&dir, "new-file", "hey");
+        run(dir.path(), &["git", "checkout", "-b", "other-branch"]);
+        commit(dir.path(), "new-file", "hey");
 
-        run(&dir, &["git", "checkout", "main"]);
-        commit(&dir, "new-file", "hi");
+        run(dir.path(), &["git", "checkout", "main"]);
+        commit(dir.path(), "new-file", "hi");
 
-        run(&dir, &["git", "merge", "other-branch"]);
+        run(dir.path(), &["git", "merge", "other-branch"]);
 
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
@@ -531,9 +534,9 @@ mod tests {
 
     #[test]
     fn moved_file() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 20);
-        commit(&dir, "new-file", "hello");
-        run(&dir, &["git", "mv", "new-file", "moved-file"]);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 20);
+        commit(dir.path(), "new-file", "hello");
+        run(dir.path(), &["git", "mv", "new-file", "moved-file"]);
 
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
@@ -541,19 +544,19 @@ mod tests {
 
     #[test]
     fn hide_untracked() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 10);
         let mut config = state.repo.config().unwrap();
         config.set_str("status.showUntrackedFiles", "off").unwrap();
-        run(&dir, &["touch", "i-am-untracked"]);
+        run(dir.path(), &["touch", "i-am-untracked"]);
 
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
-    fn commit_from_empty() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
-        commit(&dir, "new-file", "");
+    fn new_commit() {
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 10);
+        commit(dir.path(), "new-file", "");
 
         update(terminal, state, &[key('g')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
@@ -561,39 +564,69 @@ mod tests {
 
     #[test]
     fn push() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
-        commit(&dir, "new-file", "");
+        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup_clone(60, 10);
+        commit(dir.path(), "new-file", "");
 
         update(terminal, state, &[key('P'), key('u')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
     #[test]
-    fn unpushed() {
-        let (ref mut terminal, ref mut state, dir, _remote_dir) = setup(60, 10);
-        commit(&dir, "new-file", "");
-        update(terminal, state, &[key('P'), key('u')]).unwrap();
-        commit(&dir, "another-file", "");
+    fn fetch_upstream() {
+        let (ref mut terminal, ref mut state, _dir, remote_dir) = setup_clone(60, 10);
+        clone_and_commit(&remote_dir, "remote-file", "hello");
 
-        update(terminal, state, &[key('g')]).unwrap();
+        update(terminal, state, &[key('f'), key('u')]).unwrap();
         insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
     }
 
-    fn setup(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir, TempDir) {
+    #[test]
+    fn fetch_all() {
+        let (ref mut terminal, ref mut state, _dir, remote_dir) = setup_clone(60, 10);
+        clone_and_commit(&remote_dir, "remote-file", "hello");
+
+        update(terminal, state, &[key('f'), key('a')]).unwrap();
+        insta::assert_snapshot!(redact_hashes(terminal, &state.repo));
+    }
+
+    fn setup_init(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir) {
+        let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+        let dir = TempDir::new().unwrap();
+
+        set_env_vars();
+        run(dir.path(), &["git", "init", "--initial-branch=main"]);
+
+        let state = State::create(
+            Repository::open(dir.path()).unwrap(),
+            crate::Config {
+                dir: dir.path().into(),
+            },
+            Rect::new(0, 0, width, height),
+            Args {
+                command: None,
+                status: false,
+                exit_immediately: false,
+            },
+        )
+        .unwrap();
+
+        set_config(state.repo.config().unwrap());
+        (terminal, state, dir)
+    }
+
+    fn setup_clone(width: u16, height: u16) -> (Terminal<TestBackend>, State, TempDir, TempDir) {
         let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         let remote_dir = TempDir::new().unwrap();
         let dir = TempDir::new().unwrap();
 
-        env::set_var("GIT_CONFIG_GLOBAL", "/dev/null");
-        env::set_var("GIT_CONFIG_SYSTEM", "/dev/null");
-        env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
-
+        set_env_vars();
         run(
-            &remote_dir,
+            remote_dir.path(),
             &["git", "init", "--bare", "--initial-branch=main"],
         );
+        clone_and_commit(&remote_dir, "initial-file", "hello");
         run(
-            &dir,
+            dir.path(),
             &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
         );
 
@@ -611,15 +644,39 @@ mod tests {
         )
         .unwrap();
 
-        let mut config = state.repo.config().unwrap();
-        config.set_str("user.email", "ci@example.com").unwrap();
-        config.set_str("user.name", "CI").unwrap();
-
+        set_config(state.repo.config().unwrap());
         (terminal, state, dir, remote_dir)
     }
 
-    fn commit(dir: &TempDir, file_name: &str, contents: &str) {
-        let path = dir.child(file_name);
+    fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &str) {
+        let other_dir = TempDir::new().unwrap();
+
+        run(
+            other_dir.path(),
+            &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
+        );
+
+        let other_repo = Repository::open(other_dir.path()).unwrap();
+        set_config(other_repo.config().unwrap());
+
+        commit(other_dir.path(), file_name, file_content);
+        run(other_dir.path(), &["git", "push"]);
+    }
+
+    fn set_env_vars() {
+        env::set_var("GIT_CONFIG_GLOBAL", "/dev/null");
+        env::set_var("GIT_CONFIG_SYSTEM", "/dev/null");
+        env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
+    }
+
+    fn set_config(mut config: git2::Config) {
+        config.set_str("user.email", "ci@example.com").unwrap();
+        config.set_str("user.name", "CI").unwrap();
+    }
+
+    fn commit(dir: &Path, file_name: &str, contents: &str) {
+        let mut path = dir.to_path_buf();
+        path.push(file_name);
         let message = match path.try_exists() {
             Ok(true) => format!("modify {}\n\nCommit body goes here\n", file_name),
             _ => format!("add {}\n\nCommit body goes here\n", file_name),
@@ -629,10 +686,10 @@ mod tests {
         run(dir, &["git", "commit", "-m", &message]);
     }
 
-    fn run(dir: &TempDir, cmd: &[&str]) {
+    fn run(dir: &Path, cmd: &[&str]) {
         Command::new(cmd[0])
             .args(&cmd[1..])
-            .current_dir(dir.path())
+            .current_dir(dir)
             .output()
             .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd));
     }

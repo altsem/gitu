@@ -6,7 +6,7 @@ Buffer {
     area: Rect { x: 0, y: 0, width: 60, height: 20 },
     content: [
         "🢒On branch main                                             ",
-        " Your branch is based on 'origin/main', but the upstream is…",
+        " Your branch is ahead of 'origin/main' by 1 commit.         ",
         "                                                            ",
         " Staged changes (2)                                         ",
         " moved-file                                                 ",
@@ -18,7 +18,7 @@ Buffer {
         "                                                            ",
         " Recent commits                                             ",
         " _______ main add new-file                                  ",
-        "                                                            ",
+        " _______ origin/main add initial-file                       ",
         "                                                            ",
         "                                                            ",
         "                                                            ",
@@ -52,5 +52,9 @@ Buffer {
         x: 8, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 9, y: 12, fg: Rgb(169, 182, 101), bg: Reset, underline: Reset, modifier: NONE,
         x: 13, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 13, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
+        x: 8, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 9, y: 13, fg: Rgb(234, 105, 98), bg: Reset, underline: Reset, modifier: NONE,
+        x: 20, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]
 }

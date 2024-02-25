@@ -279,9 +279,6 @@ pub(crate) fn commit_fixup_cmd(reference: &str) -> Command {
 pub(crate) fn pull_cmd() -> Command {
     git(&["pull"])
 }
-pub(crate) fn fetch_all_cmd() -> Command {
-    git(&["fetch", "--all"])
-}
 pub(crate) fn rebase_interactive_cmd(reference: &str) -> Command {
     git(&["rebase", "-i", "--autostash", reference])
 }

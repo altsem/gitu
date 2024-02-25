@@ -19,7 +19,7 @@ Buffer {
         " Recent commits                                             ",
         " _______ main modify new-file                               ",
         " _______ add new-file                                       ",
-        "                                                            ",
+        " _______ origin/main add initial-file                       ",
         "                                                            ",
         "                                                            ",
         "                                                            ",
@@ -51,5 +51,9 @@ Buffer {
         x: 13, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 13, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
         x: 8, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 14, fg: Rgb(216, 166, 87), bg: Reset, underline: Reset, modifier: NONE,
+        x: 8, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 9, y: 14, fg: Rgb(234, 105, 98), bg: Reset, underline: Reset, modifier: NONE,
+        x: 20, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]
 }

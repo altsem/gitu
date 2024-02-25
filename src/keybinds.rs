@@ -102,15 +102,16 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Fetch
     Keybind::nomod(None, Char('f'), Submenu(Fetch)),
     Keybind::nomod(Fetch, Char('a'), FetchAll),
+    Keybind::nomod(Fetch, Char('u'), FetchUpstream),
     // Log
     Keybind::nomod(None, Char('l'), Submenu(Log)),
     Keybind::nomod(Log, Char('l'), LogCurrent),
     // Pull
     Keybind::shift(None, Char('F'), Submenu(Pull)),
-    Keybind::nomod(Pull, Char('p'), PullRemote),
+    Keybind::nomod(Pull, Char('u'), PullUpstream),
     // Push
     Keybind::shift(None, Char('P'), Submenu(Push)),
-    Keybind::nomod(Push, Char('u'), PushUpstreamRemote),
+    Keybind::nomod(Push, Char('u'), PushUpstream),
     // Rebase
     Keybind::nomod(None, Char('r'), Submenu(Rebase)),
     Keybind::nomod(Rebase, Char('i'), Target(RebaseInteractive)),
@@ -138,12 +139,13 @@ pub(crate) enum Op {
     ToggleSection,
     HalfPageUp,
     HalfPageDown,
-    PushUpstreamRemote,
-    PullRemote,
+    PushUpstream,
+    PullUpstream,
     Submenu(SubmenuOp),
     Commit,
     CommitAmend,
     FetchAll,
+    FetchUpstream,
     LogCurrent,
     RebaseAbort,
     RebaseContinue,
