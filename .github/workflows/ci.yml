@@ -28,7 +28,7 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Setup
-      run: cargo install cargo-deny || true
+      run: cargo install --locked cargo-deny || true
 
     - name: Build
       run: ./build.sh
