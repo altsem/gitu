@@ -306,25 +306,19 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
     use TargetOp::*;
 
     match (target_op, target) {
-        (Show, Ref(r)) => goto_show_screen(r.clone()),
+        (Show, Commit(r) | Branch(r)) => goto_show_screen(r.clone()),
         (Show, File(u)) => editor(u.clone(), None),
         (Show, Delta(d)) => editor(d.new_file.clone(), None),
         (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.first_diff_line())),
-        (Stage, Ref(_)) => None,
         (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u),
         (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, &d.new_file),
         (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
-        (Unstage, Ref(_)) => None,
-        (Unstage, File(_)) => None,
         (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, &d.new_file),
         (Unstage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::unstage_patch_cmd),
-        (RebaseInteractive, Ref(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
-        (RebaseInteractive, _) => None,
-        (CommitFixup, Ref(r)) => subscreen_arg(git::commit_fixup_cmd, r),
-        (CommitFixup, _) => None,
-        (RebaseAutosquash, Ref(r)) => subscreen_arg(git::rebase_autosquash_cmd, r),
-        (RebaseAutosquash, _) => None,
-        (Discard, Ref(_)) => None,
+        (RebaseInteractive, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
+        (CommitFixup, Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r),
+        (RebaseAutosquash, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_autosquash_cmd, r),
+        (Discard, Branch(r)) => cmd_arg(git::discard_branch, r),
         (Discard, File(f)) => Some(Box::new(|_term, state| {
             let path = PathBuf::from_iter([state.config.dir.to_path_buf(), f.clone().into()]);
             std::fs::remove_file(path)?;
@@ -342,13 +336,12 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
             h.format_patch().into_bytes(),
             git::discard_unstaged_patch_cmd,
         ),
-        (Checkout, Ref(r)) => cmd_arg(git::checkout_ref_cmd, r),
-        (Checkout, _) => None,
-        (LogOther, Ref(r)) => Some(Box::new(|_term, state| {
+        (Checkout, Commit(r) | Branch(r)) => cmd_arg(git::checkout_ref_cmd, r),
+        (LogOther, Commit(r) | Branch(r)) => Some(Box::new(|_term, state| {
             goto_log_screen(Rc::clone(&state.repo), &mut state.screens, Some(r.clone()));
             Ok(())
         })),
-        (LogOther, _) => None,
+        (_, _) => None,
     }
 }
 

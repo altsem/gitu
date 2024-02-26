@@ -266,6 +266,9 @@ pub(crate) fn unstage_patch_cmd() -> Command {
 pub(crate) fn discard_unstaged_patch_cmd() -> Command {
     git(&["apply", "--reverse"])
 }
+pub(crate) fn discard_branch(branch: &str) -> Command {
+    git(&["branch", "-d", branch])
+}
 pub(crate) fn commit_cmd() -> Command {
     git(&["commit"])
 }

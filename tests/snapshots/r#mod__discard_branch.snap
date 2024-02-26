@@ -1,0 +1,30 @@
+---
+source: tests/mod.rs
+expression: ctx.redact_buffer()
+---
+Buffer {
+    area: Rect { x: 0, y: 0, width: 60, height: 10 },
+    content: [
+        "🢒main origin/main add initial-file                          ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
+        "                                                            ",
+        "────────────────────────────────────────────────────────────",
+        "$ git branch -d main                                        ",
+        "error: cannot delete branch 'main' used by worktree at '/tmp",
+    ],
+    styles: [
+        x: 0, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
+        x: 1, y: 0, fg: Rgb(169, 182, 101), bg: Rgb(80, 73, 69), underline: Reset, modifier: BOLD,
+        x: 5, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
+        x: 6, y: 0, fg: Rgb(234, 105, 98), bg: Rgb(80, 73, 69), underline: Reset, modifier: BOLD,
+        x: 17, y: 0, fg: Reset, bg: Rgb(80, 73, 69), underline: Reset, modifier: NONE,
+        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 7, fg: Rgb(80, 73, 69), bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 8, fg: Rgb(125, 174, 163), bg: Reset, underline: Reset, modifier: NONE,
+        x: 20, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+    ]
+}

@@ -40,7 +40,7 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                         id: local.clone().into(),
                         display: Text::from(vec![Line::from(spans)]),
                         depth: 0,
-                        target_data: Some(TargetData::Ref(local.to_string())),
+                        target_data: Some(TargetData::Branch(local.to_string())),
                         ..Default::default()
                     }
                 })

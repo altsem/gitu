@@ -29,10 +29,11 @@ pub(crate) struct Item {
 
 #[derive(Clone, Debug)]
 pub(crate) enum TargetData {
-    Ref(String),
+    Commit(String),
     File(String),
     Delta(Delta),
     Hunk(Hunk),
+    Branch(String),
 }
 
 pub(crate) fn create_diff_items<'a>(
@@ -188,7 +189,7 @@ pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) ->
                 id: oid.to_string().into(),
                 display: Line::from(spans).into(),
                 depth: 1,
-                target_data: Some(TargetData::Ref(oid.to_string())),
+                target_data: Some(TargetData::Commit(oid.to_string())),
                 ..Default::default()
             })
         })
