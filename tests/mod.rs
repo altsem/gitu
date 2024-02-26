@@ -171,6 +171,13 @@ fn pull() {
 }
 
 #[test]
+fn discard_branch_confirm() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+    ctx.update(&[key('y'), key('K')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn discard_branch() {
     let mut ctx = TestContext::setup_clone(60, 10);
     ctx.update(&[key('y'), key('K'), key('y')]);
