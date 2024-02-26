@@ -118,6 +118,11 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Rebase, Char('a'), RebaseAbort),
     Keybind::nomod(Rebase, Char('c'), RebaseContinue),
     Keybind::nomod(Rebase, Char('f'), Target(RebaseAutosquash)),
+    // Reset
+    Keybind::nomod(None, Char('x'), Submenu(Reset)),
+    Keybind::nomod(Reset, Char('s'), Target(ResetSoft)),
+    Keybind::nomod(Reset, Char('m'), Target(ResetMixed)),
+    Keybind::nomod(Reset, Char('h'), Target(ResetHard)),
     // Show refs
     Keybind::nomod(None, Char('y'), ShowRefs),
     // Discard
@@ -132,52 +137,56 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Op {
-    Quit,
-    Refresh,
-    SelectPrevious,
-    SelectNext,
-    ToggleSection,
-    HalfPageUp,
-    HalfPageDown,
-    Push,
-    Pull,
-    Submenu(SubmenuOp),
     Commit,
     CommitAmend,
     FetchAll,
+    HalfPageDown,
+    HalfPageUp,
     LogCurrent,
+    Pull,
+    Push,
+    Quit,
     RebaseAbort,
     RebaseContinue,
+    Refresh,
+    SelectNext,
+    SelectPrevious,
     ShowRefs,
+    Submenu(SubmenuOp),
     Target(TargetOp),
+    ToggleSection,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum SubmenuOp {
     Any,
-    None,
     Branch,
     Commit,
     Discard,
     Fetch,
     Help,
     Log,
+    None,
     Pull,
     Push,
     Rebase,
+    Reset,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TargetOp {
     Checkout,
     CommitFixup,
+    Discard,
+    LogOther,
+    RebaseAutosquash,
+    RebaseInteractive,
+    ResetSoft,
+    ResetMixed,
+    ResetHard,
     Show,
     Stage,
     Unstage,
-    RebaseAutosquash,
-    RebaseInteractive,
-    Discard,
-    LogOther,
 }
 
 impl TargetOp {
@@ -186,13 +195,16 @@ impl TargetOp {
         [
             &TargetOp::Checkout,
             &TargetOp::CommitFixup,
+            &TargetOp::Discard,
+            &TargetOp::LogOther,
+            &TargetOp::RebaseAutosquash,
+            &TargetOp::RebaseInteractive,
+            &TargetOp::ResetSoft,
+            &TargetOp::ResetMixed,
+            &TargetOp::ResetHard,
             &TargetOp::Show,
             &TargetOp::Stage,
             &TargetOp::Unstage,
-            &TargetOp::RebaseAutosquash,
-            &TargetOp::RebaseInteractive,
-            &TargetOp::Discard,
-            &TargetOp::LogOther,
         ]
         .into_iter()
     }

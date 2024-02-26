@@ -318,6 +318,9 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         (RebaseInteractive, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
         (CommitFixup, Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r),
         (RebaseAutosquash, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_autosquash_cmd, r),
+        (ResetSoft, Commit(r) | Branch(r)) => cmd_arg(git::reset_soft_cmd, r),
+        (ResetMixed, Commit(r) | Branch(r)) => cmd_arg(git::reset_mixed_cmd, r),
+        (ResetHard, Commit(r) | Branch(r)) => cmd_arg(git::reset_hard_cmd, r),
         (Discard, Branch(r)) => cmd_arg(git::discard_branch, r),
         (Discard, File(f)) => Some(Box::new(|_term, state| {
             let path = PathBuf::from_iter([state.config.dir.to_path_buf(), f.clone().into()]);

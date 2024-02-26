@@ -306,7 +306,15 @@ pub(crate) fn rebase_continue_cmd() -> Command {
 pub(crate) fn rebase_abort_cmd() -> Command {
     git(&["rebase", "--abort"])
 }
-
+pub(crate) fn reset_soft_cmd(reference: &str) -> Command {
+    git(&["reset", "--soft", reference])
+}
+pub(crate) fn reset_mixed_cmd(reference: &str) -> Command {
+    git(&["reset", "--mixed", reference])
+}
+pub(crate) fn reset_hard_cmd(reference: &str) -> Command {
+    git(&["reset", "--hard", reference])
+}
 pub(crate) fn checkout_file_cmd(file: &str) -> Command {
     git(&["checkout", "--", file])
 }

@@ -183,3 +183,35 @@ fn discard_branch() {
     ctx.update(&[key('y'), key('K'), key('y')]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn reset_menu() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+    commit(ctx.dir.path(), "unwanted-file", "");
+    ctx.update(&[key('l'), key('l'), key('j'), key('x')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn reset_soft() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+    commit(ctx.dir.path(), "unwanted-file", "");
+    ctx.update(&[key('l'), key('l'), key('j'), key('x'), key('s'), key('q')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn reset_mixed() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+    commit(ctx.dir.path(), "unwanted-file", "");
+    ctx.update(&[key('l'), key('l'), key('j'), key('x'), key('m'), key('q')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn reset_hard() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+    commit(ctx.dir.path(), "unwanted-file", "");
+    ctx.update(&[key('l'), key('l'), key('j'), key('x'), key('h'), key('q')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
