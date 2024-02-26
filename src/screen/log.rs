@@ -4,6 +4,9 @@ use git2::Repository;
 use ratatui::prelude::Rect;
 use std::rc::Rc;
 
-pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
-    Screen::new(size, Box::new(move || log(&repo, usize::MAX)))
+pub(crate) fn create(repo: Rc<Repository>, size: Rect, reference: Option<String>) -> Res<Screen> {
+    Screen::new(
+        size,
+        Box::new(move || log(&repo, usize::MAX, reference.clone())),
+    )
 }

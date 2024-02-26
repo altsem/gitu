@@ -135,9 +135,12 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
     Text::from(lines)
 }
 
-pub(crate) fn log(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
+pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) -> Res<Vec<Item>> {
     let mut revwalk = repo.revwalk()?;
-    if revwalk.push_head().is_err() {
+    if let Some(r) = reference {
+        let oid = repo.revparse_single(&r)?.id();
+        revwalk.push(oid)?;
+    } else if revwalk.push_head().is_err() {
         return Ok(vec![]);
     }
 

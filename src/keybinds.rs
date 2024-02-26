@@ -105,6 +105,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Log
     Keybind::nomod(None, Char('l'), Submenu(Log)),
     Keybind::nomod(Log, Char('l'), LogCurrent),
+    Keybind::nomod(Log, Char('o'), Target(LogOther)),
     // Pull
     Keybind::shift(None, Char('F'), Submenu(SubmenuOp::Pull)),
     Keybind::nomod(SubmenuOp::Pull, Char('p'), Op::Pull),
@@ -176,6 +177,7 @@ pub(crate) enum TargetOp {
     RebaseAutosquash,
     RebaseInteractive,
     Discard,
+    LogOther,
 }
 
 impl TargetOp {
@@ -190,6 +192,7 @@ impl TargetOp {
             &TargetOp::RebaseAutosquash,
             &TargetOp::RebaseInteractive,
             &TargetOp::Discard,
+            &TargetOp::LogOther,
         ]
         .into_iter()
     }

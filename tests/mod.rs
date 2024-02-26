@@ -61,6 +61,16 @@ fn log() {
 }
 
 #[test]
+fn log_other() {
+    let mut ctx = TestContext::setup_clone(60, 20);
+    commit(ctx.dir.path(), "this-should-be-at-the-top", "");
+    commit(ctx.dir.path(), "this-should-not-be-visible", "");
+
+    ctx.update(&[key('g'), key('l'), key('l'), key('j'), key('l'), key('o')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn show() {
     let mut ctx = TestContext::setup_clone(60, 20);
     commit(ctx.dir.path(), "firstfile", "This should be visible\n");

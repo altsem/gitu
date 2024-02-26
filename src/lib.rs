@@ -263,7 +263,7 @@ fn handle_op<B: Backend>(
                 state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
             }
             Submenu(op) => state.pending_submenu_op = op,
-            LogCurrent => goto_log_screen(Rc::clone(&state.repo), &mut state.screens),
+            LogCurrent => goto_log_screen(Rc::clone(&state.repo), &mut state.screens, None),
             FetchAll => state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?,
             Pull => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
             Push => state.run_external_cmd(terminal, &[], git::push_cmd())?,
@@ -344,6 +344,11 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         ),
         (Checkout, Ref(r)) => cmd_arg(git::checkout_ref_cmd, r),
         (Checkout, _) => None,
+        (LogOther, Ref(r)) => Some(Box::new(|_term, state| {
+            goto_log_screen(Rc::clone(&state.repo), &mut state.screens, Some(r.clone()));
+            Ok(())
+        })),
+        (LogOther, _) => None,
     }
 }
 
@@ -400,10 +405,10 @@ fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<
     }))
 }
 
-fn goto_log_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>) {
+fn goto_log_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>, reference: Option<String>) {
     screens.drain(1..);
     let size = screens.last().unwrap().size;
-    screens.push(screen::log::create(repo, size).expect("Couldn't create screen"));
+    screens.push(screen::log::create(repo, size, reference).expect("Couldn't create screen"));
 }
 
 fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
