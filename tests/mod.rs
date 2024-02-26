@@ -215,3 +215,10 @@ fn reset_hard() {
     ctx.update(&[key('l'), key('l'), key('j'), key('x'), key('h'), key('q')]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn show_refs() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+    ctx.update(&[key('y')]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
