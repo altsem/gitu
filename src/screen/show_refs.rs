@@ -33,11 +33,11 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                         let columns = [
                             Some(Span::styled(
                                 local.clone(),
-                                Style::new().fg(CURRENT_THEME.branch).bold(),
+                                Style::new().fg(CURRENT_THEME.branch),
                             )),
                             (!remote.is_empty()).then_some(Span::styled(
                                 remote,
-                                Style::new().fg(CURRENT_THEME.remote).bold(),
+                                Style::new().fg(CURRENT_THEME.remote),
                             )),
                             Some(Span::raw(subject)),
                         ]
