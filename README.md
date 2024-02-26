@@ -1,8 +1,7 @@
 ## It's Gitu! - A Git porcelain *outside* of Emacs
 [![CI](https://github.com/altsem/gitu/actions/workflows/ci.yml/badge.svg)](https://github.com/altsem/gitu/actions/workflows/ci.yml)
 
-A terminal user interface for Git. Heavily inspired by Magit.
-Gitu launches straight from the terminal.
+A terminal user interface for Git. Inspired by Magit, and launched straight from the terminal.
 
 <img src="vhs/rec.gif"/>
 
