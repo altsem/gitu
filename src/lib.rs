@@ -22,6 +22,7 @@ use std::{
     process::{Command, Stdio},
     rc::Rc,
 };
+use strum::IntoEnumIterator;
 
 type Res<T> = Result<T, Box<dyn Error>>;
 
@@ -289,8 +290,8 @@ fn handle_op<B: Backend>(
 
 pub(crate) fn list_target_ops<B: Backend>(
     target: &TargetData,
-) -> impl Iterator<Item = &'static TargetOp> + '_ {
-    TargetOp::list_all().filter(|target_op| closure_by_target_op::<B>(target, target_op).is_some())
+) -> impl Iterator<Item = TargetOp> + '_ {
+    TargetOp::iter().filter(|target_op| closure_by_target_op::<B>(target, target_op).is_some())
 }
 
 type OpClosure<'a, B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) -> Res<()> + 'a>;

@@ -1,5 +1,6 @@
 use crossterm::event::{self, KeyCode, KeyModifiers};
 
+use strum::EnumIter;
 use KeyCode::*;
 use Op::*;
 use SubmenuOp::*;
@@ -173,7 +174,7 @@ pub(crate) enum SubmenuOp {
     Reset,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, EnumIter)]
 pub(crate) enum TargetOp {
     Checkout,
     CommitFixup,
@@ -187,27 +188,6 @@ pub(crate) enum TargetOp {
     Show,
     Stage,
     Unstage,
-}
-
-impl TargetOp {
-    // TODO find a better way to always keep this up to date with TargetOp contents
-    pub(crate) fn list_all() -> impl Iterator<Item = &'static TargetOp> {
-        [
-            &TargetOp::Checkout,
-            &TargetOp::CommitFixup,
-            &TargetOp::Discard,
-            &TargetOp::LogOther,
-            &TargetOp::RebaseAutosquash,
-            &TargetOp::RebaseInteractive,
-            &TargetOp::ResetSoft,
-            &TargetOp::ResetMixed,
-            &TargetOp::ResetHard,
-            &TargetOp::Show,
-            &TargetOp::Stage,
-            &TargetOp::Unstage,
-        ]
-        .into_iter()
-    }
 }
 
 pub(crate) fn op_of_key_event(pending: SubmenuOp, key: event::KeyEvent) -> Option<Op> {

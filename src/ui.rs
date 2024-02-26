@@ -140,7 +140,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     unreachable!();
                 };
 
-                target_ops.contains(&&target)
+                target_ops.contains(&target)
             })
             .collect::<Vec<_>>();
 

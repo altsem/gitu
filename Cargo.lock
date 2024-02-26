@@ -549,6 +549,7 @@ dependencies = [
  "pretty_assertions",
  "ratatui",
  "similar",
+ "strum",
  "temp-dir",
 ]
 
