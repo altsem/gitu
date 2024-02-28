@@ -201,19 +201,21 @@ impl<'a> Screen {
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut highlight_depth = None;
-        for (line_i, (item_i, item, line)) in self
+        for (line_i, (item_i, item, line, highlight_depth)) in self
             .display_lines()
+            .scan(None, |highlight_depth, (item_i, item, line)| {
+                if self.cursor == item_i {
+                    *highlight_depth = Some(item.depth);
+                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
+                    *highlight_depth = None;
+                };
+
+                Some((item_i, item, line, *highlight_depth))
+            })
             .skip(self.scroll as usize)
             .take(area.height as usize)
             .enumerate()
         {
-            if self.cursor == item_i {
-                highlight_depth = Some(item.depth);
-            } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                highlight_depth = None;
-            };
-
             if highlight_depth.is_some() {
                 let area = Rect {
                     x: 0,
