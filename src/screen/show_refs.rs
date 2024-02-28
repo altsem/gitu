@@ -21,7 +21,7 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
             // TODO Replace with libgit2
             Ok(iter::once(Item {
                 id: "branches".into(),
-                display: Text::from("Branches".to_string().fg(CURRENT_THEME.section).bold()),
+                display: Text::from("Branches".to_string().fg(CURRENT_THEME.section)),
                 section: true,
                 depth: 0,
                 ..Default::default()

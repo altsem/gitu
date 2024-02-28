@@ -189,7 +189,7 @@ fn format_keybinds_menu<'b, B: Backend>(
             Table::new(rows, widths).block(
                 Block::new()
                     .borders(Borders::TOP)
-                    .border_style(Style::new().fg(CURRENT_THEME.highlight))
+                    .border_style(Style::new().dim())
                     .border_type(ratatui::widgets::BorderType::Plain),
             ),
         ),
@@ -201,7 +201,7 @@ fn command_popup(lines: Vec<Line>) -> Popup {
         Paragraph::new(lines).block(
             Block::new()
                 .borders(Borders::TOP)
-                .border_style(Style::new().fg(CURRENT_THEME.highlight))
+                .border_style(Style::new().dim())
                 .border_type(ratatui::widgets::BorderType::Plain),
         ),
     )

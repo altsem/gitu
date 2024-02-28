@@ -26,8 +26,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                     id: "rebase_status".into(),
                     display: Text::from(
                         format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto)
-                            .fg(CURRENT_THEME.section)
-                            .bold(),
+                            .fg(CURRENT_THEME.section),
                     ),
                     ..Default::default()
                 }]
@@ -36,9 +35,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                 vec![Item {
                     id: "merge_status".into(),
                     display: Text::from(
-                        format!("Merging {}", &merge.head)
-                            .fg(CURRENT_THEME.section)
-                            .bold(),
+                        format!("Merging {}", &merge.head).fg(CURRENT_THEME.section),
                     ),
                     ..Default::default()
                 }]
@@ -54,10 +51,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                     Item {
                         id: "untracked".into(),
                         display: Text::from(
-                            "Untracked files"
-                                .to_string()
-                                .fg(CURRENT_THEME.section)
-                                .bold(),
+                            "Untracked files".to_string().fg(CURRENT_THEME.section),
                         ),
                         section: true,
                         depth: 0,
@@ -73,9 +67,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                     items::blank_line(),
                     Item {
                         id: "unmerged".into(),
-                        display: Text::from(
-                            "Unmerged".to_string().fg(CURRENT_THEME.section).bold(),
-                        ),
+                        display: Text::from("Unmerged".to_string().fg(CURRENT_THEME.section)),
                         section: true,
                         depth: 0,
                         ..Default::default()
@@ -113,7 +105,7 @@ fn untracked(statuses: &git2::Statuses<'_>) -> Vec<Item> {
 
             Some(Item {
                 id: path.to_string().into(),
-                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file).bold()),
+                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file)),
                 depth: 1,
                 target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
@@ -136,7 +128,7 @@ fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
 
             Some(Item {
                 id: path.to_string().into(),
-                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file).bold()),
+                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file)),
                 depth: 1,
                 target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
@@ -149,7 +141,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
     let Ok(head) = repo.head() else {
         return Ok(vec![Item {
             id: "branch_status".into(),
-            display: Text::from("No branch".fg(CURRENT_THEME.section).bold()),
+            display: Text::from("No branch".fg(CURRENT_THEME.section)),
             section: true,
             depth: 0,
             ..Default::default()
@@ -159,9 +151,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
     let mut items = vec![Item {
         id: "branch_status".into(),
         display: Text::from(
-            format!("On branch {}", head.shorthand().unwrap())
-                .fg(CURRENT_THEME.section)
-                .bold(),
+            format!("On branch {}", head.shorthand().unwrap()).fg(CURRENT_THEME.section),
         ),
         section: true,
         depth: 0,
@@ -236,9 +226,7 @@ fn create_status_section_items<'a>(
             Item {
                 id: header.to_string().into(),
                 display: Text::from(
-                    format!("{} ({})", header, diff.deltas.len())
-                        .fg(CURRENT_THEME.section)
-                        .bold(),
+                    format!("{} ({})", header, diff.deltas.len()).fg(CURRENT_THEME.section),
                 ),
                 section: true,
                 depth: 0,
@@ -263,7 +251,7 @@ fn create_log_section_items<'a>(
         },
         Item {
             id: header.to_string().into(),
-            display: Text::from(header.to_string().fg(CURRENT_THEME.section).bold()),
+            display: Text::from(header.to_string().fg(CURRENT_THEME.section)),
             section: true,
             depth: 0,
             ..Default::default()

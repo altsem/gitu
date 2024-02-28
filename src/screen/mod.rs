@@ -1,6 +1,6 @@
 use ratatui::{prelude::*, widgets::Widget};
 
-use crate::{items::TargetData, theme::CURRENT_THEME, Res};
+use crate::{items::TargetData, Res};
 
 use super::Item;
 use std::{borrow::Cow, collections::HashSet};
@@ -222,14 +222,13 @@ impl Widget for &Screen {
                     height: 1,
                 };
 
-                buf.set_style(
-                    area,
-                    Style::new().bg(if self.cursor == item_i {
-                        CURRENT_THEME.highlight
-                    } else {
-                        CURRENT_THEME.dim_highlight
-                    }),
-                );
+                if self.cursor == item_i {
+                    buf.set_style(area, Style::new().bold());
+                } else {
+                    buf.get_mut(0, line_i as u16)
+                        .set_char('▌')
+                        .set_style(Style::new().blue().dim());
+                }
             }
 
             let mut x = 1;
