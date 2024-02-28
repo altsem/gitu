@@ -1,3 +1,7 @@
+Set Theme "Catppuccin Frappe"
+Set Height 800
+Set Padding 5
+
 Sleep 2
 Type gitu
 Sleep 1
