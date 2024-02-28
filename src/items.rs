@@ -116,12 +116,22 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
                         ChangeTag::Insert => "+",
                     };
 
+                    let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
+
                     Line::from(
                         iter::once(Span::styled(prefix, style))
                             .chain(change.iter_strings_lossy().map(|(emph, value)| {
                                 Span::styled(
                                     value.to_string(),
-                                    if emph { style.reversed() } else { style },
+                                    if some_emph {
+                                        if emph {
+                                            style.bold()
+                                        } else {
+                                            style.dim()
+                                        }
+                                    } else {
+                                        style
+                                    },
                                 )
                             }))
                             .collect::<Vec<_>>(),
