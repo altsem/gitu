@@ -1,24 +1,22 @@
-use std::iter;
+use std::{iter, rc::Rc};
 
 use super::Screen;
 use crate::{
-    git,
     items::{Item, TargetData},
     theme::CURRENT_THEME,
-    Config, Res,
+    Res,
 };
+use git2::{BranchType, Repository};
 use ratatui::{
     prelude::Rect,
-    style::{Style, Stylize},
+    style::Stylize,
     text::{Line, Span, Text},
 };
 
-pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
-    let path_buf = config.dir.clone();
+pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     Screen::new(
         size,
         Box::new(move || {
-            // TODO Replace with libgit2
             Ok(iter::once(Item {
                 id: "branches".into(),
                 display: Text::from("Branches".to_string().fg(CURRENT_THEME.section)),
@@ -27,31 +25,28 @@ pub(crate) fn create(config: &Config, size: Rect) -> Res<Screen> {
                 ..Default::default()
             })
             .chain(
-                git::show_refs(&path_buf)?
-                    .into_iter()
-                    .map(|(local, remote, subject)| {
-                        let columns = [
-                            Some(Span::styled(
-                                local.clone(),
-                                Style::new().fg(CURRENT_THEME.branch),
-                            )),
-                            (!remote.is_empty()).then_some(Span::styled(
-                                remote,
-                                Style::new().fg(CURRENT_THEME.remote),
-                            )),
-                            Some(Span::raw(subject)),
-                        ]
-                        .into_iter()
-                        .flatten();
+                repo.branches(Some(BranchType::Local))?
+                    .filter_map(Result::ok)
+                    .map(|(branch, _branch_type)| {
+                        let name = Span::raw(branch.name().unwrap().unwrap().to_string())
+                            .fg(CURRENT_THEME.branch);
 
-                        let spans =
-                            itertools::intersperse(columns, Span::raw(" ")).collect::<Vec<_>>();
+                        let upstream_name = if let Ok(upstream) = branch.upstream() {
+                            if let Ok(Some(name)) = upstream.name() {
+                                Span::raw(name.to_string()).fg(CURRENT_THEME.remote)
+                            } else {
+                                Span::raw("")
+                            }
+                        } else {
+                            Span::raw("")
+                        };
 
                         Item {
-                            id: local.clone().into(),
-                            display: Text::from(vec![Line::from(spans)]),
+                            id: name.clone().content,
+                            display: Line::from(vec![name.clone(), Span::raw(" "), upstream_name])
+                                .into(),
                             depth: 1,
-                            target_data: Some(TargetData::Branch(local.to_string())),
+                            target_data: Some(TargetData::Branch(name.content.into())),
                             ..Default::default()
                         }
                     }),

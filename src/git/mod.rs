@@ -224,33 +224,6 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     })
 }
 
-pub(crate) fn show_refs(dir: &Path) -> Res<Vec<(String, String, String)>> {
-    let out = Command::new("git")
-        .args([
-            "for-each-ref",
-            "--sort",
-            "-creatordate",
-            "--format",
-            "%(refname:short) %(upstream:short) %(subject)",
-            "refs/heads",
-        ])
-        .current_dir(dir)
-        .output()?
-        .stdout;
-
-    Ok(str::from_utf8(&out)?
-        .lines()
-        .map(|line| {
-            let mut columns = line.splitn(3, ' ');
-            let local = columns.next().unwrap().to_string();
-            let remote = columns.next().unwrap().to_string();
-            let subject = columns.next().unwrap().to_string();
-
-            (local, remote, subject)
-        })
-        .collect())
-}
-
 pub(crate) fn stage_file_cmd(file: &str) -> Command {
     git(&["add", file])
 }

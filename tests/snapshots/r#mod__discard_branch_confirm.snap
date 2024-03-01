@@ -6,14 +6,14 @@ Buffer {
     area: Rect { x: 0, y: 0, width: 60, height: 10 },
     content: [
         " Branches                                                   ",
-        "🢒main origin/main add initial-file                          ",
+        "🢒main origin/main                                           ",
         "                                                            ",
         "                                                            ",
         "                                                            ",
         "                                                            ",
         "                                                            ",
         "────────────────────────────────────────────────────────────",
-        "Discard                                  main origin/main ad",
+        "Discard                                  main origin/main   ",
         "n Quit                                   y Discard          ",
     ],
     styles: [

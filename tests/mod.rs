@@ -219,6 +219,9 @@ fn reset_hard() {
 #[test]
 fn show_refs() {
     let mut ctx = TestContext::setup_clone(60, 10);
+    run(ctx.dir.path(), &["git", "tag", "same-name"]);
+    run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
+
     ctx.update(&[key('y')]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }

@@ -281,7 +281,7 @@ fn handle_op<B: Backend>(
             RebaseContinue => {
                 state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?;
             }
-            ShowRefs => goto_refs_screen(&state.config, &mut state.screens),
+            ShowRefs => goto_refs_screen(Rc::clone(&state.repo), &mut state.screens),
         }
     }
 
@@ -408,8 +408,8 @@ fn goto_log_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>, reference: O
     screens.push(screen::log::create(repo, size, reference).expect("Couldn't create screen"));
 }
 
-fn goto_refs_screen(config: &Config, screens: &mut Vec<Screen>) {
+fn goto_refs_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>) {
     screens.drain(1..);
     let size = screens.last().unwrap().size;
-    screens.push(screen::show_refs::create(config, size).expect("Couldn't create screen"));
+    screens.push(screen::show_refs::create(repo, size).expect("Couldn't create screen"));
 }
