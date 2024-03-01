@@ -17,6 +17,8 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     Screen::new(
         size,
         Box::new(move || {
+            let head = repo.head().ok();
+
             Ok(iter::once(Item {
                 id: "branches".into(),
                 display: Text::from("Branches".to_string().fg(CURRENT_THEME.section)),
@@ -31,6 +33,14 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                         let name = Span::raw(branch.name().unwrap().unwrap().to_string())
                             .fg(CURRENT_THEME.branch);
 
+                        let prefix = Span::raw(
+                            if branch.get().name() == head.as_ref().and_then(|h| h.name()) {
+                                "* "
+                            } else {
+                                "  "
+                            },
+                        );
+
                         let upstream_name = if let Ok(upstream) = branch.upstream() {
                             if let Ok(Some(name)) = upstream.name() {
                                 Span::raw(name.to_string()).fg(CURRENT_THEME.remote)
@@ -44,6 +54,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                         Item {
                             id: name.clone().content,
                             display: Line::from(vec![
+                                prefix,
                                 name.clone(),
                                 Span::raw("    "),
                                 upstream_name,
