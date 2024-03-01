@@ -43,8 +43,12 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
 
                         Item {
                             id: name.clone().content,
-                            display: Line::from(vec![name.clone(), Span::raw(" "), upstream_name])
-                                .into(),
+                            display: Line::from(vec![
+                                name.clone(),
+                                Span::raw("    "),
+                                upstream_name,
+                            ])
+                            .into(),
                             depth: 1,
                             target_data: Some(TargetData::Branch(name.content.into())),
                             ..Default::default()
