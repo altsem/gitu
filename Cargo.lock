@@ -552,6 +552,7 @@ dependencies = [
  "similar",
  "strum",
  "temp-dir",
+ "tui-prompts",
 ]
 
 [[package]]
@@ -1411,6 +1412,17 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tui-prompts"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54a38625ddb7cc1867a181201d54b93afe516e771cd5967f38a61cb0209b21fb"
+dependencies = [
+ "crossterm",
+ "itertools 0.12.1",
+ "ratatui",
+]
 
 [[package]]
 name = "unicode-bidi"

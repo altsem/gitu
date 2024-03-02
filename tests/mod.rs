@@ -296,3 +296,27 @@ fn show_refs() {
     gitu::update(&mut ctx.term, &mut state, &[key('y')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn checkout_new_branch() {
+    let mut ctx = TestContext::setup_clone(60, 10);
+
+    let mut state = ctx.init_state();
+    gitu::update(
+        &mut ctx.term,
+        &mut state,
+        &[
+            key('b'),
+            key('c'),
+            key('f'),
+            // Don't want to create branch 'f', try again
+            key_code(KeyCode::Esc),
+            key('b'),
+            key('c'),
+            key('x'),
+            key_code(KeyCode::Enter),
+        ],
+    )
+    .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}

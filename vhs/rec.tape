@@ -14,6 +14,14 @@ Sleep 500ms
 Type "h"
 Screenshot ../vhs/help.png
 Sleep 2s
+Type "b"
+Sleep 2s
+Type "c"
+Sleep 500ms
+Type "my-feature-branch"
+Sleep 500ms
+Enter
+Sleep 1.0s
 Type "l"
 Sleep 1s
 Type "l"
@@ -24,27 +32,13 @@ Type "j"
 Sleep 500ms
 Type "j"
 Sleep 500ms
-Type "j"
-Sleep 500ms
 Enter
-Type "j"
-Sleep 500ms
-Type "kk"
-Tab
-Sleep 1.0s
-Type "j"
-Sleep 1.0s
-Tab
-Sleep 1.0s
-Type "j"
-Sleep 1s
 Type "j"
 Sleep 1.0s
 Enter
-Sleep 1.5s
+Sleep 500ms
 Type "A // Here's a useless comment..."
 Escape
-Sleep 1s
 Type ":wq"
 Sleep 500ms
 Enter
@@ -52,8 +46,6 @@ Sleep 500ms
 Type "jkq"
 Sleep 500ms
 Type "q"
-Sleep 500ms
-Type "j"
 Sleep 1.0s
 Type "s"
 Sleep 2s

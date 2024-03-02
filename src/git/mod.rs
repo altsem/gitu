@@ -296,6 +296,9 @@ pub(crate) fn reset_hard_cmd(reference: &str) -> Command {
 pub(crate) fn checkout_file_cmd(file: &str) -> Command {
     git(&["checkout", "--", file])
 }
+pub(crate) fn checkout_new_branch_cmd(name: &str) -> Command {
+    git(&["checkout", "-b", name])
+}
 
 pub(crate) fn checkout_ref_cmd(reference: &str) -> Command {
     git(&["checkout", reference])

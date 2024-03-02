@@ -17,6 +17,8 @@ use ratatui::widgets::Paragraph;
 use ratatui::widgets::Row;
 use ratatui::widgets::Table;
 use ratatui::Frame;
+use tui_prompts::State as _;
+use tui_prompts::TextPrompt;
 
 enum Popup<'a> {
     None,
@@ -24,7 +26,7 @@ enum Popup<'a> {
     Table(Table<'a>),
 }
 
-pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
+pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
     let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.cmd_meta {
         let lines = format_command(cmd);
         (lines.len(), command_popup(lines))
@@ -45,7 +47,11 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
 
     let layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Min(1), Constraint::Length(popup_len)],
+        [
+            Constraint::Min(1),
+            Constraint::Length(popup_len),
+            Constraint::Length(if state.prompt.is_some() { 1 } else { 0 }),
+        ],
     )
     .split(frame.size());
 
@@ -56,6 +62,24 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &State) {
         Popup::Paragraph(paragraph) => frame.render_widget(paragraph, layout[1]),
         Popup::Table(table) => frame.render_widget(table, layout[1]),
     }
+
+    if let Some(prompt) = state.prompt {
+        frame.render_stateful_widget(
+            TextPrompt::new(prompt_text(prompt)),
+            layout[2],
+            &mut state.prompt_state,
+        );
+        let (cx, cy) = state.prompt_state.cursor();
+        frame.set_cursor(cx, cy);
+    }
+}
+
+fn prompt_text(prompt: Op) -> std::borrow::Cow<'static, str> {
+    match prompt {
+        Op::CheckoutNewBranch => "New branch name: ",
+        _ => unimplemented!(),
+    }
+    .into()
 }
 
 fn format_command(cmd: &CmdMeta) -> Vec<Line> {

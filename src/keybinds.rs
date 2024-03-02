@@ -95,6 +95,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Branch
     Keybind::nomod(None, Char('b'), Submenu(Branch)),
     Keybind::nomod(Branch, Char('b'), Target(Checkout)),
+    Keybind::nomod(Branch, Char('c'), CheckoutNewBranch),
     // Commit
     Keybind::nomod(None, Char('c'), Submenu(SubmenuOp::Commit)),
     Keybind::nomod(SubmenuOp::Commit, Char('c'), Op::Commit),
@@ -138,6 +139,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Op {
+    CheckoutNewBranch,
     Commit,
     CommitAmend,
     FetchAll,

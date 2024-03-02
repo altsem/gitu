@@ -23,6 +23,7 @@ use std::{
     rc::Rc,
 };
 use strum::IntoEnumIterator;
+use tui_prompts::{prelude::*, State as _};
 
 type Res<T> = Result<T, Box<dyn Error>>;
 
@@ -43,6 +44,8 @@ pub struct State {
     screens: Vec<Screen>,
     pending_submenu_op: SubmenuOp,
     pub(crate) cmd_meta: Option<CmdMeta>,
+    prompt: Option<Op>,
+    prompt_state: TextState<'static>,
 }
 
 impl State {
@@ -64,6 +67,8 @@ impl State {
             screens,
             pending_submenu_op: SubmenuOp::None,
             cmd_meta: None,
+            prompt: None,
+            prompt_state: TextState::new(),
         })
     }
 
@@ -116,7 +121,7 @@ impl State {
             args: display.into(),
             out: None,
         });
-        terminal.draw(|frame| ui::ui::<B>(frame, &*self))?;
+        terminal.draw(|frame| ui::ui::<B>(frame, self))?;
 
         self.cmd_meta.as_mut().unwrap().out = Some(cmd(self)?);
         self.screen_mut().update()?;
@@ -174,7 +179,7 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
         terminal.size()?,
         args,
     )?;
-    terminal.draw(|frame| ui::ui::<B>(frame, &state))?;
+    terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
 
     while !state.quit {
         // TODO Gather all events, no need to draw for every
@@ -202,7 +207,9 @@ pub fn update<B: Backend>(
                 }
             }
             Event::Key(key) => {
-                if key.kind == KeyEventKind::Press {
+                if state.prompt_state.is_focused() {
+                    state.prompt_state.handle_key_event(key)
+                } else if key.kind == KeyEventKind::Press {
                     state.cmd_meta = None;
 
                     handle_op(terminal, state, key)?;
@@ -210,11 +217,29 @@ pub fn update<B: Backend>(
             }
             _ => (),
         }
+
+        match state.prompt_state.status() {
+            Status::Pending => (),
+            Status::Aborted => {
+                state.prompt = None;
+                state.prompt_state = TextState::new();
+            }
+            Status::Done => {
+                if state.prompt == Some(Op::CheckoutNewBranch) {
+                    let name = state.prompt_state.value().to_string();
+                    let mut fun = cmd_arg(git::checkout_new_branch_cmd, &name).unwrap();
+                    fun(terminal, state)?;
+                }
+
+                state.prompt = None;
+                state.prompt_state = TextState::new();
+            }
+        }
     }
 
     if let Some(screen) = state.screens.last_mut() {
         screen.clamp_cursor();
-        terminal.draw(|frame| ui::ui::<B>(frame, &*state))?;
+        terminal.draw(|frame| ui::ui::<B>(frame, state))?;
     }
 
     Ok(())
@@ -255,6 +280,10 @@ fn handle_op<B: Backend>(
             SelectNext => state.screen_mut().select_next(),
             HalfPageUp => state.screen_mut().scroll_half_page_up(),
             HalfPageDown => state.screen_mut().scroll_half_page_down(),
+            CheckoutNewBranch => {
+                state.prompt = Some(Op::CheckoutNewBranch);
+                state.prompt_state.focus();
+            }
             Commit => {
                 state.issue_subscreen_command(terminal, git::commit_cmd())?;
             }
