@@ -8,7 +8,7 @@ Buffer {
         "🢒No branch                                                  ",
         "                                                            ",
         " Staged changes (1)                                         ",
-        " new-file…                                                  ",
+        " added   new-file…                                          ",
         "                                                            ",
         " Recent commits                                             ",
         "                                                            ",
@@ -34,7 +34,7 @@ Buffer {
         x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
         x: 15, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 3, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 17, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 5, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
         x: 15, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]

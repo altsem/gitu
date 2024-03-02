@@ -13,6 +13,7 @@ pub(crate) struct Delta {
     pub old_file: String,
     pub new_file: String,
     pub hunks: Vec<Hunk>,
+    pub status: git2::Delta,
 }
 
 #[derive(Debug, Clone)]

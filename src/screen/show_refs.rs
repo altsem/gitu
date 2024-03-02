@@ -56,7 +56,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                             display: Line::from(vec![
                                 prefix,
                                 name.clone(),
-                                Span::raw("    "),
+                                Span::raw("   "),
                                 upstream_name,
                             ])
                             .into(),

@@ -108,6 +108,7 @@ pub(crate) fn convert_diff(diff: git2::Diff) -> Res<Diff> {
                         old_file: path(&delta.old_file()),
                         new_file: path(&delta.new_file()),
                         hunks: vec![],
+                        status: delta.status(),
                     });
                 } else {
                     let delta = deltas.last_mut().unwrap();

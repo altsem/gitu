@@ -47,11 +47,12 @@ pub(crate) fn create_diff_items<'a>(
 
         iter::once(Item {
             id: delta.file_header.to_string().into(),
-            display: if delta.old_file == delta.new_file {
-                delta.new_file.clone().fg(CURRENT_THEME.file)
-            } else {
-                format!("{} -> {}", delta.old_file, delta.new_file).fg(CURRENT_THEME.file)
-            }
+            display: format!(
+                "{}   {}",
+                format!("{:?}", delta.status).to_lowercase(),
+                delta.new_file.clone()
+            )
+            .fg(CURRENT_THEME.file)
             .into(),
             section: true,
             default_collapsed,
