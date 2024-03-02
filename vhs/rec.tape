@@ -1,5 +1,5 @@
 Set Shell sh
-Set Theme "GitHub Dark"
+Set Theme "Chalkboard"
 Set Height 800
 Set Padding 5
 
