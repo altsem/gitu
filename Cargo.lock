@@ -548,6 +548,7 @@ dependencies = [
  "pprof",
  "pretty_assertions",
  "ratatui",
+ "signal-hook",
  "similar",
  "strum",
  "temp-dir",

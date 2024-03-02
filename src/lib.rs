@@ -144,9 +144,7 @@ impl State {
             ),
         });
 
-        terminal.hide_cursor()?;
         terminal.clear()?;
-
         self.screen_mut().update()?;
 
         Ok(())
