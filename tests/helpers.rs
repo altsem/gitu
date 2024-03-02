@@ -1,72 +1,70 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use git2::Repository;
-use gitu::{cli::Args, update, State};
+use gitu::{cli::Args, State};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::{env, fs, path::Path, process::Command};
 use temp_dir::TempDir;
 
 pub struct TestContext {
-    pub terminal: Terminal<TestBackend>,
-    pub state: State,
+    pub term: Terminal<TestBackend>,
     pub dir: TempDir,
     pub remote_dir: TempDir,
+    pub size: Rect,
 }
 
 impl TestContext {
     pub fn setup_init(width: u16, height: u16) -> Self {
-        let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+        let term = Terminal::new(TestBackend::new(width, height)).unwrap();
         let remote_dir = TempDir::new().unwrap();
         let dir = TempDir::new().unwrap();
 
         set_env_vars();
         run(dir.path(), &["git", "init", "--initial-branch=main"]);
-
-        let state = State::create(
-            Repository::open(dir.path()).unwrap(),
-            gitu::Config {
-                dir: dir.path().into(),
-            },
-            Rect::new(0, 0, width, height),
-            Args {
-                command: None,
-                status: false,
-                exit_immediately: false,
-            },
-        )
-        .unwrap();
-
-        set_config(state.repo.config().unwrap());
+        set_config(dir.path());
 
         Self {
-            terminal,
-            state,
+            term,
             dir,
             remote_dir,
+            size: Rect::new(0, 0, width, height),
         }
     }
 
     pub fn setup_clone(width: u16, height: u16) -> Self {
-        let terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+        let term = Terminal::new(TestBackend::new(width, height)).unwrap();
         let remote_dir = TempDir::new().unwrap();
         let dir = TempDir::new().unwrap();
 
         set_env_vars();
+
         run(
             remote_dir.path(),
             &["git", "init", "--bare", "--initial-branch=main"],
         );
+        set_config(remote_dir.path());
+
         clone_and_commit(&remote_dir, "initial-file", "hello");
         run(
             dir.path(),
             &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
         );
+        set_config(dir.path());
 
-        let state = State::create(
-            Repository::open(dir.path()).unwrap(),
+        Self {
+            term,
+            dir,
+            remote_dir,
+            size: Rect::new(0, 0, width, height),
+        }
+    }
+
+    pub fn init_state(&mut self) -> State {
+        let mut state = State::create(
+            Repository::open(self.dir.path()).unwrap(),
             gitu::Config {
-                dir: dir.path().into(),
+                dir: self.dir.path().into(),
             },
-            Rect::new(0, 0, width, height),
+            self.size,
             Args {
                 command: None,
                 status: false,
@@ -75,22 +73,13 @@ impl TestContext {
         )
         .unwrap();
 
-        set_config(state.repo.config().unwrap());
+        gitu::update(&mut self.term, &mut state, &[]).unwrap();
 
-        Self {
-            terminal,
-            state,
-            dir,
-            remote_dir,
-        }
-    }
-
-    pub fn update(&mut self, events: &[Event]) {
-        update(&mut self.terminal, &mut self.state, events).unwrap();
+        state
     }
 
     pub fn redact_buffer(&self) -> String {
-        let mut debug_output = format!("{:#?}", self.terminal.backend().buffer());
+        let mut debug_output = format!("{:#?}", self.term.backend().buffer());
 
         [&self.dir, &self.remote_dir]
             .iter()
@@ -130,8 +119,7 @@ pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &st
         &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
     );
 
-    let other_repo = Repository::open(other_dir.path()).unwrap();
-    set_config(other_repo.config().unwrap());
+    set_config(other_dir.path());
 
     commit(other_dir.path(), file_name, file_content);
     run(other_dir.path(), &["git", "push"]);
@@ -143,9 +131,9 @@ fn set_env_vars() {
     env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
 }
 
-fn set_config(mut config: git2::Config) {
-    config.set_str("user.email", "ci@example.com").unwrap();
-    config.set_str("user.name", "CI").unwrap();
+fn set_config(path: &Path) {
+    run(path, &["git", "config", "user.email", "ci@example.com"]);
+    run(path, &["git", "config", "user.name", "CI"]);
 }
 
 pub fn commit(dir: &Path, file_name: &str, contents: &str) {
