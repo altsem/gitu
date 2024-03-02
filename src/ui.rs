@@ -180,8 +180,8 @@ fn format_keybinds_menu<'b, B: Backend>(
 
     let widths = [
         Constraint::Length(25),
-        Constraint::Length(20),
-        Constraint::Length(60),
+        Constraint::Length(12),
+        Constraint::Length(25),
     ];
     (
         rows.len(),
