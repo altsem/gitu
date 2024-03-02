@@ -97,54 +97,60 @@ fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
 fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
     let old = hunk.old_content();
     let new = hunk.new_content();
+
     let diff = TextDiff::configure()
         .algorithm(Algorithm::Patience)
         .diff_lines(&old, &new);
 
-    let lines = diff
-        .grouped_ops(4)
+    let changes = diff
+        .ops()
         .iter()
-        .flat_map(|group| {
-            group.iter().flat_map(|op| {
-                diff.iter_inline_changes(op).map(|change| {
-                    let style = match change.tag() {
-                        ChangeTag::Equal => Style::new(),
-                        ChangeTag::Delete => Style::new().fg(CURRENT_THEME.removed),
-                        ChangeTag::Insert => Style::new().fg(CURRENT_THEME.added),
-                    };
+        .flat_map(|op| diff.iter_inline_changes(op))
+        .collect::<Vec<_>>();
 
-                    let prefix = match change.tag() {
-                        ChangeTag::Equal => " ",
-                        ChangeTag::Delete => "-",
-                        ChangeTag::Insert => "+",
-                    };
+    Text::from(format_changes(&changes.iter().collect::<Vec<_>>()))
+}
 
-                    let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
+fn format_changes(changes: &[&similar::InlineChange<'_, str>]) -> Vec<Line<'static>> {
+    let lines = changes
+        .iter()
+        .map(|change| {
+            let style = match change.tag() {
+                ChangeTag::Equal => Style::new(),
+                ChangeTag::Delete => Style::new().fg(CURRENT_THEME.removed),
+                ChangeTag::Insert => Style::new().fg(CURRENT_THEME.added),
+            };
 
-                    Line::from(
-                        iter::once(Span::styled(prefix, style))
-                            .chain(change.iter_strings_lossy().map(|(emph, value)| {
-                                Span::styled(
-                                    value.to_string(),
-                                    if some_emph {
-                                        if emph {
-                                            style.bold()
-                                        } else {
-                                            style.dim()
-                                        }
-                                    } else {
-                                        style
-                                    },
-                                )
-                            }))
-                            .collect::<Vec<_>>(),
-                    )
-                })
-            })
+            let prefix = match change.tag() {
+                ChangeTag::Equal => " ",
+                ChangeTag::Delete => "-",
+                ChangeTag::Insert => "+",
+            };
+
+            let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
+
+            Line::from(
+                iter::once(Span::styled(prefix, style))
+                    .chain(change.iter_strings_lossy().map(|(emph, value)| {
+                        Span::styled(
+                            value.to_string(),
+                            if some_emph {
+                                if emph {
+                                    style.bold()
+                                } else {
+                                    style.dim()
+                                }
+                            } else {
+                                style
+                            },
+                        )
+                    }))
+                    .collect::<Vec<_>>(),
+            )
         })
         .collect::<Vec<_>>();
 
-    Text::from(lines)
+    lines
 }
 
 pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) -> Res<Vec<Item>> {
