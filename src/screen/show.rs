@@ -43,7 +43,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect, reference: String) -> Res
                 },
             ]
             .into_iter()
-            .chain(items::create_diff_items(&show, &0))
+            .chain(items::create_diff_items(&show, &0, false))
             .collect())
         }),
     )

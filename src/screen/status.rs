@@ -240,7 +240,7 @@ fn create_status_section_items<'a>(
         ]
     }
     .into_iter()
-    .chain(items::create_diff_items(diff, &1))
+    .chain(items::create_diff_items(diff, &1, true))
 }
 
 fn create_log_section_items<'a>(

@@ -22,6 +22,7 @@ pub(crate) struct Item {
     pub(crate) id: Cow<'static, str>,
     pub(crate) display: Text<'static>,
     pub(crate) section: bool,
+    pub(crate) default_collapsed: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
     pub(crate) target_data: Option<TargetData>,
@@ -39,8 +40,9 @@ pub(crate) enum TargetData {
 pub(crate) fn create_diff_items<'a>(
     diff: &'a Diff,
     depth: &'a usize,
+    default_collapsed: bool,
 ) -> impl Iterator<Item = Item> + 'a {
-    diff.deltas.iter().flat_map(|delta| {
+    diff.deltas.iter().flat_map(move |delta| {
         let target_data = TargetData::Delta(delta.clone());
 
         iter::once(Item {
@@ -52,6 +54,7 @@ pub(crate) fn create_diff_items<'a>(
             }
             .into(),
             section: true,
+            default_collapsed,
             depth: *depth,
             target_data: Some(target_data),
             ..Default::default()

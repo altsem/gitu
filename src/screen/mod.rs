@@ -23,13 +23,21 @@ impl<'a> Screen {
     pub(crate) fn new(size: Rect, refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>) -> Res<Self> {
         let items = refresh_items()?;
 
+        let mut collapsed = HashSet::new();
+        items
+            .iter()
+            .filter(|item| item.default_collapsed)
+            .for_each(|item| {
+                collapsed.insert(item.id.clone());
+            });
+
         let mut screen = Self {
             cursor: 0,
             scroll: 0,
             size,
             refresh_items,
             items,
-            collapsed: HashSet::new(),
+            collapsed,
         };
 
         screen.cursor = screen
