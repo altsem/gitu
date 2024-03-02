@@ -29,10 +29,16 @@ jobs:
 
     - name: Setup
       run: |
+        rustup component add llvm-tools-preview
         cargo install --locked cargo-deny || true
         cargo install --locked grcov || true
 
     - name: Build
+      env: 
+        CARGO_INCREMENTAL: 0
+        RUSTFLAGS: '-Cinstrument-coverage'
+        LLVM_PROFILE_FILE: 'cargo-test-%p-%m.profraw'
+
       run: ./build.sh
 
     - name: Upload coverage reports to Codecov
