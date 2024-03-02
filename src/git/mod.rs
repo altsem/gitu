@@ -181,7 +181,11 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
         .next()
         .and_then(|parent| parent.tree().ok());
 
-    let diff = repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)?;
+    let diff = repo.diff_tree_to_tree(
+        parent_tree.as_ref(),
+        Some(&tree),
+        Some(&mut git2_opts::diff(repo)?),
+    )?;
     convert_diff(diff)
 }
 

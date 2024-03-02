@@ -15,5 +15,7 @@ pub(crate) fn status(repo: &Repository) -> Res<StatusOptions> {
 }
 
 pub(crate) fn diff(_repo: &Repository) -> Res<DiffOptions> {
-    Ok(DiffOptions::new())
+    let mut diff_options = DiffOptions::new();
+    diff_options.patience(true);
+    Ok(diff_options)
 }
