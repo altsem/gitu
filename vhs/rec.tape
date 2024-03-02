@@ -1,5 +1,5 @@
 Set Shell sh
-# Set Theme "Catppuccin Frappe"
+Set Theme "GitHub Dark"
 Set Height 800
 Set Padding 5
 
@@ -42,7 +42,7 @@ Type "j"
 Sleep 1.0s
 Enter
 Sleep 1.5s
-Type "o// Here's a useless comment..."
+Type "A // Here's a useless comment..."
 Escape
 Sleep 1s
 Type ":wq"
