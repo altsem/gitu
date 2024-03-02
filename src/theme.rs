@@ -21,25 +21,19 @@ pub struct Theme {
 }
 
 pub const DEFAULT_THEME: Theme = {
-    let red = Color::Red;
-    let green = Color::Green;
-    let blue = Color::Blue;
-    let yellow = Color::Yellow;
-    let magenta = Color::Magenta;
-
     Theme {
-        section: yellow,
-        unstaged_file: red,
-        unmerged_file: red,
-        file: magenta,
-        hunk_header: blue,
-        command: blue,
-        hotkey: magenta,
-        branch: green,
-        remote: red,
-        tag: yellow,
-        added: green,
-        removed: red,
-        oid: yellow,
+        section: Color::Yellow,
+        unstaged_file: Color::Red,
+        unmerged_file: Color::Red,
+        file: Color::Magenta,
+        hunk_header: Color::Blue,
+        command: Color::Blue,
+        hotkey: Color::Magenta,
+        branch: Color::Green,
+        remote: Color::Red,
+        tag: Color::Yellow,
+        added: Color::Green,
+        removed: Color::Red,
+        oid: Color::Yellow,
     }
 };

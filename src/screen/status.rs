@@ -9,7 +9,11 @@ use crate::{
     Config, Res,
 };
 use git2::Repository;
-use ratatui::{prelude::Rect, style::Stylize, text::Text};
+use ratatui::{
+    prelude::Rect,
+    style::Stylize,
+    text::{Line, Text},
+};
 
 pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<Screen> {
     let config = config.clone();
@@ -225,9 +229,10 @@ fn create_status_section_items<'a>(
             },
             Item {
                 id: header.to_string().into(),
-                display: Text::from(
-                    format!("{} ({})", header, diff.deltas.len()).fg(CURRENT_THEME.section),
-                ),
+                display: Text::from(Line::from(vec![
+                    header.to_string().fg(CURRENT_THEME.section),
+                    format!(" ({})", diff.deltas.len()).into(),
+                ])),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -258,5 +263,5 @@ fn create_log_section_items<'a>(
         },
     ]
     .into_iter()
-    .chain(items::log(repo, 5, None).unwrap())
+    .chain(items::log(repo, 10, None).unwrap())
 }
