@@ -76,18 +76,12 @@ impl From<&StyleConfigEntry> for Style {
 
 pub(crate) fn init_config() -> Res<Config> {
     let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", APP_NAME) {
-        // TODO Write the config when we're happy with the format
-        // fs::create_dir_all(app_dirs.config_dir())?;
         let path = app_dirs.config_dir().join("config.toml");
 
         match fs::read_to_string(&path) {
             Ok(content) => toml::from_str(&content)?,
             Err(err) => match err.kind() {
-                io::ErrorKind::NotFound => {
-                    // TODO Write the config when we're happy with the format
-                    // TODO write_new_config(&path)?;
-                    Config::default()
-                }
+                io::ErrorKind::NotFound => Config::default(),
                 reason => {
                     eprintln!("Error reading config file {:?} {:?}", &path, reason);
                     Config::default()
@@ -100,11 +94,3 @@ pub(crate) fn init_config() -> Res<Config> {
 
     Ok(config)
 }
-
-// TODO
-// fn write_new_config(path: &std::path::PathBuf) -> Res<()> {
-//     if let Err(err) = fs::write(path, DEFAULT_CONFIG) {
-//         eprintln!("Error writing config file {:?} {:?}", &path, err);
-//     }
-//     Ok(())
-// }
