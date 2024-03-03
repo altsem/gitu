@@ -584,7 +584,6 @@ dependencies = [
  "git2",
  "insta",
  "itertools 0.12.1",
- "lazy_static",
  "pprof",
  "pretty_assertions",
  "ratatui",
