@@ -54,7 +54,7 @@ pub(crate) fn create_diff_items<'a>(
                     format!("{:?}", delta.status).to_lowercase(),
                     delta.new_file.clone()
                 ),
-                &config.color.file,
+                &config.style.file_header,
             ),
             section: true,
             default_collapsed,
@@ -76,7 +76,7 @@ fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iter
 
     iter::once(Item {
         id: hunk.format_patch().into(),
-        display: Line::styled(hunk.header.clone(), &config.color.hunk_header),
+        display: Line::styled(hunk.header.clone(), &config.style.hunk_header),
         section: true,
         depth,
         target_data: Some(target_data),
@@ -116,14 +116,14 @@ fn format_changes(
     config: &Config,
     changes: &[&similar::InlineChange<'_, str>],
 ) -> Vec<Line<'static>> {
-    let color = &config.color;
+    let style = &config.style;
     let lines = changes
         .iter()
         .map(|change| {
             let style = match change.tag() {
                 ChangeTag::Equal => Style::new(),
-                ChangeTag::Delete => (&color.removed).into(),
-                ChangeTag::Insert => (&color.added).into(),
+                ChangeTag::Delete => (&style.line_removed).into(),
+                ChangeTag::Insert => (&style.line_added).into(),
             };
 
             let prefix = match change.tag() {
@@ -164,7 +164,7 @@ pub(crate) fn log(
     limit: usize,
     reference: Option<String>,
 ) -> Res<Vec<Item>> {
-    let color = &config.color;
+    let style = &config.style;
     let mut revwalk = repo.revwalk()?;
     if let Some(r) = reference {
         let oid = repo.revparse_single(&r)?.id();
@@ -180,11 +180,11 @@ pub(crate) fn log(
             |reference| match (reference.target(), reference.shorthand()) {
                 (Some(target), Some(name)) => {
                     let style: Style = if reference.is_remote() {
-                        &color.remote
+                        &style.remote
                     } else if reference.is_tag() {
-                        &color.tag
+                        &style.tag
                     } else {
-                        &color.branch
+                        &style.branch
                     }
                     .into();
 
@@ -202,7 +202,7 @@ pub(crate) fn log(
             let short_id = commit.as_object().short_id()?.as_str().unwrap().to_string();
 
             let spans = itertools::intersperse(
-                iter::once(Span::styled(short_id, &color.oid))
+                iter::once(Span::styled(short_id, &style.hash))
                     .chain(
                         references
                             .iter()

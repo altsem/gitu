@@ -90,7 +90,7 @@ fn format_command<'a>(config: &Config, cmd: &'a CmdMeta) -> Vec<Line<'a>> {
             cmd.args,
             if cmd.out.is_some() { "" } else { "..." }
         ),
-        &config.color.command,
+        &config.style.command,
     )]
     .into_iter()
     .chain(cmd.out.iter().flat_map(|out| Text::raw(out).lines))
@@ -102,14 +102,14 @@ fn format_keybinds_menu<'b, B: Backend>(
     pending: &'b SubmenuOp,
     item: &'b Item,
 ) -> (usize, Popup<'b>) {
-    let color = &config.color;
+    let style = &config.style;
 
     let non_target_binds = keybinds::list(pending)
         .filter(|keybind| !matches!(keybind.op, keybinds::Op::Target(_)))
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
-    pending_binds_column.push(Line::styled(format!("{:?}", pending), &color.command));
+    pending_binds_column.push(Line::styled(format!("{:?}", pending), &style.command));
     for (op, binds) in non_target_binds
         .iter()
         .group_by(|bind| bind.op)
@@ -122,7 +122,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     .into_iter()
                     .map(|bind| Keybind::format_key(bind))
                     .join(" "),
-                &color.hotkey,
+                &style.hotkey,
             ),
             Span::styled(format!(" {:?}", op), Style::new()),
         ]));
@@ -135,7 +135,7 @@ fn format_keybinds_menu<'b, B: Backend>(
 
     let mut submenu_binds_column = vec![];
     if !submenus.is_empty() {
-        submenu_binds_column.push(Line::styled("Submenu", &color.command));
+        submenu_binds_column.push(Line::styled("Submenu", &style.command));
     }
     for bind in submenus {
         let Op::Submenu(submenu) = bind.op else {
@@ -143,7 +143,7 @@ fn format_keybinds_menu<'b, B: Backend>(
         };
 
         submenu_binds_column.push(Line::from(vec![
-            Span::styled(Keybind::format_key(bind), &color.hotkey),
+            Span::styled(Keybind::format_key(bind), &style.hotkey),
             Span::styled(format!(" {:?}", submenu), Style::new()),
         ]));
     }
@@ -172,7 +172,7 @@ fn format_keybinds_menu<'b, B: Backend>(
             };
 
             target_binds_column.push(Line::from(vec![
-                Span::styled(Keybind::format_key(bind), &color.hotkey),
+                Span::styled(Keybind::format_key(bind), &style.hotkey),
                 Span::styled(format!(" {:?}", target), Style::new()),
             ]));
         }

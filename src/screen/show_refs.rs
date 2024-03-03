@@ -17,12 +17,12 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
         Rc::clone(&config),
         size,
         Box::new(move || {
-            let color = &config.color;
+            let style = &config.style;
             let head = repo.head().ok();
 
             Ok(iter::once(Item {
                 id: "branches".into(),
-                display: Line::styled("Branches".to_string(), &color.section),
+                display: Line::styled("Branches".to_string(), &style.section_header),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -33,7 +33,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                     .map(|(branch, _branch_type)| {
                         let name = Span::styled(
                             branch.name().unwrap().unwrap().to_string(),
-                            &color.branch,
+                            &style.branch,
                         );
 
                         let prefix = Span::raw(
@@ -46,7 +46,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
 
                         let upstream_name = if let Ok(upstream) = branch.upstream() {
                             if let Ok(Some(name)) = upstream.name() {
-                                Span::styled(name.to_string(), &color.remote)
+                                Span::styled(name.to_string(), &style.remote)
                             } else {
                                 Span::raw("")
                             }

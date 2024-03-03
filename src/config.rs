@@ -7,41 +7,43 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub color: ColorConfig,
+    pub style: StyleConfig,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ColorConfig {
+pub struct StyleConfig {
     #[serde(default)]
-    pub section: StyleConfig,
+    pub section_header: StyleConfigEntry,
     #[serde(default)]
-    pub unstaged_file: StyleConfig,
+    pub file_header: StyleConfigEntry,
     #[serde(default)]
-    pub unmerged_file: StyleConfig,
+    pub hunk_header: StyleConfigEntry,
+
     #[serde(default)]
-    pub file: StyleConfig,
+    pub line_added: StyleConfigEntry,
     #[serde(default)]
-    pub hunk_header: StyleConfig,
+    pub line_removed: StyleConfigEntry,
+
     #[serde(default)]
-    pub command: StyleConfig,
+    pub selection_line: StyleConfigEntry,
     #[serde(default)]
-    pub hotkey: StyleConfig,
+    pub selection_bar: StyleConfigEntry,
     #[serde(default)]
-    pub branch: StyleConfig,
+    pub selection_area: StyleConfigEntry,
+
     #[serde(default)]
-    pub remote: StyleConfig,
+    pub hash: StyleConfigEntry,
     #[serde(default)]
-    pub tag: StyleConfig,
+    pub branch: StyleConfigEntry,
     #[serde(default)]
-    pub added: StyleConfig,
+    pub remote: StyleConfigEntry,
     #[serde(default)]
-    pub removed: StyleConfig,
+    pub tag: StyleConfigEntry,
+
     #[serde(default)]
-    pub oid: StyleConfig,
+    pub command: StyleConfigEntry,
     #[serde(default)]
-    pub cursor_line: StyleConfig,
-    #[serde(default)]
-    pub cursor_section: StyleConfig,
+    pub hotkey: StyleConfigEntry,
 }
 
 impl Default for Config {
@@ -51,7 +53,7 @@ impl Default for Config {
 }
 
 #[derive(Default, Debug, Deserialize)]
-pub struct StyleConfig {
+pub struct StyleConfigEntry {
     #[serde(default)]
     fg: Option<Color>,
     #[serde(default)]
@@ -60,8 +62,8 @@ pub struct StyleConfig {
     mods: Option<Modifier>,
 }
 
-impl From<&StyleConfig> for Style {
-    fn from(val: &StyleConfig) -> Self {
+impl From<&StyleConfigEntry> for Style {
+    fn from(val: &StyleConfigEntry) -> Self {
         Style {
             fg: val.fg,
             bg: val.bg,
@@ -72,7 +74,7 @@ impl From<&StyleConfig> for Style {
     }
 }
 
-pub(crate) fn load_or_default() -> Res<Config> {
+pub(crate) fn init_config() -> Res<Config> {
     let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", APP_NAME) {
         // TODO Write the config when we're happy with the format
         // fs::create_dir_all(app_dirs.config_dir())?;

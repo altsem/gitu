@@ -24,14 +24,14 @@ pub(crate) fn create(
         Rc::clone(&config),
         size,
         Box::new(move || {
-            let color = &config.color;
+            let style = &config.style;
             let commit = git::show_summary(repo.as_ref(), &reference)?;
             let show = git::show(repo.as_ref(), &reference)?;
             let details = Text::from(commit.details).lines;
 
             Ok(iter::once(Item {
                 id: format!("commit_section_{}", commit.hash).into(),
-                display: Line::styled(format!("commit {}", commit.hash), &color.section),
+                display: Line::styled(format!("commit {}", commit.hash), &style.section_header),
                 section: true,
                 depth: 0,
                 ..Default::default()

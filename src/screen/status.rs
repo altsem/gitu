@@ -19,7 +19,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
         Rc::clone(&config),
         size,
         Box::new(move || {
-            let color = &config.color;
+            let style = &config.style;
             let statuses = repo.statuses(Some(&mut git2_opts::status(&repo)?))?;
             let untracked = untracked(&config, &statuses);
             let unmerged = unmerged(&config, &statuses);
@@ -29,7 +29,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                     id: "rebase_status".into(),
                     display: Line::styled(
                         format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
-                        &color.section,
+                        &style.section_header,
                     ),
                     ..Default::default()
                 }]
@@ -37,7 +37,10 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
             } else if let Some(merge) = git::merge_status(&repo)? {
                 vec![Item {
                     id: "merge_status".into(),
-                    display: Line::styled(format!("Merging {}", &merge.head), &color.section),
+                    display: Line::styled(
+                        format!("Merging {}", &merge.head),
+                        &style.section_header,
+                    ),
                     ..Default::default()
                 }]
                 .into_iter()
@@ -51,7 +54,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                     items::blank_line(),
                     Item {
                         id: "untracked".into(),
-                        display: Line::styled("Untracked files", &color.section),
+                        display: Line::styled("Untracked files", &style.section_header),
                         section: true,
                         depth: 0,
                         ..Default::default()
@@ -66,7 +69,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                     items::blank_line(),
                     Item {
                         id: "unmerged".into(),
-                        display: Line::styled("Unmerged", &color.section),
+                        display: Line::styled("Unmerged", &style.section_header),
                         section: true,
                         depth: 0,
                         ..Default::default()
@@ -97,7 +100,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
 }
 
 fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
-    let color = &config.color;
+    let style = &config.style;
     statuses
         .iter()
         .filter_map(|status| {
@@ -111,7 +114,7 @@ fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
 
             Some(Item {
                 id: path.to_string().into(),
-                display: Line::styled(path.to_string(), &color.unstaged_file),
+                display: Line::styled(path.to_string(), &style.file_header),
                 depth: 1,
                 target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
@@ -121,7 +124,7 @@ fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
 }
 
 fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
-    let color = &config.color;
+    let style = &config.style;
     statuses
         .iter()
         .filter_map(|status| {
@@ -135,7 +138,7 @@ fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
 
             Some(Item {
                 id: path.to_string().into(),
-                display: Line::styled(path.to_string(), &color.unstaged_file),
+                display: Line::styled(path.to_string(), &style.file_header),
                 depth: 1,
                 target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
@@ -145,11 +148,11 @@ fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
 }
 
 fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
-    let color = &config.color;
+    let style = &config.style;
     let Ok(head) = repo.head() else {
         return Ok(vec![Item {
             id: "branch_status".into(),
-            display: Line::styled("No branch", &color.section),
+            display: Line::styled("No branch", &style.section_header),
             section: true,
             depth: 0,
             ..Default::default()
@@ -160,7 +163,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
         id: "branch_status".into(),
         display: Line::styled(
             format!("On branch {}", head.shorthand().unwrap()),
-            &color.section,
+            &style.section_header,
         ),
         section: true,
         depth: 0,
@@ -223,7 +226,7 @@ fn create_status_section_items<'a>(
     header: &str,
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
-    let color = &config.color;
+    let style = &config.style;
     if diff.deltas.is_empty() {
         vec![]
     } else {
@@ -237,7 +240,7 @@ fn create_status_section_items<'a>(
             Item {
                 id: header.to_string().into(),
                 display: Line::from(vec![
-                    Span::styled(header.to_string(), &color.section),
+                    Span::styled(header.to_string(), &style.section_header),
                     format!(" ({})", diff.deltas.len()).into(),
                 ]),
                 section: true,
@@ -255,7 +258,7 @@ fn create_log_section_items<'a>(
     repo: &Repository,
     header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
-    let color = &config.color;
+    let style = &config.style;
     [
         Item {
             display: Line::raw(""),
@@ -265,7 +268,7 @@ fn create_log_section_items<'a>(
         },
         Item {
             id: header.to_string().into(),
-            display: Line::styled(header.to_string(), &color.section),
+            display: Line::styled(header.to_string(), &style.section_header),
             section: true,
             depth: 0,
             ..Default::default()

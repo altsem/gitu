@@ -211,7 +211,7 @@ impl<'a> Screen {
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let color = &self.config.color;
+        let style = &self.config.style;
 
         for (line_i, (item_i, item, line, highlight_depth)) in self
             .collapsed_items_iter()
@@ -237,11 +237,13 @@ impl Widget for &Screen {
 
             if highlight_depth.is_some() {
                 if self.cursor == item_i {
-                    buf.set_style(line_area, Style::new().bold());
+                    buf.set_style(line_area, &style.selection_line);
                 } else {
                     buf.get_mut(0, line_i as u16)
                         .set_char('▌')
-                        .set_style(&color.cursor_section);
+                        .set_style(&style.selection_bar);
+
+                    buf.set_style(line_area, &style.selection_area);
                 }
             }
 

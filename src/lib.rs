@@ -211,7 +211,7 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
     let repo = Repository::open_from_env()?;
     repo.set_workdir(&dir, false)?;
 
-    let config = config::load_or_default()?;
+    let config = config::init_config()?;
     let mut state = State::create(repo, terminal.size()?, args, config)?;
     terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
 
