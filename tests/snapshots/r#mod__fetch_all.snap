@@ -17,19 +17,18 @@ Buffer {
         "   _______.._______  main       -> origin/main              ",
     ],
     styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 15, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
         x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
         x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 15, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 4, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
         x: 8, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 9, y: 4, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
         x: 13, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 0, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 7, fg: Blue, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 7, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
         x: 17, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
     ]
 }

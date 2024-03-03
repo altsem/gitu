@@ -2,33 +2,34 @@ use std::rc::Rc;
 
 use super::Screen;
 use crate::{
+    config::Config,
     git::{self, diff::Diff},
     git2_opts,
     items::{self, Item},
-    theme::CURRENT_THEME,
     Res,
 };
 use git2::Repository;
 use ratatui::{
     prelude::Rect,
-    style::Stylize,
-    text::{Line, Text},
+    text::{Line, Span},
 };
 
-pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
+pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     Screen::new(
+        Rc::clone(&config),
         size,
         Box::new(move || {
+            let color = &config.color;
             let statuses = repo.statuses(Some(&mut git2_opts::status(&repo)?))?;
-            let untracked = untracked(&statuses);
-            let unmerged = unmerged(&statuses);
+            let untracked = untracked(&config, &statuses);
+            let unmerged = unmerged(&config, &statuses);
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
                     id: "rebase_status".into(),
-                    display: Text::from(
-                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto)
-                            .fg(CURRENT_THEME.section),
+                    display: Line::styled(
+                        format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
+                        &color.section,
                     ),
                     ..Default::default()
                 }]
@@ -36,14 +37,12 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
             } else if let Some(merge) = git::merge_status(&repo)? {
                 vec![Item {
                     id: "merge_status".into(),
-                    display: Text::from(
-                        format!("Merging {}", &merge.head).fg(CURRENT_THEME.section),
-                    ),
+                    display: Line::styled(format!("Merging {}", &merge.head), &color.section),
                     ..Default::default()
                 }]
                 .into_iter()
             } else {
-                branch_status_items(&repo)?.into_iter()
+                branch_status_items(&config, &repo)?.into_iter()
             }
             .chain(if untracked.is_empty() {
                 vec![]
@@ -52,9 +51,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                     items::blank_line(),
                     Item {
                         id: "untracked".into(),
-                        display: Text::from(
-                            "Untracked files".to_string().fg(CURRENT_THEME.section),
-                        ),
+                        display: Line::styled("Untracked files", &color.section),
                         section: true,
                         depth: 0,
                         ..Default::default()
@@ -69,7 +66,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                     items::blank_line(),
                     Item {
                         id: "unmerged".into(),
-                        display: Text::from("Unmerged".to_string().fg(CURRENT_THEME.section)),
+                        display: Line::styled("Unmerged", &color.section),
                         section: true,
                         depth: 0,
                         ..Default::default()
@@ -78,14 +75,20 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
             })
             .chain(unmerged)
             .chain(create_status_section_items(
+                Rc::clone(&config),
                 "Unstaged changes",
                 &git::diff_unstaged(repo.as_ref())?,
             ))
             .chain(create_status_section_items(
+                Rc::clone(&config),
                 "Staged changes",
                 &git::diff_staged(repo.as_ref())?,
             ))
-            .chain(create_log_section_items(repo.as_ref(), "Recent commits"))
+            .chain(create_log_section_items(
+                Rc::clone(&config),
+                repo.as_ref(),
+                "Recent commits",
+            ))
             .collect();
 
             Ok(items)
@@ -93,7 +96,8 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     )
 }
 
-fn untracked(statuses: &git2::Statuses<'_>) -> Vec<Item> {
+fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
+    let color = &config.color;
     statuses
         .iter()
         .filter_map(|status| {
@@ -107,7 +111,7 @@ fn untracked(statuses: &git2::Statuses<'_>) -> Vec<Item> {
 
             Some(Item {
                 id: path.to_string().into(),
-                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file)),
+                display: Line::styled(path.to_string(), &color.unstaged_file),
                 depth: 1,
                 target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
@@ -116,7 +120,8 @@ fn untracked(statuses: &git2::Statuses<'_>) -> Vec<Item> {
         .collect::<Vec<_>>()
 }
 
-fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
+fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
+    let color = &config.color;
     statuses
         .iter()
         .filter_map(|status| {
@@ -130,7 +135,7 @@ fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
 
             Some(Item {
                 id: path.to_string().into(),
-                display: Text::from(path.to_string().fg(CURRENT_THEME.unstaged_file)),
+                display: Line::styled(path.to_string(), &color.unstaged_file),
                 depth: 1,
                 target_data: Some(items::TargetData::File(path.to_string())),
                 ..Default::default()
@@ -139,11 +144,12 @@ fn unmerged(statuses: &git2::Statuses<'_>) -> Vec<Item> {
         .collect::<Vec<_>>()
 }
 
-fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
+fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
+    let color = &config.color;
     let Ok(head) = repo.head() else {
         return Ok(vec![Item {
             id: "branch_status".into(),
-            display: Text::from("No branch".fg(CURRENT_THEME.section)),
+            display: Line::styled("No branch", &color.section),
             section: true,
             depth: 0,
             ..Default::default()
@@ -152,8 +158,9 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 
     let mut items = vec![Item {
         id: "branch_status".into(),
-        display: Text::from(
-            format!("On branch {}", head.shorthand().unwrap()).fg(CURRENT_THEME.section),
+        display: Line::styled(
+            format!("On branch {}", head.shorthand().unwrap()),
+            &color.section,
         ),
         section: true,
         depth: 0,
@@ -189,19 +196,19 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
     items.push(Item {
         id: "branch_status".into(),
         display: if ahead == 0 && behind == 0 {
-            Text::raw(format!("Your branch is up to date with '{}'.", upstream_shortname))
+            Line::raw(format!("Your branch is up to date with '{}'.", upstream_shortname))
         } else if ahead > 0 && behind == 0 {
-            Text::raw(format!(
+            Line::raw(format!(
                 "Your branch is ahead of '{}' by {} commit.",
                 upstream_shortname, ahead
             ))
         } else if ahead == 0 && behind > 0 {
-            Text::raw(format!(
+            Line::raw(format!(
                 "Your branch is behind '{}' by {} commit.",
                 upstream_shortname, behind
             ))
         } else {
-            Text::raw(format!("Your branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", upstream_shortname, ahead, behind))
+            Line::raw(format!("Your branch and '{}' have diverged,\nand have {} and {} different commits each, respectively.", upstream_shortname, ahead, behind))
         },
         depth: 1,
         unselectable: true,
@@ -212,25 +219,27 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 }
 
 fn create_status_section_items<'a>(
+    config: Rc<Config>,
     header: &str,
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
+    let color = &config.color;
     if diff.deltas.is_empty() {
         vec![]
     } else {
         vec![
             Item {
-                display: Text::raw(""),
+                display: Line::raw(""),
                 unselectable: true,
                 depth: 0,
                 ..Default::default()
             },
             Item {
                 id: header.to_string().into(),
-                display: Text::from(Line::from(vec![
-                    header.to_string().fg(CURRENT_THEME.section),
+                display: Line::from(vec![
+                    Span::styled(header.to_string(), &color.section),
                     format!(" ({})", diff.deltas.len()).into(),
-                ])),
+                ]),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -238,28 +247,30 @@ fn create_status_section_items<'a>(
         ]
     }
     .into_iter()
-    .chain(items::create_diff_items(diff, &1, true))
+    .chain(items::create_diff_items(config, diff, &1, true))
 }
 
 fn create_log_section_items<'a>(
+    config: Rc<Config>,
     repo: &Repository,
     header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
+    let color = &config.color;
     [
         Item {
-            display: Text::raw(""),
+            display: Line::raw(""),
             depth: 0,
             unselectable: true,
             ..Default::default()
         },
         Item {
             id: header.to_string().into(),
-            display: Text::from(header.to_string().fg(CURRENT_THEME.section)),
+            display: Line::styled(header.to_string(), &color.section),
             section: true,
             depth: 0,
             ..Default::default()
         },
     ]
     .into_iter()
-    .chain(items::log(repo, 10, None).unwrap())
+    .chain(items::log(&config, repo, 10, None).unwrap())
 }

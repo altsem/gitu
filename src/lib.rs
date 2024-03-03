@@ -1,12 +1,13 @@
 pub mod cli;
+pub mod config;
 mod git;
 mod git2_opts;
 mod items;
 mod keybinds;
 mod screen;
-mod theme;
 mod ui;
 
+use config::Config;
 use crossterm::event::{self, Event, KeyEventKind};
 use git2::Repository;
 use items::{Item, TargetData};
@@ -25,6 +26,7 @@ use std::{
 use strum::IntoEnumIterator;
 use tui_prompts::{prelude::*, State as _};
 
+const APP_NAME: &str = "gitu";
 type Res<T> = Result<T, Box<dyn Error>>;
 
 pub(crate) struct CmdMeta {
@@ -34,6 +36,7 @@ pub(crate) struct CmdMeta {
 
 pub struct State {
     pub repo: Rc<Repository>,
+    config: Rc<Config>,
     quit: bool,
     screens: Vec<Screen>,
     pending_submenu_op: SubmenuOp,
@@ -43,18 +46,34 @@ pub struct State {
 }
 
 impl State {
-    pub fn create(repo: Repository, size: Rect, args: cli::Args) -> Res<Self> {
+    pub fn create(
+        repo: Repository,
+        size: Rect,
+        args: cli::Args,
+        config: config::Config,
+    ) -> Res<Self> {
         let repo = Rc::new(repo);
+        let config = Rc::new(config);
 
         let screens = match args.command {
             Some(cli::Commands::Show { reference }) => {
-                vec![screen::show::create(Rc::clone(&repo), size, reference)?]
+                vec![screen::show::create(
+                    Rc::clone(&config),
+                    Rc::clone(&repo),
+                    size,
+                    reference,
+                )?]
             }
-            None => vec![screen::status::create(Rc::clone(&repo), size)?],
+            None => vec![screen::status::create(
+                Rc::clone(&config),
+                Rc::clone(&repo),
+                size,
+            )?],
         };
 
         Ok(Self {
             repo,
+            config,
             quit: args.exit_immediately,
             screens,
             pending_submenu_op: SubmenuOp::None,
@@ -146,6 +165,29 @@ impl State {
 
         Ok(())
     }
+
+    fn goto_log_screen(&mut self, reference: Option<String>) {
+        self.screens.drain(1..);
+        let size = self.screens.last().unwrap().size;
+        self.screens.push(
+            screen::log::create(
+                Rc::clone(&self.config),
+                Rc::clone(&self.repo),
+                size,
+                reference,
+            )
+            .expect("Couldn't create screen"),
+        );
+    }
+
+    fn goto_refs_screen(&mut self) {
+        self.screens.drain(1..);
+        let size = self.screens.last().unwrap().size;
+        self.screens.push(
+            screen::show_refs::create(Rc::clone(&self.config), Rc::clone(&self.repo), size)
+                .expect("Couldn't create screen"),
+        );
+    }
 }
 
 fn command_args(cmd: &Command) -> Cow<'static, str> {
@@ -169,7 +211,8 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
     let repo = Repository::open_from_env()?;
     repo.set_workdir(&dir, false)?;
 
-    let mut state = State::create(repo, terminal.size()?, args)?;
+    let config = config::load_or_default()?;
+    let mut state = State::create(repo, terminal.size()?, args, config)?;
     terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
 
     while !state.quit {
@@ -282,7 +325,7 @@ fn handle_op<B: Backend>(
                 state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
             }
             Submenu(op) => state.pending_submenu_op = op,
-            LogCurrent => goto_log_screen(Rc::clone(&state.repo), &mut state.screens, None),
+            LogCurrent => state.goto_log_screen(None),
             FetchAll => state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?,
             Pull => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
             Push => state.run_external_cmd(terminal, &[], git::push_cmd())?,
@@ -299,7 +342,7 @@ fn handle_op<B: Backend>(
             RebaseContinue => {
                 state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?;
             }
-            ShowRefs => goto_refs_screen(Rc::clone(&state.repo), &mut state.screens),
+            ShowRefs => state.goto_refs_screen(),
         }
     }
 
@@ -363,7 +406,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         ),
         (Checkout, Commit(r) | Branch(r)) => cmd_arg(git::checkout_ref_cmd, r),
         (LogOther, Commit(r) | Branch(r)) => Some(Box::new(|_term, state| {
-            goto_log_screen(Rc::clone(&state.repo), &mut state.screens, Some(r.clone()));
+            state.goto_log_screen(Some(r.clone()));
             Ok(())
         })),
         (_, _) => None,
@@ -373,8 +416,13 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
 fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     Some(Box::new(move |terminal, state| {
         state.screens.push(
-            screen::show::create(Rc::clone(&state.repo), terminal.size()?, r.clone())
-                .expect("Couldn't create screen"),
+            screen::show::create(
+                Rc::clone(&state.config),
+                Rc::clone(&state.repo),
+                terminal.size()?,
+                r.clone(),
+            )
+            .expect("Couldn't create screen"),
         );
         Ok(())
     }))
@@ -421,16 +469,4 @@ fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<
     Some(Box::new(move |terminal, state| {
         state.issue_subscreen_command(terminal, command(arg))
     }))
-}
-
-fn goto_log_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>, reference: Option<String>) {
-    screens.drain(1..);
-    let size = screens.last().unwrap().size;
-    screens.push(screen::log::create(repo, size, reference).expect("Couldn't create screen"));
-}
-
-fn goto_refs_screen(repo: Rc<Repository>, screens: &mut Vec<Screen>) {
-    screens.drain(1..);
-    let size = screens.last().unwrap().size;
-    screens.push(screen::show_refs::create(repo, size).expect("Couldn't create screen"));
 }

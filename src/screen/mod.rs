@@ -1,9 +1,9 @@
 use ratatui::{prelude::*, widgets::Widget};
 
-use crate::{items::TargetData, Res};
+use crate::{config::Config, items::TargetData, Res};
 
 use super::Item;
-use std::{borrow::Cow, collections::HashSet};
+use std::{borrow::Cow, collections::HashSet, rc::Rc};
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -14,13 +14,18 @@ pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
     pub(crate) size: Rect,
+    config: Rc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
     collapsed: HashSet<Cow<'static, str>>,
 }
 
 impl<'a> Screen {
-    pub(crate) fn new(size: Rect, refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>) -> Res<Self> {
+    pub(crate) fn new(
+        config: Rc<Config>,
+        size: Rect,
+        refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
+    ) -> Res<Self> {
         let items = refresh_items()?;
 
         let mut collapsed = HashSet::new();
@@ -35,6 +40,7 @@ impl<'a> Screen {
             cursor: 0,
             scroll: 0,
             size,
+            config,
             refresh_items,
             items,
             collapsed,
@@ -142,10 +148,11 @@ impl<'a> Screen {
         );
     }
 
+    // TODO An item is always a line now
     fn collapsed_lines_items_iter(&'a self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
         self.collapsed_items_iter().scan(0, |lines, (i, item)| {
             let line = *lines;
-            let lc = item.display.lines.len();
+            let lc = 1;
             *lines += lc;
 
             Some((line, i, item, lc))
@@ -200,61 +207,50 @@ impl<'a> Screen {
     pub(crate) fn get_selected_item(&self) -> &Item {
         &self.items[self.cursor]
     }
-
-    fn display_lines(&self) -> impl Iterator<Item = (usize, &Item, &Line<'_>)> {
-        self.collapsed_items_iter()
-            .flat_map(|(i, item)| item.display.lines.iter().map(move |line| (i, item, line)))
-    }
 }
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let color = &self.config.color;
+
         for (line_i, (item_i, item, line, highlight_depth)) in self
-            .display_lines()
-            .scan(None, |highlight_depth, (item_i, item, line)| {
+            .collapsed_items_iter()
+            .scan(None, |highlight_depth, (item_i, item)| {
                 if self.cursor == item_i {
                     *highlight_depth = Some(item.depth);
                 } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                     *highlight_depth = None;
                 };
 
-                Some((item_i, item, line, *highlight_depth))
+                Some((item_i, item, &item.display, *highlight_depth))
             })
             .skip(self.scroll as usize)
             .take(area.height as usize)
             .enumerate()
         {
-            if highlight_depth.is_some() {
-                let area = Rect {
-                    x: 0,
-                    y: line_i as u16,
-                    width: buf.area.width,
-                    height: 1,
-                };
+            let line_area = Rect {
+                x: 1,
+                y: line_i as u16,
+                width: buf.area.width,
+                height: 1,
+            };
 
+            if highlight_depth.is_some() {
                 if self.cursor == item_i {
-                    buf.set_style(area, Style::new().bold());
+                    buf.set_style(line_area, Style::new().bold());
                 } else {
                     buf.get_mut(0, line_i as u16)
                         .set_char('▌')
-                        .set_style(Style::new().blue().dim());
+                        .set_style(&color.cursor_section);
                 }
             }
 
-            let mut x = 1;
-            let mut overflow = false;
-            for span in line.spans.iter() {
-                buf.set_span(x, line_i as u16, span, span.width() as u16);
-                overflow = x + span.width() as u16 >= area.width;
-                if overflow {
-                    x = area.width - 1;
-                    break;
-                }
-                x += span.width() as u16;
-            }
+            line.render(line_area, buf);
+            let overflow = line.width() > line_area.width as usize;
 
             if self.is_collapsed(item) && line.width() > 0 || overflow {
-                buf.get_mut(x, line_i as u16).set_char('…');
+                let line_end = (line_area.x + line.width() as u16).min(area.width - 1);
+                buf.get_mut(line_end, line_i as u16).set_char('…');
             }
             if self.cursor == item_i {
                 buf.get_mut(0, line_i as u16).set_char('🢒');

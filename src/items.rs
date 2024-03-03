@@ -1,8 +1,7 @@
+use crate::config::Config;
 use crate::git::diff::Delta;
 use crate::git::diff::Diff;
 use crate::git::diff::Hunk;
-use crate::theme;
-use crate::theme::CURRENT_THEME;
 use crate::Res;
 use git2::Oid;
 use git2::Repository;
@@ -10,17 +9,17 @@ use ratatui::style::Style;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::text::Span;
-use ratatui::text::Text;
 use similar::Algorithm;
 use similar::ChangeTag;
 use similar::TextDiff;
 use std::borrow::Cow;
 use std::iter;
+use std::rc::Rc;
 
 #[derive(Default, Clone, Debug)]
 pub(crate) struct Item {
     pub(crate) id: Cow<'static, str>,
-    pub(crate) display: Text<'static>,
+    pub(crate) display: Line<'static>,
     pub(crate) section: bool,
     pub(crate) default_collapsed: bool,
     pub(crate) depth: usize,
@@ -38,22 +37,25 @@ pub(crate) enum TargetData {
 }
 
 pub(crate) fn create_diff_items<'a>(
+    config: Rc<Config>,
     diff: &'a Diff,
     depth: &'a usize,
     default_collapsed: bool,
 ) -> impl Iterator<Item = Item> + 'a {
     diff.deltas.iter().flat_map(move |delta| {
         let target_data = TargetData::Delta(delta.clone());
+        let config = Rc::clone(&config);
 
         iter::once(Item {
             id: delta.file_header.to_string().into(),
-            display: format!(
-                "{}   {}",
-                format!("{:?}", delta.status).to_lowercase(),
-                delta.new_file.clone()
-            )
-            .fg(CURRENT_THEME.file)
-            .into(),
+            display: Line::styled(
+                format!(
+                    "{}   {}",
+                    format!("{:?}", delta.status).to_lowercase(),
+                    delta.new_file.clone()
+                ),
+                &config.color.file,
+            ),
             section: true,
             default_collapsed,
             depth: *depth,
@@ -64,38 +66,26 @@ pub(crate) fn create_diff_items<'a>(
             delta
                 .hunks
                 .iter()
-                .flat_map(|hunk| create_hunk_items(hunk, *depth)),
+                .flat_map(move |hunk| create_hunk_items(Rc::clone(&config), hunk, *depth + 1)),
         )
     })
 }
 
-fn create_hunk_items(hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
+fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
         id: hunk.format_patch().into(),
-        display: hunk
-            .header
-            .clone()
-            .fg(theme::CURRENT_THEME.hunk_header)
-            .into(),
+        display: Line::styled(hunk.header.clone(), &config.color.hunk_header),
         section: true,
-        depth: depth + 1,
+        depth,
         target_data: Some(target_data),
         ..Default::default()
     })
-    .chain([{
-        Item {
-            display: format_diff_hunk(hunk),
-            unselectable: true,
-            depth: depth + 2,
-            target_data: None,
-            ..Default::default()
-        }
-    }])
+    .chain(format_diff_hunk_items(&config, depth + 1, hunk))
 }
 
-fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
+fn format_diff_hunk_items(config: &Config, depth: usize, hunk: &Hunk) -> Vec<Item> {
     let old = hunk.old_content();
     let new = hunk.new_content();
 
@@ -109,17 +99,31 @@ fn format_diff_hunk(hunk: &Hunk) -> Text<'static> {
         .flat_map(|op| diff.iter_inline_changes(op))
         .collect::<Vec<_>>();
 
-    Text::from(format_changes(&changes.iter().collect::<Vec<_>>()))
+    // TODO A lot of collect going on here (and inside format_changes too)
+    format_changes(config, &changes.iter().collect::<Vec<_>>())
+        .into_iter()
+        .map(|line| Item {
+            display: line,
+            unselectable: true,
+            depth,
+            target_data: None,
+            ..Default::default()
+        })
+        .collect()
 }
 
-fn format_changes(changes: &[&similar::InlineChange<'_, str>]) -> Vec<Line<'static>> {
+fn format_changes(
+    config: &Config,
+    changes: &[&similar::InlineChange<'_, str>],
+) -> Vec<Line<'static>> {
+    let color = &config.color;
     let lines = changes
         .iter()
         .map(|change| {
             let style = match change.tag() {
                 ChangeTag::Equal => Style::new(),
-                ChangeTag::Delete => Style::new().fg(CURRENT_THEME.removed),
-                ChangeTag::Insert => Style::new().fg(CURRENT_THEME.added),
+                ChangeTag::Delete => (&color.removed).into(),
+                ChangeTag::Insert => (&color.added).into(),
             };
 
             let prefix = match change.tag() {
@@ -154,7 +158,13 @@ fn format_changes(changes: &[&similar::InlineChange<'_, str>]) -> Vec<Line<'stat
     lines
 }
 
-pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) -> Res<Vec<Item>> {
+pub(crate) fn log(
+    config: &Config,
+    repo: &Repository,
+    limit: usize,
+    reference: Option<String>,
+) -> Res<Vec<Item>> {
+    let color = &config.color;
     let mut revwalk = repo.revwalk()?;
     if let Some(r) = reference {
         let oid = repo.revparse_single(&r)?.id();
@@ -169,13 +179,14 @@ pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) ->
         .filter_map(
             |reference| match (reference.target(), reference.shorthand()) {
                 (Some(target), Some(name)) => {
-                    let style = if reference.is_remote() {
-                        CURRENT_THEME.remote
+                    let style: Style = if reference.is_remote() {
+                        &color.remote
                     } else if reference.is_tag() {
-                        CURRENT_THEME.tag
+                        &color.tag
                     } else {
-                        CURRENT_THEME.branch
-                    };
+                        &color.branch
+                    }
+                    .into();
 
                     Some((target, Span::styled(name.to_string(), style)))
                 }
@@ -191,7 +202,7 @@ pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) ->
             let short_id = commit.as_object().short_id()?.as_str().unwrap().to_string();
 
             let spans = itertools::intersperse(
-                iter::once(short_id.fg(CURRENT_THEME.oid))
+                iter::once(Span::styled(short_id, &color.oid))
                     .chain(
                         references
                             .iter()
@@ -205,7 +216,7 @@ pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) ->
 
             Ok(Item {
                 id: oid.to_string().into(),
-                display: Line::from(spans).into(),
+                display: Line::from(spans),
                 depth: 1,
                 target_data: Some(TargetData::Commit(oid.to_string())),
                 ..Default::default()
@@ -225,7 +236,7 @@ pub(crate) fn log(repo: &Repository, limit: usize, reference: Option<String>) ->
 
 pub(crate) fn blank_line() -> Item {
     Item {
-        display: Text::raw(""),
+        display: Line::raw(""),
         depth: 0,
         unselectable: true,
         ..Default::default()

@@ -2,26 +2,27 @@ use std::{iter, rc::Rc};
 
 use super::Screen;
 use crate::{
+    config::Config,
     items::{Item, TargetData},
-    theme::CURRENT_THEME,
     Res,
 };
 use git2::{BranchType, Repository};
 use ratatui::{
     prelude::Rect,
-    style::Stylize,
-    text::{Line, Span, Text},
+    text::{Line, Span},
 };
 
-pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
+pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     Screen::new(
+        Rc::clone(&config),
         size,
         Box::new(move || {
+            let color = &config.color;
             let head = repo.head().ok();
 
             Ok(iter::once(Item {
                 id: "branches".into(),
-                display: Text::from("Branches".to_string().fg(CURRENT_THEME.section)),
+                display: Line::styled("Branches".to_string(), &color.section),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -30,8 +31,10 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                 repo.branches(Some(BranchType::Local))?
                     .filter_map(Result::ok)
                     .map(|(branch, _branch_type)| {
-                        let name = Span::raw(branch.name().unwrap().unwrap().to_string())
-                            .fg(CURRENT_THEME.branch);
+                        let name = Span::styled(
+                            branch.name().unwrap().unwrap().to_string(),
+                            &color.branch,
+                        );
 
                         let prefix = Span::raw(
                             if branch.get().name() == head.as_ref().and_then(|h| h.name()) {
@@ -43,7 +46,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
 
                         let upstream_name = if let Ok(upstream) = branch.upstream() {
                             if let Ok(Some(name)) = upstream.name() {
-                                Span::raw(name.to_string()).fg(CURRENT_THEME.remote)
+                                Span::styled(name.to_string(), &color.remote)
                             } else {
                                 Span::raw("")
                             }
@@ -58,8 +61,7 @@ pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
                                 name.clone(),
                                 Span::raw("   "),
                                 upstream_name,
-                            ])
-                            .into(),
+                            ]),
                             depth: 1,
                             target_data: Some(TargetData::Branch(name.content.into())),
                             ..Default::default()

@@ -1,10 +1,10 @@
+use crate::config::Config;
 use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::keybinds::Op;
 use crate::keybinds::SubmenuOp;
 use crate::list_target_ops;
-use crate::theme::CURRENT_THEME;
 use crate::CmdMeta;
 use crate::State;
 use itertools::EitherOrBoth;
@@ -28,10 +28,11 @@ enum Popup<'a> {
 
 pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
     let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.cmd_meta {
-        let lines = format_command(cmd);
+        let lines = format_command(&state.config, cmd);
         (lines.len(), command_popup(lines))
     } else if state.pending_submenu_op != SubmenuOp::None {
         format_keybinds_menu::<B>(
+            &state.config,
             &state.pending_submenu_op,
             state.screen().get_selected_item(),
         )
@@ -82,34 +83,33 @@ fn prompt_text(prompt: Op) -> std::borrow::Cow<'static, str> {
     .into()
 }
 
-fn format_command(cmd: &CmdMeta) -> Vec<Line> {
-    Text::from(
+fn format_command<'a>(config: &Config, cmd: &'a CmdMeta) -> Vec<Line<'a>> {
+    [Line::styled(
         format!(
             "$ {}{}",
             cmd.args,
             if cmd.out.is_some() { "" } else { "..." }
-        )
-        .fg(CURRENT_THEME.command),
-    )
-    .lines
+        ),
+        &config.color.command,
+    )]
     .into_iter()
     .chain(cmd.out.iter().flat_map(|out| Text::raw(out).lines))
     .collect::<Vec<Line>>()
 }
 
 fn format_keybinds_menu<'b, B: Backend>(
+    config: &Config,
     pending: &'b SubmenuOp,
     item: &'b Item,
 ) -> (usize, Popup<'b>) {
+    let color = &config.color;
+
     let non_target_binds = keybinds::list(pending)
         .filter(|keybind| !matches!(keybind.op, keybinds::Op::Target(_)))
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
-    pending_binds_column.push(Line::styled(
-        format!("{:?}", pending),
-        Style::new().fg(CURRENT_THEME.command).bold(),
-    ));
+    pending_binds_column.push(Line::styled(format!("{:?}", pending), &color.command));
     for (op, binds) in non_target_binds
         .iter()
         .group_by(|bind| bind.op)
@@ -122,7 +122,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     .into_iter()
                     .map(|bind| Keybind::format_key(bind))
                     .join(" "),
-                Style::new().fg(CURRENT_THEME.hotkey),
+                &color.hotkey,
             ),
             Span::styled(format!(" {:?}", op), Style::new()),
         ]));
@@ -135,10 +135,7 @@ fn format_keybinds_menu<'b, B: Backend>(
 
     let mut submenu_binds_column = vec![];
     if !submenus.is_empty() {
-        submenu_binds_column.push(Line::styled(
-            "Submenu",
-            Style::new().fg(CURRENT_THEME.command).bold(),
-        ));
+        submenu_binds_column.push(Line::styled("Submenu", &color.command));
     }
     for bind in submenus {
         let Op::Submenu(submenu) = bind.op else {
@@ -146,10 +143,7 @@ fn format_keybinds_menu<'b, B: Backend>(
         };
 
         submenu_binds_column.push(Line::from(vec![
-            Span::styled(
-                Keybind::format_key(bind),
-                Style::new().fg(CURRENT_THEME.hotkey),
-            ),
+            Span::styled(Keybind::format_key(bind), &color.hotkey),
             Span::styled(format!(" {:?}", submenu), Style::new()),
         ]));
     }
@@ -169,7 +163,7 @@ fn format_keybinds_menu<'b, B: Backend>(
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
-            target_binds_column.extend(item.display.lines.clone());
+            target_binds_column.push(item.display.clone());
         }
 
         for bind in target_binds {
@@ -178,10 +172,7 @@ fn format_keybinds_menu<'b, B: Backend>(
             };
 
             target_binds_column.push(Line::from(vec![
-                Span::styled(
-                    Keybind::format_key(bind),
-                    Style::new().fg(CURRENT_THEME.hotkey),
-                ),
+                Span::styled(Keybind::format_key(bind), &color.hotkey),
                 Span::styled(format!(" {:?}", target), Style::new()),
             ]));
         }

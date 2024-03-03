@@ -1,6 +1,6 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use git2::Repository;
-use gitu::{cli::Args, State};
+use gitu::{cli::Args, config::Config, State};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::{env, fs, path::Path, process::Command};
 use temp_dir::TempDir;
@@ -67,6 +67,7 @@ impl TestContext {
                 status: false,
                 exit_immediately: false,
             },
+            Config::default(),
         )
         .unwrap();
 
@@ -134,8 +135,7 @@ fn set_config(path: &Path) {
 }
 
 pub fn commit(dir: &Path, file_name: &str, contents: &str) {
-    let mut path = dir.to_path_buf();
-    path.push(file_name);
+    let path = dir.to_path_buf().join(file_name);
     let message = match path.try_exists() {
         Ok(true) => format!("modify {}\n\nCommit body goes here\n", file_name),
         _ => format!("add {}\n\nCommit body goes here\n", file_name),
