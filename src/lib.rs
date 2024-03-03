@@ -174,7 +174,7 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
 
     while !state.quit {
         // TODO Gather all events, no need to draw for every
-        if !event::poll(std::time::Duration::from_millis(u64::MAX))? {
+        if !event::poll(std::time::Duration::MAX)? {
             continue;
         }
 
