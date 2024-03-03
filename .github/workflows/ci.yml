@@ -32,6 +32,7 @@ jobs:
         rustup component add llvm-tools-preview
         cargo install --locked cargo-deny || true
         cargo install --locked grcov || true
+        cargo install --locked cargo-machete || true
 
     - name: Build
       env: 
