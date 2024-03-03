@@ -35,7 +35,7 @@ A help-menu can be shown by pressing the `h` key.
 ### Install
 #### Using Cargo
 Clone the repo and run:
-`cargo install --path . --locked`
+`cargo install --git https://github.com/altsem/gitu.git --locked`
 
 ### Development
 #### Profiling
