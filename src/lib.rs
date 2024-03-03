@@ -27,11 +27,6 @@ use tui_prompts::{prelude::*, State as _};
 
 type Res<T> = Result<T, Box<dyn Error>>;
 
-#[derive(Clone)]
-pub struct Config {
-    pub dir: PathBuf,
-}
-
 pub(crate) struct CmdMeta {
     pub(crate) args: Cow<'static, str>,
     pub(crate) out: Option<String>,
@@ -39,7 +34,6 @@ pub(crate) struct CmdMeta {
 
 pub struct State {
     pub repo: Rc<Repository>,
-    config: Config,
     quit: bool,
     screens: Vec<Screen>,
     pending_submenu_op: SubmenuOp,
@@ -49,20 +43,18 @@ pub struct State {
 }
 
 impl State {
-    pub fn create(repo: Repository, config: Config, size: Rect, args: cli::Args) -> Res<Self> {
+    pub fn create(repo: Repository, size: Rect, args: cli::Args) -> Res<Self> {
         let repo = Rc::new(repo);
-        repo.set_workdir(&config.dir, false)?;
 
         let screens = match args.command {
             Some(cli::Commands::Show { reference }) => {
                 vec![screen::show::create(Rc::clone(&repo), size, reference)?]
             }
-            None => vec![screen::status::create(Rc::clone(&repo), &config, size)?],
+            None => vec![screen::status::create(Rc::clone(&repo), size)?],
         };
 
         Ok(Self {
             repo,
-            config,
             quit: args.exit_immediately,
             screens,
             pending_submenu_op: SubmenuOp::None,
@@ -86,7 +78,7 @@ impl State {
         input: &[u8],
         mut cmd: Command,
     ) -> Res<()> {
-        cmd.current_dir(&self.config.dir);
+        cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
         cmd.stdout(Stdio::piped());
@@ -134,7 +126,7 @@ impl State {
         terminal: &mut Terminal<B>,
         mut cmd: Command,
     ) -> Res<()> {
-        cmd.current_dir(&self.config.dir);
+        cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
         let child = cmd.spawn()?;
@@ -164,21 +156,20 @@ fn command_args(cmd: &Command) -> Cow<'static, str> {
 }
 
 pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
-    let mut state = State::create(
-        Repository::open_from_env()?,
-        Config {
-            dir: String::from_utf8(
-                Command::new("git")
-                    .args(["rev-parse", "--show-toplevel"])
-                    .output()?
-                    .stdout,
-            )?
-            .trim_end()
-            .into(),
-        },
-        terminal.size()?,
-        args,
-    )?;
+    let dir = PathBuf::from(
+        String::from_utf8(
+            Command::new("git")
+                .args(["rev-parse", "--show-toplevel"])
+                .output()?
+                .stdout,
+        )?
+        .trim_end(),
+    );
+
+    let repo = Repository::open_from_env()?;
+    repo.set_workdir(&dir, false)?;
+
+    let mut state = State::create(repo, terminal.size()?, args)?;
     terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
 
     while !state.quit {
@@ -351,7 +342,10 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         (ResetHard, Commit(r) | Branch(r)) => cmd_arg(git::reset_hard_cmd, r),
         (Discard, Branch(r)) => cmd_arg(git::discard_branch, r),
         (Discard, File(f)) => Some(Box::new(|_term, state| {
-            let path = PathBuf::from_iter([state.config.dir.to_path_buf(), f.clone().into()]);
+            let path = PathBuf::from_iter([
+                state.repo.workdir().expect("No workdir").to_path_buf(),
+                f.into(),
+            ]);
             std::fs::remove_file(path)?;
             state.screen_mut().update()
         })),

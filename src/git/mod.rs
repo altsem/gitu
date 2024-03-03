@@ -23,7 +23,8 @@ pub(crate) mod rebase_status;
 
 // TODO Use only plumbing commands
 
-pub(crate) fn rebase_status(dir: &Path) -> Res<Option<RebaseStatus>> {
+pub(crate) fn rebase_status(repo: &Repository) -> Res<Option<RebaseStatus>> {
+    let dir = repo.workdir().expect("No workdir");
     let mut rebase_onto_file = dir.to_path_buf();
     rebase_onto_file.push(".git/rebase-merge/onto");
 
@@ -53,7 +54,8 @@ pub(crate) fn rebase_status(dir: &Path) -> Res<Option<RebaseStatus>> {
     }
 }
 
-pub(crate) fn merge_status(dir: &Path) -> Res<Option<MergeStatus>> {
+pub(crate) fn merge_status(repo: &Repository) -> Res<Option<MergeStatus>> {
+    let dir = repo.workdir().expect("No workdir");
     let mut merge_head_file = dir.to_path_buf();
     merge_head_file.push(".git/MERGE_HEAD");
 

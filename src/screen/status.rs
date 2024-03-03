@@ -6,7 +6,7 @@ use crate::{
     git2_opts,
     items::{self, Item},
     theme::CURRENT_THEME,
-    Config, Res,
+    Res,
 };
 use git2::Repository;
 use ratatui::{
@@ -15,9 +15,7 @@ use ratatui::{
     text::{Line, Text},
 };
 
-pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<Screen> {
-    let config = config.clone();
-
+pub(crate) fn create(repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     Screen::new(
         size,
         Box::new(move || {
@@ -25,7 +23,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
             let untracked = untracked(&statuses);
             let unmerged = unmerged(&statuses);
 
-            let items = if let Some(rebase) = git::rebase_status(&config.dir)? {
+            let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
                     id: "rebase_status".into(),
                     display: Text::from(
@@ -35,7 +33,7 @@ pub(crate) fn create(repo: Rc<Repository>, config: &Config, size: Rect) -> Res<S
                     ..Default::default()
                 }]
                 .into_iter()
-            } else if let Some(merge) = git::merge_status(&config.dir)? {
+            } else if let Some(merge) = git::merge_status(&repo)? {
                 vec![Item {
                     id: "merge_status".into(),
                     display: Text::from(

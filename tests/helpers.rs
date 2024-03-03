@@ -61,9 +61,6 @@ impl TestContext {
     pub fn init_state(&mut self) -> State {
         let mut state = State::create(
             Repository::open(self.dir.path()).unwrap(),
-            gitu::Config {
-                dir: self.dir.path().into(),
-            },
             self.size,
             Args {
                 command: None,
