@@ -8,6 +8,9 @@ pub struct Args {
     pub command: Option<Commands>,
     #[clap(long, action, default_value_t = false)]
     pub exit_immediately: bool,
+    /// Enable logging to 'gitu.log'
+    #[clap(long, action, default_value_t = false)]
+    pub log: bool,
 }
 
 #[derive(Debug, Subcommand)]

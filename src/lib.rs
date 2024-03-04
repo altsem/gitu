@@ -198,6 +198,7 @@ fn command_args(cmd: &Command) -> Cow<'static, str> {
 }
 
 pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
+    log::debug!("Finding git dir");
     let dir = PathBuf::from(
         String::from_utf8(
             Command::new("git")
@@ -208,20 +209,29 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
         .trim_end(),
     );
 
+    log::debug!("Opening repo");
     let repo = Repository::open_from_env()?;
     repo.set_workdir(&dir, false)?;
 
+    log::debug!("Initializing config");
     let config = config::init_config()?;
+
+    log::debug!("Creating initial state");
     let mut state = State::create(repo, terminal.size()?, args, config)?;
+
+    log::debug!("Drawing initial frame");
     terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
 
     while !state.quit {
         // TODO Gather all events, no need to draw for every
+        log::debug!("Awaiting event");
         if !event::poll(std::time::Duration::MAX)? {
             continue;
         }
 
         let event = event::read()?;
+
+        log::debug!("Updating");
         update(terminal, &mut state, &[event])?;
     }
 

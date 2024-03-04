@@ -83,7 +83,7 @@ pub(crate) fn init_config() -> Res<Config> {
             Err(err) => match err.kind() {
                 io::ErrorKind::NotFound => Config::default(),
                 reason => {
-                    eprintln!("Error reading config file {:?} {:?}", &path, reason);
+                    log::error!("Error reading config file {:?} {:?}", &path, reason);
                     Config::default()
                 }
             },

@@ -65,6 +65,7 @@ impl TestContext {
             Args {
                 command: None,
                 exit_immediately: false,
+                log: false,
             },
             Config::default(),
         )
