@@ -1,6 +1,6 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use git2::Repository;
-use gitu::{cli::Args, config::Config, State};
+use gitu::{cli::Args, config, State};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::{env, fs, path::Path, process::Command};
 use temp_dir::TempDir;
@@ -67,7 +67,7 @@ impl TestContext {
                 exit_immediately: false,
                 log: false,
             },
-            Config::default(),
+            config::init_test_config().unwrap(),
         )
         .unwrap();
 

@@ -27,6 +27,7 @@ use strum::IntoEnumIterator;
 use tui_prompts::{prelude::*, State as _};
 
 const APP_NAME: &str = "gitu";
+
 type Res<T> = Result<T, Box<dyn Error>>;
 
 pub(crate) struct CmdMeta {
