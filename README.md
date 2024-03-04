@@ -40,6 +40,10 @@ Run the command:
 ...or to install the latest from git, run:
 `cargo install --git https://github.com/altsem/gitu.git --locked`
 
+### Configuration
+To configure Gitu, you can copy the [default configuration](src/default_config.toml) to
+`~/.config/gitu/config.toml`.
+
 ### Development
 #### Profiling
 This project comes with pprof as a dev-dependency. You can run it with:
