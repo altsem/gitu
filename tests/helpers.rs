@@ -64,7 +64,6 @@ impl TestContext {
             self.size,
             Args {
                 command: None,
-                status: false,
                 exit_immediately: false,
             },
             Config::default(),

@@ -6,8 +6,6 @@ use clap::{Parser, Subcommand};
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Commands>,
-    #[clap(long, action, default_value_t = true)]
-    pub status: bool,
     #[clap(long, action, default_value_t = false)]
     pub exit_immediately: bool,
 }
