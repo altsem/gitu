@@ -21,7 +21,7 @@ config = { version = "0.14.0", features = ["toml"], default-features = false }
 crossterm = "0.27.0"
 directories = "5.0.1"
 git2 = "0.18.2"
-insta = "1.35.1"
+insta = "1.36.1"
 itertools = "0.12.0"
 ratatui = { version = "0.26.1", features = ["serde"] }
 serde = { version = "1.0.152", features = ["derive"] }
