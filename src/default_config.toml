@@ -1,21 +1,38 @@
-[style]
-section_header.fg = "Yellow"
-file_header.fg = "Magenta"
-hunk_header.fg = "Blue"
+# This file contains Gitu's default configuration.
+# It is possible to override settings with an equivalent file at:
+# `~/.config/gitu/config.toml`
 
-line_added.fg = "Green"
-line_removed.fg = "Red"
+[style]
+# fg / bg can be either of:
+# - a hex value: "#707070"
+# - an ansi color text: "light blue"
+# - an ansi color index: "255"
+
+# 'mods' can be either of (multiple values separated by '|'):
+# BOLD|DIM|ITALIC|UNDERLINED|SLOW_BLINK|RAPID_BLINK|REVERSED|HIDDEN|CROSSED_OUT
+
+# Example style config values:
+# section_header.fg = "#808080"
+# section_header.bg = "light green"
+# section_header.mods = "UNDERLINED|ITALIC"
+
+section_header.fg = "yellow"
+file_header.fg = "magenta"
+hunk_header.fg = "blue"
+
+line_added.fg = "green"
+line_removed.fg = "red"
 
 selection_line.mods = "BOLD"
-selection_bar.fg = "Blue"
-selection_bar.mods= "DIM"
-# selection_area.bg = "DarkGray"
+selection_bar.fg = "blue"
+selection_bar.mods = "DIM"
+selection_area.bg = "reset"
 
-hash.fg = "Yellow"
-branch.fg = "Green"
-remote.fg = "Red"
-tag.fg = "Yellow"
+hash.fg = "yellow"
+branch.fg = "green"
+remote.fg = "red"
+tag.fg = "yellow"
 
-command.fg = "Blue"
+command.fg = "blue"
 command.mods = "BOLD"
-hotkey.fg = "Magenta"
+hotkey.fg = "magenta"

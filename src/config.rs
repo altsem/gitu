@@ -1,55 +1,38 @@
 use crate::{Res, APP_NAME};
+use figment::{
+    providers::{Format, Toml},
+    Figment,
+};
 use ratatui::style::{Color, Modifier, Style};
 use serde::Deserialize;
-use std::{fs, io};
 
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
-#[derive(Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize)]
 pub struct Config {
     pub style: StyleConfig,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize)]
 pub struct StyleConfig {
-    #[serde(default)]
     pub section_header: StyleConfigEntry,
-    #[serde(default)]
     pub file_header: StyleConfigEntry,
-    #[serde(default)]
     pub hunk_header: StyleConfigEntry,
 
-    #[serde(default)]
     pub line_added: StyleConfigEntry,
-    #[serde(default)]
     pub line_removed: StyleConfigEntry,
 
-    #[serde(default)]
     pub selection_line: StyleConfigEntry,
-    #[serde(default)]
     pub selection_bar: StyleConfigEntry,
-    #[serde(default)]
     pub selection_area: StyleConfigEntry,
 
-    #[serde(default)]
     pub hash: StyleConfigEntry,
-    #[serde(default)]
     pub branch: StyleConfigEntry,
-    #[serde(default)]
     pub remote: StyleConfigEntry,
-    #[serde(default)]
     pub tag: StyleConfigEntry,
 
-    #[serde(default)]
     pub command: StyleConfigEntry,
-    #[serde(default)]
     pub hotkey: StyleConfigEntry,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        toml::from_str(DEFAULT_CONFIG).expect("Failed to parse default_config.toml")
-    }
 }
 
 #[derive(Default, Debug, Deserialize)]
@@ -76,21 +59,47 @@ impl From<&StyleConfigEntry> for Style {
 
 pub(crate) fn init_config() -> Res<Config> {
     let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", APP_NAME) {
-        let path = app_dirs.config_dir().join("config.toml");
-
-        match fs::read_to_string(&path) {
-            Ok(content) => toml::from_str(&content)?,
-            Err(err) => match err.kind() {
-                io::ErrorKind::NotFound => Config::default(),
-                reason => {
-                    log::error!("Error reading config file {:?} {:?}", &path, reason);
-                    Config::default()
-                }
-            },
-        }
+        Figment::new()
+            .merge(Toml::string(DEFAULT_CONFIG))
+            .merge(Toml::file(app_dirs.config_dir().join("config.toml")))
+            .extract()?
     } else {
         Config::default()
     };
 
     Ok(config)
+}
+
+pub fn init_test_config() -> Res<Config> {
+    Ok(Figment::new()
+        .merge(Toml::string(DEFAULT_CONFIG))
+        .extract()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use figment::{
+        providers::{Format, Toml},
+        Figment,
+    };
+    use ratatui::style::Color;
+
+    use super::{Config, DEFAULT_CONFIG};
+
+    #[test]
+    fn config_merges() {
+        let config: Config = Figment::new()
+            .merge(Toml::string(DEFAULT_CONFIG))
+            .merge(Toml::string(
+                r#"
+                [style]
+                line_added.bg = "light green"
+                "#,
+            ))
+            .extract()
+            .unwrap();
+
+        assert_eq!(config.style.line_added.bg, Some(Color::LightGreen));
+        assert_eq!(config.style.line_added.fg, Some(Color::Green));
+    }
 }
