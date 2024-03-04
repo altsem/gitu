@@ -34,7 +34,10 @@ A help-menu can be shown by pressing the `h` key.
 
 ### Install
 #### Using Cargo
-Run command:
+Run the command:
+`cargo install gitu --locked`
+
+...or to install the latest from git, run:
 `cargo install --git https://github.com/altsem/gitu.git --locked`
 
 ### Development
