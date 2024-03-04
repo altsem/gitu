@@ -1,0 +1,437 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.2.1](https://github.com/altsem/gitu/compare/v0.2.0...v0.2.1) - 2024-03-04
+
+### Added
+- --log flag to log to file
+- change style/color config values to be more intuitive
+- external config, change Text to Line in Item
+- checkout new branch
+- show delta status
+- handle sigterm
+- collapsed deltas on status page
+- current branch indicator
+- 'Branches' header in 'y' menu
+- reset soft/mixed/hard
+- discard branch
+- log other
+- push with git2
+- respect status.showUntrackedFiles config
+- use libgit2 to log
+- Show +/- in diffs
+- *(help)* group keys to the same action together
+- nicer show_refs
+- better status
+- Show merge status
+- make rebasing status header look nicer
+- status improvements and added rebase status
+- try select first hunk on new screens
+- scroll ends half-page down from bottom
+- arrow cursor, and no multi-line highlights
+- bold headers in help menu
+- make headers bold
+- replace delta formatting with lib 'similar'
+- 'gitu show' benchmark
+- Handle all awaiting events before drawing
+- Open hunk with editor cursor at first diff
+- status unselectable
+- Sort show_refs by creatordate
+- Stick to delta with --color-only
+- Color show_refs screen
+- Show refs and ref checkout
+- Discard files with prompt
+- rebase-abort/continue/autosquash, commit-amend/fixup
+- Just show git status
+- Improve hotkey menu
+- Improve help menu
+- Spawn subscreen commands as IssuedCommand
+- Interactive rebase
+- gitu diff
+
+### Fixed
+- merging of config
+- remove unnecessary event::poll call breaking MacOs
+- Duration::from_millis(u64::MAX) crashes on Mac
+- use patience diff, diff_opts were missing on 'show'
+- highlighting when scrolled past cursor
+- read push response, push to upstream remote
+- fix ci
+- showing the first commit crashed
+- passing GIT_DIR / GIT_WORK_TREE works again
+- parse cli args before enabling raw mode
+- more robust determination of headers in diff
+- Handle when HEAD doesn't exist
+- feedback when git command started
+- update Untracked / Unmerged headers to be single lines
+- handle too long lines
+- handle main errors more gracefully
+- handle messy file names in status
+- don't need to do a full update initially
+- use configured dir
+- Don't try draw non-existent screen on quit
+- Draw before first events
+- Make status arg non-required
+- Set git dir on start
+- Staging (Unstaging) files only works in the root dir
+- Show modifier (C-) in help
+- Better colors from git
+- Don't strip ansi from hunk
+- Detached HEAD crash
+- Screen refresh
+- Add missing screen/diff.rs module
+- fix file names
+- commit parsing
+- Set hunk file_header
+- Display behind remote in status
+- fixes
+- fix push
+- Refresh when return to status screen
+- fix quit draw problems
+- fix refresh bug, refactor
+- Collapse symbol on same line
+- Crash when items empty
+
+### Other
+- Skip messy initial changelog
+- Let dependabot check for Github action updates
+- remove CHANGELOG.md
+- Start changelog with cliffy & add release-plz gh action
+- release 0.2.0
+- mention config in README
+- release 0.1.1
+- bump deps
+- remove unused cli arg
+- update install instructions
+- remove ./install.sh
+- add package description
+- *(deps)* bump insta from 1.35.1 to 1.36.1
+- remove unused lazy_static dep
+- run cargo-machete to check for unused deps
+- Fixed command comment
+- Updated install command
+- remove TODO about writing config
+- clean up old 'config' struct
+- Add codecov badge ([#11](https://github.com/altsem/gitu/pull/11))
+- try fix coverage report
+- run grcov
+- try fix coverage
+- install grcov
+- Update ci.yml
+- update recording
+- add missing snapshots
+- make help menu spacing better
+- update recording
+- improve recording
+- diff formatting
+- init state after test setup
+- styling
+- branch/remote spacing
+- show_refs with git2
+- bold/dim diff highlight
+- make terminal recording prettier
+- simplify themeing
+- change show_refs branches to non-bold
+- show_refs
+- remove old empty file
+- replace hardcoded enum list with 'strum' lib
+- branch delete confirmation snapshot
+- Update README.md ([#10](https://github.com/altsem/gitu/pull/10))
+- update deny.toml
+- help screenshot with vhs
+- update rec
+- put vhs stuff in vhs/
+- script to record terminal
+- locked deps when installing cargo-deny
+- serparate test_helpers
+- move tests to module
+- remove git2 impl of push/fetch
+- fetch with git2
+- remove todo
+- use git2 for branch status
+- break out 'git::push' module
+- simplify license stuff
+- remove serial_test
+- rename some test vars
+- opts scaffolding for diff
+- skip 'cargo build' in build.sh
+- remove unused dependencies
+- lint git2_opts
+- bump deps
+- remove unused fields in Hunk
+- fix build.sh not preventing clippy warnings
+- remove unused Item derived traits
+- moved file
+- simplify status
+- *(deps)* bump insta from 1.34.0 to 1.35.1 ([#7](https://github.com/altsem/gitu/pull/7))
+- *(deps)* bump clap from 4.5.0 to 4.5.1 ([#8](https://github.com/altsem/gitu/pull/8))
+- Create dependabot.yml ([#6](https://github.com/altsem/gitu/pull/6))
+- update help image
+- todo
+- update TODOs
+- remove diff cli command
+- add todo
+- replace untracked/unmerged lists with libgit2 call
+- open repo in State::create
+- fix tests after using Repository::open_from_env()
+- use checkout@v4
+- don't fail build when cargo-deny already installed
+- install cargo-deny
+- add licenses
+- Update README.md
+- update gitu screenshot
+- Update README.md
+- use libgit2 for showing commits
+- remove diff parse module
+- Update merge/rebase snapshots
+- remove unused imports
+- Use libgit2 for diffing
+- ratatui 0.26.1
+- set git user in test
+- update readme
+- remove unused import
+- fix snapshot
+- use iter_str_lossy when diffing
+- Revert "ci: list config"
+- list config
+- remove unnecessary variable
+- clippy --fix
+- split into lib.rs & main.rs
+- rebase_conflict test
+- show plain 'git status' in snapshots
+- build.sh and install.sh
+- Update README.md
+- rename workflow name
+- fix tests
+- test; split stage test into multiple snapshots
+- format
+- clippy --fix
+- update snapshots
+- remove ui_lines vec
+- use buffer.set_span
+- remove boilerplate in git/mid.rs
+- remove unused Display impl for Delta
+- remove unused commit field on Diff
+- move around git modules
+- remove unused Display impl for Diff
+- move status & diff modules into git module
+- move git module
+- Update rust.yml
+- run bench in ci
+- fix bench not running
+- run clippy and fmt --check
+- remove [lib] in Cargo.toml
+- update snapshot
+- set default git branch
+- add rust.yml back
+- remove crossterm 'size' call
+- remove garbage in Cargo.toml
+- remove rust.yml
+- Update README.md
+- Create rust.yml
+- Update README.md
+- todo
+- update README
+- update readme pic
+- updating snapshots
+- rename transient -> submenu
+- clippy --fix
+- use pprof's criterion feature
+- Add ppref to bench
+- simplify cmd output handling
+- Revert "refactor: async commands"
+- remove USE_DELTA lazy-static
+- async commands
+- clippy --fix
+- `run` fn in integration test
+- Remove rest of process module
+- oh boy, use more Result, config path and remove process::run
+- Remove serial_test and add TODO about removing globals
+- can live without this TODO
+- Refactor integration tests
+- closure_by_target_op fn
+- More integration tests
+- Remove dbg
+- Split integration tests
+- Ignore .snap.new files
+- Add snapshot testing
+- Wip integration test
+- Rename Cli to Args
+- Remove Terminal type and use generics instead
+- todo
+- Update README install instruction
+- Move diff/status to module dirs
+- Rename menu Transient -> Submenu
+- discard
+- remove todo
+- Screen 'create' fns
+- Rename issue_command.. fns in main
+- Remove CopyToClipboard
+- helper fn for git
+- main
+- Simplify keybinds, don't list 'Quit'
+- Index into items instead of skip
+- Store Text in Item
+- Fix clippy lints
+- cargo clippy --fix
+- Simplify screen refresh code
+- Less cloning when drawing ui
+- Move Screen widget impl
+- Make 'display' non-optional
+- Prepare screen widget for caching
+- Diff::parse inside git module
+- refactor
+- Help menu
+- Transient menu improvements
+- Prettier keybind listing
+- Convert fetch/commit/pull/push to transient ops
+- Transient ops
+- Update README.md
+- Update readme
+- delete gitu.png from root
+- Doc
+- clippy --fix
+- Add gitu.png to README
+- Move IssuedCommand field from Screen to State
+- Extract parse_diff function
+- Fixes
+- status test with messy file name
+- Parse diffs with pest
+- Refactor status parsing
+- Fix listing of unmerged files
+- Use pest for parsing status
+- Color commit message
+- Update README
+- Scroll includes header ancestors
+- Update README.md
+- refactor
+- Copy to clipboard
+- BufWriter around stderr
+- clippy --fix
+- refactor & cleanup
+- screen widget module
+- refactor ui
+- Refactor
+- Remove key inline hints
+- Refactor ui.rs
+- Prettier key hints
+- Key hints
+- impl branch diverged status
+- keybinds
+- Make keybinding hell better
+- Rename Act -> Actionable
+- Separate definition of keybindings
+- Refactor main
+- Enum for actionable parts of Item
+- Make Hunk/Delta independent
+- Unused imports
+- Fix command output when issued
+- Command popup
+- Test branch status diverged
+- Change Readme
+- Change readme
+- Hide some stuff
+- :new()
+- Default status to select index 3, should be a diff hunk
+- Keep polling for now
+- Use stderr as in ratatui examples
+- handle command output before draw
+- Don't repaint periodically
+- Actually need to clear
+- Improve terminal management
+- Try fit entire subtree when scrolling
+- Fix branch status header
+- List unmerged files, parse status properly
+- Clippy --fix
+- Hard-code theme that's not base16 based
+- CURRENT_THEME
+- Use delta only if installed
+- Remove obsolete todo
+- Highlight and keep diff highlights
+- Change styling
+- Fix ellipsis collapse
+- CLI
+- clarify readme
+- Show untracked files
+- side-by-side diff possible
+- README
+- Draw before first event
+- Rename to gitu
+- refactor
+- Break into smaller modules
+- Remove select fn
+- Remove dead tests
+- read EDITOR
+- Constant COLOR_CMD
+- Refactor run/pipe
+- Screens as a stack
+- Fill entire diff lines
+- refactor
+- Better scrolling
+- Fix command display format
+- Scrolling
+- Move Screen to separate module
+- log
+- Show commit header
+- git show screen
+- Vec of screens
+- Wonky git show
+- Refactor display text
+- fetch --all
+- Fix issue where command args only printed when done
+- Run user actions as IssuedCommand
+- g for refresh
+- clippy --fix
+- refactor
+- refactor
+- refactor
+- Fix deps
+- Refresh items after command finish
+- Command output
+- show command output
+- pull push
+- refactor
+- Spacing between headers
+- Use Text instead of Line for items
+- Smallers hunk headers
+- Better headers
+- Clean up Item struct
+- Keep collapsed state in set, fixes reloading repo state
+- clippy --fix
+- Format
+- Fix initial line empty
+- Recent commits
+- Show short delta file name
+- Don't crash on stage/unstage no match
+- Remove TODOs
+- Jump hunks with j/k, open editor on hunk
+- c for commit
+- Highlight range
+- Colored diffs
+- Add missing example patch files
+- Fix hunk regex
+- Remove unused regex
+- Enter to open hx
+- Fix hunk regex
+- Remove libgit2 as dependency
+- Stage/unstage hunks using binary git
+- Replace libgit2 diffing with Command
+- Add todo for unstaging
+- stage files
+- Stage hunks
+- Remove header spacing
+- Skip patch header item if empty
+- Parse diff into structure, select hunk range
+- Gather data from patch instead
+- Collapse recent commits
+- Display diff line +/-
+- wip
+- Display diffs
+- List recent commits
+- refactor & fix modified index files
+- Simple status view
