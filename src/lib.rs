@@ -223,12 +223,7 @@ pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<()
     terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
 
     while !state.quit {
-        // TODO Gather all events, no need to draw for every
         log::debug!("Awaiting event");
-        if !event::poll(std::time::Duration::MAX)? {
-            continue;
-        }
-
         let event = event::read()?;
 
         log::debug!("Updating");
