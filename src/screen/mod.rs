@@ -80,9 +80,9 @@ impl<'a> Screen {
         }
 
         let start_line = self
-            .collapsed_lines_items_iter()
-            .find(|(_line, i, item, _lc)| self.selected_or_direct_ancestor(item, i))
-            .map(|(line, _i, _item, _lc)| line)
+            .collapsed_items_iter()
+            .find(|(i, item)| self.selected_or_direct_ancestor(item, i))
+            .map(|(i, _item)| i)
             .unwrap() as u16;
 
         if start_line < self.scroll {
@@ -102,10 +102,10 @@ impl<'a> Screen {
 
         let depth = self.items[self.cursor].depth;
         let last = 1 + self
-            .collapsed_lines_items_iter()
-            .skip_while(|(_line, i, _item, _lc)| i < &self.cursor)
-            .take_while(|(_line, i, item, _lc)| i == &self.cursor || depth < item.depth)
-            .map(|(line, _i, _item, lc)| line + lc)
+            .collapsed_items_iter()
+            .skip_while(|(i, _item)| i < &self.cursor)
+            .take_while(|(i, item)| i == &self.cursor || depth < item.depth)
+            .map(|(i, _item)| i + 1)
             .last()
             .unwrap();
 
@@ -141,22 +141,11 @@ impl<'a> Screen {
     pub(crate) fn scroll_half_page_down(&mut self) {
         let half_screen = self.size.height / 2;
         self.scroll = (self.scroll + half_screen).min(
-            self.collapsed_lines_items_iter()
-                .map(|(line, _i, _item, lc)| (line + lc).saturating_sub(half_screen as usize))
+            self.collapsed_items_iter()
+                .map(|(i, _item)| (i + 1).saturating_sub(half_screen as usize))
                 .last()
                 .unwrap_or(0) as u16,
         );
-    }
-
-    // TODO An item is always a line now
-    fn collapsed_lines_items_iter(&'a self) -> impl Iterator<Item = (usize, usize, &Item, usize)> {
-        self.collapsed_items_iter().scan(0, |lines, (i, item)| {
-            let line = *lines;
-            let lc = 1;
-            *lines += lc;
-
-            Some((line, i, item, lc))
-        })
     }
 
     pub(crate) fn toggle_section(&mut self) {
