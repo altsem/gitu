@@ -10,6 +10,8 @@ pub(crate) mod show;
 pub(crate) mod show_refs;
 pub(crate) mod status;
 
+const BOTTOM_CONTEXT_LINES: usize = 2;
+
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: u16,
@@ -81,8 +83,9 @@ impl<'a> Screen {
 
         let start_line = self
             .collapsed_items_iter()
-            .find(|(i, item)| self.selected_or_direct_ancestor(item, i))
-            .map(|(i, _item)| i)
+            .enumerate()
+            .find(|(_, (i, item))| self.selected_or_direct_ancestor(item, i))
+            .map(|(line, _)| line)
             .unwrap() as u16;
 
         if start_line < self.scroll {
@@ -101,13 +104,15 @@ impl<'a> Screen {
         }
 
         let depth = self.items[self.cursor].depth;
-        let last = 1 + self
-            .collapsed_items_iter()
-            .skip_while(|(i, _item)| i < &self.cursor)
-            .take_while(|(i, item)| i == &self.cursor || depth < item.depth)
-            .map(|(i, _item)| i + 1)
-            .last()
-            .unwrap();
+        let last = BOTTOM_CONTEXT_LINES
+            + self
+                .collapsed_items_iter()
+                .enumerate()
+                .skip_while(|(_, (i, _))| i < &self.cursor)
+                .take_while(|(_, (i, item))| i == &self.cursor || depth < item.depth)
+                .map(|(line, _)| line)
+                .last()
+                .unwrap();
 
         let end_line = self.size.height.saturating_sub(1);
         if last as u16 > end_line + self.scroll {
@@ -142,7 +147,8 @@ impl<'a> Screen {
         let half_screen = self.size.height / 2;
         self.scroll = (self.scroll + half_screen).min(
             self.collapsed_items_iter()
-                .map(|(i, _item)| (i + 1).saturating_sub(half_screen as usize))
+                .enumerate()
+                .map(|(line, _)| (line + 1).saturating_sub(half_screen as usize))
                 .last()
                 .unwrap_or(0) as u16,
         );
@@ -248,6 +254,59 @@ impl Widget for &Screen {
             if self.cursor == item_i {
                 buf.get_mut(0, line_i as u16).set_char('🢒');
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Screen;
+    use crate::{config::Config, items::Item, screen::BOTTOM_CONTEXT_LINES};
+    use ratatui::layout::Rect;
+    use std::rc::Rc;
+
+    #[test]
+    fn scroll_collapsed() {
+        let mut screen = Screen::new(
+            Rc::new(Config::default()),
+            Rect::new(0, 0, 10, 3 + BOTTOM_CONTEXT_LINES as u16),
+            Box::new(|| {
+                Ok(vec![
+                    collapsed_section("section 1"),
+                    sub_item("invisible"),
+                    sub_item("invisible"),
+                    sub_item("invisible"),
+                    collapsed_section("section 2"),
+                    collapsed_section("section 3"),
+                    collapsed_section("section 4"),
+                ])
+            }),
+        )
+        .unwrap();
+
+        screen.select_next();
+        screen.select_next();
+        assert_eq!(0, screen.scroll, "shouldn't have scrolled");
+
+        screen.select_next();
+        assert_eq!(1, screen.scroll, "should have scrolled");
+    }
+
+    fn collapsed_section(display: &'static str) -> Item {
+        Item {
+            display: display.into(),
+            section: true,
+            default_collapsed: true,
+            depth: 0,
+            ..Default::default()
+        }
+    }
+
+    fn sub_item(display: &'static str) -> Item {
+        Item {
+            display: display.into(),
+            depth: 1,
+            ..Default::default()
         }
     }
 }
