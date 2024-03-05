@@ -30,7 +30,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     stderr().execute(EnterAlternateScreen)?;
 
     log::debug!("Starting app");
-    let result = gitu::run(args, &mut terminal);
+    let result = gitu::run(&args, &mut terminal);
 
     stderr().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;

@@ -13,7 +13,7 @@ use git2::Repository;
 use items::{Item, TargetData};
 use itertools::Itertools;
 use keybinds::{Op, SubmenuOp, TargetOp};
-use ratatui::{prelude::*, Terminal};
+use ratatui::prelude::*;
 use screen::Screen;
 use std::{
     borrow::Cow,
@@ -50,19 +50,19 @@ impl State {
     pub fn create(
         repo: Repository,
         size: Rect,
-        args: cli::Args,
+        args: &cli::Args,
         config: config::Config,
     ) -> Res<Self> {
         let repo = Rc::new(repo);
         let config = Rc::new(config);
 
         let screens = match args.command {
-            Some(cli::Commands::Show { reference }) => {
+            Some(cli::Commands::Show { ref reference }) => {
                 vec![screen::show::create(
                     Rc::clone(&config),
                     Rc::clone(&repo),
                     size,
-                    reference,
+                    reference.clone(),
                 )?]
             }
             None => vec![screen::status::create(
@@ -198,7 +198,7 @@ fn command_args(cmd: &Command) -> Cow<'static, str> {
         .into()
 }
 
-pub fn run<B: Backend>(args: cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
+pub fn run<B: Backend>(args: &cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
     log::debug!("Finding git dir");
     let dir = PathBuf::from(
         String::from_utf8(

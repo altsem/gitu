@@ -10,13 +10,7 @@ use crate::State;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
 use ratatui::prelude::*;
-use ratatui::text::Text;
-use ratatui::widgets::Block;
-use ratatui::widgets::Borders;
-use ratatui::widgets::Paragraph;
-use ratatui::widgets::Row;
-use ratatui::widgets::Table;
-use ratatui::Frame;
+use ratatui::widgets::*;
 use tui_prompts::State as _;
 use tui_prompts::TextPrompt;
 
