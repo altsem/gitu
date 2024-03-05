@@ -218,11 +218,13 @@ impl Widget for &Screen {
             .enumerate()
         {
             let line_area = Rect {
-                x: 1,
+                x: 0,
                 y: line_i as u16,
                 width: buf.area.width,
                 height: 1,
             };
+
+            let indented_line_area = Rect { x: 1, ..line_area };
 
             if highlight_depth.is_some() {
                 if self.cursor == item_i {
@@ -236,11 +238,11 @@ impl Widget for &Screen {
                 }
             }
 
-            line.render(line_area, buf);
+            line.render(indented_line_area, buf);
             let overflow = line.width() > line_area.width as usize;
 
             if self.is_collapsed(item) && line.width() > 0 || overflow {
-                let line_end = (line_area.x + line.width() as u16).min(area.width - 1);
+                let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
                 buf.get_mut(line_end, line_i as u16).set_char('…');
             }
             if self.cursor == item_i {
