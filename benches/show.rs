@@ -8,7 +8,7 @@ fn show(c: &mut Criterion) {
         let mut terminal = Terminal::new(TestBackend::new(80, 1000)).unwrap();
         b.iter(|| {
             gitu::run(
-                gitu::cli::Args {
+                &gitu::cli::Args {
                     command: Some(Commands::Show {
                         reference: "f4de01c0a12794d7b42a77b2138aa64119b90ea5".into(),
                     }),

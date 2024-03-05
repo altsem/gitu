@@ -108,9 +108,7 @@ fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
                 return None;
             }
 
-            let Some(path) = status.path() else {
-                return None;
-            };
+            let path = status.path()?;
 
             Some(Item {
                 id: path.to_string().into(),
@@ -132,9 +130,7 @@ fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
                 return None;
             }
 
-            let Some(path) = status.path() else {
-                return None;
-            };
+            let path = status.path()?;
 
             Some(Item {
                 id: path.to_string().into(),

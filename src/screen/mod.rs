@@ -1,4 +1,4 @@
-use ratatui::{prelude::*, widgets::Widget};
+use ratatui::prelude::*;
 
 use crate::{config::Config, items::TargetData, Res};
 

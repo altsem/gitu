@@ -62,7 +62,7 @@ impl TestContext {
         let mut state = State::create(
             Repository::open(self.dir.path()).unwrap(),
             self.size,
-            Args {
+            &Args {
                 command: None,
                 exit_immediately: false,
                 log: false,
