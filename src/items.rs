@@ -85,7 +85,11 @@ fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iter
     .chain(format_diff_hunk_items(&config, depth + 1, hunk))
 }
 
-fn format_diff_hunk_items(config: &Config, depth: usize, hunk: &Hunk) -> Vec<Item> {
+fn format_diff_hunk_items(
+    config: &Config,
+    depth: usize,
+    hunk: &Hunk,
+) -> impl Iterator<Item = Item> {
     let old = hunk.old_content();
     let new = hunk.new_content();
 
@@ -99,22 +103,20 @@ fn format_diff_hunk_items(config: &Config, depth: usize, hunk: &Hunk) -> Vec<Ite
         .flat_map(|op| diff.iter_inline_changes(op))
         .collect::<Vec<_>>();
 
-    // TODO A lot of collect going on here (and inside format_changes too)
-    format_changes(config, &changes.iter().collect::<Vec<_>>())
+    format_changes(config, &changes)
         .into_iter()
-        .map(|line| Item {
+        .map(move |line| Item {
             display: line,
             unselectable: true,
             depth,
             target_data: None,
             ..Default::default()
         })
-        .collect()
 }
 
 fn format_changes(
     config: &Config,
-    changes: &[&similar::InlineChange<'_, str>],
+    changes: &[similar::InlineChange<'_, str>],
 ) -> Vec<Line<'static>> {
     let style = &config.style;
     let lines = changes
