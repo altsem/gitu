@@ -463,7 +463,19 @@ fn editor<'a, B: Backend>(file: &Path, line: Option<u32>) -> Option<OpClosure<'a
     let file = file.to_str().unwrap().to_string();
 
     Some(Box::new(move |terminal, state| {
-        let editor = std::env::var("EDITOR").expect("EDITOR not set");
+        const EDITOR_VARS: [&str; 3] = ["GIT_EDITOR", "VISUAL", "EDITOR"];
+        let configured_editor = EDITOR_VARS
+            .into_iter()
+            .find_map(|var| std::env::var(var).ok());
+
+        let Some(editor) = configured_editor else {
+            return Err(format!(
+                "No editor environment variable set ({})",
+                EDITOR_VARS.join(", ")
+            )
+            .into());
+        };
+
         let mut cmd = Command::new(editor.clone());
         let args = match line {
             Some(line) => match editor.as_str() {
@@ -479,7 +491,7 @@ fn editor<'a, B: Backend>(file: &Path, line: Option<u32>) -> Option<OpClosure<'a
 
         state
             .issue_subscreen_command(terminal, cmd)
-            .expect("Error opening editor");
+            .map_err(|err| format!("Couldn't open editor {} due to: {}", editor, err))?;
 
         state.screen_mut().update()
     }))

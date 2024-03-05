@@ -41,8 +41,10 @@ Run the command:
 `cargo install --git https://github.com/altsem/gitu.git --locked`
 
 ### Configuration
-To configure Gitu, you can copy the [default configuration](src/default_config.toml) to
-`~/.config/gitu/config.toml`.
+The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
+
+Configuration is also loaded from `~/.config/gitu/config.toml`,
+you could copy the [default configuration](src/default_config.toml).
 
 ### Development
 #### Profiling
