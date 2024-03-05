@@ -33,6 +33,7 @@ jobs:
         cargo install --locked cargo-deny || true
         cargo install --locked grcov || true
         cargo install --locked cargo-machete || true
+        cargo install --locked git-cliff || true
 
     - name: Build
       env: 
