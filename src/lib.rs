@@ -19,7 +19,7 @@ use std::{
     borrow::Cow,
     error::Error,
     iter,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     rc::Rc,
 };
@@ -379,13 +379,13 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
 
     match (target_op, target) {
         (Show, Commit(r) | Branch(r)) => goto_show_screen(r.clone()),
-        (Show, File(u)) => editor(u.clone(), None),
-        (Show, Delta(d)) => editor(d.new_file.clone(), None),
-        (Show, Hunk(h)) => editor(h.new_file.clone(), Some(h.first_diff_line())),
-        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u),
-        (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, &d.new_file),
+        (Show, File(u)) => editor(u.as_path(), None),
+        (Show, Delta(d)) => editor(d.new_file.as_path(), None),
+        (Show, Hunk(h)) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
+        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u.to_str()?),
+        (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, d.new_file.to_str()?),
         (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
-        (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, &d.new_file),
+        (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, d.new_file.to_str()?),
         (Unstage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::unstage_patch_cmd),
         (RebaseInteractive, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
         (CommitFixup, Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r),
@@ -404,7 +404,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         })),
         (Discard, Delta(d)) => {
             if d.old_file == d.new_file {
-                cmd_arg(git::checkout_file_cmd, &d.old_file)
+                cmd_arg(git::checkout_file_cmd, d.old_file.to_str()?)
             } else {
                 // TODO Discard file move
                 None
@@ -438,9 +438,10 @@ fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     }))
 }
 
-fn editor<'a, B: Backend>(file: String, line: Option<u32>) -> Option<OpClosure<'a, B>> {
+fn editor<'a, B: Backend>(file: &Path, line: Option<u32>) -> Option<OpClosure<'a, B>> {
+    let file = file.to_str().unwrap().to_string();
+
     Some(Box::new(move |terminal, state| {
-        let file: &str = &file;
         let editor = std::env::var("EDITOR").expect("EDITOR not set");
         let mut cmd = Command::new(editor.clone());
         let args = match line {

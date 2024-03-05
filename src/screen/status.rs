@@ -114,7 +114,7 @@ fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
                 id: path.to_string().into(),
                 display: Line::styled(path.to_string(), &style.file_header),
                 depth: 1,
-                target_data: Some(items::TargetData::File(path.to_string())),
+                target_data: Some(items::TargetData::File(path.into())),
                 ..Default::default()
             })
         })
@@ -136,7 +136,7 @@ fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
                 id: path.to_string().into(),
                 display: Line::styled(path.to_string(), &style.file_header),
                 depth: 1,
-                target_data: Some(items::TargetData::File(path.to_string())),
+                target_data: Some(items::TargetData::File(path.into())),
                 ..Default::default()
             })
         })

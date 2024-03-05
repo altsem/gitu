@@ -1,6 +1,5 @@
-use std::fmt::Display;
-
 use itertools::Itertools;
+use std::{fmt::Display, path::PathBuf};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Diff {
@@ -10,8 +9,8 @@ pub(crate) struct Diff {
 #[derive(Debug, Clone)]
 pub(crate) struct Delta {
     pub file_header: String,
-    pub old_file: String,
-    pub new_file: String,
+    pub old_file: PathBuf,
+    pub new_file: PathBuf,
     pub hunks: Vec<Hunk>,
     pub status: git2::Delta,
 }
@@ -19,7 +18,7 @@ pub(crate) struct Delta {
 #[derive(Debug, Clone)]
 pub(crate) struct Hunk {
     pub file_header: String,
-    pub new_file: String,
+    pub new_file: PathBuf,
     pub new_start: u32,
     pub header: String,
     pub content: String,

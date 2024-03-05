@@ -14,6 +14,7 @@ use similar::ChangeTag;
 use similar::TextDiff;
 use std::borrow::Cow;
 use std::iter;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 #[derive(Default, Clone, Debug)]
@@ -30,7 +31,7 @@ pub(crate) struct Item {
 #[derive(Clone, Debug)]
 pub(crate) enum TargetData {
     Commit(String),
-    File(String),
+    File(PathBuf),
     Delta(Delta),
     Hunk(Hunk),
     Branch(String),
@@ -52,7 +53,7 @@ pub(crate) fn create_diff_items<'a>(
                 format!(
                     "{}   {}",
                     format!("{:?}", delta.status).to_lowercase(),
-                    delta.new_file.clone()
+                    delta.new_file.to_string_lossy()
                 ),
                 &config.style.file_header,
             ),

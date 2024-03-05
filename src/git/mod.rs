@@ -11,7 +11,7 @@ use crate::{git2_opts, Res};
 use std::{
     fs,
     io::ErrorKind,
-    path::Path,
+    path::{Path, PathBuf},
     process::Command,
     str::{self},
 };
@@ -153,9 +153,8 @@ pub(crate) fn convert_diff(diff: git2::Diff) -> Res<Diff> {
     Ok(Diff { deltas })
 }
 
-// TODO Store PathBuf's instead?
-fn path(file: &git2::DiffFile) -> String {
-    file.path().unwrap().to_str().unwrap().to_string()
+fn path(file: &git2::DiffFile) -> PathBuf {
+    file.path().unwrap().to_path_buf()
 }
 
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
