@@ -64,7 +64,7 @@ impl TestContext {
             self.size,
             &Args {
                 command: None,
-                exit_immediately: false,
+                print: false,
                 log: false,
             },
             config::init_test_config().unwrap(),

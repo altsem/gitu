@@ -6,8 +6,9 @@ use clap::{Parser, Subcommand};
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Commands>,
+    /// Print one frame and exit. Useful for debugging.
     #[clap(long, action, default_value_t = false)]
-    pub exit_immediately: bool,
+    pub print: bool,
     /// Enable logging to 'gitu.log'
     #[clap(long, action, default_value_t = false)]
     pub log: bool,

@@ -26,14 +26,18 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     log::debug!("Initializing terminal backend");
     let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
 
-    enable_raw_mode()?;
-    stderr().execute(EnterAlternateScreen)?;
+    if !args.print {
+        enable_raw_mode()?;
+        stderr().execute(EnterAlternateScreen)?;
+    }
 
     log::debug!("Starting app");
     let result = gitu::run(&args, &mut terminal);
 
-    stderr().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
+    if !args.print {
+        stderr().execute(LeaveAlternateScreen)?;
+        disable_raw_mode()?;
+    }
 
     result?;
 

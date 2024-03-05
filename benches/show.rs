@@ -13,7 +13,7 @@ fn show(c: &mut Criterion) {
                         reference: "f4de01c0a12794d7b42a77b2138aa64119b90ea5".into(),
                     }),
                     log: false,
-                    exit_immediately: true,
+                    print: true,
                 },
                 &mut terminal,
             )

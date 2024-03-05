@@ -75,7 +75,7 @@ impl State {
         Ok(Self {
             repo,
             config,
-            quit: args.exit_immediately,
+            quit: false,
             screens,
             pending_submenu_op: SubmenuOp::None,
             cmd_meta: None,
@@ -222,6 +222,10 @@ pub fn run<B: Backend>(args: &cli::Args, terminal: &mut Terminal<B>) -> Result<(
 
     log::debug!("Drawing initial frame");
     terminal.draw(|frame| ui::ui::<B>(frame, &mut state))?;
+
+    if args.print {
+        return Ok(());
+    }
 
     while !state.quit {
         log::debug!("Awaiting event");
