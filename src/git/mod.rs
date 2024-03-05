@@ -212,9 +212,9 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
         .map(|line| format!("    {}", line))
         .join("\n");
 
-    let offset = chrono::FixedOffset::east_opt(commit.time().offset_minutes() * 60).unwrap();
+    let offset = chrono::FixedOffset::east_opt(author.when().offset_minutes() * 60).unwrap();
     let time = chrono::DateTime::with_timezone(
-        &chrono::DateTime::from_timestamp(commit.time().seconds(), 0).unwrap(),
+        &chrono::DateTime::from_timestamp(author.when().seconds(), 0).unwrap(),
         &offset,
     );
 
