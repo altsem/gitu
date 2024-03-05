@@ -5,7 +5,7 @@ use crate::keybinds::Keybind;
 use crate::keybinds::Op;
 use crate::keybinds::SubmenuOp;
 use crate::list_target_ops;
-use crate::CmdMeta;
+use crate::CmdMetaBuffer;
 use crate::State;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
@@ -21,9 +21,12 @@ enum Popup<'a> {
 }
 
 pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
-    let (popup_line_count, popup): (usize, Popup) = if let Some(ref cmd) = state.cmd_meta {
-        let lines = format_command(&state.config, cmd);
-        (lines.len(), command_popup(lines))
+    let (popup_line_count, popup): (usize, Popup) = if let Some(ref error) = state.error_buffer {
+        let text = error.0.clone().red().bold();
+        (1, command_popup(text.into()))
+    } else if let Some(ref cmd) = state.cmd_meta_buffer {
+        let text = format_command(&state.config, cmd);
+        (text.lines.len(), command_popup(text))
     } else if state.pending_submenu_op != SubmenuOp::None {
         format_keybinds_menu::<B>(
             &state.config,
@@ -77,7 +80,7 @@ fn prompt_text(prompt: Op) -> std::borrow::Cow<'static, str> {
     .into()
 }
 
-fn format_command<'a>(config: &Config, cmd: &'a CmdMeta) -> Vec<Line<'a>> {
+fn format_command<'a>(config: &Config, cmd: &'a CmdMetaBuffer) -> Text<'a> {
     [Line::styled(
         format!(
             "$ {}{}",
@@ -89,6 +92,7 @@ fn format_command<'a>(config: &Config, cmd: &'a CmdMeta) -> Vec<Line<'a>> {
     .into_iter()
     .chain(cmd.out.iter().flat_map(|out| Text::raw(out).lines))
     .collect::<Vec<Line>>()
+    .into()
 }
 
 fn format_keybinds_menu<'b, B: Backend>(
@@ -205,9 +209,9 @@ fn format_keybinds_menu<'b, B: Backend>(
     )
 }
 
-fn command_popup(lines: Vec<Line>) -> Popup {
+fn command_popup(text: Text<'_>) -> Popup {
     Popup::Paragraph(
-        Paragraph::new(lines).block(
+        Paragraph::new(text).block(
             Block::new()
                 .borders(Borders::TOP)
                 .border_style(Style::new().dim())

@@ -30,10 +30,12 @@ const APP_NAME: &str = "gitu";
 
 type Res<T> = Result<T, Box<dyn Error>>;
 
-pub(crate) struct CmdMeta {
+pub(crate) struct CmdMetaBuffer {
     pub(crate) args: Cow<'static, str>,
     pub(crate) out: Option<String>,
 }
+
+pub(crate) struct ErrorBuffer(String);
 
 pub struct State {
     pub repo: Rc<Repository>,
@@ -41,7 +43,8 @@ pub struct State {
     quit: bool,
     screens: Vec<Screen>,
     pending_submenu_op: SubmenuOp,
-    pub(crate) cmd_meta: Option<CmdMeta>,
+    pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
+    pub(crate) error_buffer: Option<ErrorBuffer>,
     prompt: Option<Op>,
     prompt_state: TextState<'static>,
 }
@@ -78,7 +81,8 @@ impl State {
             quit: false,
             screens,
             pending_submenu_op: SubmenuOp::None,
-            cmd_meta: None,
+            cmd_meta_buffer: None,
+            error_buffer: None,
             prompt: None,
             prompt_state: TextState::new(),
         })
@@ -129,13 +133,13 @@ impl State {
         display: S,
         mut cmd: F,
     ) -> Res<()> {
-        self.cmd_meta = Some(CmdMeta {
+        self.cmd_meta_buffer = Some(CmdMetaBuffer {
             args: display.into(),
             out: None,
         });
         terminal.draw(|frame| ui::ui::<B>(frame, self))?;
 
-        self.cmd_meta.as_mut().unwrap().out = Some(cmd(self)?);
+        self.cmd_meta_buffer.as_mut().unwrap().out = Some(cmd(self)?);
         self.screen_mut().update()?;
 
         Ok(())
@@ -153,7 +157,7 @@ impl State {
 
         let out = child.wait_with_output()?;
 
-        self.cmd_meta = Some(CmdMeta {
+        self.cmd_meta_buffer = Some(CmdMetaBuffer {
             args: command_args(&cmd),
             out: Some(
                 String::from_utf8(out.stderr.clone())
@@ -254,9 +258,10 @@ pub fn update<B: Backend>(
                 if state.prompt_state.is_focused() {
                     state.prompt_state.handle_key_event(key)
                 } else if key.kind == KeyEventKind::Press {
-                    state.cmd_meta = None;
+                    state.cmd_meta_buffer = None;
+                    state.error_buffer = None;
 
-                    handle_op(terminal, state, key)?;
+                    handle_key_input(terminal, state, key)?;
                 }
             }
             _ => (),
@@ -289,7 +294,7 @@ pub fn update<B: Backend>(
     Ok(())
 }
 
-fn handle_op<B: Backend>(
+fn handle_key_input<B: Backend>(
     terminal: &mut Terminal<B>,
     state: &mut State,
     key: event::KeyEvent,
@@ -301,59 +306,75 @@ fn handle_op<B: Backend>(
     };
 
     if let Some(op) = keybinds::op_of_key_event(pending, key) {
-        use Op::*;
         let was_submenu = state.pending_submenu_op != SubmenuOp::None;
         state.pending_submenu_op = SubmenuOp::None;
 
-        match op {
-            Quit => {
-                if was_submenu {
-                    // Do nothing, already cleared
-                } else {
-                    state.screens.pop();
-                    if let Some(screen) = state.screens.last_mut() {
-                        screen.update()?;
-                    } else {
-                        state.quit = true
-                    }
-                }
-            }
-            Refresh => state.screen_mut().update()?,
-            ToggleSection => state.screen_mut().toggle_section(),
-            SelectPrevious => state.screen_mut().select_previous(),
-            SelectNext => state.screen_mut().select_next(),
-            HalfPageUp => state.screen_mut().scroll_half_page_up(),
-            HalfPageDown => state.screen_mut().scroll_half_page_down(),
-            CheckoutNewBranch => {
-                state.prompt = Some(Op::CheckoutNewBranch);
-                state.prompt_state.focus();
-            }
-            Commit => {
-                state.issue_subscreen_command(terminal, git::commit_cmd())?;
-            }
-            CommitAmend => {
-                state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
-            }
-            Submenu(op) => state.pending_submenu_op = op,
-            LogCurrent => state.goto_log_screen(None),
-            FetchAll => state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?,
-            Pull => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
-            Push => state.run_external_cmd(terminal, &[], git::push_cmd())?,
-            Target(target_op) => {
-                if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
-                    if let Some(mut closure) = closure_by_target_op(act, &target_op) {
-                        closure(terminal, state)?;
-                    }
-                }
-            }
-            RebaseAbort => {
-                state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?;
-            }
-            RebaseContinue => {
-                state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?;
-            }
-            ShowRefs => state.goto_refs_screen(),
+        let result = handle_op(op, was_submenu, state, terminal);
+
+        if let Err(error) = result {
+            state.error_buffer = Some(ErrorBuffer(error.to_string()));
         }
+    }
+
+    Ok(())
+}
+
+fn handle_op<B: Backend>(
+    op: Op,
+    was_submenu: bool,
+    state: &mut State,
+    terminal: &mut Terminal<B>,
+) -> Result<(), Box<dyn Error>> {
+    use Op::*;
+
+    match op {
+        Quit => {
+            if was_submenu {
+                // Do nothing, already cleared
+            } else {
+                state.screens.pop();
+                if let Some(screen) = state.screens.last_mut() {
+                    screen.update()?;
+                } else {
+                    state.quit = true
+                }
+            }
+        }
+        Refresh => state.screen_mut().update()?,
+        ToggleSection => state.screen_mut().toggle_section(),
+        SelectPrevious => state.screen_mut().select_previous(),
+        SelectNext => state.screen_mut().select_next(),
+        HalfPageUp => state.screen_mut().scroll_half_page_up(),
+        HalfPageDown => state.screen_mut().scroll_half_page_down(),
+        CheckoutNewBranch => {
+            state.prompt = Some(Op::CheckoutNewBranch);
+            state.prompt_state.focus();
+        }
+        Commit => {
+            state.issue_subscreen_command(terminal, git::commit_cmd())?;
+        }
+        CommitAmend => {
+            state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
+        }
+        Submenu(op) => state.pending_submenu_op = op,
+        LogCurrent => state.goto_log_screen(None),
+        FetchAll => state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?,
+        Pull => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
+        Push => state.run_external_cmd(terminal, &[], git::push_cmd())?,
+        Target(target_op) => {
+            if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
+                if let Some(mut closure) = closure_by_target_op(act, &target_op) {
+                    closure(terminal, state)?;
+                }
+            }
+        }
+        RebaseAbort => {
+            state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?;
+        }
+        RebaseContinue => {
+            state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?;
+        }
+        ShowRefs => state.goto_refs_screen(),
     }
 
     Ok(())
