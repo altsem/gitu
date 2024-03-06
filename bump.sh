@@ -9,4 +9,4 @@ git cliff --tag "$version" > CHANGELOG.md
 
 git add Cargo.toml Cargo.lock CHANGELOG.md
 git commit -m "chore(release): prepare for $version"
-git tag "$version"
+git tag -am "$version" "$version"
