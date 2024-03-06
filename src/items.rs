@@ -6,7 +6,6 @@ use crate::Res;
 use git2::Oid;
 use git2::Repository;
 use ratatui::style::Style;
-use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::text::Span;
 use similar::Algorithm;
@@ -123,7 +122,7 @@ fn format_changes(
     let lines = changes
         .iter()
         .map(|change| {
-            let style = match change.tag() {
+            let line_style = match change.tag() {
                 ChangeTag::Equal => Style::new(),
                 ChangeTag::Delete => (&style.line_removed).into(),
                 ChangeTag::Insert => (&style.line_added).into(),
@@ -138,18 +137,18 @@ fn format_changes(
             let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
 
             Line::from(
-                iter::once(Span::styled(prefix, style))
+                iter::once(Span::styled(prefix, line_style))
                     .chain(change.iter_strings_lossy().map(|(emph, value)| {
                         Span::styled(
                             value.to_string(),
                             if some_emph {
                                 if emph {
-                                    style.bold()
+                                    line_style.patch(&style.line_highlight.changed)
                                 } else {
-                                    style.dim()
+                                    line_style.patch(&style.line_highlight.unchanged)
                                 }
                             } else {
-                                style
+                                line_style
                             },
                         )
                     }))

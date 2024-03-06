@@ -22,10 +22,14 @@ hunk_header.fg = "blue"
 
 line_added.fg = "green"
 line_removed.fg = "red"
+line_highlight.changed.mods = "BOLD"
+line_highlight.unchanged.mods = "DIM"
 
 selection_line.mods = "BOLD"
 selection_bar.fg = "blue"
 selection_bar.mods = "DIM"
+# You may want to set `selection_area.bg` to a nice background color.
+# Looks horrible with regular terminal colors, so is therefore not set.
 selection_area.bg = "reset"
 
 hash.fg = "yellow"

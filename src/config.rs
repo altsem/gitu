@@ -21,6 +21,7 @@ pub struct StyleConfig {
 
     pub line_added: StyleConfigEntry,
     pub line_removed: StyleConfigEntry,
+    pub line_highlight: LineHighlightConfig,
 
     pub selection_line: StyleConfigEntry,
     pub selection_bar: StyleConfigEntry,
@@ -33,6 +34,14 @@ pub struct StyleConfig {
 
     pub command: StyleConfigEntry,
     pub hotkey: StyleConfigEntry,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct LineHighlightConfig {
+    #[serde(default)]
+    pub changed: StyleConfigEntry,
+    #[serde(default)]
+    pub unchanged: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]
