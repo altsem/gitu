@@ -3,7 +3,7 @@ use crate::git::diff::Delta;
 use crate::git::diff::Diff;
 use crate::git::diff::Hunk;
 use crate::Res;
-use git2::Oid;
+use git2::Commit;
 use git2::Repository;
 use ratatui::style::Style;
 use ratatui::text::Line;
@@ -179,8 +179,12 @@ pub(crate) fn log(
         .references()?
         .filter_map(Result::ok)
         .filter_map(
-            |reference| match (reference.target(), reference.shorthand()) {
-                (Some(target), Some(name)) => {
+            |reference| match (reference.peel_to_commit(), reference.shorthand()) {
+                (Ok(target), Some(name)) => {
+                    if name.ends_with("/HEAD") {
+                        return None;
+                    }
+
                     let style: Style = if reference.is_remote() {
                         &style.remote
                     } else if reference.is_tag() {
@@ -195,7 +199,7 @@ pub(crate) fn log(
                 _ => None,
             },
         )
-        .collect::<Vec<(Oid, Span)>>();
+        .collect::<Vec<(Commit, Span)>>();
 
     Ok(revwalk
         .map(|oid_result| -> Res<Item> {
@@ -208,7 +212,7 @@ pub(crate) fn log(
                     .chain(
                         references
                             .iter()
-                            .filter(|(ref_oid, _)| ref_oid == &oid)
+                            .filter(|(commit, _)| commit.id() == oid)
                             .map(|(_, name)| name.clone()),
                     )
                     .chain([commit.summary().unwrap_or("").to_string().into()]),

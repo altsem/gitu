@@ -69,7 +69,9 @@ fn staged_file() {
 fn log() {
     let mut ctx = TestContext::setup_clone(60, 20);
     commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
+    run(ctx.dir.path(), &["git", "tag", "-am", ".", "annotated"]);
     commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
+    run(ctx.dir.path(), &["git", "tag", "a-tag"]);
 
     let mut state = ctx.init_state();
     gitu::update(&mut ctx.term, &mut state, &[key('l'), key('l')]).unwrap();
