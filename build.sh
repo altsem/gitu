@@ -8,4 +8,4 @@ cargo clippy -- -Dwarnings
 cargo fmt --check
 cargo deny check
 cargo machete
-git cliff
+git cliff --unreleased
