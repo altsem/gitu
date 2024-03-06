@@ -13,6 +13,11 @@ pub fn backend() -> impl Backend {
     CrosstermBackend::new(stderr())
 }
 
+pub fn enter_alternate_screen() -> Res<()> {
+    stderr().execute(EnterAlternateScreen)?;
+    Ok(())
+}
+
 pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
     stderr().execute(EnterAlternateScreen)?;
     let result = fun();

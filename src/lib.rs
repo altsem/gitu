@@ -166,6 +166,12 @@ impl State {
             ),
         });
 
+        // Prevents cursor flash when exiting editor
+        terminal.hide_cursor()?;
+
+        // In case the command left the alternate screen (editors would)
+        term::enter_alternate_screen()?;
+
         terminal.clear()?;
         self.screen_mut().update()?;
 
