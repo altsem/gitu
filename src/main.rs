@@ -1,59 +1,59 @@
-use std::{
-    error::Error,
-    io::{stderr, BufWriter},
-    process, thread,
-};
-
 use clap::Parser;
-use crossterm::{
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
-};
+use gitu::{cli::Args, term, Res};
 use log::LevelFilter;
-use ratatui::{prelude::CrosstermBackend, Terminal};
+use ratatui::Terminal;
 use signal_hook::{consts::SIGTERM, iterator::Signals};
+use std::{backtrace::Backtrace, panic, process, thread};
 
-pub fn main() -> Result<(), Box<dyn Error>> {
-    let args = gitu::cli::Args::parse();
+pub fn main() -> Res<()> {
+    let args = Args::parse();
 
     if args.log {
         simple_logging::log_to_file("gitu.log", LevelFilter::Trace)?;
     }
 
-    log::debug!("Setting up signal handlers");
     setup_signal_handler()?;
 
-    log::debug!("Initializing terminal backend");
-    let mut terminal = Terminal::new(CrosstermBackend::new(BufWriter::new(stderr())))?;
+    panic::set_hook(Box::new(|panic_info| {
+        term::cleanup_alternate_screen();
+        term::cleanup_raw_mode();
 
-    if !args.print {
-        enable_raw_mode()?;
-        stderr().execute(EnterAlternateScreen)?;
+        eprintln!("{}", panic_info);
+        eprintln!("trace: \n{}", Backtrace::force_capture());
+    }));
+
+    if args.print {
+        setup_term_and_run(&args)?;
+    } else {
+        term::alternate_screen(|| term::raw_mode(|| setup_term_and_run(&args)))?
     }
-
-    log::debug!("Starting app");
-    let result = gitu::run(&args, &mut terminal);
-
-    if !args.print {
-        stderr().execute(LeaveAlternateScreen)?;
-        disable_raw_mode()?;
-    }
-
-    result?;
 
     Ok(())
 }
 
-fn setup_signal_handler() -> Result<(), Box<dyn Error>> {
+fn setup_signal_handler() -> Res<()> {
+    log::debug!("Setting up signal handlers");
     let mut signals = Signals::new([SIGTERM])?;
+
     thread::spawn(move || {
         for sig in signals.forever() {
             if let SIGTERM = sig {
-                let mut terminal = Terminal::new(CrosstermBackend::new(stderr())).unwrap();
+                let mut terminal = Terminal::new(term::backend()).unwrap();
                 terminal.show_cursor().unwrap();
                 process::exit(sig);
             };
         }
     });
     Ok(())
+}
+
+fn setup_term_and_run(args: &Args) -> Res<()> {
+    log::debug!("Initializing terminal backend");
+    let mut terminal = Terminal::new(term::backend())?;
+
+    // Prevents cursor flash when opening gitu
+    terminal.hide_cursor()?;
+
+    log::debug!("Starting app");
+    gitu::run(args, &mut terminal)
 }

@@ -5,6 +5,7 @@ mod git2_opts;
 mod items;
 mod keybinds;
 mod screen;
+pub mod term;
 mod ui;
 
 use config::Config;
@@ -28,7 +29,7 @@ use tui_prompts::{prelude::*, State as _};
 
 const APP_NAME: &str = "gitu";
 
-type Res<T> = Result<T, Box<dyn Error>>;
+pub type Res<T> = Result<T, Box<dyn Error>>;
 
 pub(crate) struct CmdMetaBuffer {
     pub(crate) args: Cow<'static, str>,
