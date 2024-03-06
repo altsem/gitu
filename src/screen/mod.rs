@@ -166,13 +166,14 @@ impl<'a> Screen {
         }
     }
 
-    pub(crate) fn clamp_cursor(&mut self) {
-        self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1))
-    }
-
     pub(crate) fn update(&mut self) -> Res<()> {
         self.items = (self.refresh_items)()?;
+        self.clamp_cursor();
         Ok(())
+    }
+
+    fn clamp_cursor(&mut self) {
+        self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1))
     }
 
     pub(crate) fn collapsed_items_iter(&'a self) -> impl Iterator<Item = (usize, &Item)> {

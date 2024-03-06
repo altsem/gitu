@@ -286,8 +286,7 @@ pub fn update<B: Backend>(
         }
     }
 
-    if let Some(screen) = state.screens.last_mut() {
-        screen.clamp_cursor();
+    if state.screens.last_mut().is_some() {
         terminal.draw(|frame| ui::ui::<B>(frame, state))?;
     }
 
