@@ -16,6 +16,7 @@ use items::{Item, TargetData};
 use itertools::Itertools;
 use keybinds::TargetOp;
 use ratatui::prelude::*;
+use state::State;
 use std::{
     borrow::Cow,
     error::Error,
@@ -26,6 +27,8 @@ use std::{
     rc::Rc,
 };
 use strum::IntoEnumIterator;
+
+use crate::keybinds::{Op, SubmenuOp};
 
 const APP_NAME: &str = "gitu";
 
@@ -98,6 +101,38 @@ pub(crate) fn list_target_ops<B: Backend>(
     TargetOp::iter()
         .filter(|target_op| action_by_target_op::<B>(data.clone(), target_op).is_some())
         .map(|op| (op, data.clone()))
+}
+
+pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Terminal<B>) -> Res<()> {
+    use Op::*;
+
+    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
+    state.pending_submenu_op = SubmenuOp::None;
+
+    match op {
+        Quit => state.handle_quit(was_submenu)?,
+        Refresh => state.screen_mut().update()?,
+        ToggleSection => state.screen_mut().toggle_section(),
+        SelectPrevious => state.screen_mut().select_previous(),
+        SelectNext => state.screen_mut().select_next(),
+        HalfPageUp => state.screen_mut().scroll_half_page_up(),
+        HalfPageDown => state.screen_mut().scroll_half_page_down(),
+        CheckoutNewBranch => state.prompt.set(Op::CheckoutNewBranch),
+        Commit => state.issue_subscreen_command(term, git::commit_cmd())?,
+        CommitAmend => state.issue_subscreen_command(term, git::commit_amend_cmd())?,
+        Submenu(op) => state.pending_submenu_op = op,
+        LogCurrent => state.goto_log_screen(None),
+        FetchAll => state.run_external_cmd(term, &[], git::fetch_all_cmd())?,
+        Pull => state.run_external_cmd(term, &[], git::pull_cmd())?,
+        Push => state.run_external_cmd(term, &[], git::push_cmd())?,
+        Target(TargetOp::Discard) => state.prompt_action::<B>(Target(TargetOp::Discard)),
+        Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
+        RebaseAbort => state.run_external_cmd(term, &[], git::rebase_abort_cmd())?,
+        RebaseContinue => state.run_external_cmd(term, &[], git::rebase_continue_cmd())?,
+        ShowRefs => state.goto_refs_screen(),
+    }
+
+    Ok(())
 }
 
 type Action<B> = Box<dyn FnMut(&mut state::State, &mut Terminal<B>) -> Res<()>>;

@@ -16,6 +16,7 @@ use tui_prompts::Status;
 use crate::cli;
 use crate::config::Config;
 use crate::git;
+use crate::handle_op;
 use crate::items::TargetData;
 use crate::keybinds;
 use crate::keybinds::Op;
@@ -160,43 +161,11 @@ impl State {
         };
 
         if let Some(op) = keybinds::op_of_key_event(pending, key) {
-            let result = self.handle_op(op, term);
+            let result = handle_op(self, op, term);
 
             if let Err(error) = result {
                 self.error_buffer = Some(ErrorBuffer(error.to_string()));
             }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn handle_op<B: Backend>(&mut self, op: Op, term: &mut Terminal<B>) -> Res<()> {
-        use Op::*;
-
-        let was_submenu = self.pending_submenu_op != SubmenuOp::None;
-        self.pending_submenu_op = SubmenuOp::None;
-
-        match op {
-            Quit => self.handle_quit(was_submenu)?,
-            Refresh => self.screen_mut().update()?,
-            ToggleSection => self.screen_mut().toggle_section(),
-            SelectPrevious => self.screen_mut().select_previous(),
-            SelectNext => self.screen_mut().select_next(),
-            HalfPageUp => self.screen_mut().scroll_half_page_up(),
-            HalfPageDown => self.screen_mut().scroll_half_page_down(),
-            CheckoutNewBranch => self.prompt.set(Op::CheckoutNewBranch),
-            Commit => self.issue_subscreen_command(term, git::commit_cmd())?,
-            CommitAmend => self.issue_subscreen_command(term, git::commit_amend_cmd())?,
-            Submenu(op) => self.pending_submenu_op = op,
-            LogCurrent => self.goto_log_screen(None),
-            FetchAll => self.run_external_cmd(term, &[], git::fetch_all_cmd())?,
-            Pull => self.run_external_cmd(term, &[], git::pull_cmd())?,
-            Push => self.run_external_cmd(term, &[], git::push_cmd())?,
-            Target(TargetOp::Discard) => self.prompt_action::<B>(Target(TargetOp::Discard)),
-            Target(target_op) => self.try_dispatch_target_action(target_op, term)?,
-            RebaseAbort => self.run_external_cmd(term, &[], git::rebase_abort_cmd())?,
-            RebaseContinue => self.run_external_cmd(term, &[], git::rebase_continue_cmd())?,
-            ShowRefs => self.goto_refs_screen(),
         }
 
         Ok(())
