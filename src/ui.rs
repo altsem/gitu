@@ -49,7 +49,11 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
         [
             Constraint::Min(1),
             Constraint::Length(popup_len),
-            Constraint::Length(if state.prompt.is_some() { 2 } else { 0 }),
+            Constraint::Length(if state.prompt.pending_op.is_some() {
+                2
+            } else {
+                0
+            }),
         ],
     )
     .split(frame.size());
@@ -62,10 +66,10 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
         Popup::Table(table) => frame.render_widget(table, layout[1]),
     }
 
-    if let Some(prompt) = state.prompt {
+    if let Some(prompt) = state.prompt.pending_op {
         let prompt = TextPrompt::new(prompt_text(prompt)).with_block(popup_block());
-        frame.render_stateful_widget(prompt, layout[2], &mut state.prompt_state);
-        let (cx, cy) = state.prompt_state.cursor();
+        frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
+        let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
     }
 }

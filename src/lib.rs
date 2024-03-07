@@ -4,6 +4,7 @@ mod git;
 mod git2_opts;
 mod items;
 mod keybinds;
+mod prompt;
 mod screen;
 pub mod term;
 mod ui;
@@ -47,8 +48,7 @@ pub struct State {
     pending_submenu_op: SubmenuOp,
     pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
     pub(crate) error_buffer: Option<ErrorBuffer>,
-    prompt: Option<Op>,
-    prompt_state: TextState<'static>,
+    prompt: prompt::Prompt,
 }
 
 impl State {
@@ -85,8 +85,7 @@ impl State {
             pending_submenu_op: SubmenuOp::None,
             cmd_meta_buffer: None,
             error_buffer: None,
-            prompt: None,
-            prompt_state: TextState::new(),
+            prompt: prompt::Prompt::new(),
         })
     }
 
@@ -263,8 +262,8 @@ pub fn update<B: Backend>(
                 }
             }
             Event::Key(key) => {
-                if state.prompt_state.is_focused() {
-                    state.prompt_state.handle_key_event(key)
+                if state.prompt.state.is_focused() {
+                    state.prompt.state.handle_key_event(key)
                 } else if key.kind == KeyEventKind::Press {
                     state.cmd_meta_buffer = None;
                     state.error_buffer = None;
@@ -275,34 +274,7 @@ pub fn update<B: Backend>(
             _ => (),
         }
 
-        if state.prompt_state.status() == Status::Aborted {
-            state.prompt = None;
-            state.prompt_state = TextState::new();
-        } else if let Some(prompt) = state.prompt {
-            match (state.prompt_state.status(), prompt) {
-                (Status::Done, Op::CheckoutNewBranch) => {
-                    let name = state.prompt_state.value().to_string();
-                    cmd_arg(git::checkout_new_branch_cmd, name.into()).unwrap()(terminal, state)?;
-                    reset_prompt(state, terminal)?;
-                }
-                (Status::Pending, Op::Target(TargetOp::Discard)) => {
-                    match state.prompt_state.value() {
-                        "y" => {
-                            let mut action =
-                                get_action(clone_target_data(state), TargetOp::Discard).unwrap();
-                            action(terminal, state)?;
-                            reset_prompt(state, terminal)?;
-                        }
-                        "" => (),
-                        _ => {
-                            state.error_buffer = Some(ErrorBuffer(format!("{:?} aborted", prompt)));
-                            reset_prompt(state, terminal)?;
-                        }
-                    }
-                }
-                _ => (),
-            }
-        }
+        update_prompt(state, terminal)?;
     }
 
     if state.screens.last_mut().is_some() {
@@ -312,20 +284,40 @@ pub fn update<B: Backend>(
     Ok(())
 }
 
+fn update_prompt<B: Backend>(state: &mut State, terminal: &mut Terminal<B>) -> Res<()> {
+    if state.prompt.state.status() == Status::Aborted {
+        state.prompt.reset(terminal)?;
+    } else if let Some(pending_prompt) = state.prompt.pending_op {
+        match (state.prompt.state.status(), pending_prompt) {
+            (Status::Done, Op::CheckoutNewBranch) => {
+                let name = state.prompt.state.value().to_string();
+                cmd_arg(git::checkout_new_branch_cmd, name.into()).unwrap()(terminal, state)?;
+                state.prompt.reset(terminal)?;
+            }
+            (Status::Pending, Op::Target(TargetOp::Discard)) => match state.prompt.state.value() {
+                "y" => {
+                    let mut action =
+                        get_action(clone_target_data(state), TargetOp::Discard).unwrap();
+                    action(terminal, state)?;
+                    state.prompt.reset(terminal)?;
+                }
+                "" => (),
+                _ => {
+                    state.error_buffer = Some(ErrorBuffer(format!("{:?} aborted", pending_prompt)));
+                    state.prompt.reset(terminal)?;
+                }
+            },
+            _ => (),
+        }
+    }
+
+    Ok(())
+}
+
 fn clone_target_data(state: &mut State) -> Option<TargetData> {
     let screen = state.screen();
     let selected = screen.get_selected_item();
     selected.target_data.clone()
-}
-
-fn reset_prompt<B: Backend>(
-    state: &mut State,
-    terminal: &mut Terminal<B>,
-) -> Result<(), Box<dyn Error>> {
-    state.prompt = None;
-    state.prompt_state = TextState::new();
-    terminal.hide_cursor()?;
-    Ok(())
 }
 
 fn handle_key_input<B: Backend>(
@@ -381,8 +373,7 @@ fn handle_op<B: Backend>(
         HalfPageUp => state.screen_mut().scroll_half_page_up(),
         HalfPageDown => state.screen_mut().scroll_half_page_down(),
         CheckoutNewBranch => {
-            state.prompt = Some(Op::CheckoutNewBranch);
-            state.prompt_state.focus();
+            state.prompt.set(Op::CheckoutNewBranch);
         }
         Commit => {
             state.issue_subscreen_command(terminal, git::commit_cmd())?;
@@ -427,8 +418,7 @@ fn prompt_action<B: Backend>(state: &mut State, op: Op) {
         }
     }
 
-    state.prompt = Some(op);
-    state.prompt_state.focus();
+    state.prompt.set(op);
 }
 
 pub(crate) fn list_target_ops<B: Backend>(
