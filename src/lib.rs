@@ -332,10 +332,7 @@ fn handle_key_input<B: Backend>(
     };
 
     if let Some(op) = keybinds::op_of_key_event(pending, key) {
-        let was_submenu = state.pending_submenu_op != SubmenuOp::None;
-        state.pending_submenu_op = SubmenuOp::None;
-
-        let result = handle_op(op, was_submenu, state, terminal);
+        let result = handle_op(op, state, terminal);
 
         if let Err(error) = result {
             state.error_buffer = Some(ErrorBuffer(error.to_string()));
@@ -345,27 +342,14 @@ fn handle_key_input<B: Backend>(
     Ok(())
 }
 
-fn handle_op<B: Backend>(
-    op: Op,
-    was_submenu: bool,
-    state: &mut State,
-    terminal: &mut Terminal<B>,
-) -> Res<()> {
+fn handle_op<B: Backend>(op: Op, state: &mut State, terminal: &mut Terminal<B>) -> Res<()> {
     use Op::*;
 
+    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
+    state.pending_submenu_op = SubmenuOp::None;
+
     match op {
-        Quit => {
-            if was_submenu {
-                // Do nothing, already cleared
-            } else {
-                state.screens.pop();
-                if let Some(screen) = state.screens.last_mut() {
-                    screen.update()?;
-                } else {
-                    state.quit = true
-                }
-            }
-        }
+        Quit => handle_quit(state, was_submenu)?,
         Refresh => state.screen_mut().update()?,
         ToggleSection => state.screen_mut().toggle_section(),
         SelectPrevious => state.screen_mut().select_previous(),
@@ -385,6 +369,21 @@ fn handle_op<B: Backend>(
         RebaseAbort => state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?,
         RebaseContinue => state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?,
         ShowRefs => state.goto_refs_screen(),
+    }
+
+    Ok(())
+}
+
+fn handle_quit(state: &mut State, was_submenu: bool) -> Result<(), Box<dyn Error>> {
+    if was_submenu {
+        // Do nothing, already cleared
+    } else {
+        state.screens.pop();
+        if let Some(screen) = state.screens.last_mut() {
+            screen.update()?;
+        } else {
+            state.quit = true
+        }
     }
 
     Ok(())
