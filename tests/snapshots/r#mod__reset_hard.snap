@@ -3,18 +3,18 @@ source: tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
-    area: Rect { x: 0, y: 0, width: 60, height: 10 },
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
     content: [
-        "🢒On branch main                                             ",
-        "▌Your branch is up to date with 'origin/main'.              ",
-        "                                                            ",
-        " Recent commits                                             ",
-        " _______ main origin/main add initial-file                  ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
+        "🢒On branch main                                                                 ",
+        "▌Your branch is up to date with 'origin/main'.                                  ",
+        "                                                                                ",
+        " Recent commits                                                                 ",
+        " _______ main origin/main add initial-file                                      ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
