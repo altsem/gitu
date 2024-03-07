@@ -46,8 +46,8 @@ pub struct State {
     quit: bool,
     screens: Vec<Screen>,
     pending_submenu_op: SubmenuOp,
-    pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
-    pub(crate) error_buffer: Option<ErrorBuffer>,
+    cmd_meta_buffer: Option<CmdMetaBuffer>,
+    error_buffer: Option<ErrorBuffer>,
     prompt: prompt::Prompt,
 }
 
