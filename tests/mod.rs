@@ -17,7 +17,7 @@ fn help_menu() {
     let mut ctx = TestContext::setup_init(60, 20);
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('h')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('h')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -46,8 +46,8 @@ fn unstaged_changes() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('j'), key('j'), key_code(KeyCode::Tab)],
     )
     .unwrap();
@@ -74,7 +74,7 @@ fn log() {
     run(ctx.dir.path(), &["git", "tag", "a-tag"]);
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('l'), key('l')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('l'), key('l')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -86,8 +86,8 @@ fn log_other() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('l'), key('l'), key('j'), key('l'), key('o')],
     )
     .unwrap();
@@ -101,8 +101,8 @@ fn show() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('l'), key('l'), key_code(KeyCode::Enter)],
     )
     .unwrap();
@@ -162,7 +162,7 @@ fn hide_untracked() {
     let mut state = ctx.init_state();
     let mut config = state.repo.config().unwrap();
     config.set_str("status.showUntrackedFiles", "off").unwrap();
-    gitu::update(&mut ctx.term, &mut state, &[key('g')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('g')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -181,7 +181,7 @@ fn push() {
     commit(ctx.dir.path(), "new-file", "");
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('P'), key('p')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('P'), key('p')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -191,7 +191,7 @@ fn fetch_all() {
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('f'), key('a')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('f'), key('a')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -201,7 +201,7 @@ fn pull() {
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('F'), key('p')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('F'), key('p')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -210,7 +210,7 @@ fn discard_branch_confirm() {
     let mut ctx = TestContext::setup_clone(60, 10);
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('y'), key('j'), key('K')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('y'), key('j'), key('K')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -220,8 +220,8 @@ fn discard_branch() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('y'), key('j'), key('K'), key('y')],
     )
     .unwrap();
@@ -235,8 +235,8 @@ fn reset_menu() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('l'), key('l'), key('j'), key('x')],
     )
     .unwrap();
@@ -250,8 +250,8 @@ fn reset_soft() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('l'), key('l'), key('j'), key('x'), key('s'), key('q')],
     )
     .unwrap();
@@ -265,8 +265,8 @@ fn reset_mixed() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('l'), key('l'), key('j'), key('x'), key('m'), key('q')],
     )
     .unwrap();
@@ -280,8 +280,8 @@ fn reset_hard() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[key('l'), key('l'), key('j'), key('x'), key('h'), key('q')],
     )
     .unwrap();
@@ -295,7 +295,7 @@ fn show_refs() {
     run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
 
     let mut state = ctx.init_state();
-    gitu::update(&mut ctx.term, &mut state, &[key('y')]).unwrap();
+    gitu::update(&mut state, &mut ctx.term, &[key('y')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -305,8 +305,8 @@ fn checkout_new_branch() {
 
     let mut state = ctx.init_state();
     gitu::update(
-        &mut ctx.term,
         &mut state,
+        &mut ctx.term,
         &[
             key('b'),
             key('c'),

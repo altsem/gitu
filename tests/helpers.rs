@@ -71,7 +71,7 @@ impl TestContext {
         )
         .unwrap();
 
-        gitu::update(&mut self.term, &mut state, &[]).unwrap();
+        gitu::update(&mut state, &mut self.term, &[]).unwrap();
 
         state
     }

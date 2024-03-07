@@ -243,15 +243,15 @@ pub fn run<B: Backend>(args: &cli::Args, terminal: &mut Terminal<B>) -> Res<()> 
         let event = event::read()?;
 
         log::debug!("Updating");
-        update(terminal, &mut state, &[event])?;
+        update(&mut state, terminal, &[event])?;
     }
 
     Ok(())
 }
 
 pub fn update<B: Backend>(
-    terminal: &mut Terminal<B>,
     state: &mut State,
+    terminal: &mut Terminal<B>,
     events: &[Event],
 ) -> Res<()> {
     for event in events {
@@ -268,7 +268,7 @@ pub fn update<B: Backend>(
                     state.cmd_meta_buffer = None;
                     state.error_buffer = None;
 
-                    handle_key_input(terminal, state, key)?;
+                    handle_key_input(state, terminal, key)?;
                 }
             }
             _ => (),
@@ -321,8 +321,8 @@ fn clone_target_data(state: &mut State) -> Option<TargetData> {
 }
 
 fn handle_key_input<B: Backend>(
-    terminal: &mut Terminal<B>,
     state: &mut State,
+    terminal: &mut Terminal<B>,
     key: event::KeyEvent,
 ) -> Res<()> {
     let pending = if state.pending_submenu_op == SubmenuOp::Help {
@@ -332,7 +332,7 @@ fn handle_key_input<B: Backend>(
     };
 
     if let Some(op) = keybinds::op_of_key_event(pending, key) {
-        let result = handle_op(op, state, terminal);
+        let result = handle_op(state, op, terminal);
 
         if let Err(error) = result {
             state.error_buffer = Some(ErrorBuffer(error.to_string()));
@@ -342,7 +342,7 @@ fn handle_key_input<B: Backend>(
     Ok(())
 }
 
-fn handle_op<B: Backend>(op: Op, state: &mut State, terminal: &mut Terminal<B>) -> Res<()> {
+fn handle_op<B: Backend>(state: &mut State, op: Op, terminal: &mut Terminal<B>) -> Res<()> {
     use Op::*;
 
     let was_submenu = state.pending_submenu_op != SubmenuOp::None;
