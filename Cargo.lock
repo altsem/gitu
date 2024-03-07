@@ -599,7 +599,6 @@ dependencies = [
  "pretty_assertions",
  "ratatui",
  "serde",
- "signal-hook",
  "similar",
  "simple-logging",
  "strum",
