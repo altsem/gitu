@@ -45,10 +45,3 @@ The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this or
 
 Configuration is also loaded from `~/.config/gitu/config.toml`,
 you could copy the [default configuration](src/default_config.toml).
-
-### Development
-#### Profiling
-This project comes with pprof as a dev-dependency. You can run it with:
-`cargo bench --bench show -- --profile-time 5`
-
-A flamegraph would then be output to `target/criterion/show/profile/flamegraph.svg`

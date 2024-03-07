@@ -1,6 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use gitu::cli::Commands;
-use pprof::criterion::{Output, PProfProfiler};
 use ratatui::{backend::TestBackend, Terminal};
 
 fn show(c: &mut Criterion) {
@@ -24,7 +23,7 @@ fn show(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    config = Criterion::default();
     targets = show
 }
 criterion_main!(benches);
