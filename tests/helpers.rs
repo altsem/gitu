@@ -1,6 +1,6 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use git2::Repository;
-use gitu::{cli::Args, config, State};
+use gitu::{cli::Args, config, state::State};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::{env, fs, path::Path, process::Command};
 use temp_dir::TempDir;
@@ -71,8 +71,7 @@ impl TestContext {
         )
         .unwrap();
 
-        gitu::update(&mut state, &mut self.term, &[]).unwrap();
-
+        state.update(&mut self.term, &[]).unwrap();
         state
     }
 
