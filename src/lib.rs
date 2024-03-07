@@ -372,15 +372,9 @@ fn handle_op<B: Backend>(
         SelectNext => state.screen_mut().select_next(),
         HalfPageUp => state.screen_mut().scroll_half_page_up(),
         HalfPageDown => state.screen_mut().scroll_half_page_down(),
-        CheckoutNewBranch => {
-            state.prompt.set(Op::CheckoutNewBranch);
-        }
-        Commit => {
-            state.issue_subscreen_command(terminal, git::commit_cmd())?;
-        }
-        CommitAmend => {
-            state.issue_subscreen_command(terminal, git::commit_amend_cmd())?;
-        }
+        CheckoutNewBranch => state.prompt.set(Op::CheckoutNewBranch),
+        Commit => state.issue_subscreen_command(terminal, git::commit_cmd())?,
+        CommitAmend => state.issue_subscreen_command(terminal, git::commit_amend_cmd())?,
         Submenu(op) => state.pending_submenu_op = op,
         LogCurrent => state.goto_log_screen(None),
         FetchAll => state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?,
@@ -392,12 +386,8 @@ fn handle_op<B: Backend>(
                 action(terminal, state)?
             }
         }
-        RebaseAbort => {
-            state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?;
-        }
-        RebaseContinue => {
-            state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?;
-        }
+        RebaseAbort => state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?,
+        RebaseContinue => state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?,
         ShowRefs => state.goto_refs_screen(),
     }
 
