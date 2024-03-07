@@ -3,18 +3,18 @@ source: tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
-    area: Rect { x: 0, y: 0, width: 60, height: 10 },
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
     content: [
-        "🢒Branches                                                   ",
-        "▌  main   origin/main                                       ",
-        "▌* same-name                                                ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
+        "🢒Branches                                                                       ",
+        "▌  main   origin/main                                                           ",
+        "▌* same-name                                                                    ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,

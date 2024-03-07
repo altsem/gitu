@@ -3,18 +3,18 @@ source: tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
-    area: Rect { x: 0, y: 0, width: 60, height: 10 },
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
     content: [
-        "🢒On branch main                                             ",
-        "▌Your branch is behind 'origin/main' by 1 commit.           ",
-        "                                                            ",
-        " Recent commits                                             ",
-        " _______ main add initial-file                              ",
-        "                                                            ",
-        "────────────────────────────────────────────────────────────",
-        "$ git fetch --all                                           ",
-        "From                                                        ",
-        "   _______.._______  main       -> origin/main              ",
+        "🢒On branch main                                                                 ",
+        "▌Your branch is behind 'origin/main' by 1 commit.                               ",
+        "                                                                                ",
+        " Recent commits                                                                 ",
+        " _______ main add initial-file                                                  ",
+        "                                                                                ",
+        "────────────────────────────────────────────────────────────────────────────────",
+        "$ git fetch --all                                                               ",
+        "From                                                                            ",
+        "   _______.._______  main       -> origin/main                                  ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,

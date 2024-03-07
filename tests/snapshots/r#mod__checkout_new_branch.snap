@@ -3,18 +3,18 @@ source: tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
-    area: Rect { x: 0, y: 0, width: 60, height: 10 },
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
     content: [
-        "🢒On branch x                                                ",
-        "                                                            ",
-        " Recent commits                                             ",
-        " _______ main x origin/main add initial-file                ",
-        "                                                            ",
-        "                                                            ",
-        "                                                            ",
-        "────────────────────────────────────────────────────────────",
-        "$ git checkout -b x                                         ",
-        "Switched to a new branch 'x'                                ",
+        "🢒On branch x                                                                    ",
+        "                                                                                ",
+        " Recent commits                                                                 ",
+        " _______ main x origin/main add initial-file                                    ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "────────────────────────────────────────────────────────────────────────────────",
+        "$ git checkout -b x                                                             ",
+        "Switched to a new branch 'x'                                                    ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
