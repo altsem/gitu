@@ -13,7 +13,6 @@ harness = false
 pretty_assertions = "1.4.0"
 temp-dir = "0.1.12"
 criterion = "0.5.1"
-pprof = { version = "0.13.0", features = ["flamegraph", "criterion"] }
 
 [dependencies]
 chrono = "0.4.34"
