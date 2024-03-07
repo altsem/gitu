@@ -4,6 +4,7 @@ use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::keybinds::Op;
 use crate::keybinds::SubmenuOp;
+use crate::keybinds::TargetOp;
 use crate::list_target_ops;
 use crate::CmdMetaBuffer;
 use crate::State;
@@ -48,7 +49,7 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
         [
             Constraint::Min(1),
             Constraint::Length(popup_len),
-            Constraint::Length(if state.prompt.is_some() { 1 } else { 0 }),
+            Constraint::Length(if state.prompt.is_some() { 2 } else { 0 }),
         ],
     )
     .split(frame.size());
@@ -62,11 +63,8 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
     }
 
     if let Some(prompt) = state.prompt {
-        frame.render_stateful_widget(
-            TextPrompt::new(prompt_text(prompt)),
-            layout[2],
-            &mut state.prompt_state,
-        );
+        let prompt = TextPrompt::new(prompt_text(prompt)).with_block(popup_block());
+        frame.render_stateful_widget(prompt, layout[2], &mut state.prompt_state);
         let (cx, cy) = state.prompt_state.cursor();
         frame.set_cursor(cx, cy);
     }
@@ -74,7 +72,9 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
 
 fn prompt_text(prompt: Op) -> std::borrow::Cow<'static, str> {
     match prompt {
-        Op::CheckoutNewBranch => "New branch name: ",
+        Op::CheckoutNewBranch => "Create and checkout branch: ",
+        // TODO Would be nice to show what is being discarded
+        Op::Target(TargetOp::Discard) => "Really discard? (y or n)",
         _ => unimplemented!(),
     }
     .into()
@@ -156,7 +156,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     unreachable!();
                 };
 
-                target_ops.contains(&target)
+                target_ops.iter().any(|(op, _data)| op == &target)
             })
             .collect::<Vec<_>>();
 
@@ -192,30 +192,23 @@ fn format_keybinds_menu<'b, B: Backend>(
         .collect::<Vec<_>>();
 
     let widths = [
-        Constraint::Length(25),
-        Constraint::Length(12),
+        Constraint::Max(25),
+        Constraint::Max(12),
         Constraint::Length(25),
     ];
     (
         rows.len(),
-        Popup::Table(
-            Table::new(rows, widths).block(
-                Block::new()
-                    .borders(Borders::TOP)
-                    .border_style(Style::new().dim())
-                    .border_type(ratatui::widgets::BorderType::Plain),
-            ),
-        ),
+        Popup::Table(Table::new(rows, widths).block(popup_block())),
     )
 }
 
 fn command_popup(text: Text<'_>) -> Popup {
-    Popup::Paragraph(
-        Paragraph::new(text).block(
-            Block::new()
-                .borders(Borders::TOP)
-                .border_style(Style::new().dim())
-                .border_type(ratatui::widgets::BorderType::Plain),
-        ),
-    )
+    Popup::Paragraph(Paragraph::new(text).block(popup_block()))
+}
+
+fn popup_block() -> Block<'static> {
+    Block::new()
+        .borders(Borders::TOP)
+        .border_style(Style::new().dim())
+        .border_type(ratatui::widgets::BorderType::Plain)
 }

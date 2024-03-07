@@ -9,6 +9,7 @@ use self::{
 };
 use crate::{git2_opts, Res};
 use std::{
+    ffi::OsStr,
     fs,
     io::ErrorKind,
     path::{Path, PathBuf},
@@ -230,82 +231,91 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     })
 }
 
-pub(crate) fn stage_file_cmd(file: &str) -> Command {
-    git(&["add", file])
+pub(crate) fn stage_file_cmd(file: &OsStr) -> Command {
+    git([OsStr::new("add"), file])
 }
 pub(crate) fn stage_patch_cmd() -> Command {
-    git(&["apply", "--cached"])
+    git(["apply", "--cached"])
 }
-pub(crate) fn unstage_file_cmd(file: &str) -> Command {
-    git(&["restore", "--staged", file])
+pub(crate) fn unstage_file_cmd(file: &OsStr) -> Command {
+    git([OsStr::new("restore"), OsStr::new("--staged"), file])
 }
 pub(crate) fn unstage_patch_cmd() -> Command {
-    git(&["apply", "--cached", "--reverse"])
+    git(["apply", "--cached", "--reverse"])
 }
 pub(crate) fn discard_unstaged_patch_cmd() -> Command {
-    git(&["apply", "--reverse"])
+    git(["apply", "--reverse"])
 }
-pub(crate) fn discard_branch(branch: &str) -> Command {
-    git(&["branch", "-d", branch])
+pub(crate) fn discard_branch(branch: &OsStr) -> Command {
+    git([OsStr::new("branch"), OsStr::new("-d"), branch])
 }
 pub(crate) fn commit_cmd() -> Command {
-    git(&["commit"])
+    git(["commit"])
 }
 pub(crate) fn commit_amend_cmd() -> Command {
-    git(&["commit", "--amend"])
+    git(["commit", "--amend"])
 }
-pub(crate) fn commit_fixup_cmd(reference: &str) -> Command {
-    git(&["commit", "--fixup", reference])
+pub(crate) fn commit_fixup_cmd(reference: &OsStr) -> Command {
+    git([OsStr::new("commit"), OsStr::new("--fixup"), reference])
 }
 pub(crate) fn fetch_all_cmd() -> Command {
-    git(&["fetch", "--all"])
+    git(["fetch", "--all"])
 }
 pub(crate) fn push_cmd() -> Command {
-    git(&["push"])
+    git(["push"])
 }
 pub(crate) fn pull_cmd() -> Command {
-    git(&["pull"])
+    git(["pull"])
 }
-pub(crate) fn rebase_interactive_cmd(reference: &str) -> Command {
-    git(&["rebase", "-i", "--autostash", reference])
+pub(crate) fn rebase_interactive_cmd(reference: &OsStr) -> Command {
+    git([
+        OsStr::new("rebase"),
+        OsStr::new("-i"),
+        OsStr::new("--autostash"),
+        reference,
+    ])
 }
-pub(crate) fn rebase_autosquash_cmd(reference: &str) -> Command {
-    git(&[
-        "rebase",
-        "-i",
-        "--autosquash",
-        "--keep-empty",
-        "--autostash",
+pub(crate) fn rebase_autosquash_cmd(reference: &OsStr) -> Command {
+    git([
+        OsStr::new("rebase"),
+        OsStr::new("-i"),
+        OsStr::new("--autosquash"),
+        OsStr::new("--keep-empty"),
+        OsStr::new("--autostash"),
         reference,
     ])
 }
 pub(crate) fn rebase_continue_cmd() -> Command {
-    git(&["rebase", "--continue"])
+    git(["rebase", "--continue"])
 }
 pub(crate) fn rebase_abort_cmd() -> Command {
-    git(&["rebase", "--abort"])
+    git(["rebase", "--abort"])
 }
-pub(crate) fn reset_soft_cmd(reference: &str) -> Command {
-    git(&["reset", "--soft", reference])
+pub(crate) fn reset_soft_cmd(reference: &OsStr) -> Command {
+    git([OsStr::new("reset"), OsStr::new("--soft"), reference])
 }
-pub(crate) fn reset_mixed_cmd(reference: &str) -> Command {
-    git(&["reset", "--mixed", reference])
+pub(crate) fn reset_mixed_cmd(reference: &OsStr) -> Command {
+    git([OsStr::new("reset"), OsStr::new("--mixed"), reference])
 }
-pub(crate) fn reset_hard_cmd(reference: &str) -> Command {
-    git(&["reset", "--hard", reference])
+pub(crate) fn reset_hard_cmd(reference: &OsStr) -> Command {
+    git([OsStr::new("reset"), OsStr::new("--hard"), reference])
 }
-pub(crate) fn checkout_file_cmd(file: &str) -> Command {
-    git(&["checkout", "--", file])
+pub(crate) fn checkout_file_cmd(file: &OsStr) -> Command {
+    git([OsStr::new("checkout"), OsStr::new("--"), file])
 }
-pub(crate) fn checkout_new_branch_cmd(name: &str) -> Command {
-    git(&["checkout", "-b", name])
-}
-
-pub(crate) fn checkout_ref_cmd(reference: &str) -> Command {
-    git(&["checkout", reference])
+pub(crate) fn checkout_new_branch_cmd(name: &OsStr) -> Command {
+    git([OsStr::new("checkout"), OsStr::new("-b"), name])
 }
 
-fn git(args: &[&str]) -> Command {
+pub(crate) fn checkout_ref_cmd(reference: &OsStr) -> Command {
+    git([OsStr::new("checkout"), reference])
+}
+
+fn git<I, S>(args: I) -> Command
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
     let mut cmd = Command::new("git");
     cmd.args(args);
     cmd

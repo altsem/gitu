@@ -128,9 +128,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Show refs
     Keybind::nomod(None, Char('y'), ShowRefs),
     // Discard
-    Keybind::shift(None, Char('K'), Submenu(SubmenuOp::Discard)),
-    Keybind::nomod(SubmenuOp::Discard, Char('y'), Target(TargetOp::Discard)),
-    Keybind::nomod(SubmenuOp::Discard, Char('n'), Quit),
+    Keybind::shift(None, Char('K'), Target(Discard)),
     // Target actions
     Keybind::nomod(None, Enter, Target(Show)),
     Keybind::nomod(None, Char('s'), Target(Stage)),
@@ -165,7 +163,6 @@ pub(crate) enum SubmenuOp {
     Any,
     Branch,
     Commit,
-    Discard,
     Fetch,
     Help,
     Log,

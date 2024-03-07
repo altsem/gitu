@@ -19,6 +19,7 @@ use screen::Screen;
 use std::{
     borrow::Cow,
     error::Error,
+    ffi::{OsStr, OsString},
     iter,
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -274,21 +275,32 @@ pub fn update<B: Backend>(
             _ => (),
         }
 
-        match state.prompt_state.status() {
-            Status::Pending => (),
-            Status::Aborted => {
-                state.prompt = None;
-                state.prompt_state = TextState::new();
-            }
-            Status::Done => {
-                if state.prompt == Some(Op::CheckoutNewBranch) {
+        if state.prompt_state.status() == Status::Aborted {
+            state.prompt = None;
+            state.prompt_state = TextState::new();
+        } else if let Some(prompt) = state.prompt {
+            match (state.prompt_state.status(), prompt) {
+                (Status::Done, Op::CheckoutNewBranch) => {
                     let name = state.prompt_state.value().to_string();
-                    let mut fun = cmd_arg(git::checkout_new_branch_cmd, &name).unwrap();
-                    fun(terminal, state)?;
+                    cmd_arg(git::checkout_new_branch_cmd, name.into()).unwrap()(terminal, state)?;
+                    reset_prompt(state, terminal)?;
                 }
-
-                state.prompt = None;
-                state.prompt_state = TextState::new();
+                (Status::Pending, Op::Target(TargetOp::Discard)) => {
+                    match state.prompt_state.value() {
+                        "y" => {
+                            let mut action =
+                                get_action(clone_target_data(state), TargetOp::Discard).unwrap();
+                            action(terminal, state)?;
+                            reset_prompt(state, terminal)?;
+                        }
+                        "" => (),
+                        _ => {
+                            state.error_buffer = Some(ErrorBuffer(format!("{:?} aborted", prompt)));
+                            reset_prompt(state, terminal)?;
+                        }
+                    }
+                }
+                _ => (),
             }
         }
     }
@@ -297,6 +309,22 @@ pub fn update<B: Backend>(
         terminal.draw(|frame| ui::ui::<B>(frame, state))?;
     }
 
+    Ok(())
+}
+
+fn clone_target_data(state: &mut State) -> Option<TargetData> {
+    let screen = state.screen();
+    let selected = screen.get_selected_item();
+    selected.target_data.clone()
+}
+
+fn reset_prompt<B: Backend>(
+    state: &mut State,
+    terminal: &mut Terminal<B>,
+) -> Result<(), Box<dyn Error>> {
+    state.prompt = None;
+    state.prompt_state = TextState::new();
+    terminal.hide_cursor()?;
     Ok(())
 }
 
@@ -367,11 +395,10 @@ fn handle_op<B: Backend>(
         FetchAll => state.run_external_cmd(terminal, &[], git::fetch_all_cmd())?,
         Pull => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
         Push => state.run_external_cmd(terminal, &[], git::push_cmd())?,
+        Target(TargetOp::Discard) => prompt_action::<B>(state, Target(TargetOp::Discard)),
         Target(target_op) => {
-            if let Some(act) = &state.screen_mut().get_selected_item().target_data.clone() {
-                if let Some(mut closure) = closure_by_target_op(act, &target_op) {
-                    closure(terminal, state)?;
-                }
+            if let Some(mut action) = get_action(clone_target_data(state), target_op) {
+                action(terminal, state)?
             }
         }
         RebaseAbort => {
@@ -386,21 +413,41 @@ fn handle_op<B: Backend>(
     Ok(())
 }
 
-pub(crate) fn list_target_ops<B: Backend>(
-    target: &TargetData,
-) -> impl Iterator<Item = TargetOp> + '_ {
-    TargetOp::iter().filter(|target_op| closure_by_target_op::<B>(target, target_op).is_some())
+fn get_action<B: Backend>(
+    target_data: Option<TargetData>,
+    target_op: TargetOp,
+) -> Option<Action<B>> {
+    target_data.and_then(|data| action_by_target_op::<B>(data, &target_op))
 }
 
-type OpClosure<'a, B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) -> Res<()> + 'a>;
+fn prompt_action<B: Backend>(state: &mut State, op: Op) {
+    if let Op::Target(target_op) = op {
+        if get_action::<B>(clone_target_data(state), target_op).is_none() {
+            return;
+        }
+    }
+
+    state.prompt = Some(op);
+    state.prompt_state.focus();
+}
+
+pub(crate) fn list_target_ops<B: Backend>(
+    data: &TargetData,
+) -> impl Iterator<Item = (TargetOp, TargetData)> + '_ {
+    TargetOp::iter()
+        .filter(|target_op| action_by_target_op::<B>(data.clone(), target_op).is_some())
+        .map(|op| (op, data.clone()))
+}
+
+type Action<B> = Box<dyn FnMut(&mut Terminal<B>, &mut State) -> Res<()>>;
 
 /// Retrieves the 'implementation' of a `TargetOp`.
 /// These are `Option<OpClosure>`s, so that the mappings
 /// can be introspected.
-pub(crate) fn closure_by_target_op<'a, B: Backend>(
-    target: &'a TargetData,
+pub(crate) fn action_by_target_op<B: Backend>(
+    target: TargetData,
     target_op: &TargetOp,
-) -> Option<OpClosure<'a, B>> {
+) -> Option<Action<B>> {
     use TargetData::*;
     use TargetOp::*;
 
@@ -409,29 +456,33 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
         (Show, File(u)) => editor(u.as_path(), None),
         (Show, Delta(d)) => editor(d.new_file.as_path(), None),
         (Show, Hunk(h)) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
-        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u.to_str()?),
-        (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, d.new_file.to_str()?),
+        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u.into()),
+        (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, d.new_file.into()),
         (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
-        (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, d.new_file.to_str()?),
+        (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, d.new_file.into()),
         (Unstage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::unstage_patch_cmd),
-        (RebaseInteractive, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_interactive_cmd, r),
-        (CommitFixup, Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r),
-        (RebaseAutosquash, Commit(r) | Branch(r)) => subscreen_arg(git::rebase_autosquash_cmd, r),
-        (ResetSoft, Commit(r) | Branch(r)) => cmd_arg(git::reset_soft_cmd, r),
-        (ResetMixed, Commit(r) | Branch(r)) => cmd_arg(git::reset_mixed_cmd, r),
-        (ResetHard, Commit(r) | Branch(r)) => cmd_arg(git::reset_hard_cmd, r),
-        (Discard, Branch(r)) => cmd_arg(git::discard_branch, r),
-        (Discard, File(f)) => Some(Box::new(|_term, state| {
+        (RebaseInteractive, Commit(r) | Branch(r)) => {
+            subscreen_arg(git::rebase_interactive_cmd, r.into())
+        }
+        (CommitFixup, Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r.into()),
+        (RebaseAutosquash, Commit(r) | Branch(r)) => {
+            subscreen_arg(git::rebase_autosquash_cmd, r.into())
+        }
+        (ResetSoft, Commit(r) | Branch(r)) => cmd_arg(git::reset_soft_cmd, r.into()),
+        (ResetMixed, Commit(r) | Branch(r)) => cmd_arg(git::reset_mixed_cmd, r.into()),
+        (ResetHard, Commit(r) | Branch(r)) => cmd_arg(git::reset_hard_cmd, r.into()),
+        (Discard, Branch(r)) => cmd_arg(git::discard_branch, r.into()),
+        (Discard, File(f)) => Some(Box::new(move |_term, state| {
             let path = PathBuf::from_iter([
                 state.repo.workdir().expect("No workdir").to_path_buf(),
-                f.into(),
+                f.clone(),
             ]);
             std::fs::remove_file(path)?;
             state.screen_mut().update()
         })),
         (Discard, Delta(d)) => {
             if d.old_file == d.new_file {
-                cmd_arg(git::checkout_file_cmd, d.old_file.to_str()?)
+                cmd_arg(git::checkout_file_cmd, d.old_file.into())
             } else {
                 // TODO Discard file move
                 None
@@ -441,8 +492,8 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
             h.format_patch().into_bytes(),
             git::discard_unstaged_patch_cmd,
         ),
-        (Checkout, Commit(r) | Branch(r)) => cmd_arg(git::checkout_ref_cmd, r),
-        (LogOther, Commit(r) | Branch(r)) => Some(Box::new(|_term, state| {
+        (Checkout, Commit(r) | Branch(r)) => cmd_arg(git::checkout_ref_cmd, r.into()),
+        (LogOther, Commit(r) | Branch(r)) => Some(Box::new(move |_term, state| {
             state.goto_log_screen(Some(r.clone()));
             Ok(())
         })),
@@ -450,7 +501,7 @@ pub(crate) fn closure_by_target_op<'a, B: Backend>(
     }
 }
 
-fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
+fn goto_show_screen<B: Backend>(r: String) -> Option<Action<B>> {
     Some(Box::new(move |terminal, state| {
         state.screens.push(
             screen::show::create(
@@ -465,7 +516,7 @@ fn goto_show_screen<'a, B: Backend>(r: String) -> Option<OpClosure<'a, B>> {
     }))
 }
 
-fn editor<'a, B: Backend>(file: &Path, line: Option<u32>) -> Option<OpClosure<'a, B>> {
+fn editor<B: Backend>(file: &Path, line: Option<u32>) -> Option<Action<B>> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Box::new(move |terminal, state| {
@@ -503,20 +554,20 @@ fn editor<'a, B: Backend>(file: &Path, line: Option<u32>) -> Option<OpClosure<'a
     }))
 }
 
-fn cmd<'a, B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<OpClosure<'a, B>> {
+fn cmd<B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<Action<B>> {
     Some(Box::new(move |terminal, state| {
         state.run_external_cmd(terminal, &input, command())
     }))
 }
 
-fn cmd_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
+fn cmd_arg<B: Backend>(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action<B>> {
     Some(Box::new(move |terminal, state| {
-        state.run_external_cmd(terminal, &[], command(arg))
+        state.run_external_cmd(terminal, &[], command(&arg))
     }))
 }
 
-fn subscreen_arg<B: Backend>(command: fn(&str) -> Command, arg: &str) -> Option<OpClosure<B>> {
+fn subscreen_arg<B: Backend>(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action<B>> {
     Some(Box::new(move |terminal, state| {
-        state.issue_subscreen_command(terminal, command(arg))
+        state.issue_subscreen_command(terminal, command(&arg))
     }))
 }

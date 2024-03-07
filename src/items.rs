@@ -29,11 +29,11 @@ pub(crate) struct Item {
 
 #[derive(Clone, Debug)]
 pub(crate) enum TargetData {
-    Commit(String),
-    File(PathBuf),
-    Delta(Delta),
-    Hunk(Hunk),
     Branch(String),
+    Commit(String),
+    Delta(Delta),
+    File(PathBuf),
+    Hunk(Hunk),
 }
 
 pub(crate) fn create_diff_items<'a>(
