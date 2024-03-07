@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2024-03-07
+
+### 🐛 Bug Fixes
+
+- Would not start on windows due to nix signal handling
+
 ## [0.5.0] - 2024-03-07
 
 ### 🚀 Features
