@@ -381,14 +381,22 @@ fn handle_op<B: Backend>(
         Pull => state.run_external_cmd(terminal, &[], git::pull_cmd())?,
         Push => state.run_external_cmd(terminal, &[], git::push_cmd())?,
         Target(TargetOp::Discard) => prompt_action::<B>(state, Target(TargetOp::Discard)),
-        Target(target_op) => {
-            if let Some(mut action) = get_action(clone_target_data(state), target_op) {
-                action(terminal, state)?
-            }
-        }
+        Target(target_op) => try_dispatch_target_action(state, target_op, terminal)?,
         RebaseAbort => state.run_external_cmd(terminal, &[], git::rebase_abort_cmd())?,
         RebaseContinue => state.run_external_cmd(terminal, &[], git::rebase_continue_cmd())?,
         ShowRefs => state.goto_refs_screen(),
+    }
+
+    Ok(())
+}
+
+fn try_dispatch_target_action<B: Backend>(
+    state: &mut State,
+    target_op: TargetOp,
+    terminal: &mut Terminal<B>,
+) -> Res<()> {
+    if let Some(mut action) = get_action(clone_target_data(state), target_op) {
+        action(terminal, state)?
     }
 
     Ok(())
