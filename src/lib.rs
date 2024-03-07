@@ -209,7 +209,7 @@ fn command_args(cmd: &Command) -> Cow<'static, str> {
         .into()
 }
 
-pub fn run<B: Backend>(args: &cli::Args, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>> {
+pub fn run<B: Backend>(args: &cli::Args, terminal: &mut Terminal<B>) -> Res<()> {
     log::debug!("Finding git dir");
     let dir = PathBuf::from(
         String::from_utf8(
@@ -350,7 +350,7 @@ fn handle_op<B: Backend>(
     was_submenu: bool,
     state: &mut State,
     terminal: &mut Terminal<B>,
-) -> Result<(), Box<dyn Error>> {
+) -> Res<()> {
     use Op::*;
 
     match op {
