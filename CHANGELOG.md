@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2024-03-07
+
+### 🚀 Features
+
+- Move 'reset' keybind to capital 'X' to mimic magit
+- Proper y/n prompt when discarding things
+
+### 🐛 Bug Fixes
+
+- Annotated tags would not display
+
 ## [0.4.0] - 2024-03-06
 
 ### 🚀 Features
