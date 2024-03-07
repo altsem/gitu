@@ -231,7 +231,7 @@ fn reset_menu() {
 
     let mut state = ctx.init_state();
     state
-        .update(&mut ctx.term, &[key('l'), key('l'), key('j'), key('x')])
+        .update(&mut ctx.term, &[key('l'), key('l'), key('j'), key('X')])
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -245,7 +245,7 @@ fn reset_soft() {
     state
         .update(
             &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('x'), key('s'), key('q')],
+            &[key('l'), key('l'), key('j'), key('X'), key('s'), key('q')],
         )
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -260,7 +260,7 @@ fn reset_mixed() {
     state
         .update(
             &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('x'), key('m'), key('q')],
+            &[key('l'), key('l'), key('j'), key('X'), key('m'), key('q')],
         )
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -275,7 +275,7 @@ fn reset_hard() {
     state
         .update(
             &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('x'), key('h'), key('q')],
+            &[key('l'), key('l'), key('j'), key('X'), key('h'), key('q')],
         )
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());

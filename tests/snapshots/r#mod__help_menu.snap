@@ -24,7 +24,7 @@ Buffer {
         "C-d HalfPageDown      F Pull                                ",
         "y ShowRefs            P Push                                ",
         "                      r Rebase                              ",
-        "                      x Reset                               ",
+        "                      X Reset                               ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,

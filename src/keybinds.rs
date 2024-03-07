@@ -121,7 +121,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Rebase, Char('c'), RebaseContinue),
     Keybind::nomod(Rebase, Char('f'), Target(RebaseAutosquash)),
     // Reset
-    Keybind::nomod(None, Char('x'), Submenu(Reset)),
+    Keybind::shift(None, Char('X'), Submenu(Reset)),
     Keybind::nomod(Reset, Char('s'), Target(ResetSoft)),
     Keybind::nomod(Reset, Char('m'), Target(ResetMixed)),
     Keybind::nomod(Reset, Char('h'), Target(ResetHard)),
