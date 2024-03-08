@@ -169,11 +169,21 @@ impl<'a> Screen {
     pub(crate) fn update(&mut self) -> Res<()> {
         self.items = (self.refresh_items)()?;
         self.clamp_cursor();
+        self.move_from_unselectable();
         Ok(())
     }
 
     fn clamp_cursor(&mut self) {
-        self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1))
+        self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1));
+    }
+
+    fn move_from_unselectable(&mut self) {
+        if self.get_selected_item().unselectable {
+            self.select_previous();
+        }
+        if self.get_selected_item().unselectable {
+            self.select_next();
+        }
     }
 
     pub(crate) fn collapsed_items_iter(&'a self) -> impl Iterator<Item = (usize, &Item)> {

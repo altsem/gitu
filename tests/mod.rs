@@ -315,3 +315,19 @@ fn checkout_new_branch() {
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn updated_externally() {
+    let mut ctx = TestContext::setup_init(80, 20);
+    fs::write(ctx.dir.child("b"), "test").unwrap();
+
+    let mut state = ctx.init_state();
+    state
+        .update(&mut ctx.term, &[key('j'), key('j'), key('s'), key('j')])
+        .unwrap();
+
+    fs::write(ctx.dir.child("a"), "test").unwrap();
+
+    state.update(&mut ctx.term, &[key('g')]).unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
