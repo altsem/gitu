@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2024-03-08
+
+### 🐛 Bug Fixes
+
+- Cursor would disappear when staging the last hunk of a delta
+- Issue when cursor would disappear after external git updates
+
+### 🎨 Styling
+
+- Remove trailing space in 'Create and checkout branch: '
+
 ## [0.5.1] - 2024-03-07
 
 ### 🐛 Bug Fixes
