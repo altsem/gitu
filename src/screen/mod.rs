@@ -170,6 +170,7 @@ impl<'a> Screen {
         self.items = (self.refresh_items)()?;
         self.clamp_cursor();
         self.move_from_unselectable();
+        self.move_up_if_collapsed();
         Ok(())
     }
 
@@ -183,6 +184,16 @@ impl<'a> Screen {
         }
         if self.get_selected_item().unselectable {
             self.select_next();
+        }
+    }
+
+    fn move_up_if_collapsed(&mut self) {
+        if let Some((last_i, _last_item)) = self
+            .collapsed_items_iter()
+            .filter(|(i, _item)| i <= &self.cursor)
+            .last()
+        {
+            self.cursor = last_i;
         }
     }
 
