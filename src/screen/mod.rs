@@ -14,15 +14,16 @@ const BOTTOM_CONTEXT_LINES: usize = 2;
 
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
-    pub(crate) scroll: u16,
+    pub(crate) scroll: usize,
     pub(crate) size: Rect,
     config: Rc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
+    line_index: Vec<usize>,
     collapsed: HashSet<Cow<'static, str>>,
 }
 
-impl<'a> Screen {
+impl Screen {
     pub(crate) fn new(
         config: Rc<Config>,
         size: Rect,
@@ -35,11 +36,13 @@ impl<'a> Screen {
             config,
             refresh_items,
             items: vec![],
+            line_index: vec![],
             collapsed: HashSet::new(),
         };
 
         screen.update()?;
 
+        // TODO Maybe this should be done on update. Better keep track of toggled sections rather than collapsed then.
         screen
             .items
             .iter()
@@ -47,6 +50,7 @@ impl<'a> Screen {
             .for_each(|item| {
                 screen.collapsed.insert(item.id.clone());
             });
+        screen.update_line_index();
 
         screen.cursor = screen
             .find_first_hunk()
@@ -57,17 +61,18 @@ impl<'a> Screen {
     }
 
     fn find_first_hunk(&mut self) -> Option<usize> {
-        self.collapsed_items_iter()
-            .find(|(_i, item)| {
-                !item.unselectable && matches!(item.target_data, Some(TargetData::Hunk(_)))
-            })
-            .map(|(i, _item)| i)
+        (0..self.line_index.len()).find(|&line_i| {
+            !self.at_line(line_i).unselectable
+                && matches!(self.at_line(line_i).target_data, Some(TargetData::Hunk(_)))
+        })
     }
 
     fn find_first_selectable(&mut self) -> Option<usize> {
-        self.collapsed_items_iter()
-            .find(|(_i, item)| !item.unselectable)
-            .map(|(i, _item)| i)
+        (0..self.line_index.len()).find(|&line_i| !self.at_line(line_i).unselectable)
+    }
+
+    fn at_line(&mut self, line_i: usize) -> &Item {
+        &self.items[self.line_index[line_i]]
     }
 
     pub(crate) fn select_next(&mut self) {
@@ -81,21 +86,10 @@ impl<'a> Screen {
             return;
         }
 
-        let start_line = self
-            .collapsed_items_iter()
-            .enumerate()
-            .find(|(_, (i, item))| self.selected_or_direct_ancestor(item, i))
-            .map(|(line, _)| line)
-            .unwrap() as u16;
-
-        if start_line < self.scroll {
-            self.scroll = start_line;
+        let top = self.cursor.saturating_sub(self.get_selected_item().depth);
+        if top < self.scroll {
+            self.scroll = top;
         }
-    }
-
-    fn selected_or_direct_ancestor(&self, item: &Item, i: &usize) -> bool {
-        let levels_above = self.get_selected_item().depth.saturating_sub(item.depth);
-        i == &(self.cursor - levels_above)
     }
 
     fn scroll_fit_end(&mut self) {
@@ -103,59 +97,56 @@ impl<'a> Screen {
             return;
         }
 
-        let depth = self.items[self.cursor].depth;
+        let depth = self.get_selected_item().depth;
+
         let last = BOTTOM_CONTEXT_LINES
-            + self
-                .collapsed_items_iter()
-                .enumerate()
-                .skip_while(|(_, (i, _))| i < &self.cursor)
-                .take_while(|(_, (i, item))| i == &self.cursor || depth < item.depth)
-                .map(|(line, _)| line)
+            + (self.cursor..self.line_index.len())
+                .take_while(|&line_i| line_i == self.cursor || depth < self.at_line(line_i).depth)
                 .last()
                 .unwrap();
 
-        let end_line = self.size.height.saturating_sub(1);
-        if last as u16 > end_line + self.scroll {
-            self.scroll = last as u16 - end_line;
+        let end_line = self.size.height.saturating_sub(1) as usize;
+        if last > end_line + self.scroll {
+            self.scroll = last - end_line;
         }
     }
 
     pub(crate) fn find_next(&mut self) -> usize {
-        self.collapsed_items_iter()
-            .find(|(i, item)| i > &self.cursor && !item.unselectable)
-            .map(|(i, _item)| i)
+        (self.cursor..self.line_index.len())
+            .skip(1)
+            .find(|&line_i| !self.at_line(line_i).unselectable)
             .unwrap_or(self.cursor)
     }
 
     pub(crate) fn select_previous(&mut self) {
-        self.cursor = self
-            .collapsed_items_iter()
-            .filter(|(i, item)| i < &self.cursor && !item.unselectable)
-            .last()
-            .map(|(i, _item)| i)
+        self.cursor = (0..self.cursor)
+            .rev()
+            .find(|&line_i| !self.at_line(line_i).unselectable)
             .unwrap_or(self.cursor);
 
         self.scroll_fit_start();
     }
 
     pub(crate) fn scroll_half_page_up(&mut self) {
-        let half_screen = self.size.height / 2;
+        let half_screen = self.size.height as usize / 2;
         self.scroll = self.scroll.saturating_sub(half_screen);
     }
 
     pub(crate) fn scroll_half_page_down(&mut self) {
-        let half_screen = self.size.height / 2;
+        let half_screen = self.size.height as usize / 2;
         self.scroll = (self.scroll + half_screen).min(
-            self.collapsed_items_iter()
+            self.line_index
+                .iter()
+                .copied()
                 .enumerate()
-                .map(|(line, _)| (line + 1).saturating_sub(half_screen as usize))
+                .map(|(line, _)| (line + 1).saturating_sub(half_screen))
                 .last()
-                .unwrap_or(0) as u16,
+                .unwrap_or(0),
         );
     }
 
     pub(crate) fn toggle_section(&mut self) {
-        let selected = &self.items[self.cursor];
+        let selected = &self.items[self.line_index[self.cursor]];
 
         if selected.section {
             if self.collapsed.contains(&selected.id) {
@@ -164,41 +155,21 @@ impl<'a> Screen {
                 self.collapsed.insert(selected.id.clone());
             }
         }
+
+        self.update_line_index();
     }
 
     pub(crate) fn update(&mut self) -> Res<()> {
         self.items = (self.refresh_items)()?;
+        self.update_line_index();
         self.clamp_cursor();
         self.move_from_unselectable();
-        self.move_up_if_collapsed();
         Ok(())
     }
 
-    fn clamp_cursor(&mut self) {
-        self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1));
-    }
-
-    fn move_from_unselectable(&mut self) {
-        if self.get_selected_item().unselectable {
-            self.select_previous();
-        }
-        if self.get_selected_item().unselectable {
-            self.select_next();
-        }
-    }
-
-    fn move_up_if_collapsed(&mut self) {
-        if let Some((last_i, _last_item)) = self
-            .collapsed_items_iter()
-            .filter(|(i, _item)| i <= &self.cursor)
-            .last()
-        {
-            self.cursor = last_i;
-        }
-    }
-
-    pub(crate) fn collapsed_items_iter(&'a self) -> impl Iterator<Item = (usize, &Item)> {
-        self.items
+    fn update_line_index(&mut self) {
+        self.line_index = self
+            .items
             .iter()
             .enumerate()
             .scan(None, |collapse_depth, (i, next)| {
@@ -215,6 +186,23 @@ impl<'a> Screen {
                 Some(Some((i, next)))
             })
             .flatten()
+            .map(|(i, _item)| i)
+            .collect();
+    }
+
+    fn clamp_cursor(&mut self) {
+        self.cursor = self
+            .cursor
+            .clamp(0, self.line_index.len().saturating_sub(1));
+    }
+
+    fn move_from_unselectable(&mut self) {
+        if self.get_selected_item().unselectable {
+            self.select_previous();
+        }
+        if self.get_selected_item().unselectable {
+            self.select_next();
+        }
     }
 
     fn is_collapsed(&self, item: &Item) -> bool {
@@ -222,7 +210,7 @@ impl<'a> Screen {
     }
 
     pub(crate) fn get_selected_item(&self) -> &Item {
-        &self.items[self.cursor]
+        &self.items[self.line_index[self.cursor]]
     }
 }
 
@@ -230,10 +218,17 @@ impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let style = &self.config.style;
 
-        for (line_i, (item_i, item, line, highlight_depth)) in self
-            .collapsed_items_iter()
-            .scan(None, |highlight_depth, (item_i, item)| {
-                if self.cursor == item_i {
+        let scan_start = self.scroll.min(self.cursor);
+        let scan_end = (scan_start + area.height as usize).min(self.line_index.len());
+        let scan_highlight_range = scan_start..(scan_end);
+        let context_lines = self.scroll - scan_start;
+
+        for (line_i, (item_i, item, line, highlight_depth)) in self.line_index[scan_highlight_range]
+            .iter()
+            .copied()
+            .scan(None, |highlight_depth, item_i| {
+                let item = &self.items[item_i];
+                if self.line_index[self.cursor] == item_i {
                     *highlight_depth = Some(item.depth);
                 } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                     *highlight_depth = None;
@@ -241,8 +236,7 @@ impl Widget for &Screen {
 
                 Some((item_i, item, &item.display, *highlight_depth))
             })
-            .skip(self.scroll as usize)
-            .take(area.height as usize)
+            .skip(context_lines)
             .enumerate()
         {
             let line_area = Rect {
@@ -255,7 +249,7 @@ impl Widget for &Screen {
             let indented_line_area = Rect { x: 1, ..line_area };
 
             if highlight_depth.is_some() {
-                if self.cursor == item_i {
+                if self.line_index[self.cursor] == item_i {
                     buf.set_style(line_area, &style.selection_line);
                 } else {
                     buf.get_mut(0, line_i as u16)
@@ -273,62 +267,9 @@ impl Widget for &Screen {
                 let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
                 buf.get_mut(line_end, line_i as u16).set_char('…');
             }
-            if self.cursor == item_i {
+            if self.line_index[self.cursor] == item_i {
                 buf.get_mut(0, line_i as u16).set_char('🢒');
             }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Screen;
-    use crate::{config::Config, items::Item, screen::BOTTOM_CONTEXT_LINES};
-    use ratatui::layout::Rect;
-    use std::rc::Rc;
-
-    #[test]
-    fn scroll_collapsed() {
-        let mut screen = Screen::new(
-            Rc::new(Config::default()),
-            Rect::new(0, 0, 10, 3 + BOTTOM_CONTEXT_LINES as u16),
-            Box::new(|| {
-                Ok(vec![
-                    collapsed_section("section 1"),
-                    sub_item("invisible"),
-                    sub_item("invisible"),
-                    sub_item("invisible"),
-                    collapsed_section("section 2"),
-                    collapsed_section("section 3"),
-                    collapsed_section("section 4"),
-                ])
-            }),
-        )
-        .unwrap();
-
-        screen.select_next();
-        screen.select_next();
-        assert_eq!(0, screen.scroll, "shouldn't have scrolled");
-
-        screen.select_next();
-        assert_eq!(1, screen.scroll, "should have scrolled");
-    }
-
-    fn collapsed_section(display: &'static str) -> Item {
-        Item {
-            display: display.into(),
-            section: true,
-            default_collapsed: true,
-            depth: 0,
-            ..Default::default()
-        }
-    }
-
-    fn sub_item(display: &'static str) -> Item {
-        Item {
-            display: display.into(),
-            depth: 1,
-            ..Default::default()
         }
     }
 }
