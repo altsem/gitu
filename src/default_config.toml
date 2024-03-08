@@ -5,11 +5,12 @@
 [style]
 # fg / bg can be either of:
 # - a hex value: "#707070"
-# - an ansi color text: "light blue"
+# - an ansi color name: "light blue"
 # - an ansi color index: "255"
+# - "reset" will set the terminal's default foreground / background color.
 
-# 'mods' can be either of (multiple values separated by '|'):
-# BOLD|DIM|ITALIC|UNDERLINED|SLOW_BLINK|RAPID_BLINK|REVERSED|HIDDEN|CROSSED_OUT
+# 'mods' can be any combination of (multiple values separated by '|'):
+# "BOLD|DIM|ITALIC|UNDERLINED|SLOW_BLINK|RAPID_BLINK|REVERSED|HIDDEN|CROSSED_OUT"
 
 # Example style config values:
 # section_header.fg = "#808080"
