@@ -331,3 +331,27 @@ fn updated_externally() {
     state.update(&mut ctx.term, &[key('g')]).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn stage_last_hunk_of_first_delta() {
+    let mut ctx = TestContext::setup_clone(80, 20);
+    commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
+    commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
+    fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+    fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
+
+    let mut state = ctx.init_state();
+    state
+        .update(
+            &mut ctx.term,
+            &[
+                key('j'),
+                key('j'),
+                key_code(KeyCode::Tab),
+                key('j'),
+                key('s'),
+            ],
+        )
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
