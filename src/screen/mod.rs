@@ -28,25 +28,25 @@ impl<'a> Screen {
         size: Rect,
         refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     ) -> Res<Self> {
-        let items = refresh_items()?;
-
-        let mut collapsed = HashSet::new();
-        items
-            .iter()
-            .filter(|item| item.default_collapsed)
-            .for_each(|item| {
-                collapsed.insert(item.id.clone());
-            });
-
         let mut screen = Self {
             cursor: 0,
             scroll: 0,
             size,
             config,
             refresh_items,
-            items,
-            collapsed,
+            items: vec![],
+            collapsed: HashSet::new(),
         };
+
+        screen.update()?;
+
+        screen
+            .items
+            .iter()
+            .filter(|item| item.default_collapsed)
+            .for_each(|item| {
+                screen.collapsed.insert(item.id.clone());
+            });
 
         screen.cursor = screen
             .find_first_hunk()
