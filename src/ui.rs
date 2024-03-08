@@ -76,7 +76,7 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
 
 fn prompt_text(prompt: Op) -> std::borrow::Cow<'static, str> {
     match prompt {
-        Op::CheckoutNewBranch => "Create and checkout branch: ",
+        Op::CheckoutNewBranch => "Create and checkout branch:",
         // TODO Would be nice to show what is being discarded
         Op::Target(TargetOp::Discard) => "Really discard? (y or n)",
         _ => unimplemented!(),
