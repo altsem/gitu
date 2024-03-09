@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2024-03-09
+
+### 🐛 Bug Fixes
+
+- Rebase --continue freeze
+
 ## [0.5.2] - 2024-03-08
 
 ### 🐛 Bug Fixes
