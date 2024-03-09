@@ -4,12 +4,14 @@ mod git;
 mod git2_opts;
 mod items;
 mod keybinds;
+mod ops;
 mod prompt;
 mod screen;
 pub mod state;
 pub mod term;
 mod ui;
 
+use crate::keybinds::{Op, SubmenuOp};
 use crossterm::event::{self};
 use git2::Repository;
 use items::{Item, TargetData};
@@ -27,8 +29,6 @@ use std::{
     rc::Rc,
 };
 use strum::IntoEnumIterator;
-
-use crate::keybinds::{Op, SubmenuOp};
 
 const APP_NAME: &str = "gitu";
 
@@ -109,6 +109,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
     let was_submenu = state.pending_submenu_op != SubmenuOp::None;
     state.pending_submenu_op = SubmenuOp::None;
 
+    // TODO Move into separate modules
     match op {
         Quit => state.handle_quit(was_submenu)?,
         Refresh => state.screen_mut().update()?,
@@ -117,7 +118,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         SelectNext => state.screen_mut().select_next(),
         HalfPageUp => state.screen_mut().scroll_half_page_up(),
         HalfPageDown => state.screen_mut().scroll_half_page_down(),
-        CheckoutNewBranch => state.prompt.set(Op::CheckoutNewBranch),
+        CheckoutNewBranch => ops::OpTrait::<B>::trigger(&op, state)?,
         Commit => state.issue_subscreen_command(term, git::commit_cmd())?,
         CommitAmend => state.issue_subscreen_command(term, git::commit_amend_cmd())?,
         Submenu(op) => state.pending_submenu_op = op,
@@ -125,7 +126,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         FetchAll => state.run_external_cmd(term, &[], git::fetch_all_cmd())?,
         Pull => state.run_external_cmd(term, &[], git::pull_cmd())?,
         Push => state.run_external_cmd(term, &[], git::push_cmd())?,
-        Target(TargetOp::Discard) => state.prompt_action::<B>(Target(TargetOp::Discard)),
+        Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state)?,
         Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
         RebaseAbort => state.run_external_cmd(term, &[], git::rebase_abort_cmd())?,
         RebaseContinue => state.issue_subscreen_command(term, git::rebase_continue_cmd())?,

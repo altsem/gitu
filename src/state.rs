@@ -15,7 +15,6 @@ use tui_prompts::Status;
 
 use crate::cli;
 use crate::config::Config;
-use crate::git;
 use crate::handle_op;
 use crate::items::TargetData;
 use crate::keybinds;
@@ -28,7 +27,6 @@ use crate::screen::Screen;
 use crate::term;
 use crate::ui;
 
-use super::cmd_arg;
 use super::command_args;
 use super::get_action;
 use super::CmdMetaBuffer;
@@ -114,30 +112,11 @@ impl State {
         if self.prompt.state.status() == Status::Aborted {
             self.prompt.reset(term)?;
         } else if let Some(pending_prompt) = self.prompt.pending_op {
-            match (self.prompt.state.status(), pending_prompt) {
-                (Status::Done, Op::CheckoutNewBranch) => {
-                    let name = self.prompt.state.value().to_string();
-                    cmd_arg(git::checkout_new_branch_cmd, name.into()).unwrap()(self, term)?;
-                    self.prompt.reset(term)?;
-                }
-                (Status::Pending, Op::Target(TargetOp::Discard)) => {
-                    match self.prompt.state.value() {
-                        "y" => {
-                            let mut action =
-                                get_action(self.clone_target_data(), TargetOp::Discard).unwrap();
-                            action(self, term)?;
-                            self.prompt.reset(term)?;
-                        }
-                        "" => (),
-                        _ => {
-                            self.error_buffer =
-                                Some(ErrorBuffer(format!("{:?} aborted", pending_prompt)));
-                            self.prompt.reset(term)?;
-                        }
-                    }
-                }
-                _ => (),
-            }
+            pending_prompt.implementation().prompt_update(
+                self.prompt.state.status(),
+                self,
+                term,
+            )?;
         }
 
         Ok(())

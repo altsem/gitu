@@ -4,14 +4,16 @@ use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::keybinds::Op;
 use crate::keybinds::SubmenuOp;
-use crate::keybinds::TargetOp;
 use crate::list_target_ops;
+use crate::ops::OpTrait;
 use crate::state::State;
 use crate::CmdMetaBuffer;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
 use ratatui::prelude::*;
+use ratatui::style::Stylize;
 use ratatui::widgets::*;
+use ratatui::Frame;
 use tui_prompts::State as _;
 use tui_prompts::TextPrompt;
 
@@ -67,21 +69,12 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
     }
 
     if let Some(prompt) = state.prompt.pending_op {
-        let prompt = TextPrompt::new(prompt_text(prompt)).with_block(popup_block());
+        let prompt =
+            TextPrompt::new(OpTrait::<B>::format_prompt(&prompt)).with_block(popup_block());
         frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
     }
-}
-
-fn prompt_text(prompt: Op) -> std::borrow::Cow<'static, str> {
-    match prompt {
-        Op::CheckoutNewBranch => "Create and checkout branch:",
-        // TODO Would be nice to show what is being discarded
-        Op::Target(TargetOp::Discard) => "Really discard? (y or n)",
-        _ => unimplemented!(),
-    }
-    .into()
 }
 
 fn format_command<'a>(config: &Config, cmd: &'a CmdMetaBuffer) -> Text<'a> {

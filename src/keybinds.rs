@@ -1,10 +1,19 @@
+use std::borrow::Cow;
+
 use crossterm::event::{self, KeyCode, KeyModifiers};
 
+use ratatui::backend::Backend;
 use strum::EnumIter;
 use KeyCode::*;
 use Op::*;
 use SubmenuOp::*;
 use TargetOp::*;
+
+use crate::{
+    ops::{self, OpTrait},
+    state::State,
+    Res,
+};
 
 pub(crate) struct Keybind {
     pub submenu: SubmenuOp,
@@ -156,6 +165,38 @@ pub(crate) enum Op {
     Submenu(SubmenuOp),
     Target(TargetOp),
     ToggleSection,
+}
+
+impl Op {
+    pub fn implementation<B: Backend>(&self) -> Box<dyn OpTrait<B>> {
+        match self {
+            CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
+            Target(Discard) => Box::new(ops::discard::Discard {}),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl<B: Backend> OpTrait<B> for Op {
+    fn trigger(&self, state: &mut State) -> Res<()> {
+        self.implementation::<B>().trigger(state)?;
+        Ok(())
+    }
+
+    fn format_prompt(&self) -> Cow<'static, str> {
+        self.implementation::<B>().format_prompt()
+    }
+
+    fn prompt_update(
+        &self,
+        status: tui_prompts::prelude::Status,
+        arg: &mut State,
+        term: &mut ratatui::prelude::Terminal<B>,
+    ) -> Res<()> {
+        self.implementation::<B>()
+            .prompt_update(status, arg, term)?;
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
