@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use crossterm::event::{self, KeyCode, KeyModifiers};
 
-use ratatui::backend::Backend;
+use ratatui::{backend::Backend, Terminal};
 use strum::EnumIter;
 use KeyCode::*;
 use Op::*;
@@ -171,6 +171,7 @@ impl Op {
     pub fn implementation<B: Backend>(&self) -> Box<dyn OpTrait<B>> {
         match self {
             CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
+            Op::Commit => Box::new(ops::commit::Commit {}),
             Target(Discard) => Box::new(ops::discard::Discard {}),
             _ => unimplemented!(),
         }
@@ -178,8 +179,8 @@ impl Op {
 }
 
 impl<B: Backend> OpTrait<B> for Op {
-    fn trigger(&self, state: &mut State) -> Res<()> {
-        self.implementation::<B>().trigger(state)?;
+    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+        self.implementation::<B>().trigger(state, term)?;
         Ok(())
     }
 

@@ -1,13 +1,13 @@
 use super::OpTrait;
 use crate::{cmd_arg, git, keybinds::Op, state::State, Res};
-use ratatui::backend::Backend;
+use ratatui::{backend::Backend, prelude::Terminal};
 use std::borrow::Cow;
-use tui_prompts::State as _;
+use tui_prompts::{prelude::Status, State as _};
 
 pub(crate) struct CheckoutNewBranch {}
 
 impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
-    fn trigger(&self, state: &mut State) -> Res<()> {
+    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
         state.prompt.set(Op::CheckoutNewBranch);
         Ok(())
     }
@@ -16,12 +16,7 @@ impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
         "Create and checkout branch:".into()
     }
 
-    fn prompt_update(
-        &self,
-        status: tui_prompts::prelude::Status,
-        state: &mut State,
-        term: &mut ratatui::prelude::Terminal<B>,
-    ) -> Res<()> {
+    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         if status.is_done() {
             let name = state.prompt.state.value().to_string();
             cmd_arg(git::checkout_new_branch_cmd, name.into()).unwrap()(state, term)?;
