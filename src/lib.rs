@@ -128,7 +128,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         Target(TargetOp::Discard) => state.prompt_action::<B>(Target(TargetOp::Discard)),
         Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
         RebaseAbort => state.run_external_cmd(term, &[], git::rebase_abort_cmd())?,
-        RebaseContinue => state.run_external_cmd(term, &[], git::rebase_continue_cmd())?,
+        RebaseContinue => state.issue_subscreen_command(term, git::rebase_continue_cmd())?,
         ShowRefs => state.goto_refs_screen(),
     }
 
