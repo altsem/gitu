@@ -1,0 +1,42 @@
+---
+source: tests/mod.rs
+expression: ctx.redact_buffer()
+---
+Buffer {
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
+    content: [
+        " Branches                                                                       ",
+        "🢒* main   origin/main                                                           ",
+        "   other-branch                                                                 ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "────────────────────────────────────────────────────────────────────────────────",
+        "Branch                                 * main   origin/main                     ",
+        "c CheckoutNewBranch                    b Checkout                               ",
+    ],
+    styles: [
+        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 3, y: 1, fg: Green, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 7, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 10, y: 1, fg: Red, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 21, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 3, y: 2, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
+        x: 15, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
+        x: 0, y: 8, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 25, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 41, y: 8, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
+        x: 45, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 48, y: 8, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
+        x: 59, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 9, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 39, y: 9, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 40, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+    ]
+}

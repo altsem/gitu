@@ -293,6 +293,33 @@ fn show_refs() {
 }
 
 #[test]
+fn checkout_menu() {
+    let mut ctx = TestContext::setup_clone(80, 10);
+    run(ctx.dir.path(), &["git", "branch", "other-branch"]);
+
+    let mut state = ctx.init_state();
+    state
+        .update(&mut ctx.term, &[key('y'), key('j'), key('b')])
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn switch_branch() {
+    let mut ctx = TestContext::setup_clone(80, 10);
+    run(ctx.dir.path(), &["git", "branch", "other-branch"]);
+
+    let mut state = ctx.init_state();
+    state
+        .update(
+            &mut ctx.term,
+            &[key('y'), key('j'), key('j'), key('b'), key('b')],
+        )
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn checkout_new_branch() {
     let mut ctx = TestContext::setup_clone(80, 10);
 
