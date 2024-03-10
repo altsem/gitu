@@ -219,7 +219,7 @@ impl Widget for &Screen {
         let style = &self.config.style;
 
         let scan_start = self.scroll.min(self.cursor);
-        let scan_end = (scan_start + area.height as usize).min(self.line_index.len());
+        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);
         let context_lines = self.scroll - scan_start;
 

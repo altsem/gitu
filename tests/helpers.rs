@@ -163,6 +163,10 @@ pub fn key(char: char) -> Event {
     Event::Key(KeyEvent::new(KeyCode::Char(char), mods))
 }
 
+pub fn ctrl(char: char) -> Event {
+    Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::CONTROL))
+}
+
 pub fn key_code(code: KeyCode) -> Event {
     Event::Key(KeyEvent::new(code, KeyModifiers::empty()))
 }

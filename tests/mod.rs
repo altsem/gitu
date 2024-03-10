@@ -1,5 +1,6 @@
-use crate::helpers::{clone_and_commit, commit, key, key_code, run, TestContext};
+use crate::helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
 use crossterm::event::KeyCode;
+use itertools::Itertools;
 use std::fs;
 
 mod helpers;
@@ -394,6 +395,26 @@ fn go_down_past_collapsed() {
     let mut state = ctx.init_state();
     state
         .update(&mut ctx.term, &[key('j'), key('j'), key('j')])
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn scroll_down() {
+    let mut ctx = TestContext::setup_init(80, 20);
+    commit(ctx.dir.path(), "file-one", "");
+    fs::write(
+        ctx.dir.child("file-one"),
+        (1..=100).map(|i| format!("line {}", i)).join("\n"),
+    )
+    .unwrap();
+
+    let mut state = ctx.init_state();
+    state
+        .update(
+            &mut ctx.term,
+            &[key('j'), key('j'), key_code(KeyCode::Tab), ctrl('d')],
+        )
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
