@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2024-03-10
+
+### 🐛 Bug Fixes
+
+- Fixed scrolling after breaking in previous update
+
 ## [0.5.3] - 2024-03-09
 
 ### 🐛 Bug Fixes
