@@ -1,7 +1,7 @@
 use super::OpTrait;
-use crate::{cmd_arg, git, keybinds::Op, state::State, Res};
+use crate::{keybinds::Op, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
-use std::borrow::Cow;
+use std::{borrow::Cow, process::Command};
 use tui_prompts::{prelude::Status, State as _};
 
 pub(crate) struct CheckoutNewBranch {}
@@ -19,7 +19,10 @@ impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
     fn prompt_update(&self, status: Status, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         if status.is_done() {
             let name = state.prompt.state.value().to_string();
-            cmd_arg(git::checkout_new_branch_cmd, name.into()).unwrap()(state, term)?;
+            let mut cmd = Command::new("git");
+            cmd.args(["checkout", "-b", &name]);
+
+            state.run_external_cmd(term, &[], cmd)?;
             state.prompt.reset(term)?;
         }
         Ok(())

@@ -249,12 +249,6 @@ pub(crate) fn discard_unstaged_patch_cmd() -> Command {
 pub(crate) fn discard_branch(branch: &OsStr) -> Command {
     git([OsStr::new("branch"), OsStr::new("-d"), branch])
 }
-pub(crate) fn commit_cmd() -> Command {
-    git(["commit"])
-}
-pub(crate) fn commit_amend_cmd() -> Command {
-    git(["commit", "--amend"])
-}
 pub(crate) fn commit_fixup_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("commit"), OsStr::new("--fixup"), reference])
 }
@@ -303,15 +297,11 @@ pub(crate) fn reset_hard_cmd(reference: &OsStr) -> Command {
 pub(crate) fn checkout_file_cmd(file: &OsStr) -> Command {
     git([OsStr::new("checkout"), OsStr::new("--"), file])
 }
-pub(crate) fn checkout_new_branch_cmd(name: &OsStr) -> Command {
-    git([OsStr::new("checkout"), OsStr::new("-b"), name])
-}
-
 pub(crate) fn checkout_ref_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("checkout"), reference])
 }
 
-fn git<I, S>(args: I) -> Command
+pub(crate) fn git<I, S>(args: I) -> Command
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
