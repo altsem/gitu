@@ -170,10 +170,11 @@ pub(crate) enum Op {
 impl Op {
     pub fn implementation<B: Backend>(&self) -> Box<dyn OpTrait<B>> {
         match self {
-            CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
+            Op::CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
             Op::Commit => Box::new(ops::commit::Commit {}),
             Op::CommitAmend => Box::new(ops::commit::CommitAmend {}),
-            Target(Discard) => Box::new(ops::discard::Discard {}),
+            Op::LogCurrent => Box::new(ops::log::LogCurrent {}),
+            Op::Target(Discard) => Box::new(ops::discard::Discard {}),
             _ => unimplemented!(),
         }
     }

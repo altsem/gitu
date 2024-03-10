@@ -276,20 +276,6 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn goto_log_screen(&mut self, reference: Option<String>) {
-        self.screens.drain(1..);
-        let size = self.screens.last().unwrap().size;
-        self.screens.push(
-            screen::log::create(
-                Rc::clone(&self.config),
-                Rc::clone(&self.repo),
-                size,
-                reference,
-            )
-            .expect("Couldn't create screen"),
-        );
-    }
-
     pub(crate) fn goto_refs_screen(&mut self) {
         self.screens.drain(1..);
         let size = self.screens.last().unwrap().size;

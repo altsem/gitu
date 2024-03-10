@@ -8,6 +8,7 @@ use crate::{state::State, Res};
 pub(crate) mod checkout;
 pub(crate) mod commit;
 pub(crate) mod discard;
+pub(crate) mod log;
 
 pub(crate) trait OpTrait<B: Backend> {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()>;

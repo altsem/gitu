@@ -123,7 +123,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         Commit => ops::OpTrait::<B>::trigger(&op, state, term)?,
         CommitAmend => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Submenu(op) => state.pending_submenu_op = op,
-        LogCurrent => state.goto_log_screen(None),
+        LogCurrent => ops::OpTrait::<B>::trigger(&op, state, term)?,
         FetchAll => state.run_external_cmd(term, &[], git::fetch_all_cmd())?,
         Pull => state.run_external_cmd(term, &[], git::pull_cmd())?,
         Push => state.run_external_cmd(term, &[], git::push_cmd())?,
@@ -192,7 +192,7 @@ pub(crate) fn action_by_target_op<B: Backend>(
         ),
         (Checkout, Commit(r) | Branch(r)) => cmd_arg(git::checkout_ref_cmd, r.into()),
         (LogOther, Commit(r) | Branch(r)) => Some(Box::new(move |state, _term| {
-            state.goto_log_screen(Some(r.clone()));
+            ops::log::goto_log_screen(state, Some(r.clone()));
             Ok(())
         })),
         (_, _) => None,
