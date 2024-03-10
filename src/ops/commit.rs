@@ -12,3 +12,12 @@ impl<B: Backend> OpTrait<B> for Commit {
         Ok(())
     }
 }
+
+pub(crate) struct CommitAmend {}
+
+impl<B: Backend> OpTrait<B> for CommitAmend {
+    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+        state.issue_subscreen_command(term, git::commit_amend_cmd())?;
+        Ok(())
+    }
+}

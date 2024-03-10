@@ -172,6 +172,7 @@ impl Op {
         match self {
             CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
             Op::Commit => Box::new(ops::commit::Commit {}),
+            Op::CommitAmend => Box::new(ops::commit::CommitAmend {}),
             Target(Discard) => Box::new(ops::discard::Discard {}),
             _ => unimplemented!(),
         }

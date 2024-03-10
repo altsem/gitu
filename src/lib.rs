@@ -118,9 +118,10 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         SelectNext => state.screen_mut().select_next(),
         HalfPageUp => state.screen_mut().scroll_half_page_up(),
         HalfPageDown => state.screen_mut().scroll_half_page_down(),
+
         CheckoutNewBranch => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Commit => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        CommitAmend => state.issue_subscreen_command(term, git::commit_amend_cmd())?,
+        CommitAmend => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Submenu(op) => state.pending_submenu_op = op,
         LogCurrent => state.goto_log_screen(None),
         FetchAll => state.run_external_cmd(term, &[], git::fetch_all_cmd())?,
