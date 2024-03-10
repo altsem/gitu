@@ -88,6 +88,29 @@ pub fn run<B: Backend>(args: &cli::Args, term: &mut Terminal<B>) -> Res<()> {
     Ok(())
 }
 
+// TODO Split remaining parts into modules at crate::ops
+pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Terminal<B>) -> Res<()> {
+    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
+    state.pending_submenu_op = SubmenuOp::None;
+
+    match op {
+        Op::Quit => state.handle_quit(was_submenu)?,
+        Op::Refresh => state.screen_mut().update()?,
+
+        Op::Submenu(op) => state.pending_submenu_op = op,
+
+        Op::Target(TargetOp::Discard(_)) => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        Op::Target(target_op) => {
+            if let Some(mut action) = get_action(state.clone_target_data(), target_op) {
+                action(state, term)?;
+            }
+        }
+        _ => ops::OpTrait::<B>::trigger(&op, state, term)?,
+    }
+
+    Ok(())
+}
+
 fn get_action<B: Backend>(
     target_data: Option<TargetData>,
     target_op: TargetOp,
@@ -103,30 +126,11 @@ pub(crate) fn list_target_ops<B: Backend>(
         .map(|op| (op, data.clone()))
 }
 
-pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Terminal<B>) -> Res<()> {
-    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
-    state.pending_submenu_op = SubmenuOp::None;
-
-    match op {
-        Op::Quit => state.handle_quit(was_submenu)?,
-        Op::Refresh => state.screen_mut().update()?,
-
-        Op::Submenu(op) => state.pending_submenu_op = op,
-
-        Op::Target(TargetOp::Discard(_)) => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        Op::Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
-
-        _ => ops::OpTrait::<B>::trigger(&op, state, term)?,
-    }
-
-    Ok(())
-}
-
 type Action<B> = Box<dyn FnMut(&mut state::State, &mut Terminal<B>) -> Res<()>>;
 
+// TODO Split this into modules at crate::ops
 /// Retrieves the 'implementation' of a `TargetOp`.
-/// These are `Option<OpClosure>`s, so that the mappings
-/// can be introspected.
+/// These are `Option<Action>`s, so that you can tell whether they are implemented or not
 pub(crate) fn action_by_target_op<B: Backend>(
     target: TargetData,
     target_op: &TargetOp,

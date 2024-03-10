@@ -20,7 +20,6 @@ use crate::items::TargetData;
 use crate::keybinds;
 use crate::ops::Op;
 use crate::ops::SubmenuOp;
-use crate::ops::TargetOp;
 use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
@@ -173,18 +172,6 @@ impl State {
         }
 
         self.prompt.set(op);
-    }
-
-    pub(crate) fn try_dispatch_target_action<B: Backend>(
-        &mut self,
-        target_op: TargetOp,
-        term: &mut Terminal<B>,
-    ) -> Res<()> {
-        if let Some(mut action) = get_action(self.clone_target_data(), target_op) {
-            action(self, term)?
-        }
-
-        Ok(())
     }
 
     pub(crate) fn screen_mut(&mut self) -> &mut Screen {
