@@ -3,6 +3,7 @@ use crate::{state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::process::Command;
 
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct Commit;
 impl<B: Backend> OpTrait<B> for Commit {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
@@ -14,6 +15,7 @@ impl<B: Backend> OpTrait<B> for Commit {
     }
 }
 
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct CommitAmend;
 impl<B: Backend> OpTrait<B> for CommitAmend {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {

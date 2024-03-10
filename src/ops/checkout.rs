@@ -4,10 +4,11 @@ use ratatui::{backend::Backend, prelude::Terminal};
 use std::{borrow::Cow, process::Command};
 use tui_prompts::{prelude::Status, State as _};
 
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct CheckoutNewBranch;
 impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
-        state.prompt.set(Op::CheckoutNewBranch);
+        state.prompt.set(Op::CheckoutNewBranch(CheckoutNewBranch));
         Ok(())
     }
 

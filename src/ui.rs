@@ -119,7 +119,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     .join(" "),
                 &style.hotkey,
             ),
-            Span::styled(format!(" {:?}", op), Style::new()),
+            Span::styled(format!(" {}", op), Style::new()),
         ]));
     }
 
@@ -139,7 +139,7 @@ fn format_keybinds_menu<'b, B: Backend>(
 
         submenu_binds_column.push(Line::from(vec![
             Span::styled(Keybind::format_key(bind), &style.hotkey),
-            Span::styled(format!(" {:?}", submenu), Style::new()),
+            Span::styled(format!(" {}", submenu), Style::new()),
         ]));
     }
 

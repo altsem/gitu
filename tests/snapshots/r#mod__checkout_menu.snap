@@ -14,7 +14,7 @@ Buffer {
         "                                                                                ",
         "────────────────────────────────────────────────────────────────────────────────",
         "Branch                                 * main   origin/main                     ",
-        "c CheckoutNewBranch                    b Checkout                               ",
+        "c Checkout new branch                  b Checkout                               ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,

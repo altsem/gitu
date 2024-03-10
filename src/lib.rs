@@ -110,15 +110,10 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
     match op {
         Op::Quit => state.handle_quit(was_submenu)?,
         Op::Refresh => state.screen_mut().update()?,
-        Op::ToggleSection => state.screen_mut().toggle_section(),
-        Op::SelectPrevious => state.screen_mut().select_previous(),
-        Op::SelectNext => state.screen_mut().select_next(),
-        Op::HalfPageUp => state.screen_mut().scroll_half_page_up(),
-        Op::HalfPageDown => state.screen_mut().scroll_half_page_down(),
 
         Op::Submenu(op) => state.pending_submenu_op = op,
 
-        Op::Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        Op::Target(TargetOp::Discard(_)) => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Op::Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
 
         _ => ops::OpTrait::<B>::trigger(&op, state, term)?,
@@ -159,8 +154,8 @@ pub(crate) fn action_by_target_op<B: Backend>(
         (ResetSoft, Commit(r) | Branch(r)) => cmd_arg(git::reset_soft_cmd, r.into()),
         (ResetMixed, Commit(r) | Branch(r)) => cmd_arg(git::reset_mixed_cmd, r.into()),
         (ResetHard, Commit(r) | Branch(r)) => cmd_arg(git::reset_hard_cmd, r.into()),
-        (Discard, Branch(r)) => cmd_arg(git::discard_branch, r.into()),
-        (Discard, File(f)) => Some(Box::new(move |state, _term| {
+        (Discard(_), Branch(r)) => cmd_arg(git::discard_branch, r.into()),
+        (Discard(_), File(f)) => Some(Box::new(move |state, _term| {
             let path = PathBuf::from_iter([
                 state.repo.workdir().expect("No workdir").to_path_buf(),
                 f.clone(),
@@ -168,7 +163,7 @@ pub(crate) fn action_by_target_op<B: Backend>(
             std::fs::remove_file(path)?;
             state.screen_mut().update()
         })),
-        (Discard, Delta(d)) => {
+        (Discard(_), Delta(d)) => {
             if d.old_file == d.new_file {
                 cmd_arg(git::checkout_file_cmd, d.old_file.into())
             } else {
@@ -176,7 +171,7 @@ pub(crate) fn action_by_target_op<B: Backend>(
                 None
             }
         }
-        (Discard, Hunk(h)) => cmd(
+        (Discard(_), Hunk(h)) => cmd(
             h.format_patch().into_bytes(),
             git::discard_unstaged_patch_cmd,
         ),

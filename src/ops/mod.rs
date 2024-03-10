@@ -1,12 +1,13 @@
 use crate::{state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Display};
 use strum::EnumIter;
 use tui_prompts::prelude::Status;
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
 pub(crate) mod discard;
+pub(crate) mod editor;
 pub(crate) mod fetch;
 pub(crate) mod log;
 pub(crate) mod pull;
@@ -33,66 +34,28 @@ pub(crate) trait OpTrait<B: Backend> {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Op {
-    CheckoutNewBranch,
-    Commit,
-    CommitAmend,
-    FetchAll,
-    HalfPageDown,
-    HalfPageUp,
-    LogCurrent,
-    Pull,
-    Push,
     Quit,
-    RebaseAbort,
-    RebaseContinue,
     Refresh,
-    SelectNext,
-    SelectPrevious,
-    ShowRefs,
+
+    ToggleSection(editor::ToggleSection),
+    SelectNext(editor::SelectNext),
+    SelectPrevious(editor::SelectPrevious),
+    HalfPageUp(editor::HalfPageUp),
+    HalfPageDown(editor::HalfPageDown),
+
+    CheckoutNewBranch(checkout::CheckoutNewBranch),
+    Commit(commit::Commit),
+    CommitAmend(commit::CommitAmend),
+    FetchAll(fetch::FetchAll),
+    LogCurrent(log::LogCurrent),
+    Pull(pull::Pull),
+    Push(push::Push),
+    RebaseAbort(rebase::RebaseAbort),
+    RebaseContinue(rebase::RebaseContinue),
+    ShowRefs(show_refs::ShowRefs),
+
     Submenu(SubmenuOp),
     Target(TargetOp),
-    ToggleSection,
-}
-
-impl Op {
-    pub fn implementation<B: Backend>(&self) -> Box<dyn OpTrait<B>> {
-        match self {
-            Op::CheckoutNewBranch => Box::new(checkout::CheckoutNewBranch),
-            Op::Commit => Box::new(commit::Commit),
-            Op::CommitAmend => Box::new(commit::CommitAmend),
-            Op::FetchAll => Box::new(fetch::FetchAll),
-            Op::LogCurrent => Box::new(log::LogCurrent),
-            Op::Pull => Box::new(pull::Pull),
-            Op::Push => Box::new(push::Push),
-            Op::RebaseAbort => Box::new(rebase::RebaseAbort),
-            Op::RebaseContinue => Box::new(rebase::RebaseContinue),
-            Op::ShowRefs => Box::new(show_refs::ShowRefs),
-            Op::Target(TargetOp::Discard) => Box::new(discard::Discard),
-            _ => unimplemented!(),
-        }
-    }
-}
-
-impl<B: Backend> OpTrait<B> for Op {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
-        self.implementation::<B>().trigger(state, term)?;
-        Ok(())
-    }
-
-    fn format_prompt(&self) -> Cow<'static, str> {
-        self.implementation::<B>().format_prompt()
-    }
-
-    fn prompt_update(
-        &self,
-        status: tui_prompts::prelude::Status,
-        arg: &mut State,
-        term: &mut ratatui::prelude::Terminal<B>,
-    ) -> Res<()> {
-        self.implementation::<B>()
-            .prompt_update(status, arg, term)?;
-        Ok(())
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -114,7 +77,7 @@ pub(crate) enum SubmenuOp {
 pub(crate) enum TargetOp {
     Checkout,
     CommitFixup,
-    Discard,
+    Discard(discard::Discard),
     LogOther,
     RebaseAutosquash,
     RebaseInteractive,
@@ -124,4 +87,109 @@ pub(crate) enum TargetOp {
     Show,
     Stage,
     Unstage,
+}
+
+impl Op {
+    pub fn implementation<B: Backend>(self) -> Box<dyn OpTrait<B>> {
+        match self {
+            Op::ToggleSection(op_trait) => Box::new(op_trait),
+            Op::SelectNext(op_trait) => Box::new(op_trait),
+            Op::SelectPrevious(op_trait) => Box::new(op_trait),
+            Op::HalfPageUp(op_trait) => Box::new(op_trait),
+            Op::HalfPageDown(op_trait) => Box::new(op_trait),
+
+            Op::CheckoutNewBranch(op_trait) => Box::new(op_trait),
+            Op::Commit(op_trait) => Box::new(op_trait),
+            Op::CommitAmend(op_trait) => Box::new(op_trait),
+            Op::FetchAll(op_trait) => Box::new(op_trait),
+            Op::LogCurrent(op_trait) => Box::new(op_trait),
+            Op::Pull(op_trait) => Box::new(op_trait),
+            Op::Push(op_trait) => Box::new(op_trait),
+            Op::RebaseAbort(op_trait) => Box::new(op_trait),
+            Op::RebaseContinue(op_trait) => Box::new(op_trait),
+            Op::ShowRefs(op_trait) => Box::new(op_trait),
+            Op::Target(TargetOp::Discard(op_trait)) => Box::new(op_trait),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl<B: Backend> OpTrait<B> for Op {
+    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+        self.implementation::<B>().trigger(state, term)?;
+        Ok(())
+    }
+
+    fn format_prompt(&self) -> Cow<'static, str> {
+        self.implementation::<B>().format_prompt()
+    }
+
+    fn prompt_update(&self, status: Status, arg: &mut State, term: &mut Terminal<B>) -> Res<()> {
+        self.implementation::<B>()
+            .prompt_update(status, arg, term)?;
+        Ok(())
+    }
+}
+
+impl Display for Op {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Op::CheckoutNewBranch(_) => "Checkout new branch",
+            Op::Commit(_) => "Commit",
+            Op::CommitAmend(_) => "Commit amend",
+            Op::FetchAll(_) => "Fetch all",
+            Op::HalfPageDown(_) => "Half page down",
+            Op::HalfPageUp(_) => "Half page up",
+            Op::LogCurrent(_) => "Log current",
+            Op::Pull(_) => "Pull",
+            Op::Push(_) => "Push",
+            Op::Quit => "Quit",
+            Op::RebaseAbort(_) => "Rebase abort",
+            Op::RebaseContinue(_) => "Rebase continue",
+            Op::Refresh => "Refresh",
+            Op::SelectNext(_) => "Select next",
+            Op::SelectPrevious(_) => "Select previous",
+            Op::ShowRefs(_) => "Show refs",
+            Op::Submenu(_) => "Submenu",
+            Op::Target(_) => "Target",
+            Op::ToggleSection(_) => "Toggle section",
+        })
+    }
+}
+
+impl Display for SubmenuOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            SubmenuOp::Any => "Any",
+            SubmenuOp::Branch => "Branch",
+            SubmenuOp::Commit => "Commit",
+            SubmenuOp::Fetch => "Fetch",
+            SubmenuOp::Help => "Help",
+            SubmenuOp::Log => "Log",
+            SubmenuOp::None => "None",
+            SubmenuOp::Pull => "Pull",
+            SubmenuOp::Push => "Push",
+            SubmenuOp::Rebase => "Rebase",
+            SubmenuOp::Reset => "Reset",
+        })
+    }
+}
+
+impl Display for TargetOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            TargetOp::Checkout => "Checkout",
+            TargetOp::CommitFixup => "Commit fixup",
+            TargetOp::Discard(_) => "Discard",
+            TargetOp::LogOther => "Log other",
+            TargetOp::RebaseAutosquash => "Rebase autosquash",
+            TargetOp::RebaseInteractive => "Rebase interactive",
+            TargetOp::ResetSoft => "Reset soft",
+            TargetOp::ResetMixed => "Reset mixed",
+            TargetOp::ResetHard => "Reset hard",
+            TargetOp::Show => "Show",
+            TargetOp::Stage => "Stage",
+            TargetOp::Unstage => "Unstage",
+        })
+    }
 }
