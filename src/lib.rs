@@ -118,19 +118,12 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         HalfPageUp => state.screen_mut().scroll_half_page_up(),
         HalfPageDown => state.screen_mut().scroll_half_page_down(),
 
-        CheckoutNewBranch => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        Commit => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        CommitAmend => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Submenu(op) => state.pending_submenu_op = op,
-        LogCurrent => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        FetchAll => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        Pull => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        Push => ops::OpTrait::<B>::trigger(&op, state, term)?,
+
         Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
-        RebaseAbort => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        RebaseContinue => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        ShowRefs => ops::OpTrait::<B>::trigger(&op, state, term)?,
+
+        _ => ops::OpTrait::<B>::trigger(&op, state, term)?,
     }
 
     Ok(())
