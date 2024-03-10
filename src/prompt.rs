@@ -1,5 +1,6 @@
+use crate::ops::Op;
+
 use super::Res;
-use crate::keybinds::Op;
 use ratatui::{backend::Backend, Terminal};
 use tui_prompts::{State, TextState};
 

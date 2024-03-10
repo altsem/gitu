@@ -3,8 +3,7 @@ use crate::{state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::process::Command;
 
-pub(crate) struct Commit {}
-
+pub(crate) struct Commit;
 impl<B: Backend> OpTrait<B> for Commit {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         let mut cmd = Command::new("git");
@@ -15,8 +14,7 @@ impl<B: Backend> OpTrait<B> for Commit {
     }
 }
 
-pub(crate) struct CommitAmend {}
-
+pub(crate) struct CommitAmend;
 impl<B: Backend> OpTrait<B> for CommitAmend {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         let mut cmd = Command::new("git");

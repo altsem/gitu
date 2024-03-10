@@ -3,8 +3,7 @@ use crate::{screen, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::rc::Rc;
 
-pub(crate) struct ShowRefs {}
-
+pub(crate) struct ShowRefs;
 impl<B: Backend> OpTrait<B> for ShowRefs {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
         goto_refs_screen(state);

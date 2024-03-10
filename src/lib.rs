@@ -11,12 +11,12 @@ pub mod state;
 pub mod term;
 mod ui;
 
-use crate::keybinds::{Op, SubmenuOp};
+use crate::ops::SubmenuOp;
 use crossterm::event::{self};
 use git2::Repository;
 use items::{Item, TargetData};
 use itertools::Itertools;
-use keybinds::TargetOp;
+use ops::{Op, TargetOp};
 use ratatui::prelude::*;
 use state::State;
 use std::{
@@ -104,24 +104,22 @@ pub(crate) fn list_target_ops<B: Backend>(
 }
 
 pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Terminal<B>) -> Res<()> {
-    use Op::*;
-
     let was_submenu = state.pending_submenu_op != SubmenuOp::None;
     state.pending_submenu_op = SubmenuOp::None;
 
     match op {
-        Quit => state.handle_quit(was_submenu)?,
-        Refresh => state.screen_mut().update()?,
-        ToggleSection => state.screen_mut().toggle_section(),
-        SelectPrevious => state.screen_mut().select_previous(),
-        SelectNext => state.screen_mut().select_next(),
-        HalfPageUp => state.screen_mut().scroll_half_page_up(),
-        HalfPageDown => state.screen_mut().scroll_half_page_down(),
+        Op::Quit => state.handle_quit(was_submenu)?,
+        Op::Refresh => state.screen_mut().update()?,
+        Op::ToggleSection => state.screen_mut().toggle_section(),
+        Op::SelectPrevious => state.screen_mut().select_previous(),
+        Op::SelectNext => state.screen_mut().select_next(),
+        Op::HalfPageUp => state.screen_mut().scroll_half_page_up(),
+        Op::HalfPageDown => state.screen_mut().scroll_half_page_down(),
 
-        Submenu(op) => state.pending_submenu_op = op,
+        Op::Submenu(op) => state.pending_submenu_op = op,
 
-        Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
+        Op::Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        Op::Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
 
         _ => ops::OpTrait::<B>::trigger(&op, state, term)?,
     }

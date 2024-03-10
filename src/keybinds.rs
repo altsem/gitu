@@ -1,19 +1,10 @@
-use std::borrow::Cow;
-
+use crate::ops::Op;
+use crate::ops::Op::*;
+use crate::ops::SubmenuOp;
+use crate::ops::SubmenuOp::*;
+use crate::ops::TargetOp::*;
 use crossterm::event::{self, KeyCode, KeyModifiers};
-
-use ratatui::{backend::Backend, Terminal};
-use strum::EnumIter;
 use KeyCode::*;
-use Op::*;
-use SubmenuOp::*;
-use TargetOp::*;
-
-use crate::{
-    ops::{self, OpTrait},
-    state::State,
-    Res,
-};
 
 pub(crate) struct Keybind {
     pub submenu: SubmenuOp,
@@ -143,101 +134,6 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(None, Char('s'), Target(Stage)),
     Keybind::nomod(None, Char('u'), Target(Unstage)),
 ];
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Op {
-    CheckoutNewBranch,
-    Commit,
-    CommitAmend,
-    FetchAll,
-    HalfPageDown,
-    HalfPageUp,
-    LogCurrent,
-    Pull,
-    Push,
-    Quit,
-    RebaseAbort,
-    RebaseContinue,
-    Refresh,
-    SelectNext,
-    SelectPrevious,
-    ShowRefs,
-    Submenu(SubmenuOp),
-    Target(TargetOp),
-    ToggleSection,
-}
-
-impl Op {
-    pub fn implementation<B: Backend>(&self) -> Box<dyn OpTrait<B>> {
-        match self {
-            Op::CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
-            Op::Commit => Box::new(ops::commit::Commit {}),
-            Op::CommitAmend => Box::new(ops::commit::CommitAmend {}),
-            Op::FetchAll => Box::new(ops::fetch::FetchAll {}),
-            Op::LogCurrent => Box::new(ops::log::LogCurrent {}),
-            Op::Pull => Box::new(ops::pull::Pull {}),
-            Op::Push => Box::new(ops::push::Push {}),
-            Op::RebaseAbort => Box::new(ops::rebase::RebaseAbort {}),
-            Op::RebaseContinue => Box::new(ops::rebase::RebaseContinue {}),
-            Op::ShowRefs => Box::new(ops::show_refs::ShowRefs {}),
-            Op::Target(Discard) => Box::new(ops::discard::Discard {}),
-            _ => unimplemented!(),
-        }
-    }
-}
-
-impl<B: Backend> OpTrait<B> for Op {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
-        self.implementation::<B>().trigger(state, term)?;
-        Ok(())
-    }
-
-    fn format_prompt(&self) -> Cow<'static, str> {
-        self.implementation::<B>().format_prompt()
-    }
-
-    fn prompt_update(
-        &self,
-        status: tui_prompts::prelude::Status,
-        arg: &mut State,
-        term: &mut ratatui::prelude::Terminal<B>,
-    ) -> Res<()> {
-        self.implementation::<B>()
-            .prompt_update(status, arg, term)?;
-        Ok(())
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum SubmenuOp {
-    Any,
-    Branch,
-    Commit,
-    Fetch,
-    Help,
-    Log,
-    None,
-    Pull,
-    Push,
-    Rebase,
-    Reset,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug, EnumIter)]
-pub(crate) enum TargetOp {
-    Checkout,
-    CommitFixup,
-    Discard,
-    LogOther,
-    RebaseAutosquash,
-    RebaseInteractive,
-    ResetSoft,
-    ResetMixed,
-    ResetHard,
-    Show,
-    Stage,
-    Unstage,
-}
 
 pub(crate) fn op_of_key_event(pending: SubmenuOp, key: event::KeyEvent) -> Option<Op> {
     KEYBINDS

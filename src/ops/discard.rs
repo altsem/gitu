@@ -1,16 +1,10 @@
-use super::OpTrait;
-use crate::{
-    get_action,
-    keybinds::{Op, TargetOp},
-    state::State,
-    ErrorBuffer, Res,
-};
+use super::{Op, OpTrait, TargetOp};
+use crate::{get_action, state::State, ErrorBuffer, Res};
 use ratatui::{backend::Backend, Terminal};
 use std::borrow::Cow;
 use tui_prompts::{prelude::Status, State as _};
 
-pub(crate) struct Discard {}
-
+pub(crate) struct Discard;
 impl<B: Backend> OpTrait<B> for Discard {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
         state.prompt_action::<B>(Op::Target(TargetOp::Discard));

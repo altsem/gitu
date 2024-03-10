@@ -1,11 +1,10 @@
-use super::OpTrait;
-use crate::{keybinds::Op, state::State, Res};
+use super::{Op, OpTrait};
+use crate::{state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::{borrow::Cow, process::Command};
 use tui_prompts::{prelude::Status, State as _};
 
-pub(crate) struct CheckoutNewBranch {}
-
+pub(crate) struct CheckoutNewBranch;
 impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
         state.prompt.set(Op::CheckoutNewBranch);

@@ -3,8 +3,7 @@ use crate::{state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::process::Command;
 
-pub(crate) struct RebaseContinue {}
-
+pub(crate) struct RebaseContinue;
 impl<B: Backend> OpTrait<B> for RebaseContinue {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         let mut cmd = Command::new("git");
@@ -15,8 +14,7 @@ impl<B: Backend> OpTrait<B> for RebaseContinue {
     }
 }
 
-pub(crate) struct RebaseAbort {}
-
+pub(crate) struct RebaseAbort;
 impl<B: Backend> OpTrait<B> for RebaseAbort {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         let mut cmd = Command::new("git");
