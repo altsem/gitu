@@ -1,16 +1,12 @@
 use super::OpTrait;
 use crate::{screen, state::State};
-use ratatui::backend::Backend;
+use ratatui::{backend::Backend, prelude::Terminal};
 use std::rc::Rc;
 
 pub(crate) struct LogCurrent {}
 
 impl<B: Backend> OpTrait<B> for LogCurrent {
-    fn trigger(
-        &self,
-        state: &mut crate::state::State,
-        _term: &mut ratatui::prelude::Terminal<B>,
-    ) -> crate::Res<()> {
+    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> crate::Res<()> {
         goto_log_screen(state, None);
         Ok(())
     }

@@ -173,6 +173,7 @@ impl Op {
             Op::CheckoutNewBranch => Box::new(ops::checkout::CheckoutNewBranch {}),
             Op::Commit => Box::new(ops::commit::Commit {}),
             Op::CommitAmend => Box::new(ops::commit::CommitAmend {}),
+            Op::FetchAll => Box::new(ops::fetch::FetchAll {}),
             Op::LogCurrent => Box::new(ops::log::LogCurrent {}),
             Op::Target(Discard) => Box::new(ops::discard::Discard {}),
             _ => unimplemented!(),

@@ -1,13 +1,12 @@
-use std::borrow::Cow;
-
-use ratatui::{backend::Backend, prelude::Terminal};
-use tui_prompts::prelude::Status;
-
 use crate::{state::State, Res};
+use ratatui::{backend::Backend, prelude::Terminal};
+use std::borrow::Cow;
+use tui_prompts::prelude::Status;
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
 pub(crate) mod discard;
+pub(crate) mod fetch;
 pub(crate) mod log;
 
 pub(crate) trait OpTrait<B: Backend> {

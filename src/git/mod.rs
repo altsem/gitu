@@ -252,9 +252,6 @@ pub(crate) fn discard_branch(branch: &OsStr) -> Command {
 pub(crate) fn commit_fixup_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("commit"), OsStr::new("--fixup"), reference])
 }
-pub(crate) fn fetch_all_cmd() -> Command {
-    git(["fetch", "--all"])
-}
 pub(crate) fn push_cmd() -> Command {
     git(["push"])
 }

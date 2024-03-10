@@ -124,7 +124,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         CommitAmend => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Submenu(op) => state.pending_submenu_op = op,
         LogCurrent => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        FetchAll => state.run_external_cmd(term, &[], git::fetch_all_cmd())?,
+        FetchAll => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Pull => state.run_external_cmd(term, &[], git::pull_cmd())?,
         Push => state.run_external_cmd(term, &[], git::push_cmd())?,
         Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,

@@ -7,7 +7,7 @@ use crate::{
 };
 use ratatui::{backend::Backend, Terminal};
 use std::borrow::Cow;
-use tui_prompts::State as _;
+use tui_prompts::{prelude::Status, State as _};
 
 pub(crate) struct Discard {}
 
@@ -24,9 +24,9 @@ impl<B: Backend> OpTrait<B> for Discard {
 
     fn prompt_update(
         &self,
-        status: tui_prompts::prelude::Status,
+        status: Status,
         state: &mut State,
-        term: &mut ratatui::prelude::Terminal<B>,
+        term: &mut Terminal<B>,
     ) -> crate::Res<()> {
         if status.is_pending() {
             match state.prompt.state.value() {
