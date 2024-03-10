@@ -8,6 +8,10 @@ pub(crate) mod commit;
 pub(crate) mod discard;
 pub(crate) mod fetch;
 pub(crate) mod log;
+pub(crate) mod pull;
+pub(crate) mod push;
+pub(crate) mod rebase;
+pub(crate) mod show_refs;
 
 pub(crate) trait OpTrait<B: Backend> {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()>;

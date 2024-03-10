@@ -275,13 +275,4 @@ impl State {
 
         Ok(())
     }
-
-    pub(crate) fn goto_refs_screen(&mut self) {
-        self.screens.drain(1..);
-        let size = self.screens.last().unwrap().size;
-        self.screens.push(
-            screen::show_refs::create(Rc::clone(&self.config), Rc::clone(&self.repo), size)
-                .expect("Couldn't create screen"),
-        );
-    }
 }

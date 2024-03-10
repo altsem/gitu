@@ -252,12 +252,6 @@ pub(crate) fn discard_branch(branch: &OsStr) -> Command {
 pub(crate) fn commit_fixup_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("commit"), OsStr::new("--fixup"), reference])
 }
-pub(crate) fn push_cmd() -> Command {
-    git(["push"])
-}
-pub(crate) fn pull_cmd() -> Command {
-    git(["pull"])
-}
 pub(crate) fn rebase_interactive_cmd(reference: &OsStr) -> Command {
     git([
         OsStr::new("rebase"),
@@ -275,12 +269,6 @@ pub(crate) fn rebase_autosquash_cmd(reference: &OsStr) -> Command {
         OsStr::new("--autostash"),
         reference,
     ])
-}
-pub(crate) fn rebase_continue_cmd() -> Command {
-    git(["rebase", "--continue"])
-}
-pub(crate) fn rebase_abort_cmd() -> Command {
-    git(["rebase", "--abort"])
 }
 pub(crate) fn reset_soft_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("reset"), OsStr::new("--soft"), reference])

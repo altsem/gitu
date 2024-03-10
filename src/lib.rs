@@ -109,7 +109,6 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
     let was_submenu = state.pending_submenu_op != SubmenuOp::None;
     state.pending_submenu_op = SubmenuOp::None;
 
-    // TODO Move into separate modules
     match op {
         Quit => state.handle_quit(was_submenu)?,
         Refresh => state.screen_mut().update()?,
@@ -125,13 +124,13 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
         Submenu(op) => state.pending_submenu_op = op,
         LogCurrent => ops::OpTrait::<B>::trigger(&op, state, term)?,
         FetchAll => ops::OpTrait::<B>::trigger(&op, state, term)?,
-        Pull => state.run_external_cmd(term, &[], git::pull_cmd())?,
-        Push => state.run_external_cmd(term, &[], git::push_cmd())?,
+        Pull => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        Push => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Target(target_op) => state.try_dispatch_target_action(target_op, term)?,
-        RebaseAbort => state.run_external_cmd(term, &[], git::rebase_abort_cmd())?,
-        RebaseContinue => state.issue_subscreen_command(term, git::rebase_continue_cmd())?,
-        ShowRefs => state.goto_refs_screen(),
+        RebaseAbort => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        RebaseContinue => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        ShowRefs => ops::OpTrait::<B>::trigger(&op, state, term)?,
     }
 
     Ok(())

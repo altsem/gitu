@@ -175,6 +175,11 @@ impl Op {
             Op::CommitAmend => Box::new(ops::commit::CommitAmend {}),
             Op::FetchAll => Box::new(ops::fetch::FetchAll {}),
             Op::LogCurrent => Box::new(ops::log::LogCurrent {}),
+            Op::Pull => Box::new(ops::pull::Pull {}),
+            Op::Push => Box::new(ops::push::Push {}),
+            Op::RebaseAbort => Box::new(ops::rebase::RebaseAbort {}),
+            Op::RebaseContinue => Box::new(ops::rebase::RebaseContinue {}),
+            Op::ShowRefs => Box::new(ops::show_refs::ShowRefs {}),
             Op::Target(Discard) => Box::new(ops::discard::Discard {}),
             _ => unimplemented!(),
         }
