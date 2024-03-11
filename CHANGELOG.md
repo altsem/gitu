@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2024-03-11
+
+### 🐛 Bug Fixes
+
+- Gitu would not open inside submodules
+
 ## [0.5.4] - 2024-03-10
 
 ### 🐛 Bug Fixes
