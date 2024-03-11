@@ -3,7 +3,6 @@ use git2::Repository;
 use gitu::{cli::Args, config, state::State};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::{
-    borrow::Cow,
     env, fs,
     path::{Path, PathBuf},
     process::Command,

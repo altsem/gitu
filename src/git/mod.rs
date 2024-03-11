@@ -11,7 +11,6 @@ use crate::{git2_opts, Res};
 use std::{
     ffi::OsStr,
     fs,
-    io::ErrorKind,
     path::{Path, PathBuf},
     process::Command,
     str::{self},
