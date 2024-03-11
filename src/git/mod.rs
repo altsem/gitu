@@ -46,11 +46,12 @@ pub(crate) fn rebase_status(repo: &Repository) -> Res<Option<RebaseStatus>> {
             }))
         }
         Err(err) => {
-            if err.kind() == ErrorKind::NotFound {
-                Ok(None)
-            } else {
-                Err(Box::new(err))
-            }
+            log::warn!(
+                "Couldn't read {}, due to {}",
+                rebase_onto_file.to_string_lossy(),
+                err
+            );
+            Ok(None)
         }
     }
 }
@@ -68,11 +69,12 @@ pub(crate) fn merge_status(repo: &Repository) -> Res<Option<MergeStatus>> {
             }))
         }
         Err(err) => {
-            if err.kind() == ErrorKind::NotFound {
-                Ok(None)
-            } else {
-                Err(Box::new(err))
-            }
+            log::warn!(
+                "Couldn't read {}, due to {}",
+                merge_head_file.to_string_lossy(),
+                err
+            );
+            Ok(None)
         }
     }
 }

@@ -418,3 +418,23 @@ fn scroll_down() {
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn inside_submodule() {
+    let mut ctx = TestContext::setup_clone(80, 20);
+    run(
+        ctx.dir.path(),
+        &[
+            "git",
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            ctx.remote_dir.path().to_str().unwrap(),
+            "test-submodule",
+        ],
+    );
+
+    let _state = ctx.init_state_at_path(ctx.dir.child("test-submodule"));
+    insta::assert_snapshot!(ctx.redact_buffer());
+}

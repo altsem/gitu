@@ -2,7 +2,12 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use git2::Repository;
 use gitu::{cli::Args, config, state::State};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
-use std::{env, fs, path::Path, process::Command};
+use std::{
+    borrow::Cow,
+    env, fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 use temp_dir::TempDir;
 
 pub struct TestContext {
@@ -59,8 +64,12 @@ impl TestContext {
     }
 
     pub fn init_state(&mut self) -> State {
+        self.init_state_at_path(self.dir.path().to_path_buf())
+    }
+
+    pub fn init_state_at_path(&mut self, path: PathBuf) -> State {
         let mut state = State::create(
-            Repository::open(self.dir.path()).unwrap(),
+            Repository::open(path).unwrap(),
             self.size,
             &Args {
                 command: None,
@@ -146,12 +155,16 @@ pub fn commit(dir: &Path, file_name: &str, contents: &str) {
     run(dir, &["git", "commit", "-m", &message]);
 }
 
-pub fn run(dir: &Path, cmd: &[&str]) {
-    Command::new(cmd[0])
-        .args(&cmd[1..])
-        .current_dir(dir)
-        .output()
-        .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd));
+pub fn run(dir: &Path, cmd: &[&str]) -> String {
+    String::from_utf8(
+        Command::new(cmd[0])
+            .args(&cmd[1..])
+            .current_dir(dir)
+            .output()
+            .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd))
+            .stderr,
+    )
+    .unwrap()
 }
 
 pub fn key(char: char) -> Event {
