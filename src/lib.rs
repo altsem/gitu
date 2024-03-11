@@ -179,7 +179,6 @@ pub(crate) fn action_by_target_op<B: Backend>(
             h.format_patch().into_bytes(),
             git::discard_unstaged_patch_cmd,
         ),
-        (Checkout, Commit(r) | Branch(r)) => cmd_arg(git::checkout_ref_cmd, r.into()),
         (LogOther, Commit(r) | Branch(r)) => Some(Box::new(move |state, _term| {
             ops::log::goto_log_screen(state, Some(r.clone()));
             Ok(())

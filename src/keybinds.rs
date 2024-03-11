@@ -1,3 +1,4 @@
+use crate::ops::checkout::Checkout;
 use crate::ops::checkout::CheckoutNewBranch;
 use crate::ops::commit::Commit;
 use crate::ops::commit::CommitAmend;
@@ -120,7 +121,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::None, Char('h'), Op::Submenu(SubmenuOp::Help)),
     // Branch
     Keybind::nomod(SubmenuOp::None, Char('b'), Op::Submenu(SubmenuOp::Branch)),
-    Keybind::nomod(SubmenuOp::Branch, Char('b'), Op::Target(TargetOp::Checkout)),
+    Keybind::nomod(SubmenuOp::Branch, Char('b'), Op::Checkout(Checkout)),
     Keybind::nomod(
         SubmenuOp::Branch,
         Char('c'),

@@ -306,7 +306,7 @@ fn checkout_menu() {
 }
 
 #[test]
-fn switch_branch() {
+fn switch_branch_selected() {
     let mut ctx = TestContext::setup_clone(80, 10);
     run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
@@ -314,7 +314,38 @@ fn switch_branch() {
     state
         .update(
             &mut ctx.term,
-            &[key('y'), key('j'), key('j'), key('b'), key('b')],
+            &[
+                key('y'),
+                key('j'),
+                key('j'),
+                key('b'),
+                key('b'),
+                key_code(KeyCode::Enter),
+            ],
+        )
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn switch_branch_input() {
+    let mut ctx = TestContext::setup_clone(80, 10);
+    run(ctx.dir.path(), &["git", "branch", "hi"]);
+
+    let mut state = ctx.init_state();
+    state
+        .update(
+            &mut ctx.term,
+            &[
+                key('y'),
+                key('j'),
+                key('j'),
+                key('b'),
+                key('b'),
+                key('h'),
+                key('i'),
+                key_code(KeyCode::Enter),
+            ],
         )
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());

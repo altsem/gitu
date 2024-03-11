@@ -70,7 +70,7 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
 
     if let Some(prompt) = state.prompt.pending_op {
         let prompt =
-            TextPrompt::new(OpTrait::<B>::format_prompt(&prompt)).with_block(popup_block());
+            TextPrompt::new(OpTrait::<B>::format_prompt(&prompt, state)).with_block(popup_block());
         frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
@@ -189,7 +189,7 @@ fn format_keybinds_menu<'b, B: Backend>(
         .collect::<Vec<_>>();
 
     let widths = [
-        Constraint::Max(25),
+        Constraint::Max(28),
         Constraint::Max(12),
         Constraint::Length(25),
     ];

@@ -18,7 +18,7 @@ pub(crate) mod show_refs;
 pub(crate) trait OpTrait<B: Backend> {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()>;
 
-    fn format_prompt(&self) -> Cow<'static, str> {
+    fn format_prompt(&self, _state: &State) -> Cow<'static, str> {
         unimplemented!()
     }
 
@@ -43,6 +43,7 @@ pub(crate) enum Op {
     HalfPageUp(editor::HalfPageUp),
     HalfPageDown(editor::HalfPageDown),
 
+    Checkout(checkout::Checkout),
     CheckoutNewBranch(checkout::CheckoutNewBranch),
     Commit(commit::Commit),
     CommitAmend(commit::CommitAmend),
@@ -75,7 +76,6 @@ pub(crate) enum SubmenuOp {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, EnumIter)]
 pub(crate) enum TargetOp {
-    Checkout,
     CommitFixup,
     Discard(discard::Discard),
     LogOther,
@@ -98,6 +98,7 @@ impl Op {
             Op::HalfPageUp(op_trait) => Box::new(op_trait),
             Op::HalfPageDown(op_trait) => Box::new(op_trait),
 
+            Op::Checkout(op_trait) => Box::new(op_trait),
             Op::CheckoutNewBranch(op_trait) => Box::new(op_trait),
             Op::Commit(op_trait) => Box::new(op_trait),
             Op::CommitAmend(op_trait) => Box::new(op_trait),
@@ -120,8 +121,8 @@ impl<B: Backend> OpTrait<B> for Op {
         Ok(())
     }
 
-    fn format_prompt(&self) -> Cow<'static, str> {
-        self.implementation::<B>().format_prompt()
+    fn format_prompt(&self, state: &State) -> Cow<'static, str> {
+        self.implementation::<B>().format_prompt(state)
     }
 
     fn prompt_update(&self, status: Status, arg: &mut State, term: &mut Terminal<B>) -> Res<()> {
@@ -134,6 +135,7 @@ impl<B: Backend> OpTrait<B> for Op {
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
+            Op::Checkout(_) => "Checkout branch/revision",
             Op::CheckoutNewBranch(_) => "Checkout new branch",
             Op::Commit(_) => "Commit",
             Op::CommitAmend(_) => "Commit amend",
@@ -178,7 +180,6 @@ impl Display for SubmenuOp {
 impl Display for TargetOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            TargetOp::Checkout => "Checkout",
             TargetOp::CommitFixup => "Commit fixup",
             TargetOp::Discard(_) => "Discard",
             TargetOp::LogOther => "Log other",

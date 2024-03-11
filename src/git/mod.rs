@@ -283,9 +283,6 @@ pub(crate) fn reset_hard_cmd(reference: &OsStr) -> Command {
 pub(crate) fn checkout_file_cmd(file: &OsStr) -> Command {
     git([OsStr::new("checkout"), OsStr::new("--"), file])
 }
-pub(crate) fn checkout_ref_cmd(reference: &OsStr) -> Command {
-    git([OsStr::new("checkout"), reference])
-}
 
 pub(crate) fn git<I, S>(args: I) -> Command
 where

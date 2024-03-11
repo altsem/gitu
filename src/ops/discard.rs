@@ -12,7 +12,7 @@ impl<B: Backend> OpTrait<B> for Discard {
         Ok(())
     }
 
-    fn format_prompt(&self) -> Cow<'static, str> {
+    fn format_prompt(&self, _state: &State) -> Cow<'static, str> {
         // TODO Show what is being discarded
         "Really discard? (y or n)".into()
     }
