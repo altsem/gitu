@@ -127,6 +127,7 @@ fn set_env_vars() {
     env::set_var("GIT_CONFIG_SYSTEM", "/dev/null");
     env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
     env::set_var("GIT_AUTHOR_DATE", "Fri Feb 16 11:11 2024 +0100");
+    env::set_var("LC_ALL", "C");
 }
 
 fn set_config(path: &Path) {
