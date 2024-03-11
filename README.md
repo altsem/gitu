@@ -40,6 +40,16 @@ Run the command (recommended):
 ...or to install from git, run:
 `cargo install --git https://github.com/altsem/gitu.git --locked`
 
+#### Using Release binaries
+
+gitu is available on Github Releases and should be installed from there.
+
+The latest release is available
+[here](https://github.com/altsem/gitu/releases).
+
+Download the archive that is appropriate for your platform and extract the
+binary into your `$PATH`. A common valid path location is `/usr/local/bin`.
+
 ### Configuration
 The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
 
