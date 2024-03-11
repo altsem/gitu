@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2024-03-11
+
+### 🚀 Features
+
+- Prompt what to checkout, default to selected item (like Magit)
+
 ## [0.5.5] - 2024-03-11
 
 ### 🐛 Bug Fixes
