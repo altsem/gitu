@@ -16,6 +16,9 @@ jobs:
       upload_url: ${{ steps.release.outputs.upload_url }}
       gitu_version: ${{ env.GITU_VERSION }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Gather information
         shell: bash
         if: env.GITU_VERSION == ''
