@@ -50,6 +50,29 @@ The latest release is available
 Download the archive that is appropriate for your platform and extract the
 binary into your `$PATH`. A common valid path location is `/usr/local/bin`.
 
+#### Using Nix flakes
+To build from `master` on flaked Nix platforms add this repo to your inputs:
+
+```
+inputs = {
+  nixpkgs.url = "nixpkgs/nixos-unstable";
+  gitu.url = "github:altsem/gitu";
+  gitu.inputs.nixpkgs.follows = "nixpkgs";
+};
+```
+
+Then wherever you install your packages (i.e., `home-manager`):
+
+```
+{ inputs, pkgs, lib, system, ... }: 
+{
+home.packages = with pkgs;
+  [
+    inputs.gitu.packages.${system}.default
+  ];
+}
+```
+
 ### Configuration
 The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
 
