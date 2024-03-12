@@ -28,8 +28,9 @@
         gitu = craneLib.buildPackage {
           src = craneLib.cleanCargoSource (craneLib.path ./.);
           doCheck = false;
-          buildInputs = with pkgs; [ openssl ];
-          nativeBuildInputs = with pkgs; [ pkg-config ];
+          buildInputs = with pkgs;
+            [ openssl pkg-config ] ++ nixpkgs.lib.optionals stdenv.isDarwin
+            [ darwin.apple_sdk.frameworks.Security ];
         };
       in {
         checks = { inherit gitu; };
