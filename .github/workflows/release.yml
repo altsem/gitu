@@ -17,12 +17,22 @@ jobs:
       upload_url: ${{ steps.release.outputs.upload_url }}
       gitu_version: ${{ env.GITU_VERSION }}
     steps:
-      - name: Get the release version from the tag
+      - name: Install git cliff
+        run: cargo install --locked git-cliff || true
+
+      - name: Gather information
         shell: bash
         if: env.GITU_VERSION == ''
         run: |
           echo "GITU_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
           echo "version is: ${{ env.GITU_VERSION }}"
+
+          echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_ENV
+          echo "$(git cliff --current --strip header)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "changelog entry:"
+          echo "${{ env.CHANGELOG_ENTRY }}"
+
       - name: Create GitHub release
         id: release
         uses: actions/create-release@v1
@@ -31,6 +41,7 @@ jobs:
         with:
           tag_name: ${{ env.GITU_VERSION }}
           release_name: ${{ env.GITU_VERSION }}
+          body: ${{ env.CHANGELOG_ENTRY }}
 
   build-release:
     name: build-release
