@@ -21,7 +21,7 @@ clap = { version = "4.5.1", features = ["derive"] }
 crossterm = "0.27.0"
 directories = "5.0.1"
 figment = { version = "0.10.14", features = ["toml"] }
-git2 = "0.18.2"
+git2 = { version = "0.18.2", default-features = false }
 itertools = "0.12.0"
 log = "0.4.21"
 ratatui = { version = "0.26.1", features = ["serde"] }
