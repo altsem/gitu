@@ -40,7 +40,7 @@
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
           inputsFrom = [ gitu ];
-          packages = with pkgs; [ cargo-insta clippy rust-analyzer rustfmt ];
+          packages = with pkgs; [ clippy rust-analyzer rustfmt ];
         };
       });
 }
