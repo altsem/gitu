@@ -19,7 +19,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-tags: true
+          sparse-checkout: .recent-changelog-entry
+          sparse-checkout-cone-mode: false
 
       - name: Gather information
         shell: bash
@@ -29,7 +30,7 @@ jobs:
           echo "version is: ${{ env.GITU_VERSION }}"
 
           echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_ENV
-          echo "$(git for-each-ref refs/tags/${GITHUB_REF_NAME} --format='%(contents)')" >> $GITHUB_ENV
+          cat .recent-changelog-entry >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           echo "changelog entry:"
           echo "${{ env.CHANGELOG_ENTRY }}"

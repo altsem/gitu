@@ -11,8 +11,8 @@ fi
 
 cargo set-version "$(echo "$version" | sed s/^v//)"
 git cliff --tag "$version" > CHANGELOG.md
-changelog_entry="$(git cliff --unreleased --tag "$version" --strip header)"
+git cliff --unreleased --tag "$version" --strip header > .recent-changelog-entry
 
-git add Cargo.toml Cargo.lock CHANGELOG.md
+git add Cargo.toml Cargo.lock CHANGELOG.md .recent-changelog-entry
 git commit -m "chore(release): prepare for $version"
-git -c core.commentChar="@" tag -am "$changelog_entry" "$version"
+git tag -am "$version" "$version"
