@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.2] - 2024-03-12
+
+### 🐛 Bug Fixes
+
+- Include changelog entry in github release
+
 ## [0.6.1] - 2024-03-12
 
 ### 🐛 Bug Fixes
