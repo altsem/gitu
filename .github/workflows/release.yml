@@ -1,6 +1,5 @@
 name: release
 on:
-  workflow_dispatch:
   push:
     tags:
     - "v[0-9]+.[0-9]+.[0-9]+"
@@ -17,9 +16,6 @@ jobs:
       upload_url: ${{ steps.release.outputs.upload_url }}
       gitu_version: ${{ env.GITU_VERSION }}
     steps:
-      - name: Install git cliff
-        run: cargo install --locked git-cliff || true
-
       - name: Gather information
         shell: bash
         if: env.GITU_VERSION == ''
@@ -28,7 +24,7 @@ jobs:
           echo "version is: ${{ env.GITU_VERSION }}"
 
           echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_ENV
-          echo "$(git cliff --current --strip header)" >> $GITHUB_ENV
+          echo "$(git for-each-ref refs/tags/${GITHUB_REF_NAME} --format='%(contents)')" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           echo "changelog entry:"
           echo "${{ env.CHANGELOG_ENTRY }}"
@@ -41,7 +37,7 @@ jobs:
         with:
           tag_name: ${{ env.GITU_VERSION }}
           release_name: ${{ env.GITU_VERSION }}
-          body: ${{ env.CHANGELOG_ENTRY }}
+          body: "${{ env.CHANGELOG_ENTRY }}"
 
   build-release:
     name: build-release
