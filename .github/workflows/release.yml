@@ -18,6 +18,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        fetch-tags: true
 
       - name: Gather information
         shell: bash
