@@ -9,6 +9,8 @@ jobs:
   create-release:
     name: create-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       GITU_VERSION: ""
     outputs:
@@ -34,6 +36,8 @@ jobs:
     name: build-release
     needs: ['create-release']
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     env:
       CARGO: cargo
       TARGET_FLAGS: "--target ${{ matrix.target }}"
