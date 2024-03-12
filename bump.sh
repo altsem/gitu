@@ -3,6 +3,11 @@
 set -e
 
 version=$(git cliff --bumped-version)
+if git rev-parse "refs/tags/$version" >/dev/null 2>&1
+then
+  echo "tag $version exists"
+  exit 1
+fi
 
 cargo set-version "$(echo "$version" | sed s/^v//)"
 git cliff --tag "$version" > CHANGELOG.md
