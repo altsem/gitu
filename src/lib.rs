@@ -90,7 +90,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
 
         Op::Submenu(op) => state.pending_submenu_op = op,
 
-        Op::Target(TargetOp::Discard(_)) => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        Op::Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Op::Target(target_op) => {
             if let Some(mut action) = ops::get_action(state.clone_target_data(), target_op) {
                 action(state, term)?;

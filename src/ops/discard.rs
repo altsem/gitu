@@ -8,7 +8,7 @@ use tui_prompts::{prelude::Status, State as _};
 pub(crate) struct Discard;
 impl<B: Backend> OpTrait<B> for Discard {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
-        state.prompt_action::<B>(Op::Target(TargetOp::Discard(Discard)));
+        state.prompt_action::<B>(Op::Target(TargetOp::Discard));
         Ok(())
     }
 
@@ -22,7 +22,7 @@ impl<B: Backend> OpTrait<B> for Discard {
             match state.prompt.state.value() {
                 "y" => {
                     let mut action =
-                        get_action(state.clone_target_data(), TargetOp::Discard(Discard)).unwrap();
+                        get_action(state.clone_target_data(), TargetOp::Discard).unwrap();
                     action(state, term)?;
                     state.prompt.reset(term)?;
                 }

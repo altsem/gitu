@@ -8,7 +8,7 @@ use tui_prompts::{prelude::Status, State as _};
 pub(crate) struct Checkout;
 impl<B: Backend> OpTrait<B> for Checkout {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
-        state.prompt.set(Op::Checkout(Checkout));
+        state.prompt.set(Op::Checkout);
         Ok(())
     }
 
@@ -51,7 +51,7 @@ fn default_branch_or_revision(state: &State) -> Option<&str> {
 pub(crate) struct CheckoutNewBranch;
 impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
     fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
-        state.prompt.set(Op::CheckoutNewBranch(CheckoutNewBranch));
+        state.prompt.set(Op::CheckoutNewBranch);
         Ok(())
     }
 
