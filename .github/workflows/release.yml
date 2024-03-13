@@ -13,7 +13,7 @@ jobs:
 
     - name: Cargo publish
       run: |
-        cargo publish --token "${{ env.CARGO_REGISTRY_TOKEN }}"
+        cargo publish
 
   create-github-release:
     runs-on: ubuntu-latest
