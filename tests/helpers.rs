@@ -1,6 +1,11 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use git2::Repository;
-use gitu::{cli::Args, config, state::State};
+use gitu::{
+    cli::Args,
+    config,
+    state::State,
+    term::{Term, TermBackend},
+};
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::{
     env, fs,
@@ -10,7 +15,7 @@ use std::{
 use temp_dir::TempDir;
 
 pub struct TestContext {
-    pub term: Terminal<TestBackend>,
+    pub term: Term,
     pub dir: TempDir,
     pub remote_dir: TempDir,
     pub size: Rect,
@@ -18,7 +23,7 @@ pub struct TestContext {
 
 impl TestContext {
     pub fn setup_init(width: u16, height: u16) -> Self {
-        let term = Terminal::new(TestBackend::new(width, height)).unwrap();
+        let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
         let remote_dir = TempDir::new().unwrap();
         let dir = TempDir::new().unwrap();
 
@@ -35,7 +40,7 @@ impl TestContext {
     }
 
     pub fn setup_clone(width: u16, height: u16) -> Self {
-        let term = Terminal::new(TestBackend::new(width, height)).unwrap();
+        let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
         let remote_dir = TempDir::new().unwrap();
         let dir = TempDir::new().unwrap();
 
@@ -84,7 +89,10 @@ impl TestContext {
     }
 
     pub fn redact_buffer(&self) -> String {
-        let mut debug_output = format!("{:#?}", self.term.backend().buffer());
+        let TermBackend::Test(test_backend) = self.term.backend() else {
+            unreachable!();
+        };
+        let mut debug_output = format!("{:#?}", test_backend.buffer());
 
         [&self.dir, &self.remote_dir]
             .iter()

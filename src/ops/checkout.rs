@@ -1,13 +1,12 @@
 use super::{Op, OpTrait};
-use crate::{items::TargetData, state::State, Res};
-use ratatui::{backend::Backend, prelude::Terminal};
+use crate::{items::TargetData, state::State, term::Term, Res};
 use std::{borrow::Cow, process::Command};
 use tui_prompts::{prelude::Status, State as _};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct Checkout;
-impl<B: Backend> OpTrait<B> for Checkout {
-    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for Checkout {
+    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
         state.prompt.set(Op::Checkout);
         Ok(())
     }
@@ -20,7 +19,7 @@ impl<B: Backend> OpTrait<B> for Checkout {
         }
     }
 
-    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Term) -> Res<()> {
         if status.is_done() {
             let input = state.prompt.state.value().to_string();
             let branch_or_revision = match (input.as_str(), default_branch_or_revision(state)) {
@@ -49,8 +48,8 @@ fn default_branch_or_revision(state: &State) -> Option<&str> {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct CheckoutNewBranch;
-impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
-    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for CheckoutNewBranch {
+    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
         state.prompt.set(Op::CheckoutNewBranch);
         Ok(())
     }
@@ -59,7 +58,7 @@ impl<B: Backend> OpTrait<B> for CheckoutNewBranch {
         "Create and checkout branch:".into()
     }
 
-    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Term) -> Res<()> {
         if status.is_done() {
             let name = state.prompt.state.value().to_string();
             let mut cmd = Command::new("git");

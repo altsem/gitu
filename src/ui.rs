@@ -23,7 +23,7 @@ enum Popup<'a> {
     Table(Table<'a>),
 }
 
-pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
+pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     let (popup_line_count, popup): (usize, Popup) = if let Some(ref error) = state.error_buffer {
         let text = error.0.clone().red().bold();
         (1, command_popup(text.into()))
@@ -31,7 +31,7 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
         let text = format_command(&state.config, cmd);
         (text.lines.len(), command_popup(text))
     } else if state.pending_submenu_op != SubmenuOp::None {
-        format_keybinds_menu::<B>(
+        format_keybinds_menu(
             &state.config,
             &state.pending_submenu_op,
             state.screen().get_selected_item(),
@@ -70,7 +70,7 @@ pub(crate) fn ui<B: Backend>(frame: &mut Frame, state: &mut State) {
 
     if let Some(prompt) = state.prompt.pending_op {
         let prompt =
-            TextPrompt::new(OpTrait::<B>::format_prompt(&prompt, state)).with_block(popup_block());
+            TextPrompt::new(OpTrait::format_prompt(&prompt, state)).with_block(popup_block());
         frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
@@ -92,7 +92,7 @@ fn format_command<'a>(config: &Config, cmd: &'a CmdMetaBuffer) -> Text<'a> {
     .into()
 }
 
-fn format_keybinds_menu<'b, B: Backend>(
+fn format_keybinds_menu<'b>(
     config: &Config,
     pending: &'b SubmenuOp,
     item: &'b Item,
@@ -152,7 +152,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     unreachable!();
                 };
 
-                TargetOpTrait::<B>::get_action(&target, target_data.clone()).is_some()
+                TargetOpTrait::get_action(&target, target_data.clone()).is_some()
             })
             .collect::<Vec<_>>();
 

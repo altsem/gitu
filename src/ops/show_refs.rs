@@ -1,12 +1,11 @@
 use super::OpTrait;
-use crate::{screen, state::State, Res};
-use ratatui::{backend::Backend, prelude::Terminal};
+use crate::{screen, state::State, term::Term, Res};
 use std::rc::Rc;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct ShowRefs;
-impl<B: Backend> OpTrait<B> for ShowRefs {
-    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for ShowRefs {
+    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
         goto_refs_screen(state);
         Ok(())
     }

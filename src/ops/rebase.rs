@@ -1,6 +1,5 @@
 use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
-use crate::{items::TargetData, state::State, Res};
-use ratatui::{backend::Backend, prelude::Terminal};
+use crate::{items::TargetData, state::State, term::Term, Res};
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -8,8 +7,8 @@ use std::{
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct RebaseContinue;
-impl<B: Backend> OpTrait<B> for RebaseContinue {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for RebaseContinue {
+    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
         let mut cmd = Command::new("git");
         cmd.args(["rebase", "--continue"]);
 
@@ -20,8 +19,8 @@ impl<B: Backend> OpTrait<B> for RebaseContinue {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct RebaseAbort;
-impl<B: Backend> OpTrait<B> for RebaseAbort {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for RebaseAbort {
+    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
         let mut cmd = Command::new("git");
         cmd.args(["rebase", "--abort"]);
 
@@ -32,8 +31,8 @@ impl<B: Backend> OpTrait<B> for RebaseAbort {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct RebaseInteractive;
-impl<B: Backend> TargetOpTrait<B> for RebaseInteractive {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+impl TargetOpTrait for RebaseInteractive {
+    fn get_action(&self, target: TargetData) -> Option<Action> {
         match target {
             TargetData::Commit(r) | TargetData::Branch(r) => {
                 subscreen_arg(rebase_interactive_cmd, r.into())
@@ -63,8 +62,8 @@ fn parent(reference: &OsStr) -> OsString {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct RebaseAutosquash;
-impl<B: Backend> TargetOpTrait<B> for RebaseAutosquash {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+impl TargetOpTrait for RebaseAutosquash {
+    fn get_action(&self, target: TargetData) -> Option<Action> {
         match target {
             TargetData::Commit(r) | TargetData::Branch(r) => {
                 subscreen_arg(rebase_autosquash_cmd, r.into())

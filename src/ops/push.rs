@@ -1,12 +1,11 @@
 use super::OpTrait;
-use crate::{state::State, Res};
-use ratatui::{backend::Backend, prelude::Terminal};
+use crate::{state::State, term::Term, Res};
 use std::process::Command;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct Push;
-impl<B: Backend> OpTrait<B> for Push {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for Push {
+    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
         let mut cmd = Command::new("git");
         cmd.args(["push"]);
 

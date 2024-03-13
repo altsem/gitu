@@ -1,12 +1,11 @@
 use super::{Action, OpTrait, TargetOpTrait};
-use crate::{items::TargetData, screen, state::State, Res};
-use ratatui::{backend::Backend, prelude::Terminal};
+use crate::{items::TargetData, screen, state::State, term::Term, Res};
 use std::rc::Rc;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct LogCurrent;
-impl<B: Backend> OpTrait<B> for LogCurrent {
-    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
+impl OpTrait for LogCurrent {
+    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
         goto_log_screen(state, None);
         Ok(())
     }
@@ -14,8 +13,8 @@ impl<B: Backend> OpTrait<B> for LogCurrent {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct LogOther;
-impl<B: Backend> TargetOpTrait<B> for LogOther {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+impl TargetOpTrait for LogOther {
+    fn get_action(&self, target: TargetData) -> Option<Action> {
         match target {
             TargetData::Commit(r) | TargetData::Branch(r) => Some(Box::new(move |state, _term| {
                 goto_log_screen(state, Some(r.clone()));

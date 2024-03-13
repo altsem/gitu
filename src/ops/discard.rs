@@ -1,14 +1,13 @@
 use super::{cmd, cmd_arg, get_action, Action, Op, OpTrait, TargetOp, TargetOpTrait};
-use crate::{git, items::TargetData, state::State, ErrorBuffer, Res};
-use ratatui::{backend::Backend, Terminal};
+use crate::{git, items::TargetData, state::State, term::Term, ErrorBuffer, Res};
 use std::{borrow::Cow, path::PathBuf};
 use tui_prompts::{prelude::Status, State as _};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct Discard;
-impl<B: Backend> OpTrait<B> for Discard {
-    fn trigger(&self, state: &mut State, _term: &mut Terminal<B>) -> Res<()> {
-        state.prompt_action::<B>(Op::Target(TargetOp::Discard));
+impl OpTrait for Discard {
+    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
+        state.prompt_action(Op::Target(TargetOp::Discard));
         Ok(())
     }
 
@@ -17,7 +16,7 @@ impl<B: Backend> OpTrait<B> for Discard {
         "Really discard? (y or n)".into()
     }
 
-    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
+    fn prompt_update(&self, status: Status, state: &mut State, term: &mut Term) -> Res<()> {
         if status.is_pending() {
             match state.prompt.state.value() {
                 "y" => {
@@ -37,8 +36,8 @@ impl<B: Backend> OpTrait<B> for Discard {
     }
 }
 
-impl<B: Backend> TargetOpTrait<B> for Discard {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+impl TargetOpTrait for Discard {
+    fn get_action(&self, target: TargetData) -> Option<Action> {
         match target {
             TargetData::Branch(r) => cmd_arg(git::discard_branch, r.into()),
             TargetData::File(f) => Some(Box::new(move |state, _term| {

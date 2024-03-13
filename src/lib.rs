@@ -17,9 +17,9 @@ use git2::Repository;
 use items::Item;
 use itertools::Itertools;
 use ops::{Action, Op, TargetOp};
-use ratatui::prelude::*;
 use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command};
+use term::Term;
 
 const APP_NAME: &str = "gitu";
 
@@ -39,7 +39,7 @@ fn command_args(cmd: &Command) -> Cow<'static, str> {
         .into()
 }
 
-pub fn run<B: Backend>(args: &cli::Args, term: &mut Terminal<B>) -> Res<()> {
+pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     log::debug!("Finding git dir");
     let dir = PathBuf::from(
         String::from_utf8(
@@ -62,7 +62,7 @@ pub fn run<B: Backend>(args: &cli::Args, term: &mut Terminal<B>) -> Res<()> {
     let mut state = state::State::create(repo, term.size()?, args, config)?;
 
     log::debug!("Drawing initial frame");
-    term.draw(|frame| ui::ui::<B>(frame, &mut state))?;
+    term.draw(|frame| ui::ui(frame, &mut state))?;
 
     if args.print {
         return Ok(());
@@ -80,7 +80,7 @@ pub fn run<B: Backend>(args: &cli::Args, term: &mut Terminal<B>) -> Res<()> {
 }
 
 // TODO Split remaining parts into modules at crate::ops
-pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Terminal<B>) -> Res<()> {
+pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
     let was_submenu = state.pending_submenu_op != SubmenuOp::None;
     state.pending_submenu_op = SubmenuOp::None;
 
@@ -90,13 +90,13 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
 
         Op::Submenu(op) => state.pending_submenu_op = op,
 
-        Op::Target(TargetOp::Discard) => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        Op::Target(TargetOp::Discard) => ops::OpTrait::trigger(&op, state, term)?,
         Op::Target(target_op) => {
             if let Some(mut action) = ops::get_action(state.clone_target_data(), target_op) {
                 action(state, term)?;
             }
         }
-        _ => ops::OpTrait::<B>::trigger(&op, state, term)?,
+        _ => ops::OpTrait::trigger(&op, state, term)?,
     }
 
     Ok(())

@@ -1,5 +1,4 @@
-use crate::{items::TargetData, state::State, Res};
-use ratatui::{backend::Backend, prelude::Terminal};
+use crate::{items::TargetData, state::State, term::Term, Res};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -23,27 +22,22 @@ pub(crate) mod show_refs;
 pub(crate) mod stage;
 pub(crate) mod unstage;
 
-pub(crate) trait OpTrait<B: Backend> {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()>;
+pub(crate) trait OpTrait {
+    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()>;
 
     fn format_prompt(&self, _state: &State) -> Cow<'static, str> {
         unimplemented!()
     }
 
-    fn prompt_update(
-        &self,
-        _status: Status,
-        _state: &mut State,
-        _term: &mut Terminal<B>,
-    ) -> Res<()> {
+    fn prompt_update(&self, _status: Status, _state: &mut State, _term: &mut Term) -> Res<()> {
         unimplemented!()
     }
 }
 
-pub(crate) type Action<B> = Box<dyn FnMut(&mut State, &mut Terminal<B>) -> Res<()>>;
+pub(crate) type Action = Box<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
-pub(crate) trait TargetOpTrait<B: Backend> {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>>;
+pub(crate) trait TargetOpTrait {
+    fn get_action(&self, target: TargetData) -> Option<Action>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -104,7 +98,7 @@ pub(crate) enum TargetOp {
 }
 
 impl Op {
-    pub fn implementation<B: Backend>(self) -> Box<dyn OpTrait<B>> {
+    pub fn implementation(self) -> Box<dyn OpTrait> {
         // TODO Get rid of this
         match self {
             Op::ToggleSection => Box::new(editor::ToggleSection),
@@ -131,7 +125,7 @@ impl Op {
 }
 
 impl TargetOp {
-    pub fn implementation<B: Backend>(self) -> Box<dyn TargetOpTrait<B>> {
+    pub fn implementation(self) -> Box<dyn TargetOpTrait> {
         // TODO Get rid of this
         match self {
             TargetOp::CommitFixup => Box::new(commit::CommitFixup),
@@ -149,32 +143,28 @@ impl TargetOp {
     }
 }
 
-pub(crate) fn get_action<B: Backend>(
-    target_data: Option<TargetData>,
-    target_op: TargetOp,
-) -> Option<Action<B>> {
-    target_data.and_then(|data| TargetOpTrait::<B>::get_action(&target_op, data))
+pub(crate) fn get_action(target_data: Option<TargetData>, target_op: TargetOp) -> Option<Action> {
+    target_data.and_then(|data| TargetOpTrait::get_action(&target_op, data))
 }
 
-impl<B: Backend> OpTrait<B> for Op {
-    fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
-        self.implementation::<B>().trigger(state, term)?;
+impl OpTrait for Op {
+    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
+        self.implementation().trigger(state, term)?;
         Ok(())
     }
 
     fn format_prompt(&self, state: &State) -> Cow<'static, str> {
-        self.implementation::<B>().format_prompt(state)
+        self.implementation().format_prompt(state)
     }
 
-    fn prompt_update(&self, status: Status, arg: &mut State, term: &mut Terminal<B>) -> Res<()> {
-        self.implementation::<B>()
-            .prompt_update(status, arg, term)?;
+    fn prompt_update(&self, status: Status, arg: &mut State, term: &mut Term) -> Res<()> {
+        self.implementation().prompt_update(status, arg, term)?;
         Ok(())
     }
 }
 
-impl<B: Backend> TargetOpTrait<B> for TargetOp {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+impl TargetOpTrait for TargetOp {
+    fn get_action(&self, target: TargetData) -> Option<Action> {
         self.implementation().get_action(target)
     }
 }
@@ -244,25 +234,19 @@ impl Display for TargetOp {
     }
 }
 
-pub(crate) fn cmd<B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<Action<B>> {
+pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Option<Action> {
     Some(Box::new(move |state, term| {
         state.run_external_cmd(term, &input, command())
     }))
 }
 
-pub(crate) fn cmd_arg<B: Backend>(
-    command: fn(&OsStr) -> Command,
-    arg: OsString,
-) -> Option<Action<B>> {
+pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action> {
     Some(Box::new(move |state, term| {
         state.run_external_cmd(term, &[], command(&arg))
     }))
 }
 
-pub(crate) fn subscreen_arg<B: Backend>(
-    command: fn(&OsStr) -> Command,
-    arg: OsString,
-) -> Option<Action<B>> {
+pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action> {
     Some(Box::new(move |state, term| {
         state.issue_subscreen_command(term, command(&arg))
     }))

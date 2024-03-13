@@ -7,9 +7,7 @@ use crossterm::event;
 use crossterm::event::Event;
 use crossterm::event::KeyEventKind;
 use git2::Repository;
-use ratatui::backend::Backend;
 use ratatui::layout::Rect;
-use ratatui::Terminal;
 use tui_prompts::State as _;
 use tui_prompts::Status;
 
@@ -25,6 +23,7 @@ use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term;
+use crate::term::Term;
 use crate::ui;
 
 use super::command_args;
@@ -76,7 +75,7 @@ impl State {
         })
     }
 
-    pub fn update<B: Backend>(&mut self, term: &mut Terminal<B>, events: &[Event]) -> Res<()> {
+    pub fn update(&mut self, term: &mut Term, events: &[Event]) -> Res<()> {
         for event in events {
             match *event {
                 Event::Resize(w, h) => {
@@ -101,13 +100,13 @@ impl State {
         }
 
         if self.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui::<B>(frame, self))?;
+            term.draw(|frame| ui::ui(frame, self))?;
         }
 
         Ok(())
     }
 
-    pub(crate) fn update_prompt<B: Backend>(&mut self, term: &mut Terminal<B>) -> Res<()> {
+    pub(crate) fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
         if self.prompt.state.status() == Status::Aborted {
             self.prompt.reset(term)?;
         } else if let Some(pending_prompt) = self.prompt.pending_op {
@@ -127,11 +126,7 @@ impl State {
         selected.target_data.clone()
     }
 
-    pub(crate) fn handle_key_input<B: Backend>(
-        &mut self,
-        term: &mut Terminal<B>,
-        key: event::KeyEvent,
-    ) -> Res<()> {
+    pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
         let pending = if self.pending_submenu_op == SubmenuOp::Help {
             SubmenuOp::None
         } else {
@@ -164,9 +159,9 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn prompt_action<B: Backend>(&mut self, op: Op) {
+    pub(crate) fn prompt_action(&mut self, op: Op) {
         if let Op::Target(target_op) = op {
-            if ops::get_action::<B>(self.clone_target_data(), target_op).is_none() {
+            if ops::get_action(self.clone_target_data(), target_op).is_none() {
                 return;
             }
         }
@@ -182,9 +177,9 @@ impl State {
         self.screens.last().expect("No screen")
     }
 
-    pub(crate) fn run_external_cmd<B: Backend>(
+    pub(crate) fn run_external_cmd(
         &mut self,
-        term: &mut Terminal<B>,
+        term: &mut Term,
         input: &[u8],
         mut cmd: Command,
     ) -> Res<()> {
@@ -209,13 +204,9 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn run_cmd<
-        B: Backend,
-        S: Into<Cow<'static, str>>,
-        F: FnMut(&mut Self) -> Res<String>,
-    >(
+    pub(crate) fn run_cmd<S: Into<Cow<'static, str>>, F: FnMut(&mut Self) -> Res<String>>(
         &mut self,
-        term: &mut Terminal<B>,
+        term: &mut Term,
         display: S,
         mut cmd: F,
     ) -> Res<()> {
@@ -223,7 +214,7 @@ impl State {
             args: display.into(),
             out: None,
         });
-        term.draw(|frame| ui::ui::<B>(frame, self))?;
+        term.draw(|frame| ui::ui(frame, self))?;
 
         self.cmd_meta_buffer.as_mut().unwrap().out = Some(cmd(self)?);
         self.screen_mut().update()?;
@@ -231,11 +222,7 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn issue_subscreen_command<B: Backend>(
-        &mut self,
-        term: &mut Terminal<B>,
-        mut cmd: Command,
-    ) -> Res<()> {
+    pub(crate) fn issue_subscreen_command(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());

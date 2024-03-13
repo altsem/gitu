@@ -1,14 +1,13 @@
 use super::TargetOpTrait;
 use crate::{items::TargetData, screen, Action};
-use ratatui::backend::Backend;
 use std::{path::Path, process::Command, rc::Rc};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct Show;
-impl<B: Backend> TargetOpTrait<B> for Show {
-    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+impl TargetOpTrait for Show {
+    fn get_action(&self, target: TargetData) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => goto_show_screen::<B>(r.clone()),
+            TargetData::Commit(r) | TargetData::Branch(r) => goto_show_screen(r.clone()),
             TargetData::File(u) => editor(u.as_path(), None),
             TargetData::Delta(d) => editor(d.new_file.as_path(), None),
             TargetData::Hunk(h) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
@@ -16,7 +15,7 @@ impl<B: Backend> TargetOpTrait<B> for Show {
     }
 }
 
-fn goto_show_screen<B: Backend>(r: String) -> Option<Action<B>> {
+fn goto_show_screen(r: String) -> Option<Action> {
     Some(Box::new(move |state, term| {
         state.screens.push(
             screen::show::create(
@@ -31,7 +30,7 @@ fn goto_show_screen<B: Backend>(r: String) -> Option<Action<B>> {
     }))
 }
 
-fn editor<B: Backend>(file: &Path, line: Option<u32>) -> Option<Action<B>> {
+fn editor(file: &Path, line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Box::new(move |state, term| {
