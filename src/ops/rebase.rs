@@ -1,7 +1,7 @@
 use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
-use crate::{git, items::TargetData, state::State, Res};
+use crate::{items::TargetData, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
-use std::process::Command;
+use std::{ffi::OsStr, process::Command};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct RebaseContinue;
@@ -33,11 +33,23 @@ impl<B: Backend> TargetOpTrait<B> for RebaseInteractive {
     fn get_action(&self, target: TargetData) -> Option<Action<B>> {
         match target {
             TargetData::Commit(r) | TargetData::Branch(r) => {
-                subscreen_arg(git::rebase_interactive_cmd, r.into())
+                subscreen_arg(rebase_interactive_cmd, r.into())
             }
             _ => None,
         }
     }
+}
+
+fn rebase_interactive_cmd(reference: &OsStr) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args([
+        OsStr::new("rebase"),
+        OsStr::new("-i"),
+        OsStr::new("--autostash"),
+        &reference,
+    ]);
+
+    cmd
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -46,9 +58,22 @@ impl<B: Backend> TargetOpTrait<B> for RebaseAutosquash {
     fn get_action(&self, target: TargetData) -> Option<Action<B>> {
         match target {
             TargetData::Commit(r) | TargetData::Branch(r) => {
-                subscreen_arg(git::rebase_autosquash_cmd, r.into())
+                subscreen_arg(rebase_autosquash_cmd, r.into())
             }
             _ => None,
         }
     }
+}
+
+fn rebase_autosquash_cmd(reference: &OsStr) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args([
+        OsStr::new("rebase"),
+        OsStr::new("-i"),
+        OsStr::new("--autosquash"),
+        OsStr::new("--keep-empty"),
+        OsStr::new("--autostash"),
+        &reference,
+    ]);
+    cmd
 }

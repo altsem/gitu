@@ -253,24 +253,6 @@ pub(crate) fn discard_branch(branch: &OsStr) -> Command {
 pub(crate) fn commit_fixup_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("commit"), OsStr::new("--fixup"), reference])
 }
-pub(crate) fn rebase_interactive_cmd(reference: &OsStr) -> Command {
-    git([
-        OsStr::new("rebase"),
-        OsStr::new("-i"),
-        OsStr::new("--autostash"),
-        reference,
-    ])
-}
-pub(crate) fn rebase_autosquash_cmd(reference: &OsStr) -> Command {
-    git([
-        OsStr::new("rebase"),
-        OsStr::new("-i"),
-        OsStr::new("--autosquash"),
-        OsStr::new("--keep-empty"),
-        OsStr::new("--autostash"),
-        reference,
-    ])
-}
 pub(crate) fn reset_soft_cmd(reference: &OsStr) -> Command {
     git([OsStr::new("reset"), OsStr::new("--soft"), reference])
 }
