@@ -35,13 +35,23 @@ A help-menu can be shown by pressing the `h` key.
 ### Install
 #### Using Cargo
 Run the command (recommended):
-`cargo install gitu --locked`
+```
+cargo install gitu --locked
+```
 
 ...or to install from git, run:
-`cargo install --git https://github.com/altsem/gitu.git --locked`
+```
+cargo install --git https://github.com/altsem/gitu.git --locked
+```
+
+#### Arch Linux
+You can install the `gitu` package from the [official extra repository](https://archlinux.org/packages/extra/x86_64/gitu/):
+
+```
+pacman -S gitu
+```
 
 #### Using Release binaries
-
 gitu is available on Github Releases and should be installed from there.
 
 The latest release is available
