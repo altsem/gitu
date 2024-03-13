@@ -1,5 +1,5 @@
-use super::OpTrait;
-use crate::{state::State, Res};
+use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
+use crate::{git, items::TargetData, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::process::Command;
 
@@ -24,5 +24,16 @@ impl<B: Backend> OpTrait<B> for CommitAmend {
 
         state.issue_subscreen_command(term, cmd)?;
         Ok(())
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) struct CommitFixup;
+impl<B: Backend> TargetOpTrait<B> for CommitFixup {
+    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+        match target {
+            TargetData::Commit(r) => subscreen_arg(git::commit_fixup_cmd, r.into()),
+            _ => None,
+        }
     }
 }

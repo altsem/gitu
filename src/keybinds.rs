@@ -2,6 +2,7 @@ use crate::ops::checkout::Checkout;
 use crate::ops::checkout::CheckoutNewBranch;
 use crate::ops::commit::Commit;
 use crate::ops::commit::CommitAmend;
+use crate::ops::commit::CommitFixup;
 use crate::ops::discard::Discard;
 use crate::ops::editor::HalfPageDown;
 use crate::ops::editor::HalfPageUp;
@@ -10,11 +11,20 @@ use crate::ops::editor::SelectPrevious;
 use crate::ops::editor::ToggleSection;
 use crate::ops::fetch::FetchAll;
 use crate::ops::log::LogCurrent;
+use crate::ops::log::LogOther;
 use crate::ops::pull::Pull;
 use crate::ops::push::Push;
 use crate::ops::rebase::RebaseAbort;
+use crate::ops::rebase::RebaseAutosquash;
 use crate::ops::rebase::RebaseContinue;
+use crate::ops::rebase::RebaseInteractive;
+use crate::ops::reset::ResetHard;
+use crate::ops::reset::ResetMixed;
+use crate::ops::reset::ResetSoft;
+use crate::ops::show::Show;
 use crate::ops::show_refs::ShowRefs;
+use crate::ops::stage::Stage;
+use crate::ops::unstage::Unstage;
 use crate::ops::Op;
 use crate::ops::SubmenuOp;
 use crate::ops::TargetOp;
@@ -134,7 +144,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(
         SubmenuOp::Commit,
         Char('f'),
-        Op::Target(TargetOp::CommitFixup),
+        Op::Target(TargetOp::CommitFixup(CommitFixup)),
     ),
     // Fetch
     Keybind::nomod(SubmenuOp::None, Char('f'), Op::Submenu(SubmenuOp::Fetch)),
@@ -142,7 +152,11 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     // Log
     Keybind::nomod(SubmenuOp::None, Char('l'), Op::Submenu(SubmenuOp::Log)),
     Keybind::nomod(SubmenuOp::Log, Char('l'), Op::LogCurrent(LogCurrent)),
-    Keybind::nomod(SubmenuOp::Log, Char('o'), Op::Target(TargetOp::LogOther)),
+    Keybind::nomod(
+        SubmenuOp::Log,
+        Char('o'),
+        Op::Target(TargetOp::LogOther(LogOther)),
+    ),
     // Pull
     Keybind::shift(SubmenuOp::None, Char('F'), Op::Submenu(SubmenuOp::Pull)),
     Keybind::nomod(SubmenuOp::Pull, Char('p'), Op::Pull(Pull)),
@@ -154,7 +168,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(
         SubmenuOp::Rebase,
         Char('i'),
-        Op::Target(TargetOp::RebaseInteractive),
+        Op::Target(TargetOp::RebaseInteractive(RebaseInteractive)),
     ),
     Keybind::nomod(SubmenuOp::Rebase, Char('a'), Op::RebaseAbort(RebaseAbort)),
     Keybind::nomod(
@@ -165,17 +179,27 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(
         SubmenuOp::Rebase,
         Char('f'),
-        Op::Target(TargetOp::RebaseAutosquash),
+        Op::Target(TargetOp::RebaseAutosquash(RebaseAutosquash)),
     ),
     // Reset
     Keybind::shift(SubmenuOp::None, Char('X'), Op::Submenu(SubmenuOp::Reset)),
-    Keybind::nomod(SubmenuOp::Reset, Char('s'), Op::Target(TargetOp::ResetSoft)),
+    Keybind::nomod(
+        SubmenuOp::Reset,
+        Char('s'),
+        Op::Target(TargetOp::ResetSoft(ResetSoft)),
+    ),
     Keybind::nomod(
         SubmenuOp::Reset,
         Char('m'),
-        Op::Target(TargetOp::ResetMixed),
+        Op::Target(TargetOp::ResetMixed(ResetMixed)),
     ),
-    Keybind::nomod(SubmenuOp::Reset, Char('h'), Op::Target(TargetOp::ResetHard)),
+    Keybind::nomod(
+        SubmenuOp::Reset,
+        Char('h'),
+        Op::Target(TargetOp::ResetHard(ResetHard)),
+    ),
+    // Show
+    Keybind::nomod(SubmenuOp::None, Enter, Op::Target(TargetOp::Show(Show))),
     // Show refs
     Keybind::nomod(SubmenuOp::None, Char('y'), Op::ShowRefs(ShowRefs)),
     // Discard
@@ -185,9 +209,16 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
         Op::Target(TargetOp::Discard(Discard)),
     ),
     // Target actions
-    Keybind::nomod(SubmenuOp::None, Enter, Op::Target(TargetOp::Show)),
-    Keybind::nomod(SubmenuOp::None, Char('s'), Op::Target(TargetOp::Stage)),
-    Keybind::nomod(SubmenuOp::None, Char('u'), Op::Target(TargetOp::Unstage)),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('s'),
+        Op::Target(TargetOp::Stage(Stage)),
+    ),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('u'),
+        Op::Target(TargetOp::Unstage(Unstage)),
+    ),
 ];
 
 pub(crate) fn op_of_key_event(pending: SubmenuOp, key: event::KeyEvent) -> Option<Op> {

@@ -1,7 +1,12 @@
-use crate::{state::State, Res};
+use crate::{items::TargetData, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
-use std::{borrow::Cow, fmt::Display};
-use strum::EnumIter;
+use std::{
+    borrow::Cow,
+    ffi::{OsStr, OsString},
+    fmt::Display,
+    process::Command,
+};
+use strum::{EnumIter, IntoEnumIterator};
 use tui_prompts::prelude::Status;
 
 pub(crate) mod checkout;
@@ -13,7 +18,11 @@ pub(crate) mod log;
 pub(crate) mod pull;
 pub(crate) mod push;
 pub(crate) mod rebase;
+pub(crate) mod reset;
+pub(crate) mod show;
 pub(crate) mod show_refs;
+pub(crate) mod stage;
+pub(crate) mod unstage;
 
 pub(crate) trait OpTrait<B: Backend> {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()>;
@@ -30,6 +39,12 @@ pub(crate) trait OpTrait<B: Backend> {
     ) -> Res<()> {
         unimplemented!()
     }
+}
+
+pub(crate) type Action<B> = Box<dyn FnMut(&mut State, &mut Terminal<B>) -> Res<()>>;
+
+pub(crate) trait TargetOpTrait<B: Backend> {
+    fn get_action(&self, target: TargetData) -> Option<Action<B>>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -76,21 +91,22 @@ pub(crate) enum SubmenuOp {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, EnumIter)]
 pub(crate) enum TargetOp {
-    CommitFixup,
+    CommitFixup(commit::CommitFixup),
     Discard(discard::Discard),
-    LogOther,
-    RebaseAutosquash,
-    RebaseInteractive,
-    ResetSoft,
-    ResetMixed,
-    ResetHard,
-    Show,
-    Stage,
-    Unstage,
+    LogOther(log::LogOther),
+    RebaseAutosquash(rebase::RebaseAutosquash),
+    RebaseInteractive(rebase::RebaseInteractive),
+    ResetSoft(reset::ResetSoft),
+    ResetMixed(reset::ResetMixed),
+    ResetHard(reset::ResetHard),
+    Show(show::Show),
+    Stage(stage::Stage),
+    Unstage(unstage::Unstage),
 }
 
 impl Op {
     pub fn implementation<B: Backend>(self) -> Box<dyn OpTrait<B>> {
+        // TODO Get rid of this
         match self {
             Op::ToggleSection(op_trait) => Box::new(op_trait),
             Op::SelectNext(op_trait) => Box::new(op_trait),
@@ -115,6 +131,40 @@ impl Op {
     }
 }
 
+impl TargetOp {
+    pub fn implementation<B: Backend>(self) -> Box<dyn TargetOpTrait<B>> {
+        // TODO Get rid of this
+        match self {
+            TargetOp::CommitFixup(op_trait) => Box::new(op_trait),
+            TargetOp::Discard(op_trait) => Box::new(op_trait),
+            TargetOp::LogOther(op_trait) => Box::new(op_trait),
+            TargetOp::RebaseAutosquash(op_trait) => Box::new(op_trait),
+            TargetOp::RebaseInteractive(op_trait) => Box::new(op_trait),
+            TargetOp::ResetSoft(op_trait) => Box::new(op_trait),
+            TargetOp::ResetMixed(op_trait) => Box::new(op_trait),
+            TargetOp::ResetHard(op_trait) => Box::new(op_trait),
+            TargetOp::Show(op_trait) => Box::new(op_trait),
+            TargetOp::Stage(op_trait) => Box::new(op_trait),
+            TargetOp::Unstage(op_trait) => Box::new(op_trait),
+        }
+    }
+}
+
+pub(crate) fn get_action<B: Backend>(
+    target_data: Option<TargetData>,
+    target_op: TargetOp,
+) -> Option<Action<B>> {
+    target_data.and_then(|data| TargetOpTrait::<B>::get_action(&target_op, data))
+}
+
+pub(crate) fn list_target_ops<B: Backend>(
+    data: &TargetData,
+) -> impl Iterator<Item = (TargetOp, TargetData)> + '_ {
+    TargetOp::iter()
+        .filter(|target_op| TargetOpTrait::<B>::get_action(target_op, data.clone()).is_some())
+        .map(|op| (op, data.clone()))
+}
+
 impl<B: Backend> OpTrait<B> for Op {
     fn trigger(&self, state: &mut State, term: &mut Terminal<B>) -> Res<()> {
         self.implementation::<B>().trigger(state, term)?;
@@ -132,8 +182,15 @@ impl<B: Backend> OpTrait<B> for Op {
     }
 }
 
+impl<B: Backend> TargetOpTrait<B> for TargetOp {
+    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+        self.implementation().get_action(target)
+    }
+}
+
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO Move this to each module
         f.write_str(match self {
             Op::Checkout(_) => "Checkout branch/revision",
             Op::CheckoutNewBranch(_) => "Checkout new branch",
@@ -179,18 +236,43 @@ impl Display for SubmenuOp {
 
 impl Display for TargetOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO Move this to each module
         f.write_str(match self {
-            TargetOp::CommitFixup => "Commit fixup",
+            TargetOp::CommitFixup(_) => "Commit fixup",
             TargetOp::Discard(_) => "Discard",
-            TargetOp::LogOther => "Log other",
-            TargetOp::RebaseAutosquash => "Rebase autosquash",
-            TargetOp::RebaseInteractive => "Rebase interactive",
-            TargetOp::ResetSoft => "Reset soft",
-            TargetOp::ResetMixed => "Reset mixed",
-            TargetOp::ResetHard => "Reset hard",
-            TargetOp::Show => "Show",
-            TargetOp::Stage => "Stage",
-            TargetOp::Unstage => "Unstage",
+            TargetOp::LogOther(_) => "Log other",
+            TargetOp::RebaseAutosquash(_) => "Rebase autosquash",
+            TargetOp::RebaseInteractive(_) => "Rebase interactive",
+            TargetOp::ResetSoft(_) => "Reset soft",
+            TargetOp::ResetMixed(_) => "Reset mixed",
+            TargetOp::ResetHard(_) => "Reset hard",
+            TargetOp::Show(_) => "Show",
+            TargetOp::Stage(_) => "Stage",
+            TargetOp::Unstage(_) => "Unstage",
         })
     }
+}
+
+pub(crate) fn cmd<B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<Action<B>> {
+    Some(Box::new(move |state, term| {
+        state.run_external_cmd(term, &input, command())
+    }))
+}
+
+pub(crate) fn cmd_arg<B: Backend>(
+    command: fn(&OsStr) -> Command,
+    arg: OsString,
+) -> Option<Action<B>> {
+    Some(Box::new(move |state, term| {
+        state.run_external_cmd(term, &[], command(&arg))
+    }))
+}
+
+pub(crate) fn subscreen_arg<B: Backend>(
+    command: fn(&OsStr) -> Command,
+    arg: OsString,
+) -> Option<Action<B>> {
+    Some(Box::new(move |state, term| {
+        state.issue_subscreen_command(term, command(&arg))
+    }))
 }

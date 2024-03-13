@@ -1,7 +1,7 @@
-use super::{Op, OpTrait, TargetOp};
-use crate::{get_action, state::State, ErrorBuffer, Res};
+use super::{cmd, cmd_arg, get_action, Action, Op, OpTrait, TargetOp, TargetOpTrait};
+use crate::{git, items::TargetData, state::State, ErrorBuffer, Res};
 use ratatui::{backend::Backend, Terminal};
-use std::borrow::Cow;
+use std::{borrow::Cow, path::PathBuf};
 use tui_prompts::{prelude::Status, State as _};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -34,5 +34,34 @@ impl<B: Backend> OpTrait<B> for Discard {
             }
         }
         Ok(())
+    }
+}
+
+impl<B: Backend> TargetOpTrait<B> for Discard {
+    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+        match target {
+            TargetData::Branch(r) => cmd_arg(git::discard_branch, r.into()),
+            TargetData::File(f) => Some(Box::new(move |state, _term| {
+                let path = PathBuf::from_iter([
+                    state.repo.workdir().expect("No workdir").to_path_buf(),
+                    f.clone(),
+                ]);
+                std::fs::remove_file(path)?;
+                state.screen_mut().update()
+            })),
+            TargetData::Delta(d) => {
+                if d.old_file == d.new_file {
+                    cmd_arg(git::checkout_file_cmd, d.old_file.into())
+                } else {
+                    // TODO Discard file move
+                    None
+                }
+            }
+            TargetData::Hunk(h) => cmd(
+                h.format_patch().into_bytes(),
+                git::discard_unstaged_patch_cmd,
+            ),
+            _ => None,
+        }
     }
 }

@@ -18,6 +18,7 @@ use crate::config::Config;
 use crate::handle_op;
 use crate::items::TargetData;
 use crate::keybinds;
+use crate::ops;
 use crate::ops::Op;
 use crate::ops::SubmenuOp;
 use crate::prompt;
@@ -27,7 +28,6 @@ use crate::term;
 use crate::ui;
 
 use super::command_args;
-use super::get_action;
 use super::CmdMetaBuffer;
 use super::ErrorBuffer;
 use super::Res;
@@ -166,7 +166,7 @@ impl State {
 
     pub(crate) fn prompt_action<B: Backend>(&mut self, op: Op) {
         if let Op::Target(target_op) = op {
-            if get_action::<B>(self.clone_target_data(), target_op).is_none() {
+            if ops::get_action::<B>(self.clone_target_data(), target_op).is_none() {
                 return;
             }
         }

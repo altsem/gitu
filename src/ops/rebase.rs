@@ -1,5 +1,5 @@
-use super::OpTrait;
-use crate::{state::State, Res};
+use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
+use crate::{git, items::TargetData, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
 use std::process::Command;
 
@@ -24,5 +24,31 @@ impl<B: Backend> OpTrait<B> for RebaseAbort {
 
         state.run_external_cmd(term, &[], cmd)?;
         Ok(())
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) struct RebaseInteractive;
+impl<B: Backend> TargetOpTrait<B> for RebaseInteractive {
+    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+        match target {
+            TargetData::Commit(r) | TargetData::Branch(r) => {
+                subscreen_arg(git::rebase_interactive_cmd, r.into())
+            }
+            _ => None,
+        }
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) struct RebaseAutosquash;
+impl<B: Backend> TargetOpTrait<B> for RebaseAutosquash {
+    fn get_action(&self, target: TargetData) -> Option<Action<B>> {
+        match target {
+            TargetData::Commit(r) | TargetData::Branch(r) => {
+                subscreen_arg(git::rebase_autosquash_cmd, r.into())
+            }
+            _ => None,
+        }
     }
 }

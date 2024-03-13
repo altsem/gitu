@@ -14,21 +14,12 @@ mod ui;
 use crate::ops::SubmenuOp;
 use crossterm::event::{self};
 use git2::Repository;
-use items::{Item, TargetData};
+use items::Item;
 use itertools::Itertools;
-use ops::{Op, TargetOp};
+use ops::{Action, Op, TargetOp};
 use ratatui::prelude::*;
 use state::State;
-use std::{
-    borrow::Cow,
-    error::Error,
-    ffi::{OsStr, OsString},
-    iter,
-    path::{Path, PathBuf},
-    process::Command,
-    rc::Rc,
-};
-use strum::IntoEnumIterator;
+use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command};
 
 const APP_NAME: &str = "gitu";
 
@@ -101,7 +92,7 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
 
         Op::Target(TargetOp::Discard(_)) => ops::OpTrait::<B>::trigger(&op, state, term)?,
         Op::Target(target_op) => {
-            if let Some(mut action) = get_action(state.clone_target_data(), target_op) {
+            if let Some(mut action) = ops::get_action(state.clone_target_data(), target_op) {
                 action(state, term)?;
             }
         }
@@ -109,151 +100,4 @@ pub(crate) fn handle_op<B: Backend>(state: &mut State, op: Op, term: &mut Termin
     }
 
     Ok(())
-}
-
-fn get_action<B: Backend>(
-    target_data: Option<TargetData>,
-    target_op: TargetOp,
-) -> Option<Action<B>> {
-    target_data.and_then(|data| action_by_target_op::<B>(data, &target_op))
-}
-
-pub(crate) fn list_target_ops<B: Backend>(
-    data: &TargetData,
-) -> impl Iterator<Item = (TargetOp, TargetData)> + '_ {
-    TargetOp::iter()
-        .filter(|target_op| action_by_target_op::<B>(data.clone(), target_op).is_some())
-        .map(|op| (op, data.clone()))
-}
-
-type Action<B> = Box<dyn FnMut(&mut state::State, &mut Terminal<B>) -> Res<()>>;
-
-// TODO Split this into modules at crate::ops
-/// Retrieves the 'implementation' of a `TargetOp`.
-/// These are `Option<Action>`s, so that you can tell whether they are implemented or not
-pub(crate) fn action_by_target_op<B: Backend>(
-    target: TargetData,
-    target_op: &TargetOp,
-) -> Option<Action<B>> {
-    use TargetData::*;
-    use TargetOp::*;
-
-    match (target_op, target) {
-        (Show, Commit(r) | Branch(r)) => goto_show_screen(r.clone()),
-        (Show, File(u)) => editor(u.as_path(), None),
-        (Show, Delta(d)) => editor(d.new_file.as_path(), None),
-        (Show, Hunk(h)) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
-        (Stage, File(u)) => cmd_arg(git::stage_file_cmd, u.into()),
-        (Stage, Delta(d)) => cmd_arg(git::stage_file_cmd, d.new_file.into()),
-        (Stage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
-        (Unstage, Delta(d)) => cmd_arg(git::unstage_file_cmd, d.new_file.into()),
-        (Unstage, Hunk(h)) => cmd(h.format_patch().into_bytes(), git::unstage_patch_cmd),
-        (RebaseInteractive, Commit(r) | Branch(r)) => {
-            subscreen_arg(git::rebase_interactive_cmd, r.into())
-        }
-        (CommitFixup, Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r.into()),
-        (RebaseAutosquash, Commit(r) | Branch(r)) => {
-            subscreen_arg(git::rebase_autosquash_cmd, r.into())
-        }
-        (ResetSoft, Commit(r) | Branch(r)) => cmd_arg(git::reset_soft_cmd, r.into()),
-        (ResetMixed, Commit(r) | Branch(r)) => cmd_arg(git::reset_mixed_cmd, r.into()),
-        (ResetHard, Commit(r) | Branch(r)) => cmd_arg(git::reset_hard_cmd, r.into()),
-        (Discard(_), Branch(r)) => cmd_arg(git::discard_branch, r.into()),
-        (Discard(_), File(f)) => Some(Box::new(move |state, _term| {
-            let path = PathBuf::from_iter([
-                state.repo.workdir().expect("No workdir").to_path_buf(),
-                f.clone(),
-            ]);
-            std::fs::remove_file(path)?;
-            state.screen_mut().update()
-        })),
-        (Discard(_), Delta(d)) => {
-            if d.old_file == d.new_file {
-                cmd_arg(git::checkout_file_cmd, d.old_file.into())
-            } else {
-                // TODO Discard file move
-                None
-            }
-        }
-        (Discard(_), Hunk(h)) => cmd(
-            h.format_patch().into_bytes(),
-            git::discard_unstaged_patch_cmd,
-        ),
-        (LogOther, Commit(r) | Branch(r)) => Some(Box::new(move |state, _term| {
-            ops::log::goto_log_screen(state, Some(r.clone()));
-            Ok(())
-        })),
-        (_, _) => None,
-    }
-}
-
-fn goto_show_screen<B: Backend>(r: String) -> Option<Action<B>> {
-    Some(Box::new(move |state, term| {
-        state.screens.push(
-            screen::show::create(
-                Rc::clone(&state.config),
-                Rc::clone(&state.repo),
-                term.size()?,
-                r.clone(),
-            )
-            .expect("Couldn't create screen"),
-        );
-        Ok(())
-    }))
-}
-
-fn editor<B: Backend>(file: &Path, line: Option<u32>) -> Option<Action<B>> {
-    let file = file.to_str().unwrap().to_string();
-
-    Some(Box::new(move |state, term| {
-        const EDITOR_VARS: [&str; 3] = ["GIT_EDITOR", "VISUAL", "EDITOR"];
-        let configured_editor = EDITOR_VARS
-            .into_iter()
-            .find_map(|var| std::env::var(var).ok());
-
-        let Some(editor) = configured_editor else {
-            return Err(format!(
-                "No editor environment variable set ({})",
-                EDITOR_VARS.join(", ")
-            )
-            .into());
-        };
-
-        let mut cmd = Command::new(editor.clone());
-        let args = match line {
-            Some(line) => match editor.as_str() {
-                "vi" | "vim" | "nvim" | "nano" => {
-                    vec![format!("+{}", line), file.to_string()]
-                }
-                _ => vec![format!("{}:{}", file, line)],
-            },
-            None => vec![file.to_string()],
-        };
-
-        cmd.args(args);
-
-        state
-            .issue_subscreen_command(term, cmd)
-            .map_err(|err| format!("Couldn't open editor {} due to: {}", editor, err))?;
-
-        state.screen_mut().update()
-    }))
-}
-
-fn cmd<B: Backend>(input: Vec<u8>, command: fn() -> Command) -> Option<Action<B>> {
-    Some(Box::new(move |state, term| {
-        state.run_external_cmd(term, &input, command())
-    }))
-}
-
-fn cmd_arg<B: Backend>(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action<B>> {
-    Some(Box::new(move |state, term| {
-        state.run_external_cmd(term, &[], command(&arg))
-    }))
-}
-
-fn subscreen_arg<B: Backend>(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action<B>> {
-    Some(Box::new(move |state, term| {
-        state.issue_subscreen_command(term, command(&arg))
-    }))
 }
