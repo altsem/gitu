@@ -1,6 +1,7 @@
-## [0.6.2] - 2024-03-12
+## [0.6.3] - 2024-03-13
 
 ### 🐛 Bug Fixes
 
-- Include changelog entry in github release
+- Interactive rebase includes parent (like magit)
+- Target binds in help-menu had wrong name formatting
 
