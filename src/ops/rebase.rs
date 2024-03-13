@@ -1,7 +1,10 @@
 use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
 use crate::{items::TargetData, state::State, Res};
 use ratatui::{backend::Backend, prelude::Terminal};
-use std::{ffi::OsStr, process::Command};
+use std::{
+    ffi::{OsStr, OsString},
+    process::Command,
+};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct RebaseContinue;
@@ -46,10 +49,16 @@ fn rebase_interactive_cmd(reference: &OsStr) -> Command {
         OsStr::new("rebase"),
         OsStr::new("-i"),
         OsStr::new("--autostash"),
-        &reference,
+        &parent(reference),
     ]);
 
     cmd
+}
+
+fn parent(reference: &OsStr) -> OsString {
+    let mut parent = reference.to_os_string();
+    parent.push("^");
+    parent
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
