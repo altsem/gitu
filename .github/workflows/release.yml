@@ -5,8 +5,17 @@ on:
     - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  create-release:
-    name: create-release
+  cargo-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Cargo publish
+      run: |
+        cargo publish --token "${{ CARGO_REGISTRY_TOKEN }}"
+
+  create-github-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -45,9 +54,8 @@ jobs:
           release_name: ${{ env.GITU_VERSION }}
           body: "${{ env.CHANGELOG_ENTRY }}"
 
-  build-release:
-    name: build-release
-    needs: ['create-release']
+  build-github-release:
+    needs: ['create-github-release']
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -107,7 +115,7 @@ jobs:
     - name: Build archive
       shell: bash
       run: |
-        staging="gitu-${{ needs.create-release.outputs.gitu_version }}-${{ matrix.target }}"
+        staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
         mkdir -p "$staging/complete"
 
         cp {README.md,LICENSE} "$staging/"
@@ -121,7 +129,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        upload_url: ${{ needs.create-github-release.outputs.upload_url }}
         asset_path: ${{ env.ASSET }}
         asset_name: ${{ env.ASSET }}
         asset_content_type: application/octet-stream
