@@ -28,6 +28,5 @@ ratatui = { version = "0.26.1", features = ["serde"] }
 serde = { version = "1.0.152", features = ["derive"] }
 similar = { version = "2.4.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
-strum = "0.26.1"
 toml = "0.8.10"
 tui-prompts = "0.3.5"

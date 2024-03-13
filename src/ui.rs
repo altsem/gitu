@@ -2,10 +2,10 @@ use crate::config::Config;
 use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
-use crate::ops;
 use crate::ops::Op;
 use crate::ops::OpTrait;
 use crate::ops::SubmenuOp;
+use crate::ops::TargetOpTrait;
 use crate::state::State;
 use crate::CmdMetaBuffer;
 use itertools::EitherOrBoth;
@@ -145,7 +145,6 @@ fn format_keybinds_menu<'b, B: Backend>(
 
     let mut target_binds_column = vec![];
     if let Some(target_data) = &item.target_data {
-        let target_ops = ops::list_target_ops::<B>(target_data).collect::<Vec<_>>();
         let target_binds = keybinds::list(pending)
             .filter(|keybind| matches!(keybind.op, Op::Target(_)))
             .filter(|keybind| {
@@ -153,7 +152,7 @@ fn format_keybinds_menu<'b, B: Backend>(
                     unreachable!();
                 };
 
-                target_ops.iter().any(|(op, _data)| op == &target)
+                TargetOpTrait::<B>::get_action(&target, target_data.clone()).is_some()
             })
             .collect::<Vec<_>>();
 

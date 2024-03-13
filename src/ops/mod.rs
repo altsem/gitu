@@ -6,7 +6,6 @@ use std::{
     fmt::Display,
     process::Command,
 };
-use strum::{EnumIter, IntoEnumIterator};
 use tui_prompts::prelude::Status;
 
 pub(crate) mod checkout;
@@ -89,7 +88,7 @@ pub(crate) enum SubmenuOp {
     Reset,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, EnumIter)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TargetOp {
     CommitFixup(commit::CommitFixup),
     Discard(discard::Discard),
@@ -155,14 +154,6 @@ pub(crate) fn get_action<B: Backend>(
     target_op: TargetOp,
 ) -> Option<Action<B>> {
     target_data.and_then(|data| TargetOpTrait::<B>::get_action(&target_op, data))
-}
-
-pub(crate) fn list_target_ops<B: Backend>(
-    data: &TargetData,
-) -> impl Iterator<Item = (TargetOp, TargetData)> + '_ {
-    TargetOp::iter()
-        .filter(|target_op| TargetOpTrait::<B>::get_action(target_op, data.clone()).is_some())
-        .map(|op| (op, data.clone()))
 }
 
 impl<B: Backend> OpTrait<B> for Op {

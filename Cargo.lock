@@ -509,7 +509,6 @@ dependencies = [
  "serde",
  "similar",
  "simple-logging",
- "strum",
  "temp-dir",
  "toml",
  "tui-prompts",
