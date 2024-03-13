@@ -168,7 +168,7 @@ fn format_keybinds_menu<'b, B: Backend>(
 
             target_binds_column.push(Line::from(vec![
                 Span::styled(Keybind::format_key(bind), &style.hotkey),
-                Span::styled(format!(" {:?}", target), Style::new()),
+                Span::styled(format!(" {}", target), Style::new()),
             ]));
         }
     }

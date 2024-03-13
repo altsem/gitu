@@ -12,9 +12,9 @@ Buffer {
         "                                                                                ",
         "────────────────────────────────────────────────────────────────────────────────",
         "Reset                                     _______ origin/main add i             ",
-        "                                          s ResetSoft                           ",
-        "                                          m ResetMixed                          ",
-        "                                          h ResetHard                           ",
+        "                                          s Reset soft                          ",
+        "                                          m Reset mixed                         ",
+        "                                          h Reset hard                          ",
     ],
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
