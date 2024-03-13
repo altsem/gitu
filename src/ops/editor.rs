@@ -1,28 +1,6 @@
-use super::{OpTrait, SubmenuOp};
+use super::OpTrait;
 use crate::{state::State, term::Term, Res};
 use derive_more::Display;
-
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Quit")]
-pub(crate) struct Quit;
-impl OpTrait for Quit {
-    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
-        let was_submenu = state.pending_submenu_op != SubmenuOp::None;
-        state.pending_submenu_op = SubmenuOp::None;
-        state.handle_quit(was_submenu)?;
-        Ok(())
-    }
-}
-
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Refresh")]
-pub(crate) struct Refresh;
-impl OpTrait for Refresh {
-    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
-        state.screen_mut().update()?;
-        Ok(())
-    }
-}
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Toggle section")]

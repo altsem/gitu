@@ -15,7 +15,7 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op, TargetOp};
+use ops::{Action, Op, SubmenuOp, TargetOp};
 use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command};
 use term::Term;
@@ -78,10 +78,16 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     Ok(())
 }
 
-// TODO Split remaining parts into modules at crate::ops
 pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
+    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
+    state.pending_submenu_op = SubmenuOp::None;
+
     match op {
+        Op::Quit => state.handle_quit(was_submenu)?,
+        Op::Refresh => state.screen_mut().update()?,
+
         Op::Submenu(op) => state.pending_submenu_op = op,
+
         // TODO Get rid of this special handling of 'Discard'
         Op::Target(TargetOp::Discard) => ops::OpTrait::trigger(&op, state, term)?,
         Op::Target(target_op) => {

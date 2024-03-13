@@ -100,8 +100,6 @@ pub(crate) enum TargetOp {
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
-            Op::Quit => Box::new(editor::Quit),
-            Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::SelectNext => Box::new(editor::SelectNext),
             Op::SelectPrevious => Box::new(editor::SelectPrevious),
@@ -171,7 +169,11 @@ impl TargetOpTrait for TargetOp {
 
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.implementation().fmt(f)
+        match self {
+            Op::Quit => f.write_str("Quit"),
+            Op::Refresh => f.write_str("Refresh"),
+            _ => self.implementation().fmt(f),
+        }
     }
 }
 
