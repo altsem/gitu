@@ -8,36 +8,58 @@
     fenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, crane, fenix, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        craneLib = crane.lib.${system};
+  outputs = inputs@{ nixpkgs, flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "aarch64-linux" "x86_64-linux" "x86_64-darwin" ];
 
-        pkgs = import nixpkgs {
-          inherit system;
-          packages.${system}.default =
-            fenix.packages.${system}.default.toolchain;
-        };
-
-        gitu = craneLib.buildPackage {
-          src = craneLib.cleanCargoSource (craneLib.path ./.);
-          doCheck = false;
-          buildInputs = with pkgs;
-            [ openssl pkg-config ] ++ nixpkgs.lib.optionals stdenv.isDarwin [
-              libiconv
-              darwin.apple_sdk.frameworks.Security
+      perSystem = { config, pkgs, system, inputs', self', ... }:
+        let
+          toolchain = with inputs.fenix.packages.${system};
+            combine [
+              latest.rustc
+              latest.cargo
+              latest.clippy
+              latest.rust-analysis
+              latest.rust-src
+              latest.rustfmt
             ];
-        };
-      in {
-        checks = { inherit gitu; };
 
-        packages.default = gitu;
-        apps.default = flake-utils.lib.mkApp { drv = gitu; };
+          craneLib = inputs.crane.lib.${system}.overrideToolchain toolchain;
+          common-build-args = {
+            src = craneLib.cleanCargoSource (craneLib.path ./.);
+          };
+          deps-only = craneLib.buildDepsOnly ({ } // common-build-args);
 
-        devShells.default = craneLib.devShell {
-          checks = self.checks.${system};
-          inputsFrom = [ gitu ];
-          packages = with pkgs; [ clippy rust-analyzer rustfmt ];
+          packages = {
+            default = packages.gitu;
+            gitu = craneLib.buildPackage (common-build-args // {
+              doCheck = false;
+              buildInputs = with pkgs;
+                [ openssl pkg-config ] ++ pkgs.lib.optionals stdenv.isDarwin [
+                  libiconv
+                  darwin.apple_sdk.frameworks.Security
+                ];
+            });
+          };
+
+          checks = {
+            clippy = craneLib.cargoClippy ({
+              cargoArtifacts = deps-only;
+              cargoClippyExtraArgs = "--all-features -- --deny warnings";
+            } // common-build-args);
+
+            rust-fmt = craneLib.cargoFmt
+              ({ inherit (common-build-args) src; } // common-build-args);
+
+            rust-tests = craneLib.cargoNextest ({
+              cargoArtifacts = deps-only;
+              partitions = 1;
+              partitionType = "count";
+            } // common-build-args);
+          };
+
+        in rec {
+          inherit packages checks;
         };
-      });
+    };
 }
