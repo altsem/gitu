@@ -1,28 +1,22 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
-
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
-    };
-
-    flake-utils.url = "github:numtide/flake-utils";
+    fenix.url = "github:nix-community/fenix";
+    fenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, crane, rust-overlay, flake-utils, ... }:
+  outputs = { self, nixpkgs, crane, fenix, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         craneLib = crane.lib.${system};
 
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ (import rust-overlay) ];
+          packages.${system}.default =
+            fenix.packages.${system}.default.toolchain;
         };
 
         gitu = craneLib.buildPackage {
