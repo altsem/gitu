@@ -19,6 +19,7 @@ insta = "1.36.1"
 chrono = "0.4.34"
 clap = { version = "4.5.1", features = ["derive"] }
 crossterm = "0.27.0"
+derive_more = "0.99.17"
 directories = "5.0.1"
 figment = { version = "0.10.14", features = ["toml"] }
 git2 = { version = "0.18.2", default-features = false }

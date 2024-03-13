@@ -1,9 +1,11 @@
 use super::{Op, OpTrait};
 use crate::{items::TargetData, state::State, term::Term, Res};
+use derive_more::Display;
 use std::{borrow::Cow, process::Command};
 use tui_prompts::{prelude::Status, State as _};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Checkout branch/revision")]
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
@@ -46,7 +48,8 @@ fn default_branch_or_revision(state: &State) -> Option<&str> {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Checkout new branch")]
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {

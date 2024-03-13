@@ -11,7 +11,6 @@ pub mod state;
 pub mod term;
 mod ui;
 
-use crate::ops::SubmenuOp;
 use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
@@ -81,15 +80,9 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
 
 // TODO Split remaining parts into modules at crate::ops
 pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
-    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
-    state.pending_submenu_op = SubmenuOp::None;
-
     match op {
-        Op::Quit => state.handle_quit(was_submenu)?,
-        Op::Refresh => state.screen_mut().update()?,
-
         Op::Submenu(op) => state.pending_submenu_op = op,
-
+        // TODO Get rid of this special handling of 'Discard'
         Op::Target(TargetOp::Discard) => ops::OpTrait::trigger(&op, state, term)?,
         Op::Target(target_op) => {
             if let Some(mut action) = ops::get_action(state.clone_target_data(), target_op) {

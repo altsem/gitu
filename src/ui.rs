@@ -104,7 +104,7 @@ fn format_keybinds_menu<'b>(
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
-    pending_binds_column.push(Line::styled(format!("{:?}", pending), &style.command));
+    pending_binds_column.push(Line::styled(format!("{}", pending), &style.command));
     for (op, binds) in non_target_binds
         .iter()
         .group_by(|bind| bind.op)

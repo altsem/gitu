@@ -22,7 +22,7 @@ pub(crate) mod show_refs;
 pub(crate) mod stage;
 pub(crate) mod unstage;
 
-pub(crate) trait OpTrait {
+pub(crate) trait OpTrait: Display {
     fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()>;
 
     fn format_prompt(&self, _state: &State) -> Cow<'static, str> {
@@ -36,7 +36,7 @@ pub(crate) trait OpTrait {
 
 pub(crate) type Action = Box<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
-pub(crate) trait TargetOpTrait {
+pub(crate) trait TargetOpTrait: Display {
     fn get_action(&self, target: TargetData) -> Option<Action>;
 }
 
@@ -99,8 +99,9 @@ pub(crate) enum TargetOp {
 
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
-        // TODO Get rid of this
         match self {
+            Op::Quit => Box::new(editor::Quit),
+            Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::SelectNext => Box::new(editor::SelectNext),
             Op::SelectPrevious => Box::new(editor::SelectPrevious),
@@ -119,14 +120,13 @@ impl Op {
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::ShowRefs => Box::new(show_refs::ShowRefs),
             Op::Target(TargetOp::Discard) => Box::new(discard::Discard),
-            _ => unimplemented!(),
+            op => unimplemented!("{:?}", op),
         }
     }
 }
 
 impl TargetOp {
     pub fn implementation(self) -> Box<dyn TargetOpTrait> {
-        // TODO Get rid of this
         match self {
             TargetOp::CommitFixup => Box::new(commit::CommitFixup),
             TargetOp::Discard => Box::new(discard::Discard),
@@ -171,29 +171,7 @@ impl TargetOpTrait for TargetOp {
 
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO Move this to each module
-        f.write_str(match self {
-            Op::Checkout => "Checkout branch/revision",
-            Op::CheckoutNewBranch => "Checkout new branch",
-            Op::Commit => "Commit",
-            Op::CommitAmend => "Commit amend",
-            Op::FetchAll => "Fetch all",
-            Op::HalfPageDown => "Half page down",
-            Op::HalfPageUp => "Half page up",
-            Op::LogCurrent => "Log current",
-            Op::Pull => "Pull",
-            Op::Push => "Push",
-            Op::Quit => "Quit",
-            Op::RebaseAbort => "Rebase abort",
-            Op::RebaseContinue => "Rebase continue",
-            Op::Refresh => "Refresh",
-            Op::SelectNext => "Select next",
-            Op::SelectPrevious => "Select previous",
-            Op::ShowRefs => "Show refs",
-            Op::Submenu(_) => "Submenu",
-            Op::Target(_) => "Target",
-            Op::ToggleSection => "Toggle section",
-        })
+        self.implementation().fmt(f)
     }
 }
 
@@ -217,20 +195,7 @@ impl Display for SubmenuOp {
 
 impl Display for TargetOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO Move this to each module
-        f.write_str(match self {
-            TargetOp::CommitFixup => "Commit fixup",
-            TargetOp::Discard => "Discard",
-            TargetOp::LogOther => "Log other",
-            TargetOp::RebaseAutosquash => "Rebase autosquash",
-            TargetOp::RebaseInteractive => "Rebase interactive",
-            TargetOp::ResetSoft => "Reset soft",
-            TargetOp::ResetMixed => "Reset mixed",
-            TargetOp::ResetHard => "Reset hard",
-            TargetOp::Show => "Show",
-            TargetOp::Stage => "Stage",
-            TargetOp::Unstage => "Unstage",
-        })
+        self.implementation().fmt(f)
     }
 }
 

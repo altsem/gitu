@@ -1,7 +1,9 @@
 use super::{cmd_arg, TargetOpTrait};
 use crate::{git, items::TargetData, Action};
+use derive_more::Display;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Reset soft")]
 pub(crate) struct ResetSoft;
 impl TargetOpTrait for ResetSoft {
     fn get_action(&self, target: TargetData) -> Option<Action> {
@@ -12,7 +14,8 @@ impl TargetOpTrait for ResetSoft {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Reset mixed")]
 pub(crate) struct ResetMixed;
 impl TargetOpTrait for ResetMixed {
     fn get_action(&self, target: TargetData) -> Option<Action> {
@@ -25,7 +28,8 @@ impl TargetOpTrait for ResetMixed {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Reset hard")]
 pub(crate) struct ResetHard;
 impl TargetOpTrait for ResetHard {
     fn get_action(&self, target: TargetData) -> Option<Action> {

@@ -1,8 +1,10 @@
 use super::OpTrait;
 use crate::{screen, state::State, term::Term, Res};
+use derive_more::Display;
 use std::rc::Rc;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Show refs")]
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
     fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {

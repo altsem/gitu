@@ -1,11 +1,13 @@
 use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
 use crate::{items::TargetData, state::State, term::Term, Res};
+use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
 };
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Rebase continue")]
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
     fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
@@ -17,7 +19,8 @@ impl OpTrait for RebaseContinue {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Rebase abort")]
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
     fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
@@ -29,7 +32,8 @@ impl OpTrait for RebaseAbort {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Rebase interactive")]
 pub(crate) struct RebaseInteractive;
 impl TargetOpTrait for RebaseInteractive {
     fn get_action(&self, target: TargetData) -> Option<Action> {
@@ -60,7 +64,8 @@ fn parent(reference: &OsStr) -> OsString {
     parent
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Rebase autosquash")]
 pub(crate) struct RebaseAutosquash;
 impl TargetOpTrait for RebaseAutosquash {
     fn get_action(&self, target: TargetData) -> Option<Action> {

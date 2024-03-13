@@ -1,8 +1,10 @@
 use super::{Action, OpTrait, TargetOpTrait};
 use crate::{items::TargetData, screen, state::State, term::Term, Res};
+use derive_more::Display;
 use std::rc::Rc;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Log current")]
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
@@ -11,7 +13,8 @@ impl OpTrait for LogCurrent {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Log other")]
 pub(crate) struct LogOther;
 impl TargetOpTrait for LogOther {
     fn get_action(&self, target: TargetData) -> Option<Action> {

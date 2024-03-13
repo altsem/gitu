@@ -1,7 +1,9 @@
 use super::{cmd, cmd_arg, TargetOpTrait};
 use crate::{git, items::TargetData, Action};
+use derive_more::Display;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Unstage")]
 pub(crate) struct Unstage;
 impl TargetOpTrait for Unstage {
     fn get_action(&self, target: TargetData) -> Option<Action> {

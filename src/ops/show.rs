@@ -1,8 +1,10 @@
 use super::TargetOpTrait;
 use crate::{items::TargetData, screen, Action};
+use derive_more::Display;
 use std::{path::Path, process::Command, rc::Rc};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Show")]
 pub(crate) struct Show;
 impl TargetOpTrait for Show {
     fn get_action(&self, target: TargetData) -> Option<Action> {

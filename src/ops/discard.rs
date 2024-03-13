@@ -1,9 +1,11 @@
 use super::{cmd, cmd_arg, get_action, Action, Op, OpTrait, TargetOp, TargetOpTrait};
 use crate::{git, items::TargetData, state::State, term::Term, ErrorBuffer, Res};
+use derive_more::Display;
 use std::{borrow::Cow, path::PathBuf};
 use tui_prompts::{prelude::Status, State as _};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Discard")]
 pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
