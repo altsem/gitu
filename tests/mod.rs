@@ -203,83 +203,177 @@ fn pull() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
-#[test]
-fn discard_branch_confirm() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+mod discard {
+    use crate::helpers::commit;
+    use crate::helpers::key;
+    use crate::helpers::key_code;
+    use crate::helpers::run;
+    use crate::helpers::TestContext;
+    use crossterm::event::KeyCode;
+    use std::fs;
 
-    let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('y'), key('j'), key('K')])
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    #[test]
+    pub(crate) fn discard_branch_confirm_prompt() {
+        let ctx = {
+            let mut ctx = TestContext::setup_clone(80, 10);
+            run(ctx.dir.path(), &["git", "branch", "asd"]);
+            let mut state = ctx.init_state();
+
+            state
+                .update(&mut ctx.term, &[key('y'), key('j'), key('K')])
+                .unwrap();
+            ctx
+        };
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn discard_branch_yes() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        run(ctx.dir.path(), &["git", "branch", "asd"]);
+        let mut state = ctx.init_state();
+
+        state
+            .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('y')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn discard_branch_no() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        run(ctx.dir.path(), &["git", "branch", "asd"]);
+        let mut state = ctx.init_state();
+
+        state
+            .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('n')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn discard_untracked_file() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        run(ctx.dir.path(), &["touch", "some-file"]);
+        let mut state = ctx.init_state();
+
+        state
+            .update(&mut ctx.term, &[key('j'), key('j'), key('K'), key('y')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn discard_unstaged_delta() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
+        fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+
+        let mut state = ctx.init_state();
+
+        state
+            .update(&mut ctx.term, &[key('j'), key('j'), key('K'), key('y')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn discard_unstaged_hunk() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
+        fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+
+        let mut state = ctx.init_state();
+
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('j'),
+                    key('j'),
+                    key_code(KeyCode::Tab),
+                    key('j'),
+                    key('K'),
+                    key('y'),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    // FIXME Deleting branches doesn't work with the test-setup
+    // #[test]
+    // fn discard_branch() {
+    //     let mut ctx = TestContext::setup_clone(80, 10);
+    //     let mut state = ctx.init_state();
+    //     state
+    //         .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('y')])
+    //         .unwrap();
+    //     insta::assert_snapshot!(ctx.redact_buffer());
+    // }
 }
 
-// FIXME Deleting branches doesn't work with the test-setup
-// #[test]
-// fn discard_branch() {
-//     let mut ctx = TestContext::setup_clone(80, 10);
-//     let mut state = ctx.init_state();
-//     state
-//         .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('y')])
-//         .unwrap();
-//     insta::assert_snapshot!(ctx.redact_buffer());
-// }
+mod reset {
+    use crate::helpers::commit;
+    use crate::helpers::key;
+    use crate::helpers::TestContext;
 
-#[test]
-fn reset_menu() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    commit(ctx.dir.path(), "unwanted-file", "");
+    #[test]
+    pub(crate) fn reset_menu() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "unwanted-file", "");
 
-    let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('l'), key('l'), key('j'), key('X')])
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
+        let mut state = ctx.init_state();
+        state
+            .update(&mut ctx.term, &[key('l'), key('l'), key('j'), key('X')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 
-#[test]
-fn reset_soft() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    commit(ctx.dir.path(), "unwanted-file", "");
+    #[test]
+    pub(crate) fn reset_soft() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "unwanted-file", "");
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('X'), key('s'), key('q')],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('l'), key('l'), key('j'), key('X'), key('s'), key('q')],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 
-#[test]
-fn reset_mixed() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    commit(ctx.dir.path(), "unwanted-file", "");
+    #[test]
+    pub(crate) fn reset_mixed() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "unwanted-file", "");
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('X'), key('m'), key('q')],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('l'), key('l'), key('j'), key('X'), key('m'), key('q')],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 
-#[test]
-fn reset_hard() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    commit(ctx.dir.path(), "unwanted-file", "");
+    #[test]
+    fn reset_hard() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "unwanted-file", "");
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('X'), key('h'), key('q')],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('l'), key('l'), key('j'), key('X'), key('h'), key('q')],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]
@@ -293,86 +387,94 @@ fn show_refs() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
-#[test]
-fn checkout_menu() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    run(ctx.dir.path(), &["git", "branch", "other-branch"]);
+mod checkout {
+    use crate::helpers::key;
+    use crate::helpers::key_code;
+    use crate::helpers::run;
+    use crate::helpers::TestContext;
+    use crossterm::event::KeyCode;
 
-    let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('y'), key('j'), key('b')])
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
+    #[test]
+    pub(crate) fn checkout_menu() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
-#[test]
-fn switch_branch_selected() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    run(ctx.dir.path(), &["git", "branch", "other-branch"]);
+        let mut state = ctx.init_state();
+        state
+            .update(&mut ctx.term, &[key('y'), key('j'), key('b')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[
-                key('y'),
-                key('j'),
-                key('j'),
-                key('b'),
-                key('b'),
-                key_code(KeyCode::Enter),
-            ],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
+    #[test]
+    pub(crate) fn switch_branch_selected() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
-#[test]
-fn switch_branch_input() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    run(ctx.dir.path(), &["git", "branch", "hi"]);
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('y'),
+                    key('j'),
+                    key('j'),
+                    key('b'),
+                    key('b'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[
-                key('y'),
-                key('j'),
-                key('j'),
-                key('b'),
-                key('b'),
-                key('h'),
-                key('i'),
-                key_code(KeyCode::Enter),
-            ],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
+    #[test]
+    pub(crate) fn switch_branch_input() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        run(ctx.dir.path(), &["git", "branch", "hi"]);
 
-#[test]
-fn checkout_new_branch() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('y'),
+                    key('j'),
+                    key('j'),
+                    key('b'),
+                    key('b'),
+                    key('h'),
+                    key('i'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[
-                key('b'),
-                key('c'),
-                key('f'),
-                // Don't want to create branch 'f', try again
-                key_code(KeyCode::Esc),
-                key('b'),
-                key('c'),
-                key('x'),
-                key_code(KeyCode::Enter),
-            ],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    #[test]
+    pub(crate) fn checkout_new_branch() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('b'),
+                    key('c'),
+                    key('f'),
+                    // Don't want to create branch 'f', try again
+                    key_code(KeyCode::Esc),
+                    key('b'),
+                    key('c'),
+                    key('x'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]

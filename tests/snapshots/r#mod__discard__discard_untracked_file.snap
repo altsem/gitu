@@ -1,0 +1,33 @@
+---
+source: tests/mod.rs
+expression: ctx.redact_buffer()
+---
+Buffer {
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
+    content: [
+        " On branch main                                                                 ",
+        " Your branch is up to date with 'origin/main'.                                  ",
+        "                                                                                ",
+        " Recent commits                                                                 ",
+        "🢒_______ main origin/main add initial-file                                      ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+    ],
+    styles: [
+        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 1, y: 4, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 8, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 9, y: 4, fg: Green, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 13, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 14, y: 4, fg: Red, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 25, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+    ]
+}
