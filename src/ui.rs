@@ -147,7 +147,7 @@ fn format_keybinds_menu<'b>(
                     unreachable!();
                 };
 
-                TargetOpTrait::get_action(&target, target_data.clone()).is_some()
+                TargetOpTrait::get_action(&target, Some(target_data)).is_some()
             })
             .collect::<Vec<_>>();
 

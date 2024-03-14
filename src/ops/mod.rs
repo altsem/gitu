@@ -27,7 +27,7 @@ pub(crate) trait OpTrait: Display {
 pub(crate) type Action = Box<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
 pub(crate) trait TargetOpTrait: Display {
-    fn get_action(&self, target: TargetData) -> Option<Action>;
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -131,10 +131,6 @@ impl TargetOp {
     }
 }
 
-pub(crate) fn get_action(target_data: Option<TargetData>, target_op: TargetOp) -> Option<Action> {
-    target_data.and_then(|data| TargetOpTrait::get_action(&target_op, data))
-}
-
 impl OpTrait for Op {
     fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
         self.implementation().trigger(state, term)?;
@@ -143,7 +139,7 @@ impl OpTrait for Op {
 }
 
 impl TargetOpTrait for TargetOp {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         self.implementation().get_action(target)
     }
 }
