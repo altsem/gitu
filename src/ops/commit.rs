@@ -33,9 +33,9 @@ impl OpTrait for CommitAmend {
 #[display(fmt = "Commit fixup")]
 pub(crate) struct CommitFixup;
 impl TargetOpTrait for CommitFixup {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) => subscreen_arg(git::commit_fixup_cmd, r.into()),
+            Some(TargetData::Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r.into()),
             _ => None,
         }
     }

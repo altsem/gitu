@@ -11,11 +11,11 @@ use tui_prompts::State as _;
 pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
-        let Some(target) = state.clone_target_data() else {
+        let Some(target) = state.screen().get_selected_item().target_data.as_ref() else {
             return Ok(());
         };
 
-        let Some(mut action) = self.get_action(target) else {
+        let Some(mut action) = self.get_action(Some(target)) else {
             return Ok(());
         };
 
@@ -45,10 +45,10 @@ impl OpTrait for Discard {
 }
 
 impl TargetOpTrait for Discard {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
-        match target {
-            TargetData::Branch(r) => cmd_arg(git::discard_branch, r.into()),
-            TargetData::File(f) => Some(Box::new(move |state, _term| {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        match target.cloned() {
+            Some(TargetData::Branch(r)) => cmd_arg(git::discard_branch, r.into()),
+            Some(TargetData::File(f)) => Some(Box::new(move |state, _term| {
                 let path = PathBuf::from_iter([
                     state.repo.workdir().expect("No workdir").to_path_buf(),
                     f.clone(),
@@ -56,7 +56,7 @@ impl TargetOpTrait for Discard {
                 std::fs::remove_file(path)?;
                 state.screen_mut().update()
             })),
-            TargetData::Delta(d) => {
+            Some(TargetData::Delta(d)) => {
                 if d.old_file == d.new_file {
                     cmd_arg(git::checkout_file_cmd, d.old_file.into())
                 } else {
@@ -64,7 +64,7 @@ impl TargetOpTrait for Discard {
                     None
                 }
             }
-            TargetData::Hunk(h) => cmd(
+            Some(TargetData::Hunk(h)) => cmd(
                 h.format_patch().into_bytes(),
                 git::discard_unstaged_patch_cmd,
             ),

@@ -36,9 +36,9 @@ impl OpTrait for RebaseAbort {
 #[display(fmt = "Rebase interactive")]
 pub(crate) struct RebaseInteractive;
 impl TargetOpTrait for RebaseInteractive {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => {
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 subscreen_arg(rebase_interactive_cmd, r.into())
             }
             _ => None,
@@ -68,9 +68,9 @@ fn parent(reference: &OsStr) -> OsString {
 #[display(fmt = "Rebase autosquash")]
 pub(crate) struct RebaseAutosquash;
 impl TargetOpTrait for RebaseAutosquash {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => {
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 subscreen_arg(rebase_autosquash_cmd, r.into())
             }
             _ => None,

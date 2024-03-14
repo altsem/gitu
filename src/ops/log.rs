@@ -17,12 +17,14 @@ impl OpTrait for LogCurrent {
 #[display(fmt = "Log other")]
 pub(crate) struct LogOther;
 impl TargetOpTrait for LogOther {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
-        match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => Some(Box::new(move |state, _term| {
-                goto_log_screen(state, Some(r.clone()));
-                Ok(())
-            })),
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        match target.cloned() {
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
+                Some(Box::new(move |state, _term| {
+                    goto_log_screen(state, Some(r.clone()));
+                    Ok(())
+                }))
+            }
             _ => None,
         }
     }

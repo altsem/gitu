@@ -14,7 +14,6 @@ use tui_prompts::Status;
 use crate::cli;
 use crate::config::Config;
 use crate::handle_op;
-use crate::items::TargetData;
 use crate::keybinds;
 use crate::ops::SubmenuOp;
 use crate::prompt;
@@ -115,12 +114,6 @@ impl State {
         }
 
         Ok(())
-    }
-
-    pub(crate) fn clone_target_data(&mut self) -> Option<TargetData> {
-        let screen = self.screen();
-        let selected = screen.get_selected_item();
-        selected.target_data.clone()
     }
 
     pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {

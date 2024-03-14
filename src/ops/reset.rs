@@ -6,9 +6,11 @@ use derive_more::Display;
 #[display(fmt = "Reset soft")]
 pub(crate) struct ResetSoft;
 impl TargetOpTrait for ResetSoft {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => cmd_arg(git::reset_soft_cmd, r.into()),
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
+                cmd_arg(git::reset_soft_cmd, r.into())
+            }
             _ => None,
         }
     }
@@ -18,9 +20,9 @@ impl TargetOpTrait for ResetSoft {
 #[display(fmt = "Reset mixed")]
 pub(crate) struct ResetMixed;
 impl TargetOpTrait for ResetMixed {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => {
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 cmd_arg(git::reset_mixed_cmd, r.into())
             }
             _ => None,
@@ -32,9 +34,11 @@ impl TargetOpTrait for ResetMixed {
 #[display(fmt = "Reset hard")]
 pub(crate) struct ResetHard;
 impl TargetOpTrait for ResetHard {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => cmd_arg(git::reset_hard_cmd, r.into()),
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
+                cmd_arg(git::reset_hard_cmd, r.into())
+            }
             _ => None,
         }
     }

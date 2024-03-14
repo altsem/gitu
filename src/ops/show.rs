@@ -7,12 +7,13 @@ use std::{path::Path, process::Command, rc::Rc};
 #[display(fmt = "Show")]
 pub(crate) struct Show;
 impl TargetOpTrait for Show {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => goto_show_screen(r.clone()),
-            TargetData::File(u) => editor(u.as_path(), None),
-            TargetData::Delta(d) => editor(d.new_file.as_path(), None),
-            TargetData::Hunk(h) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => goto_show_screen(r.clone()),
+            Some(TargetData::File(u)) => editor(u.as_path(), None),
+            Some(TargetData::Delta(d)) => editor(d.new_file.as_path(), None),
+            Some(TargetData::Hunk(h)) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
+            None => None,
         }
     }
 }

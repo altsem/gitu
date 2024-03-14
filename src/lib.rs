@@ -15,7 +15,7 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op, SubmenuOp, TargetOp};
+use ops::{Action, Op, SubmenuOp, TargetOp, TargetOpTrait};
 use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command};
 use term::Term;
@@ -91,7 +91,10 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
         // TODO Get rid of this special handling of 'Discard'
         Op::Target(TargetOp::Discard) => ops::OpTrait::trigger(&op, state, term)?,
         Op::Target(target_op) => {
-            if let Some(mut action) = ops::get_action(state.clone_target_data(), target_op) {
+            if let Some(mut action) = TargetOpTrait::get_action(
+                &target_op,
+                state.screen().get_selected_item().target_data.as_ref(),
+            ) {
                 action(state, term)?;
             }
         }
