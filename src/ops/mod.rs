@@ -1,11 +1,9 @@
 use crate::{items::TargetData, state::State, term::Term, Res};
 use std::{
-    borrow::Cow,
     ffi::{OsStr, OsString},
     fmt::Display,
     process::Command,
 };
-use tui_prompts::prelude::Status;
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
@@ -24,14 +22,6 @@ pub(crate) mod unstage;
 
 pub(crate) trait OpTrait: Display {
     fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()>;
-
-    fn format_prompt(&self, _state: &State) -> Cow<'static, str> {
-        unimplemented!()
-    }
-
-    fn prompt_update(&self, _status: Status, _state: &mut State, _term: &mut Term) -> Res<()> {
-        unimplemented!()
-    }
 }
 
 pub(crate) type Action = Box<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
@@ -148,15 +138,6 @@ pub(crate) fn get_action(target_data: Option<TargetData>, target_op: TargetOp) -
 impl OpTrait for Op {
     fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
         self.implementation().trigger(state, term)?;
-        Ok(())
-    }
-
-    fn format_prompt(&self, state: &State) -> Cow<'static, str> {
-        self.implementation().format_prompt(state)
-    }
-
-    fn prompt_update(&self, status: Status, arg: &mut State, term: &mut Term) -> Res<()> {
-        self.implementation().prompt_update(status, arg, term)?;
         Ok(())
     }
 }

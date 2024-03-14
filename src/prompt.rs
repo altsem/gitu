@@ -1,29 +1,34 @@
-use crate::ops::Op;
-
 use super::Res;
+use crate::ops::Action;
 use ratatui::{backend::Backend, Terminal};
-use tui_prompts::{State, TextState};
+use std::borrow::Cow;
+use tui_prompts::{State as _, TextState};
+
+pub(crate) struct PromptData {
+    pub(crate) prompt_text: Cow<'static, str>,
+    pub(crate) update_fn: Action,
+}
 
 pub(crate) struct Prompt {
-    pub(crate) pending_op: Option<Op>,
+    pub(crate) data: Option<PromptData>,
     pub(crate) state: TextState<'static>,
 }
 
 impl Prompt {
     pub(crate) fn new() -> Self {
         Prompt {
-            pending_op: None,
+            data: None,
             state: TextState::new(),
         }
     }
 
-    pub(crate) fn set(&mut self, op: Op) {
-        self.pending_op = Some(op);
+    pub(crate) fn set(&mut self, data: PromptData) {
+        self.data = Some(data);
         self.state.focus();
     }
 
     pub(crate) fn reset<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Res<()> {
-        self.pending_op = None;
+        self.data = None;
         self.state = TextState::new();
         terminal.hide_cursor()?;
         Ok(())

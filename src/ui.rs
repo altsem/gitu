@@ -3,7 +3,6 @@ use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::ops::Op;
-use crate::ops::OpTrait;
 use crate::ops::SubmenuOp;
 use crate::ops::TargetOpTrait;
 use crate::state::State;
@@ -51,11 +50,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         [
             Constraint::Min(1),
             Constraint::Length(popup_len),
-            Constraint::Length(if state.prompt.pending_op.is_some() {
-                2
-            } else {
-                0
-            }),
+            Constraint::Length(if state.prompt.data.is_some() { 2 } else { 0 }),
         ],
     )
     .split(frame.size());
@@ -68,12 +63,12 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         Popup::Table(table) => frame.render_widget(table, layout[1]),
     }
 
-    if let Some(prompt) = state.prompt.pending_op {
-        let prompt =
-            TextPrompt::new(OpTrait::format_prompt(&prompt, state)).with_block(popup_block());
+    if let Some(prompt_data) = state.prompt.data.take() {
+        let prompt = TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block());
         frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
+        state.prompt.data = Some(prompt_data);
     }
 }
 

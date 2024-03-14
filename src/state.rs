@@ -16,8 +16,6 @@ use crate::config::Config;
 use crate::handle_op;
 use crate::items::TargetData;
 use crate::keybinds;
-use crate::ops;
-use crate::ops::Op;
 use crate::ops::SubmenuOp;
 use crate::prompt;
 use crate::screen;
@@ -109,12 +107,11 @@ impl State {
     pub(crate) fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
         if self.prompt.state.status() == Status::Aborted {
             self.prompt.reset(term)?;
-        } else if let Some(pending_prompt) = self.prompt.pending_op {
-            pending_prompt.implementation().prompt_update(
-                self.prompt.state.status(),
-                self,
-                term,
-            )?;
+        } else if let Some(mut prompt_data) = self.prompt.data.take() {
+            (prompt_data.update_fn)(self, term)?;
+            if self.prompt.state.is_focused() {
+                self.prompt.data = Some(prompt_data);
+            }
         }
 
         Ok(())
@@ -157,16 +154,6 @@ impl State {
         }
 
         Ok(())
-    }
-
-    pub(crate) fn prompt_action(&mut self, op: Op) {
-        if let Op::Target(target_op) = op {
-            if ops::get_action(self.clone_target_data(), target_op).is_none() {
-                return;
-            }
-        }
-
-        self.prompt.set(op);
     }
 
     pub(crate) fn screen_mut(&mut self) -> &mut Screen {
