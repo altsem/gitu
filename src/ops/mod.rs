@@ -3,6 +3,7 @@ use std::{
     ffi::{OsStr, OsString},
     fmt::Display,
     process::Command,
+    rc::Rc,
 };
 
 pub(crate) mod checkout;
@@ -20,13 +21,9 @@ pub(crate) mod show_refs;
 pub(crate) mod stage;
 pub(crate) mod unstage;
 
+pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
+
 pub(crate) trait OpTrait: Display {
-    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()>;
-}
-
-pub(crate) type Action = Box<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
-
-pub(crate) trait TargetOpTrait: Display {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
 }
 
@@ -107,14 +104,13 @@ impl Op {
             Op::RebaseAbort => Box::new(rebase::RebaseAbort),
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::ShowRefs => Box::new(show_refs::ShowRefs),
-            Op::Target(TargetOp::Discard) => Box::new(discard::Discard),
             op => unimplemented!("{:?}", op),
         }
     }
 }
 
 impl TargetOp {
-    pub fn implementation(self) -> Box<dyn TargetOpTrait> {
+    pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
             TargetOp::CommitFixup => Box::new(commit::CommitFixup),
             TargetOp::Discard => Box::new(discard::Discard),
@@ -132,13 +128,12 @@ impl TargetOp {
 }
 
 impl OpTrait for Op {
-    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
-        self.implementation().trigger(state, term)?;
-        Ok(())
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        self.implementation().get_action(target)
     }
 }
 
-impl TargetOpTrait for TargetOp {
+impl OpTrait for TargetOp {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         self.implementation().get_action(target)
     }
@@ -178,20 +173,14 @@ impl Display for TargetOp {
     }
 }
 
-pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Option<Action> {
-    Some(Box::new(move |state, term| {
-        state.run_external_cmd(term, &input, command())
-    }))
+pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Action {
+    Rc::new(move |state, term| state.run_external_cmd(term, &input, command()))
 }
 
-pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action> {
-    Some(Box::new(move |state, term| {
-        state.run_external_cmd(term, &[], command(&arg))
-    }))
+pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
+    Rc::new(move |state, term| state.run_external_cmd(term, &[], command(&arg)))
 }
 
-pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action> {
-    Some(Box::new(move |state, term| {
-        state.issue_subscreen_command(term, command(&arg))
-    }))
+pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
+    Rc::new(move |state, term| state.issue_subscreen_command(term, command(&arg)))
 }

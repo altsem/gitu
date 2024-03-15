@@ -1,4 +1,4 @@
-use super::TargetOpTrait;
+use super::OpTrait;
 use crate::{items::TargetData, screen, Action};
 use derive_more::Display;
 use std::{path::Path, process::Command, rc::Rc};
@@ -6,7 +6,7 @@ use std::{path::Path, process::Command, rc::Rc};
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Show")]
 pub(crate) struct Show;
-impl TargetOpTrait for Show {
+impl OpTrait for Show {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => goto_show_screen(r.clone()),
@@ -19,7 +19,7 @@ impl TargetOpTrait for Show {
 }
 
 fn goto_show_screen(r: String) -> Option<Action> {
-    Some(Box::new(move |state, term| {
+    Some(Rc::new(move |state, term| {
         state.screens.push(
             screen::show::create(
                 Rc::clone(&state.config),
@@ -36,7 +36,7 @@ fn goto_show_screen(r: String) -> Option<Action> {
 fn editor(file: &Path, line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
-    Some(Box::new(move |state, term| {
+    Some(Rc::new(move |state, term| {
         const EDITOR_VARS: [&str; 3] = ["GIT_EDITOR", "VISUAL", "EDITOR"];
         let configured_editor = EDITOR_VARS
             .into_iter()

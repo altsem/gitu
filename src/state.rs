@@ -107,7 +107,7 @@ impl State {
         if self.prompt.state.status() == Status::Aborted {
             self.prompt.reset(term)?;
         } else if let Some(mut prompt_data) = self.prompt.data.take() {
-            (prompt_data.update_fn)(self, term)?;
+            (Rc::get_mut(&mut prompt_data.update_fn).unwrap())(self, term)?;
             if self.prompt.state.is_focused() {
                 self.prompt.data = Some(prompt_data);
             }

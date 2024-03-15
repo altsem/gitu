@@ -3,8 +3,8 @@ use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::ops::Op;
+use crate::ops::OpTrait;
 use crate::ops::SubmenuOp;
-use crate::ops::TargetOpTrait;
 use crate::state::State;
 use crate::CmdMetaBuffer;
 use itertools::EitherOrBoth;
@@ -147,7 +147,7 @@ fn format_keybinds_menu<'b>(
                     unreachable!();
                 };
 
-                TargetOpTrait::get_action(&target, Some(target_data)).is_some()
+                OpTrait::get_action(&target, Some(target_data)).is_some()
             })
             .collect::<Vec<_>>();
 
