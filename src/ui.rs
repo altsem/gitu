@@ -95,7 +95,7 @@ fn format_keybinds_menu<'b>(
     let style = &config.style;
 
     let non_target_binds = keybinds::list(pending)
-        .filter(|keybind| !matches!(keybind.op, Op::Target(_)))
+        .filter(|keybind| !keybind.op.is_target_op())
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
@@ -141,14 +141,8 @@ fn format_keybinds_menu<'b>(
     let mut target_binds_column = vec![];
     if let Some(target_data) = &item.target_data {
         let target_binds = keybinds::list(pending)
-            .filter(|keybind| matches!(keybind.op, Op::Target(_)))
-            .filter(|keybind| {
-                let Op::Target(target) = keybind.op else {
-                    unreachable!();
-                };
-
-                OpTrait::get_action(&target, Some(target_data)).is_some()
-            })
+            .filter(|keybind| keybind.op.is_target_op())
+            .filter(|keybind| OpTrait::get_action(&keybind.op, Some(target_data)).is_some())
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
@@ -156,13 +150,9 @@ fn format_keybinds_menu<'b>(
         }
 
         for bind in target_binds {
-            let Op::Target(target) = bind.op else {
-                unreachable!();
-            };
-
             target_binds_column.push(Line::from(vec![
                 Span::styled(Keybind::format_key(bind), &style.hotkey),
-                Span::styled(format!(" {}", target), Style::new()),
+                Span::styled(format!(" {}", bind.op), Style::new()),
             ]));
         }
     }

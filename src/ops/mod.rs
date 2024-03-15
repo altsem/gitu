@@ -25,6 +25,9 @@ pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
 pub(crate) trait OpTrait: Display {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
+    fn is_target_op(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -50,8 +53,19 @@ pub(crate) enum Op {
     RebaseContinue,
     ShowRefs,
 
+    CommitFixup,
+    Discard,
+    LogOther,
+    RebaseAutosquash,
+    RebaseInteractive,
+    ResetSoft,
+    ResetMixed,
+    ResetHard,
+    Show,
+    Stage,
+    Unstage,
+
     Submenu(SubmenuOp),
-    Target(TargetOp),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -67,21 +81,6 @@ pub(crate) enum SubmenuOp {
     Push,
     Rebase,
     Reset,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum TargetOp {
-    CommitFixup,
-    Discard,
-    LogOther,
-    RebaseAutosquash,
-    RebaseInteractive,
-    ResetSoft,
-    ResetMixed,
-    ResetHard,
-    Show,
-    Stage,
-    Unstage,
 }
 
 impl Op {
@@ -104,25 +103,20 @@ impl Op {
             Op::RebaseAbort => Box::new(rebase::RebaseAbort),
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::ShowRefs => Box::new(show_refs::ShowRefs),
-            op => unimplemented!("{:?}", op),
-        }
-    }
-}
 
-impl TargetOp {
-    pub fn implementation(self) -> Box<dyn OpTrait> {
-        match self {
-            TargetOp::CommitFixup => Box::new(commit::CommitFixup),
-            TargetOp::Discard => Box::new(discard::Discard),
-            TargetOp::LogOther => Box::new(log::LogOther),
-            TargetOp::RebaseAutosquash => Box::new(rebase::RebaseAutosquash),
-            TargetOp::RebaseInteractive => Box::new(rebase::RebaseInteractive),
-            TargetOp::ResetSoft => Box::new(reset::ResetSoft),
-            TargetOp::ResetMixed => Box::new(reset::ResetMixed),
-            TargetOp::ResetHard => Box::new(reset::ResetHard),
-            TargetOp::Show => Box::new(show::Show),
-            TargetOp::Stage => Box::new(stage::Stage),
-            TargetOp::Unstage => Box::new(unstage::Unstage),
+            Op::CommitFixup => Box::new(commit::CommitFixup),
+            Op::Discard => Box::new(discard::Discard),
+            Op::LogOther => Box::new(log::LogOther),
+            Op::RebaseAutosquash => Box::new(rebase::RebaseAutosquash),
+            Op::RebaseInteractive => Box::new(rebase::RebaseInteractive),
+            Op::ResetSoft => Box::new(reset::ResetSoft),
+            Op::ResetMixed => Box::new(reset::ResetMixed),
+            Op::ResetHard => Box::new(reset::ResetHard),
+            Op::Show => Box::new(show::Show),
+            Op::Stage => Box::new(stage::Stage),
+            Op::Unstage => Box::new(unstage::Unstage),
+
+            op => unimplemented!("{:?}", op),
         }
     }
 }
@@ -131,11 +125,13 @@ impl OpTrait for Op {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         self.implementation().get_action(target)
     }
-}
 
-impl OpTrait for TargetOp {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        self.implementation().get_action(target)
+    fn is_target_op(&self) -> bool {
+        match self {
+            // TODO get rid of this special case
+            Op::Quit | Op::Refresh | Op::Submenu(_) => false,
+            _ => self.implementation().is_target_op(),
+        }
     }
 }
 
@@ -164,12 +160,6 @@ impl Display for SubmenuOp {
             SubmenuOp::Rebase => "Rebase",
             SubmenuOp::Reset => "Reset",
         })
-    }
-}
-
-impl Display for TargetOp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.implementation().fmt(f)
     }
 }
 

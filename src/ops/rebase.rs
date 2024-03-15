@@ -51,6 +51,9 @@ impl OpTrait for RebaseInteractive {
 
         Some(action)
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }
 
 fn rebase_interactive_cmd(reference: &OsStr) -> Command {
@@ -84,6 +87,9 @@ impl OpTrait for RebaseAutosquash {
         };
 
         Some(action)
+    }
+    fn is_target_op(&self) -> bool {
+        true
     }
 }
 

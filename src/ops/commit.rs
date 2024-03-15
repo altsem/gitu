@@ -45,4 +45,7 @@ impl OpTrait for CommitFixup {
 
         Some(action)
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }

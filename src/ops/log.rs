@@ -30,6 +30,9 @@ impl OpTrait for LogOther {
             _ => None,
         }
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }
 
 fn goto_log_screen(state: &mut State, reference: Option<String>) {

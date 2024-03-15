@@ -88,14 +88,6 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
 
         Op::Submenu(op) => state.pending_submenu_op = op,
 
-        Op::Target(target_op) => {
-            if let Some(mut action) = OpTrait::get_action(
-                &target_op,
-                state.screen().get_selected_item().target_data.as_ref(),
-            ) {
-                Rc::get_mut(&mut action).unwrap()(state, term)?;
-            }
-        }
         _ => {
             let target = state.screen().get_selected_item().target_data.as_ref();
             if let Some(mut action) = op.get_action(target) {
