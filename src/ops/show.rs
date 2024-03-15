@@ -16,6 +16,9 @@ impl OpTrait for Show {
             None => None,
         }
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }
 
 fn goto_show_screen(r: String) -> Option<Action> {

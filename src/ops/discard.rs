@@ -61,4 +61,8 @@ impl OpTrait for Discard {
             Ok(())
         }))
     }
+
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }

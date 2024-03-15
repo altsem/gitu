@@ -16,6 +16,9 @@ impl OpTrait for ResetSoft {
 
         Some(action)
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
@@ -32,6 +35,9 @@ impl OpTrait for ResetMixed {
 
         Some(action)
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
@@ -47,5 +53,8 @@ impl OpTrait for ResetHard {
         };
 
         Some(action)
+    }
+    fn is_target_op(&self) -> bool {
+        true
     }
 }

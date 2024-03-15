@@ -16,4 +16,7 @@ impl OpTrait for Stage {
 
         Some(action)
     }
+    fn is_target_op(&self) -> bool {
+        true
+    }
 }
