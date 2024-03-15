@@ -1,5 +1,5 @@
-use super::OpTrait;
-use crate::{screen, state::State, term::Term, Res};
+use super::{Action, OpTrait};
+use crate::{items::TargetData, screen, state::State, term::Term};
 use derive_more::Display;
 use std::rc::Rc;
 
@@ -7,9 +7,11 @@ use std::rc::Rc;
 #[display(fmt = "Show refs")]
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
-    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
-        goto_refs_screen(state);
-        Ok(())
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state: &mut State, _term: &mut Term| {
+            goto_refs_screen(state);
+            Ok(())
+        }))
     }
 }
 

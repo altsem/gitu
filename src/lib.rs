@@ -15,9 +15,9 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op, SubmenuOp, TargetOp, TargetOpTrait};
+use ops::{Action, Op, OpTrait, SubmenuOp};
 use state::State;
-use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command};
+use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
 
 const APP_NAME: &str = "gitu";
@@ -88,17 +88,20 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
 
         Op::Submenu(op) => state.pending_submenu_op = op,
 
-        // TODO Get rid of this special handling of 'Discard'
-        Op::Target(TargetOp::Discard) => ops::OpTrait::trigger(&op, state, term)?,
         Op::Target(target_op) => {
-            if let Some(mut action) = TargetOpTrait::get_action(
+            if let Some(mut action) = OpTrait::get_action(
                 &target_op,
                 state.screen().get_selected_item().target_data.as_ref(),
             ) {
-                action(state, term)?;
+                Rc::get_mut(&mut action).unwrap()(state, term)?;
             }
         }
-        _ => ops::OpTrait::trigger(&op, state, term)?,
+        _ => {
+            let target = state.screen().get_selected_item().target_data.as_ref();
+            if let Some(mut action) = op.get_action(target) {
+                Rc::get_mut(&mut action).unwrap()(state, term)?
+            }
+        }
     }
 
     Ok(())

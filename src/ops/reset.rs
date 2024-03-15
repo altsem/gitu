@@ -1,45 +1,51 @@
-use super::{cmd_arg, TargetOpTrait};
+use super::{cmd_arg, OpTrait};
 use crate::{git, items::TargetData, Action};
 use derive_more::Display;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Reset soft")]
 pub(crate) struct ResetSoft;
-impl TargetOpTrait for ResetSoft {
+impl OpTrait for ResetSoft {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        match target {
+        let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 cmd_arg(git::reset_soft_cmd, r.into())
             }
-            _ => None,
-        }
+            _ => return None,
+        };
+
+        Some(action)
     }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Reset mixed")]
 pub(crate) struct ResetMixed;
-impl TargetOpTrait for ResetMixed {
+impl OpTrait for ResetMixed {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        match target {
+        let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 cmd_arg(git::reset_mixed_cmd, r.into())
             }
-            _ => None,
-        }
+            _ => return None,
+        };
+
+        Some(action)
     }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Reset hard")]
 pub(crate) struct ResetHard;
-impl TargetOpTrait for ResetHard {
+impl OpTrait for ResetHard {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        match target {
+        let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 cmd_arg(git::reset_hard_cmd, r.into())
             }
-            _ => None,
-        }
+            _ => return None,
+        };
+
+        Some(action)
     }
 }

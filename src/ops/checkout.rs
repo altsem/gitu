@@ -1,25 +1,27 @@
-use super::OpTrait;
+use super::{Action, OpTrait};
 use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, Res};
 use derive_more::Display;
-use std::process::Command;
+use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Checkout branch/revision")]
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
-    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
-        let prompt_text = if let Some(branch_or_revision) = default_branch_or_revision(state) {
-            format!("Checkout (default {}):", branch_or_revision).into()
-        } else {
-            "Checkout:".into()
-        };
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state: &mut State, _term: &mut Term| {
+            let prompt_text = if let Some(branch_or_revision) = default_branch_or_revision(state) {
+                format!("Checkout (default {}):", branch_or_revision).into()
+            } else {
+                "Checkout:".into()
+            };
 
-        state.prompt.set(PromptData {
-            prompt_text,
-            update_fn: Box::new(checkout_prompt_update),
-        });
-        Ok(())
+            state.prompt.set(PromptData {
+                prompt_text,
+                update_fn: Rc::new(checkout_prompt_update),
+            });
+            Ok(())
+        }))
     }
 }
 
@@ -53,12 +55,14 @@ fn default_branch_or_revision(state: &State) -> Option<&str> {
 #[display(fmt = "Checkout new branch")]
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
-    fn trigger(&self, state: &mut State, _term: &mut Term) -> Res<()> {
-        state.prompt.set(PromptData {
-            prompt_text: "Create and checkout branch:".into(),
-            update_fn: Box::new(checkout_new_branch_prompt_update),
-        });
-        Ok(())
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state: &mut State, _term: &mut Term| {
+            state.prompt.set(PromptData {
+                prompt_text: "Create and checkout branch:".into(),
+                update_fn: Rc::new(checkout_new_branch_prompt_update),
+            });
+            Ok(())
+        }))
     }
 }
 
