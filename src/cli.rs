@@ -12,6 +12,10 @@ pub struct Args {
     /// Enable logging to 'gitu.log'
     #[clap(long, action, default_value_t = false)]
     pub log: bool,
+
+    #[clap(long, action, default_value_t = false)]
+    /// Print version
+    pub version: bool,
 }
 
 #[derive(Debug, Subcommand)]

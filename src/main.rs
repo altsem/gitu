@@ -7,6 +7,11 @@ use std::{backtrace::Backtrace, panic};
 pub fn main() -> Res<()> {
     let args = Args::parse();
 
+    if args.version {
+        println!("gitu {}", git_version::git_version!());
+        return Ok(());
+    }
+
     if args.log {
         simple_logging::log_to_file("gitu.log", LevelFilter::Trace)?;
     }
