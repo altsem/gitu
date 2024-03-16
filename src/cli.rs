@@ -1,19 +1,19 @@
 use clap::{Parser, Subcommand};
 
-#[derive(Debug, Parser)]
+#[derive(Default, Debug, Parser)]
 #[command(name = crate::APP_NAME)]
 #[command(flatten_help = true)]
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Commands>,
     /// Print one frame and exit. Useful for debugging.
-    #[clap(long, action, default_value_t = false)]
+    #[clap(long, action)]
     pub print: bool,
     /// Enable logging to 'gitu.log'
-    #[clap(long, action, default_value_t = false)]
+    #[clap(long, action)]
     pub log: bool,
 
-    #[clap(long, action, default_value_t = false)]
+    #[clap(long, action)]
     /// Print version
     pub version: bool,
 }

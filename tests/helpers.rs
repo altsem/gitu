@@ -75,11 +75,7 @@ impl TestContext {
         let mut state = State::create(
             Repository::open(path).unwrap(),
             self.size,
-            &Args {
-                command: None,
-                print: false,
-                log: false,
-            },
+            &Args::default(),
             config::init_test_config().unwrap(),
         )
         .unwrap();
