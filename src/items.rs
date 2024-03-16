@@ -99,6 +99,44 @@ fn format_diff_hunk_items(depth: usize, hunk: &Hunk) -> impl Iterator<Item = Ite
     })
 }
 
+pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {
+    let style = &config.style;
+
+    Ok(repo
+        .reflog("refs/stash")?
+        .iter()
+        .enumerate()
+        .map(|(i, stash)| -> Res<Item> {
+            let spans = itertools::intersperse(
+                iter::once(Span::styled(format!("stash@{i}"), &style.hash)).chain([stash
+                    .message()
+                    .unwrap_or("")
+                    .to_string()
+                    .into()]),
+                Span::raw(" "),
+            )
+            .collect::<Vec<_>>();
+
+            Ok(Item {
+                id: stash.id_new().to_string().into(),
+                display: Line::from(spans),
+                depth: 1,
+                target_data: Some(TargetData::Commit(stash.id_new().to_string())),
+                ..Default::default()
+            })
+        })
+        .map(|result| match result {
+            Ok(item) => item,
+            Err(err) => Item {
+                id: err.to_string().into(),
+                display: err.to_string().into(),
+                ..Default::default()
+            },
+        })
+        .take(limit)
+        .collect::<Vec<_>>())
+}
+
 pub(crate) fn log(
     config: &Config,
     repo: &Repository,
