@@ -8,7 +8,7 @@ pub fn main() -> Res<()> {
     let args = Args::parse();
 
     if args.version {
-        println!("gitu {}", git_version::git_version!());
+        println!("{} {}", clap::crate_name!(), clap::crate_version!());
         return Ok(());
     }
 
