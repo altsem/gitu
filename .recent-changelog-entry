@@ -1,4 +1,9 @@
-## [0.7.1] - 2024-03-16
+## [0.7.0] - 2024-03-16
+
+### 🚀 Features
+
+- Add --version flag
+- Add Nix flake via ipetkov/crane
 
 ### 🐛 Bug Fixes
 
