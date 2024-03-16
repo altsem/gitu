@@ -19,6 +19,7 @@ pub(crate) mod reset;
 pub(crate) mod show;
 pub(crate) mod show_refs;
 pub(crate) mod stage;
+pub(crate) mod stash;
 pub(crate) mod unstage;
 
 pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
@@ -57,6 +58,11 @@ pub(crate) enum Op {
     RebaseAbort,
     RebaseContinue,
     ShowRefs,
+    Stash,
+    StashApply,
+    StashIndex,
+    StashKeepIndex,
+    StashPop,
 
     CommitFixup,
     Discard,
@@ -87,6 +93,7 @@ pub(crate) enum SubmenuOp {
     Push,
     Rebase,
     Reset,
+    Stash,
 }
 
 impl Op {
@@ -112,6 +119,11 @@ impl Op {
             Op::RebaseAbort => Box::new(rebase::RebaseAbort),
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::ShowRefs => Box::new(show_refs::ShowRefs),
+            Op::Stash => Box::new(stash::Stash),
+            Op::StashApply => Box::new(stash::StashApply),
+            Op::StashIndex => Box::new(stash::StashIndex),
+            Op::StashKeepIndex => Box::new(stash::StashKeepIndex),
+            Op::StashPop => Box::new(stash::StashPop),
 
             Op::CommitFixup => Box::new(commit::CommitFixup),
             Op::Discard => Box::new(discard::Discard),
@@ -142,6 +154,7 @@ impl Display for SubmenuOp {
             SubmenuOp::Push => "Push",
             SubmenuOp::Rebase => "Rebase",
             SubmenuOp::Reset => "Reset",
+            SubmenuOp::Stash => "Stash",
         })
     }
 }
