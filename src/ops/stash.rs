@@ -34,6 +34,22 @@ impl OpTrait for StashIndex {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Stash working tree")]
+pub(crate) struct StashWorktree;
+impl OpTrait for StashWorktree {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state: &mut State, term: &mut Term| {
+            let mut cmd = Command::new("git");
+            // TODO
+            cmd.args(["stash", "--staged"]);
+
+            state.issue_subscreen_command(term, cmd)?;
+            Ok(())
+        }))
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Stash keeping index")]
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
