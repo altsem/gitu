@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2024-03-16
+
+### 🐛 Bug Fixes
+
+- Crate would not build (due to trying to get version via git)
+
 ## [0.7.0] - 2024-03-16
 
 ### 🚀 Features

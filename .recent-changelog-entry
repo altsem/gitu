@@ -1,7 +1,6 @@
-## [0.7.0] - 2024-03-16
+## [0.7.1] - 2024-03-16
 
-### 🚀 Features
+### 🐛 Bug Fixes
 
-- Add --version flag
-- Add Nix flake via ipetkov/crane
+- Crate would not build (due to trying to get version via git)
 
