@@ -1,7 +1,7 @@
-## [0.6.3] - 2024-03-13
+## [0.7.0] - 2024-03-16
 
-### 🐛 Bug Fixes
+### 🚀 Features
 
-- Interactive rebase includes parent (like magit)
-- Target binds in help-menu had wrong name formatting
+- Add --version flag
+- Add Nix flake via ipetkov/crane
 
