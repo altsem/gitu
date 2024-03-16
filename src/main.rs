@@ -8,7 +8,9 @@ pub fn main() -> Res<()> {
     let args = Args::parse();
 
     if args.version {
-        println!("{} {}", clap::crate_name!(), clap::crate_version!());
+        // Setting cargo_suffix enables falling back to Cargo.toml for version
+        // `cargo install --locked gitu` would fail otherwise, as there's no git repo
+        println!("gitu {}", git_version::git_version!(cargo_suffix = ""));
         return Ok(());
     }
 
