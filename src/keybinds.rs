@@ -133,6 +133,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::Stash, Char('x'), Op::StashKeepIndex),
     Keybind::nomod(SubmenuOp::Stash, Char('p'), Op::StashPop),
     Keybind::nomod(SubmenuOp::Stash, Char('a'), Op::StashApply),
+    Keybind::nomod(SubmenuOp::Stash, Char('k'), Op::StashDrop),
     // Discard
     Keybind::shift(SubmenuOp::None, Char('K'), Op::Discard),
     // Target actions
