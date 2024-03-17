@@ -3,7 +3,6 @@ use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::ops::Op;
-use crate::ops::OpTrait;
 use crate::ops::SubmenuOp;
 use crate::state::State;
 use crate::CmdMetaBuffer;
@@ -95,7 +94,7 @@ fn format_keybinds_menu<'b>(
     let style = &config.style;
 
     let non_target_binds = keybinds::list(pending)
-        .filter(|keybind| !keybind.op.is_target_op())
+        .filter(|keybind| !keybind.op.implementation().is_target_op())
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
@@ -114,7 +113,7 @@ fn format_keybinds_menu<'b>(
                     .join(" "),
                 &style.hotkey,
             ),
-            Span::styled(format!(" {}", op), Style::new()),
+            Span::styled(format!(" {}", op.implementation()), Style::new()),
         ]));
     }
 
@@ -141,8 +140,14 @@ fn format_keybinds_menu<'b>(
     let mut target_binds_column = vec![];
     if let Some(target_data) = &item.target_data {
         let target_binds = keybinds::list(pending)
-            .filter(|keybind| keybind.op.is_target_op())
-            .filter(|keybind| OpTrait::get_action(&keybind.op, Some(target_data)).is_some())
+            .filter(|keybind| keybind.op.implementation().is_target_op())
+            .filter(|keybind| {
+                keybind
+                    .op
+                    .implementation()
+                    .get_action(Some(target_data))
+                    .is_some()
+            })
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
@@ -152,7 +157,7 @@ fn format_keybinds_menu<'b>(
         for bind in target_binds {
             target_binds_column.push(Line::from(vec![
                 Span::styled(Keybind::format_key(bind), &style.hotkey),
-                Span::styled(format!(" {}", bind.op), Style::new()),
+                Span::styled(format!(" {}", bind.op.implementation()), Style::new()),
             ]));
         }
     }
