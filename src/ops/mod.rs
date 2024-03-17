@@ -91,6 +91,7 @@ pub(crate) enum SubmenuOp {
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
+            Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::SelectNext => Box::new(editor::SelectNext),
             Op::SelectPrevious => Box::new(editor::SelectPrevious),
@@ -134,7 +135,7 @@ impl OpTrait for Op {
     fn is_target_op(&self) -> bool {
         match self {
             // TODO get rid of this special case
-            Op::Quit | Op::Refresh | Op::Submenu(_) => false,
+            Op::Quit | Op::Submenu(_) => false,
             _ => self.implementation().is_target_op(),
         }
     }
@@ -144,7 +145,6 @@ impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Op::Quit => f.write_str("Quit"),
-            Op::Refresh => f.write_str("Refresh"),
             _ => self.implementation().fmt(f),
         }
     }

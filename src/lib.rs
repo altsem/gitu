@@ -84,8 +84,6 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
 
     match op {
         Op::Quit => state.handle_quit(was_submenu)?,
-        Op::Refresh => state.screen_mut().update()?,
-
         Op::Submenu(op) => state.pending_submenu_op = op,
 
         _ => {
