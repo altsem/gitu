@@ -27,11 +27,44 @@ impl OpTrait for StashIndex {
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        // TODO: how to execute several commands?
-        // Ideally, for unstaged stashing we need to commit index, stash unstaged and then reset
-        // last commit. In the current implementation we include index in the stash despite index
-        // remains untouched.
-        Some(stash_push_action("--keep-index", "--include-untracked"))
+        let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
+            if state.prompt.state.status().is_done() {
+                let input = state.prompt.state.value().to_string();
+                // TODO: How to show all 3 commands? We show only git reset in the current
+                // implementation.
+
+                // 1. Commit index
+                let mut cmd = Command::new("git");
+                cmd.args(["commit", "--message", "TEMP"]);
+                state.run_external_cmd(term, &[], cmd)?;
+
+                // 2. Stash everything else
+                let mut cmd = Command::new("git");
+                cmd.args(["stash", "push", "--include-untracked"]);
+                if !input.is_empty() {
+                    cmd.args(["--message", &input]);
+                }
+                state.run_external_cmd(term, &[], cmd)?;
+
+                // 3. Reset index
+                let mut cmd = Command::new("git");
+                cmd.args(["reset", "--soft", "HEAD^1"]);
+                state.run_external_cmd(term, &[], cmd)?;
+
+                state.prompt.reset(term)?;
+            }
+            Ok(())
+        };
+
+        Some(Rc::new(
+            move |state: &mut State, _term: &mut Term| -> Res<()> {
+                state.prompt.set(PromptData {
+                    prompt_text: "Name of the stash:".into(),
+                    update_fn: Rc::new(update_fn),
+                });
+                Ok(())
+            },
+        ))
     }
 }
 
