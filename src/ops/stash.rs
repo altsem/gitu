@@ -9,7 +9,7 @@ use tui_prompts::State as _;
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_push_action("--include-untracked", ""))
+        Some(stash_push_action(["--include-untracked"]))
     }
 }
 
@@ -18,7 +18,7 @@ impl OpTrait for Stash {
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_push_action("--staged", ""))
+        Some(stash_push_action(["--staged"]))
     }
 }
 
@@ -73,36 +73,30 @@ impl OpTrait for StashWorktree {
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_push_action("--keep-index", "--include-untracked"))
+        Some(stash_push_action(["--keep-index", "--include-untracked"]))
     }
 }
 
-fn stash_push_action(arg0: &'static str, arg1: &'static str) -> Action {
+fn stash_push_action<const N: usize>(args: [&'static str; N]) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| -> Res<()> {
         state.prompt.set(PromptData {
             prompt_text: "Name of the stash:".into(),
-            update_fn: Rc::new(stash_push_action_prompt_update(arg0, arg1)),
+            update_fn: Rc::new(stash_push_action_prompt_update(args)),
         });
         Ok(())
     })
 }
 
-fn stash_push_action_prompt_update<'a>(
-    arg0: &'static str,
-    arg1: &'static str,
-) -> impl FnMut(&mut State, &mut Term) -> Res<()> + 'a {
+fn stash_push_action_prompt_update<const N: usize>(
+    args: [&'static str; N],
+) -> impl FnMut(&mut State, &mut Term) -> Res<()> + 'static {
     move |state: &mut State, term: &mut Term| -> Res<()> {
         if state.prompt.state.status().is_done() {
             let input = state.prompt.state.value().to_string();
 
             let mut cmd = Command::new("git");
             cmd.args(["stash", "push"]);
-            if !arg0.is_empty() {
-                cmd.args([arg0]);
-            }
-            if !arg1.is_empty() {
-                cmd.args([arg1]);
-            }
+            cmd.args(args);
             if !input.is_empty() {
                 cmd.args(["--message".into(), input]);
             }
