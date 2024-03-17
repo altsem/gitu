@@ -73,7 +73,7 @@ pub(crate) enum Op {
     Submenu(SubmenuOp),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub(crate) enum SubmenuOp {
     Any,
     Branch,
@@ -81,6 +81,7 @@ pub(crate) enum SubmenuOp {
     Fetch,
     Help,
     Log,
+    #[default]
     None,
     Pull,
     Push,
@@ -92,6 +93,7 @@ impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
             Op::Quit => Box::new(editor::Quit),
+            Op::Submenu(submenu) => Box::new(editor::Submenu(submenu)),
             Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::SelectNext => Box::new(editor::SelectNext),
@@ -122,8 +124,6 @@ impl Op {
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
-
-            op => unimplemented!("{:?}", op),
         }
     }
 }
@@ -134,11 +134,7 @@ impl OpTrait for Op {
     }
 
     fn is_target_op(&self) -> bool {
-        match self {
-            // TODO get rid of this special case
-            Op::Submenu(_) => false,
-            _ => self.implementation().is_target_op(),
-        }
+        self.implementation().is_target_op()
     }
 }
 

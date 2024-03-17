@@ -1,4 +1,4 @@
-use super::{Action, OpTrait};
+use super::{Action, OpTrait, SubmenuOp};
 use crate::items::TargetData;
 use derive_more::Display;
 use std::rc::Rc;
@@ -9,6 +9,19 @@ pub(crate) struct Quit;
 impl OpTrait for Quit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| state.handle_quit()))
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Submenu")]
+pub(crate) struct Submenu(pub SubmenuOp);
+impl OpTrait for Submenu {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        let submenu = self.0;
+        Some(Rc::new(move |state, _term| {
+            state.pending_submenu_op = submenu;
+            Ok(())
+        }))
     }
 }
 
