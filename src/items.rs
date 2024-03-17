@@ -34,6 +34,7 @@ pub(crate) enum TargetData {
     Delta(Delta),
     File(PathBuf),
     Hunk(Hunk),
+    Stash { commit: String, id: usize },
 }
 
 pub(crate) fn create_diff_items<'a>(
@@ -121,7 +122,10 @@ pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Re
                 id: stash.id_new().to_string().into(),
                 display: Line::from(spans),
                 depth: 1,
-                target_data: Some(TargetData::Commit(stash.id_new().to_string())),
+                target_data: Some(TargetData::Stash {
+                    commit: stash.id_new().to_string(),
+                    id: i,
+                }),
                 ..Default::default()
             })
         })
