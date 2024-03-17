@@ -246,24 +246,29 @@ fn create_stash_list_section_items<'a>(
     repo: &Repository,
     header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
-    let style = &config.style;
-    [
-        Item {
-            display: Line::raw(""),
-            depth: 0,
-            unselectable: true,
-            ..Default::default()
-        },
-        Item {
-            id: header.to_string().into(),
-            display: Line::styled(header.to_string(), &style.section_header),
-            section: true,
-            depth: 0,
-            ..Default::default()
-        },
-    ]
+    let stashes = items::stash_list(&config, repo, 10).unwrap();
+    if stashes.is_empty() {
+        vec![]
+    } else {
+        let style = &config.style;
+        vec![
+            Item {
+                display: Line::raw(""),
+                depth: 0,
+                unselectable: true,
+                ..Default::default()
+            },
+            Item {
+                id: header.to_string().into(),
+                display: Line::styled(header.to_string(), &style.section_header),
+                section: true,
+                depth: 0,
+                ..Default::default()
+            },
+        ]
+    }
     .into_iter()
-    .chain(items::stash_list(&config, repo, 10).unwrap())
+    .chain(stashes)
 }
 
 fn create_log_section_items<'a>(
