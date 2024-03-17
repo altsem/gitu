@@ -128,22 +128,6 @@ impl Op {
     }
 }
 
-impl OpTrait for Op {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        self.implementation().get_action(target)
-    }
-
-    fn is_target_op(&self) -> bool {
-        self.implementation().is_target_op()
-    }
-}
-
-impl Display for Op {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.implementation().fmt(f)
-    }
-}
-
 impl Display for SubmenuOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {

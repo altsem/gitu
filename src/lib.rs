@@ -15,7 +15,7 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op, OpTrait, SubmenuOp};
+use ops::{Action, Op, SubmenuOp};
 use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
@@ -80,7 +80,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
 
 pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
     let target = state.screen().get_selected_item().target_data.as_ref();
-    if let Some(mut action) = op.get_action(target) {
+    if let Some(mut action) = op.implementation().get_action(target) {
         Rc::get_mut(&mut action).unwrap()(state, term)?;
 
         close_submenu(state, op);
