@@ -4,6 +4,15 @@ use derive_more::Display;
 use std::rc::Rc;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Quit")]
+pub(crate) struct Quit;
+impl OpTrait for Quit {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| state.handle_quit()))
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Refresh")]
 pub(crate) struct Refresh;
 impl OpTrait for Refresh {

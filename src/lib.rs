@@ -79,17 +79,14 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
 }
 
 pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
-    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
-    state.pending_submenu_op = SubmenuOp::None;
-
     match op {
-        Op::Quit => state.handle_quit(was_submenu)?,
         Op::Submenu(op) => state.pending_submenu_op = op,
 
         _ => {
             let target = state.screen().get_selected_item().target_data.as_ref();
             if let Some(mut action) = op.get_action(target) {
-                Rc::get_mut(&mut action).unwrap()(state, term)?
+                Rc::get_mut(&mut action).unwrap()(state, term)?;
+                state.pending_submenu_op = SubmenuOp::None;
             }
         }
     }

@@ -134,15 +134,19 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn handle_quit(&mut self, was_submenu: bool) -> Res<()> {
-        if was_submenu {
-            // Do nothing, already cleared
-        } else {
-            self.screens.pop();
-            if let Some(screen) = self.screens.last_mut() {
-                screen.update()?;
-            } else {
-                self.quit = true
+    pub(crate) fn handle_quit(&mut self) -> Res<()> {
+        match self.pending_submenu_op {
+            SubmenuOp::None => {
+                self.screens.pop();
+                if let Some(screen) = self.screens.last_mut() {
+                    screen.update()?;
+                } else {
+                    self.quit = true
+                }
+            }
+            _ => {
+                self.pending_submenu_op = SubmenuOp::None;
+                return Ok(());
             }
         }
 
