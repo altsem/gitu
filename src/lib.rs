@@ -15,7 +15,7 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op, SubmenuOp};
+use ops::{Action, OpTrait, SubmenuOp};
 use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
@@ -78,9 +78,9 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     Ok(())
 }
 
-pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
+pub(crate) fn handle_op(state: &mut State, op: &'static dyn OpTrait, term: &mut Term) -> Res<()> {
     let target = state.screen().get_selected_item().target_data.as_ref();
-    if let Some(mut action) = op.implementation().get_action(target) {
+    if let Some(mut action) = op.get_action(target) {
         Rc::get_mut(&mut action).unwrap()(state, term)?;
 
         close_submenu(state, op);
@@ -89,9 +89,9 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
     Ok(())
 }
 
-fn close_submenu(state: &mut State, op: Op) {
-    match op {
-        Op::Submenu(_) => (),
-        _ => state.pending_submenu_op = SubmenuOp::None,
+fn close_submenu(state: &mut State, op: &'static dyn OpTrait) {
+    // TODO There must be a better way to do this
+    if format!("{}", op) != "Submenu" {
+        state.pending_submenu_op = SubmenuOp::None
     }
 }

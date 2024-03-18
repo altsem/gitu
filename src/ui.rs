@@ -2,7 +2,6 @@ use crate::config::Config;
 use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
-use crate::ops::Op;
 use crate::ops::SubmenuOp;
 use crate::state::State;
 use crate::CmdMetaBuffer;
@@ -94,7 +93,7 @@ fn format_keybinds_menu<'b>(
     let style = &config.style;
 
     let non_target_binds = keybinds::list(pending)
-        .filter(|keybind| !keybind.op.implementation().is_target_op())
+        .filter(|keybind| !keybind.op.is_target_op())
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
@@ -103,7 +102,8 @@ fn format_keybinds_menu<'b>(
         .iter()
         .group_by(|bind| bind.op)
         .into_iter()
-        .filter(|(op, _binds)| !matches!(op, Op::Submenu(_)))
+        // TODO Do this comparison in a better way
+        .filter(|(op, _binds)| format!("{}", op) != "Submenu")
     {
         pending_binds_column.push(Line::from(vec![
             Span::styled(
@@ -119,7 +119,8 @@ fn format_keybinds_menu<'b>(
 
     let submenus = non_target_binds
         .iter()
-        .filter(|bind| matches!(bind.op, Op::Submenu(_)))
+        // TODO Do this comparison in a better way
+        .filter(|bind| format!("{}", bind.op) == "Submenu")
         .collect::<Vec<_>>();
 
     let mut submenu_binds_column = vec![];
@@ -127,13 +128,9 @@ fn format_keybinds_menu<'b>(
         submenu_binds_column.push(Line::styled("Submenu", &style.command));
     }
     for bind in submenus {
-        let Op::Submenu(submenu) = bind.op else {
-            unreachable!();
-        };
-
         submenu_binds_column.push(Line::from(vec![
             Span::styled(Keybind::format_key(bind), &style.hotkey),
-            Span::styled(format!(" {}", submenu), Style::new()),
+            Span::styled(format!(" {}", bind), Style::new()),
         ]));
     }
 

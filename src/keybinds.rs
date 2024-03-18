@@ -1,4 +1,5 @@
-use crate::ops::Op;
+use crate::ops;
+use crate::ops::OpTrait;
 use crate::ops::SubmenuOp;
 use crossterm::event::{self, KeyCode, KeyModifiers};
 use KeyCode::*;
@@ -7,11 +8,11 @@ pub(crate) struct Keybind {
     pub submenu: SubmenuOp,
     pub mods: KeyModifiers,
     pub key: KeyCode,
-    pub op: Op,
+    pub op: &'static dyn OpTrait,
 }
 
 impl Keybind {
-    const fn nomod(submenu: SubmenuOp, key: KeyCode, op: Op) -> Self {
+    const fn nomod(submenu: SubmenuOp, key: KeyCode, op: &'static dyn OpTrait) -> Self {
         Self {
             submenu,
             mods: KeyModifiers::NONE,
@@ -20,7 +21,7 @@ impl Keybind {
         }
     }
 
-    const fn ctrl(submenu: SubmenuOp, key: KeyCode, op: Op) -> Self {
+    const fn ctrl(submenu: SubmenuOp, key: KeyCode, op: &'static dyn OpTrait) -> Self {
         Self {
             submenu,
             mods: KeyModifiers::CONTROL,
@@ -29,7 +30,7 @@ impl Keybind {
         }
     }
 
-    const fn shift(submenu: SubmenuOp, key: KeyCode, op: Op) -> Self {
+    const fn shift(submenu: SubmenuOp, key: KeyCode, op: &'static dyn OpTrait) -> Self {
         Self {
             submenu,
             mods: KeyModifiers::SHIFT,
@@ -74,66 +75,113 @@ impl Keybind {
 
 pub(crate) const KEYBINDS: &[Keybind] = &[
     // Generic
-    Keybind::nomod(SubmenuOp::Any, Char('q'), Op::Quit),
-    Keybind::nomod(SubmenuOp::Any, Esc, Op::Quit),
-    Keybind::nomod(SubmenuOp::None, Char('g'), Op::Refresh),
+    Keybind::nomod(SubmenuOp::Any, Char('q'), &ops::editor::Quit),
+    Keybind::nomod(SubmenuOp::Any, Esc, &ops::editor::Quit),
+    Keybind::nomod(SubmenuOp::None, Char('g'), &ops::editor::Refresh),
     // Editor
-    Keybind::nomod(SubmenuOp::None, Tab, Op::ToggleSection),
-    Keybind::nomod(SubmenuOp::None, Char('k'), Op::SelectPrevious),
-    Keybind::nomod(SubmenuOp::None, Char('p'), Op::SelectPrevious),
-    Keybind::nomod(SubmenuOp::None, KeyCode::Up, Op::SelectPrevious),
-    Keybind::nomod(SubmenuOp::None, Char('j'), Op::SelectNext),
-    Keybind::nomod(SubmenuOp::None, Char('n'), Op::SelectNext),
-    Keybind::nomod(SubmenuOp::None, KeyCode::Down, Op::SelectNext),
-    Keybind::ctrl(SubmenuOp::None, Char('u'), Op::HalfPageUp),
-    Keybind::ctrl(SubmenuOp::None, Char('d'), Op::HalfPageDown),
+    Keybind::nomod(SubmenuOp::None, Tab, &ops::editor::ToggleSection),
+    Keybind::nomod(SubmenuOp::None, Char('k'), &ops::editor::SelectPrevious),
+    Keybind::nomod(SubmenuOp::None, Char('p'), &ops::editor::SelectPrevious),
+    Keybind::nomod(SubmenuOp::None, KeyCode::Up, &ops::editor::SelectPrevious),
+    Keybind::nomod(SubmenuOp::None, Char('j'), &ops::editor::SelectNext),
+    Keybind::nomod(SubmenuOp::None, Char('n'), &ops::editor::SelectNext),
+    Keybind::nomod(SubmenuOp::None, KeyCode::Down, &ops::editor::SelectNext),
+    Keybind::ctrl(SubmenuOp::None, Char('u'), &ops::editor::HalfPageUp),
+    Keybind::ctrl(SubmenuOp::None, Char('d'), &ops::editor::HalfPageDown),
     // Help
-    Keybind::nomod(SubmenuOp::None, Char('h'), Op::Submenu(SubmenuOp::Help)),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('h'),
+        &ops::editor::Submenu(SubmenuOp::Help),
+    ),
     // Branch
-    Keybind::nomod(SubmenuOp::None, Char('b'), Op::Submenu(SubmenuOp::Branch)),
-    Keybind::nomod(SubmenuOp::Branch, Char('b'), Op::Checkout),
-    Keybind::nomod(SubmenuOp::Branch, Char('c'), Op::CheckoutNewBranch),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('b'),
+        &ops::editor::Submenu(SubmenuOp::Branch),
+    ),
+    Keybind::nomod(SubmenuOp::Branch, Char('b'), &ops::checkout::Checkout),
+    Keybind::nomod(
+        SubmenuOp::Branch,
+        Char('c'),
+        &ops::checkout::CheckoutNewBranch,
+    ),
     // Commit
-    Keybind::nomod(SubmenuOp::None, Char('c'), Op::Submenu(SubmenuOp::Commit)),
-    Keybind::nomod(SubmenuOp::Commit, Char('c'), Op::Commit),
-    Keybind::nomod(SubmenuOp::Commit, Char('a'), Op::CommitAmend),
-    Keybind::nomod(SubmenuOp::Commit, Char('f'), Op::CommitFixup),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('c'),
+        &ops::editor::Submenu(SubmenuOp::Commit),
+    ),
+    Keybind::nomod(SubmenuOp::Commit, Char('c'), &ops::commit::Commit),
+    Keybind::nomod(SubmenuOp::Commit, Char('a'), &ops::commit::CommitAmend),
+    Keybind::nomod(SubmenuOp::Commit, Char('f'), &ops::commit::CommitFixup),
     // Fetch
-    Keybind::nomod(SubmenuOp::None, Char('f'), Op::Submenu(SubmenuOp::Fetch)),
-    Keybind::nomod(SubmenuOp::Fetch, Char('a'), Op::FetchAll),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('f'),
+        &ops::editor::Submenu(SubmenuOp::Fetch),
+    ),
+    Keybind::nomod(SubmenuOp::Fetch, Char('a'), &ops::fetch::FetchAll),
     // Log
-    Keybind::nomod(SubmenuOp::None, Char('l'), Op::Submenu(SubmenuOp::Log)),
-    Keybind::nomod(SubmenuOp::Log, Char('l'), Op::LogCurrent),
-    Keybind::nomod(SubmenuOp::Log, Char('o'), Op::LogOther),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('l'),
+        &ops::editor::Submenu(SubmenuOp::Log),
+    ),
+    Keybind::nomod(SubmenuOp::Log, Char('l'), &ops::log::LogCurrent),
+    Keybind::nomod(SubmenuOp::Log, Char('o'), &ops::log::LogOther),
     // Pull
-    Keybind::shift(SubmenuOp::None, Char('F'), Op::Submenu(SubmenuOp::Pull)),
-    Keybind::nomod(SubmenuOp::Pull, Char('p'), Op::Pull),
+    Keybind::shift(
+        SubmenuOp::None,
+        Char('F'),
+        &ops::editor::Submenu(SubmenuOp::Pull),
+    ),
+    Keybind::nomod(SubmenuOp::Pull, Char('p'), &ops::pull::Pull),
     // Push
-    Keybind::shift(SubmenuOp::None, Char('P'), Op::Submenu(SubmenuOp::Push)),
-    Keybind::nomod(SubmenuOp::Push, Char('p'), Op::Push),
+    Keybind::shift(
+        SubmenuOp::None,
+        Char('P'),
+        &ops::editor::Submenu(SubmenuOp::Push),
+    ),
+    Keybind::nomod(SubmenuOp::Push, Char('p'), &ops::push::Push),
     // Rebase
-    Keybind::nomod(SubmenuOp::None, Char('r'), Op::Submenu(SubmenuOp::Rebase)),
-    Keybind::nomod(SubmenuOp::Rebase, Char('i'), Op::RebaseInteractive),
-    Keybind::nomod(SubmenuOp::Rebase, Char('a'), Op::RebaseAbort),
-    Keybind::nomod(SubmenuOp::Rebase, Char('c'), Op::RebaseContinue),
-    Keybind::nomod(SubmenuOp::Rebase, Char('f'), Op::RebaseAutosquash),
+    Keybind::nomod(
+        SubmenuOp::None,
+        Char('r'),
+        &ops::editor::Submenu(SubmenuOp::Rebase),
+    ),
+    Keybind::nomod(
+        SubmenuOp::Rebase,
+        Char('i'),
+        &ops::rebase::RebaseInteractive,
+    ),
+    Keybind::nomod(SubmenuOp::Rebase, Char('a'), &ops::rebase::RebaseAbort),
+    Keybind::nomod(SubmenuOp::Rebase, Char('c'), &ops::rebase::RebaseContinue),
+    Keybind::nomod(SubmenuOp::Rebase, Char('f'), &ops::rebase::RebaseAutosquash),
     // Reset
-    Keybind::shift(SubmenuOp::None, Char('X'), Op::Submenu(SubmenuOp::Reset)),
-    Keybind::nomod(SubmenuOp::Reset, Char('s'), Op::ResetSoft),
-    Keybind::nomod(SubmenuOp::Reset, Char('m'), Op::ResetMixed),
-    Keybind::nomod(SubmenuOp::Reset, Char('h'), Op::ResetHard),
+    Keybind::shift(
+        SubmenuOp::None,
+        Char('X'),
+        &ops::editor::Submenu(SubmenuOp::Reset),
+    ),
+    Keybind::nomod(SubmenuOp::Reset, Char('s'), &ops::reset::ResetSoft),
+    Keybind::nomod(SubmenuOp::Reset, Char('m'), &ops::reset::ResetMixed),
+    Keybind::nomod(SubmenuOp::Reset, Char('h'), &ops::reset::ResetHard),
     // Show
-    Keybind::nomod(SubmenuOp::None, Enter, Op::Show),
+    Keybind::nomod(SubmenuOp::None, Enter, &ops::show::Show),
     // Show refs
-    Keybind::nomod(SubmenuOp::None, Char('y'), Op::ShowRefs),
+    Keybind::nomod(SubmenuOp::None, Char('y'), &ops::show_refs::ShowRefs),
     // Discard
-    Keybind::shift(SubmenuOp::None, Char('K'), Op::Discard),
+    Keybind::shift(SubmenuOp::None, Char('K'), &ops::discard::Discard),
     // Target actions
-    Keybind::nomod(SubmenuOp::None, Char('s'), Op::Stage),
-    Keybind::nomod(SubmenuOp::None, Char('u'), Op::Unstage),
+    Keybind::nomod(SubmenuOp::None, Char('s'), &ops::stage::Stage),
+    Keybind::nomod(SubmenuOp::None, Char('u'), &ops::unstage::Unstage),
 ];
 
-pub(crate) fn op_of_key_event(pending: SubmenuOp, key: event::KeyEvent) -> Option<Op> {
+pub(crate) fn op_of_key_event(
+    pending: SubmenuOp,
+    key: event::KeyEvent,
+) -> Option<&'static dyn OpTrait> {
     KEYBINDS
         .iter()
         .find(|keybind| {
