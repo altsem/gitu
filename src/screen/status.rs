@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{path::PathBuf, rc::Rc};
 
 use super::Screen;
 use crate::{
@@ -21,8 +21,21 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
         Box::new(move || {
             let style = &config.style;
             let statuses = repo.statuses(Some(&mut git2_opts::status(&repo)?))?;
-            let untracked = untracked(&config, &statuses);
-            let unmerged = unmerged(&config, &statuses);
+
+            let untracked_files = statuses
+                .iter()
+                .filter(|status| status.status().is_wt_new())
+                .map(|status| PathBuf::from(status.path().unwrap()))
+                .collect::<Vec<_>>();
+
+            let unmerged_files = statuses
+                .iter()
+                .filter(|status| status.status().is_conflicted())
+                .map(|status| PathBuf::from(status.path().unwrap()))
+                .collect::<Vec<_>>();
+
+            let untracked = items_list(&config, untracked_files.clone());
+            let unmerged = items_list(&config, unmerged_files);
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
@@ -99,46 +112,16 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
     )
 }
 
-fn untracked(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
+fn items_list(config: &Config, files: Vec<PathBuf>) -> Vec<Item> {
     let style = &config.style;
-    statuses
-        .iter()
-        .filter_map(|status| {
-            if !status.status().is_wt_new() {
-                return None;
-            }
-
-            let path = status.path()?;
-
-            Some(Item {
-                id: path.to_string().into(),
-                display: Line::styled(path.to_string(), &style.file_header),
-                depth: 1,
-                target_data: Some(items::TargetData::File(path.into())),
-                ..Default::default()
-            })
-        })
-        .collect::<Vec<_>>()
-}
-
-fn unmerged(config: &Config, statuses: &git2::Statuses<'_>) -> Vec<Item> {
-    let style = &config.style;
-    statuses
-        .iter()
-        .filter_map(|status| {
-            if !status.status().is_conflicted() {
-                return None;
-            }
-
-            let path = status.path()?;
-
-            Some(Item {
-                id: path.to_string().into(),
-                display: Line::styled(path.to_string(), &style.file_header),
-                depth: 1,
-                target_data: Some(items::TargetData::File(path.into())),
-                ..Default::default()
-            })
+    files
+        .into_iter()
+        .map(|path| Item {
+            id: path.to_string_lossy().to_string().into(),
+            display: Line::styled(path.to_string_lossy().to_string(), &style.file_header),
+            depth: 1,
+            target_data: Some(items::TargetData::File(path)),
+            ..Default::default()
         })
         .collect::<Vec<_>>()
 }
