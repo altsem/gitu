@@ -13,7 +13,7 @@ impl OpTrait for Show {
             Some(TargetData::File(u)) => editor(u.as_path(), None),
             Some(TargetData::Delta(d)) => editor(d.new_file.as_path(), None),
             Some(TargetData::Hunk(h)) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
-            None => None,
+            _ => None,
         }
     }
     fn is_target_op(&self) -> bool {
