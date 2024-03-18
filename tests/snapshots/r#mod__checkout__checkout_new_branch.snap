@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 Buffer {
     area: Rect { x: 0, y: 0, width: 80, height: 10 },
     content: [
-        "🢒On branch x                                                                    ",
+        "▌On branch x                                                                    ",
         "                                                                                ",
         " Recent commits                                                                 ",
         " _______ main x origin/main add initial-file                                    ",
@@ -17,7 +17,7 @@ Buffer {
         "Switched to a new branch 'x'                                                    ",
     ],
     styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 0, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD | DIM,
         x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
         x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,

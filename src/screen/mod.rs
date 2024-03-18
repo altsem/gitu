@@ -249,14 +249,14 @@ impl Widget for &Screen {
             let indented_line_area = Rect { x: 1, ..line_area };
 
             if highlight_depth.is_some() {
+                buf.get_mut(0, line_i as u16)
+                    .set_char('▌')
+                    .set_style(&style.selection_bar);
+
+                buf.set_style(line_area, &style.selection_area);
+
                 if self.line_index[self.cursor] == item_i {
                     buf.set_style(line_area, &style.selection_line);
-                } else {
-                    buf.get_mut(0, line_i as u16)
-                        .set_char('▌')
-                        .set_style(&style.selection_bar);
-
-                    buf.set_style(line_area, &style.selection_area);
                 }
             }
 
@@ -266,9 +266,6 @@ impl Widget for &Screen {
             if self.is_collapsed(item) && line.width() > 0 || overflow {
                 let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
                 buf.get_mut(line_end, line_i as u16).set_char('…');
-            }
-            if self.line_index[self.cursor] == item_i {
-                buf.get_mut(0, line_i as u16).set_char('🢒');
             }
         }
     }
