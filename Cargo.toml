@@ -17,7 +17,7 @@ insta = "1.36.1"
 
 [dependencies]
 chrono = "0.4.34"
-clap = { version = "4.5.1", features = ["derive"] }
+clap = { version = "4.5.3", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
 directories = "5.0.1"
