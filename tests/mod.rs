@@ -67,6 +67,21 @@ mod stage {
     }
 
     #[test]
+    fn stage_all_unstaged() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
+        commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
+
+        fs::write(ctx.dir.child("firstfile"), "blahonga\n").unwrap();
+        fs::write(ctx.dir.child("secondfile"), "blahonga\n").unwrap();
+
+        let mut state = ctx.init_state();
+        state.update(&mut ctx.term, &[key('j'), key('s')]).unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
     fn stage_all_untracked() {
         let mut ctx = TestContext::setup_init(80, 20);
         run(ctx.dir.path(), &["touch", "file-a"]);

@@ -29,6 +29,7 @@ pub(crate) struct Item {
 
 #[derive(Clone, Debug)]
 pub(crate) enum TargetData {
+    AllUnstaged,
     AllUntracked(Vec<PathBuf>),
     Branch(String),
     Commit(String),
