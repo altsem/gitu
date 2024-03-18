@@ -53,14 +53,18 @@ fn unstaged_changes() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
-#[test]
-fn staged_file() {
-    let mut ctx = TestContext::setup_init(80, 20);
-    run(ctx.dir.path(), &["touch", "new-file"]);
-    run(ctx.dir.path(), &["git", "add", "new-file"]);
+mod stage {
+    use super::*;
 
-    ctx.init_state();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    #[test]
+    fn staged_file() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        run(ctx.dir.path(), &["touch", "new-file"]);
+        run(ctx.dir.path(), &["git", "add", "new-file"]);
+
+        ctx.init_state();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]
