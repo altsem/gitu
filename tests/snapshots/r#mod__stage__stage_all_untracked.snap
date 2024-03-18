@@ -1,0 +1,47 @@
+---
+source: tests/mod.rs
+expression: ctx.redact_buffer()
+---
+Buffer {
+    area: Rect { x: 0, y: 0, width: 80, height: 20 },
+    content: [
+        " No branch                                                                      ",
+        "                                                                                ",
+        "🢒Staged changes (2)                                                             ",
+        "▌added   file-a                                                                 ",
+        "▌added   file-b                                                                 ",
+        "                                                                                ",
+        " Recent commits                                                                 ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "                                                                                ",
+        "────────────────────────────────────────────────────────────────────────────────",
+        "$ git add file-a file-b                                                         ",
+        "                                                                                ",
+    ],
+    styles: [
+        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 15, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 3, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
+        x: 1, y: 3, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 4, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
+        x: 1, y: 4, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 6, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
+        x: 0, y: 18, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 23, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+    ]
+}

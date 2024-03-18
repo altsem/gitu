@@ -1,11 +1,9 @@
-use std::{path::PathBuf, rc::Rc};
-
 use super::Screen;
 use crate::{
     config::Config,
     git::{self, diff::Diff},
     git2_opts,
-    items::{self, Item},
+    items::{self, Item, TargetData},
     Res,
 };
 use git2::Repository;
@@ -13,6 +11,7 @@ use ratatui::{
     prelude::Rect,
     text::{Line, Span},
 };
+use std::{path::PathBuf, rc::Rc};
 
 pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Res<Screen> {
     Screen::new(
@@ -70,6 +69,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                         display: Line::styled("Untracked files", &style.section_header),
                         section: true,
                         depth: 0,
+                        target_data: Some(TargetData::AllUntracked(untracked_files)),
                         ..Default::default()
                     },
                 ]
