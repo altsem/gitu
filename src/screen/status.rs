@@ -99,7 +99,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "Staged changes",
-                None,
+                Some(TargetData::AllStaged),
                 &git::diff_staged(repo.as_ref())?,
             ))
             .chain(create_log_section_items(

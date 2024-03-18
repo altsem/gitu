@@ -53,6 +53,24 @@ fn unstaged_changes() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
+mod unstage {
+    use super::*;
+
+    #[test]
+    fn unstage_all_staged() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        run(ctx.dir.path(), &["touch", "one", "two", "unaffected"]);
+        run(ctx.dir.path(), &["git", "add", "one", "two"]);
+
+        let mut state = ctx.init_state();
+        state
+            .update(&mut ctx.term, &[key('j'), key('j'), key('j'), key('u')])
+            .unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+}
+
 mod stage {
     use super::*;
 
