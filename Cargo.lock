@@ -465,9 +465,9 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "figment"
-version = "0.10.14"
+version = "0.10.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b6e5bc7bd59d60d0d45a6ccab6cf0f4ce28698fb4e81e750ddf229c9b824026"
+checksum = "7270677e7067213e04f323b55084586195f18308cd7546cfac9f873344ccceb6"
 dependencies = [
  "atomic",
  "serde",
