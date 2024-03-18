@@ -252,12 +252,7 @@ fn create_stash_list_section_items<'a>(
     } else {
         let style = &config.style;
         vec![
-            Item {
-                display: Line::raw(""),
-                depth: 0,
-                unselectable: true,
-                ..Default::default()
-            },
+            items::blank_line(),
             Item {
                 id: header.to_string().into(),
                 display: Line::styled(header.to_string(), &style.section_header),
