@@ -93,11 +93,13 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "Unstaged changes",
+                Some(TargetData::AllUnstaged),
                 &git::diff_unstaged(repo.as_ref())?,
             ))
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "Staged changes",
+                None,
                 &git::diff_staged(repo.as_ref())?,
             ))
             .chain(create_log_section_items(
@@ -203,6 +205,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
 fn create_status_section_items<'a>(
     config: Rc<Config>,
     header: &str,
+    header_data: Option<TargetData>,
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
     let style = &config.style;
@@ -224,6 +227,7 @@ fn create_status_section_items<'a>(
                 ]),
                 section: true,
                 depth: 0,
+                target_data: header_data,
                 ..Default::default()
             },
         ]
