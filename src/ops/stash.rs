@@ -5,7 +5,7 @@ use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Stash")]
+#[display(fmt = "Stash (include untracked)")]
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
