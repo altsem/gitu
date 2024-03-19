@@ -16,6 +16,7 @@ criterion = "0.5.1"
 insta = "1.36.1"
 
 [dependencies]
+ansi-to-tui = "4.0.1"
 chrono = "0.4.34"
 clap = { version = "4.5.3", features = ["derive"] }
 crossterm = "0.27.0"

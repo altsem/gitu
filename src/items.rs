@@ -14,6 +14,8 @@ use similar::TextDiff;
 use std::borrow::Cow;
 use std::iter;
 use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
 use std::rc::Rc;
 
 #[derive(Default, Clone, Debug)]
@@ -88,79 +90,49 @@ fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iter
     .chain(format_diff_hunk_items(&config, depth + 1, hunk))
 }
 
-fn format_diff_hunk_items(
-    config: &Config,
-    depth: usize,
-    hunk: &Hunk,
-) -> impl Iterator<Item = Item> {
-    let old = hunk.old_content();
-    let new = hunk.new_content();
+fn format_diff_hunk_items(config: &Config, depth: usize, hunk: &Hunk) -> Vec<Item> {
+    let mut child = Command::new("delta")
+        .arg("--color-only")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("couldn't spawn delta");
 
-    let diff = TextDiff::configure()
-        .algorithm(Algorithm::Patience)
-        .diff_lines(&old, &new);
+    use std::io::Write;
+    let child_stdin = child.stdin.as_mut().unwrap();
 
-    let changes = diff
-        .ops()
-        .iter()
-        .flat_map(|op| diff.iter_inline_changes(op))
-        .collect::<Vec<_>>();
+    child_stdin
+        .write_all(hunk.header.as_bytes())
+        .expect("couldn't write input to delta");
 
-    format_changes(config, &changes)
-        .into_iter()
-        .map(move |line| Item {
-            display: line,
+    child_stdin
+        .write_all(hunk.content.as_bytes())
+        .expect("couldn't write input to delta");
+
+    let out = String::from_utf8(
+        child
+            .wait_with_output()
+            .expect("awaiting delta failed")
+            .stdout,
+    )
+    .expect("Error turning command output to String");
+
+    // TODO ansi is output by delta, but ansi_to_tui fails?
+
+    let colored_text = ansi_to_tui::IntoText::into_text(&out).expect("couldn't parse ansi text");
+
+    hunk.content
+        .lines()
+        .zip(&colored_text.lines[1..])
+        .map(move |(line, colored_line)| Item {
+            display: colored_line.clone(),
             unselectable: true,
             depth,
             target_data: None,
             ..Default::default()
         })
-}
-
-fn format_changes(
-    config: &Config,
-    changes: &[similar::InlineChange<'_, str>],
-) -> Vec<Line<'static>> {
-    let style = &config.style;
-    let lines = changes
-        .iter()
-        .map(|change| {
-            let line_style = match change.tag() {
-                ChangeTag::Equal => Style::new(),
-                ChangeTag::Delete => (&style.line_removed).into(),
-                ChangeTag::Insert => (&style.line_added).into(),
-            };
-
-            let prefix = match change.tag() {
-                ChangeTag::Equal => " ",
-                ChangeTag::Delete => "-",
-                ChangeTag::Insert => "+",
-            };
-
-            let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
-
-            Line::from(
-                iter::once(Span::styled(prefix, line_style))
-                    .chain(change.iter_strings_lossy().map(|(emph, value)| {
-                        Span::styled(
-                            value.to_string(),
-                            if some_emph {
-                                if emph {
-                                    line_style.patch(&style.line_highlight.changed)
-                                } else {
-                                    line_style.patch(&style.line_highlight.unchanged)
-                                }
-                            } else {
-                                line_style
-                            },
-                        )
-                    }))
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    lines
+        .collect()
 }
 
 pub(crate) fn log(
