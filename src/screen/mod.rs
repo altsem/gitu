@@ -261,12 +261,23 @@ impl Widget for &Screen {
             }
 
             line.render(indented_line_area, buf);
-            let overflow = line.width() > line_area.width as usize;
 
-            if self.is_collapsed(item) && line.width() > 0 || overflow {
-                let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
-                buf.get_mut(line_end, line_i as u16).set_char('…');
+            let mut occupied_right = 0;
+
+            if self.is_collapsed(item) && line.width() > 0 {
+                let pos = (indented_line_area.x + line.width() as u16 + 1).min(area.width - 1);
+                buf.get_mut(pos, line_i as u16)
+                    .set_char('⏷')
+                    .set_style(Style::reset());
+
+                occupied_right += 1;
             }
+
+            if line.width() > line_area.width as usize - 2 {
+                buf.get_mut(line_area.width - occupied_right - 1, line_i as u16)
+                    .set_char('…');
+            }
+
             if self.line_index[self.cursor] == item_i {
                 buf.get_mut(0, line_i as u16).set_char('🢒');
             }

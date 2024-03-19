@@ -567,6 +567,17 @@ fn stage_last_hunk_of_first_delta() {
 }
 
 #[test]
+fn overflow() {
+    let mut ctx = TestContext::setup_init(20, 20);
+    commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
+    fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+
+    let mut state = ctx.init_state();
+    state.update(&mut ctx.term, &[]).unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn go_down_past_collapsed() {
     let mut ctx = TestContext::setup_init(80, 20);
     commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
