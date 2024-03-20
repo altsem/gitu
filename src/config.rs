@@ -10,7 +10,19 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
 #[derive(Default, Debug, Deserialize)]
 pub struct Config {
+    pub general: GeneralConfig,
     pub style: StyleConfig,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct GeneralConfig {
+    pub confirm_quit: BoolConfigEntry,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct BoolConfigEntry {
+    #[serde(default)]
+    pub enabled: bool,
 }
 
 #[derive(Default, Debug, Deserialize)]

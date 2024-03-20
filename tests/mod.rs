@@ -904,3 +904,22 @@ fn inside_submodule() {
     let _state = ctx.init_state_at_path(ctx.dir.child("test-submodule"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn quit_prompt() {
+    let mut ctx = TestContext::setup_init(80, 20);
+
+    let mut state = ctx.init_state();
+    state.update(&mut ctx.term, &[key('q')]).unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn quit() {
+    let mut ctx = TestContext::setup_init(80, 20);
+
+    // TODO init_state should probably accept `Config` as an arg?
+    let mut state = ctx.init_state();
+    state.update(&mut ctx.term, &[key('q'), key('y')]).unwrap();
+    assert!(state.quit);
+}
