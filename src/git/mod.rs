@@ -1,17 +1,12 @@
-use git2::{DiffLineType::*, Repository};
+use git2::Repository;
 use itertools::Itertools;
 
-use self::{
-    commit::Commit,
-    diff::{Delta, Diff, Hunk},
-    merge_status::MergeStatus,
-    rebase_status::RebaseStatus,
-};
-use crate::{git2_opts, Res};
+use self::{commit::Commit, diff::Diff, merge_status::MergeStatus, rebase_status::RebaseStatus};
+use crate::{config::Config, git2_opts, Res};
 use std::{
     ffi::OsStr,
     fs,
-    path::{Path, PathBuf},
+    path::Path,
     process::Command,
     str::{self},
 };
@@ -92,79 +87,12 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
         .map(|line| line.split(' ').nth(1).unwrap().to_string()))
 }
 
-// TODO Move elsewhere
-pub(crate) fn convert_diff(diff: git2::Diff) -> Res<Diff> {
-    let mut deltas = vec![];
-    let mut lines = String::new();
-
-    diff.print(git2::DiffFormat::Patch, |delta, maybe_hunk, line| {
-        let line_content = str::from_utf8(line.content()).unwrap();
-        let is_new_header = line_content.starts_with("diff")
-            && line.origin_value() == git2::DiffLineType::FileHeader;
-        let is_new_hunk =
-            line_content.starts_with("@@") && line.origin_value() == git2::DiffLineType::HunkHeader;
-
-        match maybe_hunk {
-            None => {
-                if is_new_header {
-                    deltas.push(Delta {
-                        file_header: line_content.to_string(),
-                        old_file: path(&delta.old_file()),
-                        new_file: path(&delta.new_file()),
-                        hunks: vec![],
-                        status: delta.status(),
-                    });
-                } else {
-                    let delta = deltas.last_mut().unwrap();
-                    delta.file_header.push_str(line_content);
-                }
-            }
-            Some(hunk) => {
-                if is_new_hunk {
-                    let delta = deltas.last_mut().unwrap();
-
-                    delta.hunks.push(Hunk {
-                        file_header: delta.file_header.clone(),
-                        new_file: delta.new_file.clone(),
-                        new_start: hunk.new_start(),
-                        header: line_content.to_string(),
-                        content: String::new(),
-                    });
-                } else {
-                    lines.push_str(line_content);
-                    let last_hunk = deltas.last_mut().unwrap().hunks.last_mut().unwrap();
-
-                    match line.origin_value() {
-                        Context | Addition | Deletion => {
-                            last_hunk
-                                .content
-                                .push_str(&(format!("{}{}", line.origin(), line_content)));
-                        }
-                        ContextEOFNL => {
-                            // TODO Handle '\ No newline at the end of file'
-                        }
-                        _ => (),
-                    };
-                }
-            }
-        }
-
-        true
-    })?;
-
-    Ok(Diff { deltas })
-}
-
-fn path(file: &git2::DiffFile) -> PathBuf {
-    file.path().unwrap().to_path_buf()
-}
-
-pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
+pub(crate) fn diff_unstaged(config: &Config, repo: &Repository) -> Res<Diff> {
     let diff = repo.diff_index_to_workdir(None, Some(&mut git2_opts::diff(repo)?))?;
-    convert_diff(diff)
+    diff::convert_diff(config, repo, diff, true)
 }
 
-pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
+pub(crate) fn diff_staged(config: &Config, repo: &Repository) -> Res<Diff> {
     let opts = &mut git2_opts::diff(repo)?;
 
     let diff = match repo.head() {
@@ -172,10 +100,10 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
         Err(_) => repo.diff_tree_to_index(None, None, Some(opts))?,
     };
 
-    convert_diff(diff)
+    diff::convert_diff(config, repo, diff, false)
 }
 
-pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
+pub(crate) fn show(config: &Config, repo: &Repository, reference: &str) -> Res<Diff> {
     let object = &repo.revparse_single(reference)?;
 
     let commit = object.peel_to_commit()?;
@@ -190,7 +118,8 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
         Some(&tree),
         Some(&mut git2_opts::diff(repo)?),
     )?;
-    convert_diff(diff)
+
+    diff::convert_diff(config, repo, diff, false)
 }
 
 pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {

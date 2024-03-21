@@ -8,9 +8,6 @@ use git2::Repository;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
-use similar::Algorithm;
-use similar::ChangeTag;
-use similar::TextDiff;
 use std::borrow::Cow;
 use std::iter;
 use std::path::PathBuf;
@@ -74,7 +71,11 @@ pub(crate) fn create_diff_items<'a>(
     })
 }
 
-fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
+fn create_hunk_items(
+    config: Rc<Config>,
+    hunk: &Hunk,
+    depth: usize,
+) -> impl Iterator<Item = Item> + '_ {
     let target_data = TargetData::Hunk(hunk.clone());
 
     iter::once(Item {
@@ -85,82 +86,17 @@ fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iter
         target_data: Some(target_data),
         ..Default::default()
     })
-    .chain(format_diff_hunk_items(&config, depth + 1, hunk))
+    .chain(format_diff_hunk_items(depth + 1, hunk))
 }
 
-fn format_diff_hunk_items(
-    config: &Config,
-    depth: usize,
-    hunk: &Hunk,
-) -> impl Iterator<Item = Item> {
-    let old = hunk.old_content();
-    let new = hunk.new_content();
-
-    let diff = TextDiff::configure()
-        .algorithm(Algorithm::Patience)
-        .diff_lines(&old, &new);
-
-    let changes = diff
-        .ops()
-        .iter()
-        .flat_map(|op| diff.iter_inline_changes(op))
-        .collect::<Vec<_>>();
-
-    format_changes(config, &changes)
-        .into_iter()
-        .map(move |line| Item {
-            display: line,
-            unselectable: true,
-            depth,
-            target_data: None,
-            ..Default::default()
-        })
-}
-
-fn format_changes(
-    config: &Config,
-    changes: &[similar::InlineChange<'_, str>],
-) -> Vec<Line<'static>> {
-    let style = &config.style;
-    let lines = changes
-        .iter()
-        .map(|change| {
-            let line_style = match change.tag() {
-                ChangeTag::Equal => Style::new(),
-                ChangeTag::Delete => (&style.line_removed).into(),
-                ChangeTag::Insert => (&style.line_added).into(),
-            };
-
-            let prefix = match change.tag() {
-                ChangeTag::Equal => " ",
-                ChangeTag::Delete => "-",
-                ChangeTag::Insert => "+",
-            };
-
-            let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
-
-            Line::from(
-                iter::once(Span::styled(prefix, line_style))
-                    .chain(change.iter_strings_lossy().map(|(emph, value)| {
-                        Span::styled(
-                            value.to_string(),
-                            if some_emph {
-                                if emph {
-                                    line_style.patch(&style.line_highlight.changed)
-                                } else {
-                                    line_style.patch(&style.line_highlight.unchanged)
-                                }
-                            } else {
-                                line_style
-                            },
-                        )
-                    }))
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    lines
+fn format_diff_hunk_items(depth: usize, hunk: &Hunk) -> impl Iterator<Item = Item> + '_ {
+    hunk.content.lines.iter().map(move |line| Item {
+        display: line.clone(),
+        unselectable: true,
+        depth,
+        target_data: None,
+        ..Default::default()
+    })
 }
 
 pub(crate) fn log(
