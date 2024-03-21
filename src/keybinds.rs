@@ -85,6 +85,12 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::None, Char('j'), Op::SelectNext),
     Keybind::nomod(SubmenuOp::None, Char('n'), Op::SelectNext),
     Keybind::nomod(SubmenuOp::None, KeyCode::Down, Op::SelectNext),
+    Keybind::ctrl(SubmenuOp::None, Char('k'), Op::SelectPreviousLine),
+    Keybind::ctrl(SubmenuOp::None, Char('p'), Op::SelectPreviousLine),
+    Keybind::ctrl(SubmenuOp::None, KeyCode::Up, Op::SelectPreviousLine),
+    Keybind::ctrl(SubmenuOp::None, Char('j'), Op::SelectNextLine),
+    Keybind::ctrl(SubmenuOp::None, Char('n'), Op::SelectNextLine),
+    Keybind::ctrl(SubmenuOp::None, KeyCode::Down, Op::SelectNextLine),
     Keybind::ctrl(SubmenuOp::None, Char('u'), Op::HalfPageUp),
     Keybind::ctrl(SubmenuOp::None, Char('d'), Op::HalfPageDown),
     // Help

@@ -167,6 +167,9 @@ pub(crate) fn stage_file_cmd(file: &OsStr) -> Command {
 pub(crate) fn stage_patch_cmd() -> Command {
     git(["apply", "--cached"])
 }
+pub(crate) fn stage_line_cmd() -> Command {
+    git(["apply", "--cached", "--recount"])
+}
 pub(crate) fn unstage_file_cmd(file: &OsStr) -> Command {
     git([OsStr::new("restore"), OsStr::new("--staged"), file])
 }

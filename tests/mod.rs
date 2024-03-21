@@ -110,6 +110,56 @@ mod stage {
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
+
+    #[test]
+    fn stage_removed_line() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
+        fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
+
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('j'),
+                    key('j'),
+                    key_code(KeyCode::Tab),
+                    ctrl('j'),
+                    ctrl('j'),
+                    key('s'),
+                ],
+            )
+            .unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    fn stage_added_line() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
+        fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
+
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('j'),
+                    key('j'),
+                    key_code(KeyCode::Tab),
+                    ctrl('j'),
+                    ctrl('j'),
+                    ctrl('j'),
+                    ctrl('j'),
+                    key('s'),
+                ],
+            )
+            .unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]

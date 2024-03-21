@@ -1,5 +1,5 @@
 use super::{Action, OpTrait, SubmenuOp};
-use crate::items::TargetData;
+use crate::{items::TargetData, screen::NavMode};
 use derive_more::Display;
 use std::rc::Rc;
 
@@ -47,24 +47,50 @@ impl OpTrait for ToggleSection {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Select previous")]
+#[display(fmt = "Move up")]
 pub(crate) struct SelectPrevious;
 impl OpTrait for SelectPrevious {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
-            state.screen_mut().select_previous();
+            state.screen_mut().select_previous(NavMode::Normal);
             Ok(())
         }))
     }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Select next")]
+#[display(fmt = "Move down")]
 pub(crate) struct SelectNext;
 impl OpTrait for SelectNext {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
-            state.screen_mut().select_next();
+            state.screen_mut().select_next(NavMode::Normal);
+            Ok(())
+        }))
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Move down line")]
+pub(crate) struct SelectNextLine;
+impl OpTrait for SelectNextLine {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            state.screen_mut().select_next(NavMode::IncludeHunkLines);
+            Ok(())
+        }))
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Move up line")]
+pub(crate) struct SelectPreviousLine;
+impl OpTrait for SelectPreviousLine {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            state
+                .screen_mut()
+                .select_previous(NavMode::IncludeHunkLines);
             Ok(())
         }))
     }

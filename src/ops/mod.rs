@@ -44,6 +44,8 @@ pub(crate) enum Op {
     ToggleSection,
     SelectNext,
     SelectPrevious,
+    SelectNextLine,
+    SelectPreviousLine,
     HalfPageUp,
     HalfPageDown,
 
@@ -107,6 +109,8 @@ impl Op {
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::SelectNext => Box::new(editor::SelectNext),
             Op::SelectPrevious => Box::new(editor::SelectPrevious),
+            Op::SelectNextLine => Box::new(editor::SelectNextLine),
+            Op::SelectPreviousLine => Box::new(editor::SelectPreviousLine),
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
 
