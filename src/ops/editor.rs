@@ -48,8 +48,8 @@ impl OpTrait for ToggleSection {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Move up")]
-pub(crate) struct SelectPrevious;
-impl OpTrait for SelectPrevious {
+pub(crate) struct MoveUp;
+impl OpTrait for MoveUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
             state.screen_mut().select_previous(NavMode::Normal);
@@ -60,8 +60,8 @@ impl OpTrait for SelectPrevious {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Move down")]
-pub(crate) struct SelectNext;
-impl OpTrait for SelectNext {
+pub(crate) struct MoveDown;
+impl OpTrait for MoveDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
             state.screen_mut().select_next(NavMode::Normal);
@@ -72,8 +72,8 @@ impl OpTrait for SelectNext {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Move down line")]
-pub(crate) struct SelectNextLine;
-impl OpTrait for SelectNextLine {
+pub(crate) struct MoveDownLine;
+impl OpTrait for MoveDownLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
             state.screen_mut().select_next(NavMode::IncludeHunkLines);
@@ -84,8 +84,8 @@ impl OpTrait for SelectNextLine {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Move up line")]
-pub(crate) struct SelectPreviousLine;
-impl OpTrait for SelectPreviousLine {
+pub(crate) struct MoveUpLine;
+impl OpTrait for MoveUpLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
             state
