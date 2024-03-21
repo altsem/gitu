@@ -252,6 +252,140 @@ fn pull() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
+mod stash {
+    use crate::helpers::key;
+    use crate::helpers::key_code;
+    use crate::helpers::run;
+    use crate::helpers::TestContext;
+    use crossterm::event::KeyCode;
+    use gitu::state::State;
+    use std::fs;
+
+    fn setup() -> (TestContext, State) {
+        let mut ctx = TestContext::setup_clone(80, 20);
+        fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+        fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
+        run(ctx.dir.path(), &["git", "add", "file-one"]);
+        let state = ctx.init_state();
+        (ctx, state)
+    }
+
+    #[test]
+    pub(crate) fn stash_menu() {
+        let (mut ctx, mut state) = setup();
+        state.update(&mut ctx.term, &[key('z')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_prompt() {
+        let (mut ctx, mut state) = setup();
+        state.update(&mut ctx.term, &[key('z'), key('z')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash() {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('z'),
+                    key('z'),
+                    key('t'),
+                    key('e'),
+                    key('s'),
+                    key('t'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_index_prompt() {
+        let (mut ctx, mut state) = setup();
+        state.update(&mut ctx.term, &[key('z'), key('i')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_index() {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('z'),
+                    key('i'),
+                    key('t'),
+                    key('e'),
+                    key('s'),
+                    key('t'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_working_tree_prompt() {
+        let (mut ctx, mut state) = setup();
+        state.update(&mut ctx.term, &[key('z'), key('w')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_working_tree() {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('z'),
+                    key('w'),
+                    key('t'),
+                    key('e'),
+                    key('s'),
+                    key('t'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_keeping_index_prompt() {
+        let (mut ctx, mut state) = setup();
+        state.update(&mut ctx.term, &[key('z'), key('x')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_keeping_index() {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('z'),
+                    key('x'),
+                    key('t'),
+                    key('e'),
+                    key('s'),
+                    key('t'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+}
+
 mod discard {
     use crate::helpers::commit;
     use crate::helpers::key;
