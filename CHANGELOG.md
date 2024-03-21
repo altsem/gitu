@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2024-03-16
+
+### 🚀 Features
+
+- Add --version flag
+- Add Nix flake via ipetkov/crane
+
+### 🐛 Bug Fixes
+
+- Crate would not build (due to trying to get version via git)
+
 ## [0.6.3] - 2024-03-13
 
 ### 🐛 Bug Fixes

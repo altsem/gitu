@@ -1,7 +1,11 @@
-## [0.6.3] - 2024-03-13
+## [0.7.2] - 2024-03-16
+
+### 🚀 Features
+
+- Add --version flag
+- Add Nix flake via ipetkov/crane
 
 ### 🐛 Bug Fixes
 
-- Interactive rebase includes parent (like magit)
-- Target binds in help-menu had wrong name formatting
+- Crate would not build (due to trying to get version via git)
 

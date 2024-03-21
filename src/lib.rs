@@ -15,9 +15,9 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op, SubmenuOp, TargetOp};
+use ops::{Action, Op, SubmenuOp};
 use state::State;
-use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command};
+use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
 
 const APP_NAME: &str = "gitu";
@@ -79,24 +79,19 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
 }
 
 pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
-    let was_submenu = state.pending_submenu_op != SubmenuOp::None;
-    state.pending_submenu_op = SubmenuOp::None;
+    let target = state.screen().get_selected_item().target_data.as_ref();
+    if let Some(mut action) = op.implementation().get_action(target) {
+        Rc::get_mut(&mut action).unwrap()(state, term)?;
 
-    match op {
-        Op::Quit => state.handle_quit(was_submenu)?,
-        Op::Refresh => state.screen_mut().update()?,
-
-        Op::Submenu(op) => state.pending_submenu_op = op,
-
-        // TODO Get rid of this special handling of 'Discard'
-        Op::Target(TargetOp::Discard) => ops::OpTrait::trigger(&op, state, term)?,
-        Op::Target(target_op) => {
-            if let Some(mut action) = ops::get_action(state.clone_target_data(), target_op) {
-                action(state, term)?;
-            }
-        }
-        _ => ops::OpTrait::trigger(&op, state, term)?,
+        close_submenu(state, op);
     }
 
     Ok(())
+}
+
+fn close_submenu(state: &mut State, op: Op) {
+    match op {
+        Op::Submenu(_) => (),
+        _ => state.pending_submenu_op = SubmenuOp::None,
+    }
 }

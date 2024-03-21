@@ -3,9 +3,7 @@ use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
 use crate::ops::Op;
-use crate::ops::OpTrait;
 use crate::ops::SubmenuOp;
-use crate::ops::TargetOpTrait;
 use crate::state::State;
 use crate::CmdMetaBuffer;
 use itertools::EitherOrBoth;
@@ -51,11 +49,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         [
             Constraint::Min(1),
             Constraint::Length(popup_len),
-            Constraint::Length(if state.prompt.pending_op.is_some() {
-                2
-            } else {
-                0
-            }),
+            Constraint::Length(if state.prompt.data.is_some() { 2 } else { 0 }),
         ],
     )
     .split(frame.size());
@@ -68,12 +62,12 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         Popup::Table(table) => frame.render_widget(table, layout[1]),
     }
 
-    if let Some(prompt) = state.prompt.pending_op {
-        let prompt =
-            TextPrompt::new(OpTrait::format_prompt(&prompt, state)).with_block(popup_block());
+    if let Some(prompt_data) = state.prompt.data.take() {
+        let prompt = TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block());
         frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
+        state.prompt.data = Some(prompt_data);
     }
 }
 
@@ -100,7 +94,7 @@ fn format_keybinds_menu<'b>(
     let style = &config.style;
 
     let non_target_binds = keybinds::list(pending)
-        .filter(|keybind| !matches!(keybind.op, Op::Target(_)))
+        .filter(|keybind| !keybind.op.implementation().is_target_op())
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
@@ -119,7 +113,7 @@ fn format_keybinds_menu<'b>(
                     .join(" "),
                 &style.hotkey,
             ),
-            Span::styled(format!(" {}", op), Style::new()),
+            Span::styled(format!(" {}", op.implementation()), Style::new()),
         ]));
     }
 
@@ -146,13 +140,13 @@ fn format_keybinds_menu<'b>(
     let mut target_binds_column = vec![];
     if let Some(target_data) = &item.target_data {
         let target_binds = keybinds::list(pending)
-            .filter(|keybind| matches!(keybind.op, Op::Target(_)))
+            .filter(|keybind| keybind.op.implementation().is_target_op())
             .filter(|keybind| {
-                let Op::Target(target) = keybind.op else {
-                    unreachable!();
-                };
-
-                TargetOpTrait::get_action(&target, target_data.clone()).is_some()
+                keybind
+                    .op
+                    .implementation()
+                    .get_action(Some(target_data))
+                    .is_some()
             })
             .collect::<Vec<_>>();
 
@@ -161,13 +155,9 @@ fn format_keybinds_menu<'b>(
         }
 
         for bind in target_binds {
-            let Op::Target(target) = bind.op else {
-                unreachable!();
-            };
-
             target_binds_column.push(Line::from(vec![
                 Span::styled(Keybind::format_key(bind), &style.hotkey),
-                Span::styled(format!(" {}", target), Style::new()),
+                Span::styled(format!(" {}", bind.op.implementation()), Style::new()),
             ]));
         }
     }

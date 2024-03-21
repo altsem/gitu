@@ -7,6 +7,13 @@ use std::{backtrace::Backtrace, panic};
 pub fn main() -> Res<()> {
     let args = Args::parse();
 
+    if args.version {
+        // Setting cargo_suffix enables falling back to Cargo.toml for version
+        // `cargo install --locked gitu` would fail otherwise, as there's no git repo
+        println!("gitu {}", git_version::git_version!(cargo_suffix = ""));
+        return Ok(());
+    }
+
     if args.log {
         simple_logging::log_to_file("gitu.log", LevelFilter::Trace)?;
     }

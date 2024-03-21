@@ -75,11 +75,7 @@ impl TestContext {
         let mut state = State::create(
             Repository::open(path).unwrap(),
             self.size,
-            &Args {
-                command: None,
-                print: false,
-                log: false,
-            },
+            &Args::default(),
             config::init_test_config().unwrap(),
         )
         .unwrap();
@@ -139,10 +135,15 @@ pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &st
 }
 
 fn set_env_vars() {
+    // https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
     env::set_var("GIT_CONFIG_GLOBAL", "/dev/null");
     env::set_var("GIT_CONFIG_SYSTEM", "/dev/null");
-    env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
+    env::set_var("GIT_AUTHOR_NAME", "Author Name");
+    env::set_var("GIT_AUTHOR_EMAIL", "author@email.com");
     env::set_var("GIT_AUTHOR_DATE", "Fri Feb 16 11:11 2024 +0100");
+    env::set_var("GIT_COMMITTER_NAME", "Committer Name");
+    env::set_var("GIT_COMMITTER_EMAIL", "committer@email.com");
+    env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
     env::set_var("LC_ALL", "C");
 }
 

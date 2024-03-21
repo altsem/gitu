@@ -1,7 +1,7 @@
 [package]
 name = "gitu"
 description = "A git client inspired by Magit"
-version = "0.6.3"
+version = "0.7.2"
 edition = "2021"
 license = "MIT"
 
@@ -17,11 +17,12 @@ insta = "1.36.1"
 
 [dependencies]
 chrono = "0.4.34"
-clap = { version = "4.5.1", features = ["derive"] }
+clap = { version = "4.5.3", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
 directories = "5.0.1"
-figment = { version = "0.10.14", features = ["toml"] }
+figment = { version = "0.10.15", features = ["toml"] }
+git-version = "0.3.9"
 git2 = { version = "0.18.2", default-features = false }
 itertools = "0.12.0"
 log = "0.4.21"
@@ -29,5 +30,5 @@ ratatui = { version = "0.26.1", features = ["serde"] }
 serde = { version = "1.0.152", features = ["derive"] }
 similar = { version = "2.4.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
-toml = "0.8.10"
-tui-prompts = "0.3.5"
+toml = "0.8.11"
+tui-prompts = "0.3.8"

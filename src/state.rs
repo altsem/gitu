@@ -14,10 +14,7 @@ use tui_prompts::Status;
 use crate::cli;
 use crate::config::Config;
 use crate::handle_op;
-use crate::items::TargetData;
 use crate::keybinds;
-use crate::ops;
-use crate::ops::Op;
 use crate::ops::SubmenuOp;
 use crate::prompt;
 use crate::screen;
@@ -109,21 +106,14 @@ impl State {
     pub(crate) fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
         if self.prompt.state.status() == Status::Aborted {
             self.prompt.reset(term)?;
-        } else if let Some(pending_prompt) = self.prompt.pending_op {
-            pending_prompt.implementation().prompt_update(
-                self.prompt.state.status(),
-                self,
-                term,
-            )?;
+        } else if let Some(mut prompt_data) = self.prompt.data.take() {
+            (Rc::get_mut(&mut prompt_data.update_fn).unwrap())(self, term)?;
+            if self.prompt.state.is_focused() {
+                self.prompt.data = Some(prompt_data);
+            }
         }
 
         Ok(())
-    }
-
-    pub(crate) fn clone_target_data(&mut self) -> Option<TargetData> {
-        let screen = self.screen();
-        let selected = screen.get_selected_item();
-        selected.target_data.clone()
     }
 
     pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
@@ -144,29 +134,23 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn handle_quit(&mut self, was_submenu: bool) -> Res<()> {
-        if was_submenu {
-            // Do nothing, already cleared
-        } else {
-            self.screens.pop();
-            if let Some(screen) = self.screens.last_mut() {
-                screen.update()?;
-            } else {
-                self.quit = true
+    pub(crate) fn handle_quit(&mut self) -> Res<()> {
+        match self.pending_submenu_op {
+            SubmenuOp::None => {
+                self.screens.pop();
+                if let Some(screen) = self.screens.last_mut() {
+                    screen.update()?;
+                } else {
+                    self.quit = true
+                }
+            }
+            _ => {
+                self.pending_submenu_op = SubmenuOp::None;
+                return Ok(());
             }
         }
 
         Ok(())
-    }
-
-    pub(crate) fn prompt_action(&mut self, op: Op) {
-        if let Op::Target(target_op) = op {
-            if ops::get_action(self.clone_target_data(), target_op).is_none() {
-                return;
-            }
-        }
-
-        self.prompt.set(op);
     }
 
     pub(crate) fn screen_mut(&mut self) -> &mut Screen {

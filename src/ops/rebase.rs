@@ -1,21 +1,24 @@
-use super::{subscreen_arg, Action, OpTrait, TargetOpTrait};
-use crate::{items::TargetData, state::State, term::Term, Res};
+use super::{subscreen_arg, Action, OpTrait};
+use crate::{items::TargetData, state::State, term::Term};
 use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
+    rc::Rc,
 };
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Rebase continue")]
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
-    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
-        let mut cmd = Command::new("git");
-        cmd.args(["rebase", "--continue"]);
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state: &mut State, term: &mut Term| {
+            let mut cmd = Command::new("git");
+            cmd.args(["rebase", "--continue"]);
 
-        state.issue_subscreen_command(term, cmd)?;
-        Ok(())
+            state.issue_subscreen_command(term, cmd)?;
+            Ok(())
+        }))
     }
 }
 
@@ -23,26 +26,33 @@ impl OpTrait for RebaseContinue {
 #[display(fmt = "Rebase abort")]
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
-    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
-        let mut cmd = Command::new("git");
-        cmd.args(["rebase", "--abort"]);
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state: &mut State, term: &mut Term| {
+            let mut cmd = Command::new("git");
+            cmd.args(["rebase", "--abort"]);
 
-        state.run_external_cmd(term, &[], cmd)?;
-        Ok(())
+            state.run_external_cmd(term, &[], cmd)?;
+            Ok(())
+        }))
     }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Rebase interactive")]
 pub(crate) struct RebaseInteractive;
-impl TargetOpTrait for RebaseInteractive {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
-        match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => {
+impl OpTrait for RebaseInteractive {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        let action = match target {
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 subscreen_arg(rebase_interactive_cmd, r.into())
             }
-            _ => None,
-        }
+            _ => return None,
+        };
+
+        Some(action)
+    }
+    fn is_target_op(&self) -> bool {
+        true
     }
 }
 
@@ -67,14 +77,19 @@ fn parent(reference: &OsStr) -> OsString {
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Rebase autosquash")]
 pub(crate) struct RebaseAutosquash;
-impl TargetOpTrait for RebaseAutosquash {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
-        match target {
-            TargetData::Commit(r) | TargetData::Branch(r) => {
+impl OpTrait for RebaseAutosquash {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        let action = match target {
+            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 subscreen_arg(rebase_autosquash_cmd, r.into())
             }
-            _ => None,
-        }
+            _ => return None,
+        };
+
+        Some(action)
+    }
+    fn is_target_op(&self) -> bool {
+        true
     }
 }
 

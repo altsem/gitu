@@ -1,11 +1,10 @@
 use crate::{items::TargetData, state::State, term::Term, Res};
 use std::{
-    borrow::Cow,
     ffi::{OsStr, OsString},
     fmt::Display,
     process::Command,
+    rc::Rc,
 };
-use tui_prompts::prelude::Status;
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
@@ -22,22 +21,18 @@ pub(crate) mod show_refs;
 pub(crate) mod stage;
 pub(crate) mod unstage;
 
+pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
+
 pub(crate) trait OpTrait: Display {
-    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()>;
+    /// Get the implementation (which may or may not exist) of the Op given some TargetData.
+    /// This indirection allows Gitu to show a contextual menu of applicable actions.
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
 
-    fn format_prompt(&self, _state: &State) -> Cow<'static, str> {
-        unimplemented!()
+    /// This indicates whether the Op is meant to read and
+    /// act on TargetData. Those are listed differently in the help menu.
+    fn is_target_op(&self) -> bool {
+        false
     }
-
-    fn prompt_update(&self, _status: Status, _state: &mut State, _term: &mut Term) -> Res<()> {
-        unimplemented!()
-    }
-}
-
-pub(crate) type Action = Box<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
-
-pub(crate) trait TargetOpTrait: Display {
-    fn get_action(&self, target: TargetData) -> Option<Action>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -63,27 +58,6 @@ pub(crate) enum Op {
     RebaseContinue,
     ShowRefs,
 
-    Submenu(SubmenuOp),
-    Target(TargetOp),
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum SubmenuOp {
-    Any,
-    Branch,
-    Commit,
-    Fetch,
-    Help,
-    Log,
-    None,
-    Pull,
-    Push,
-    Rebase,
-    Reset,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum TargetOp {
     CommitFixup,
     Discard,
     LogOther,
@@ -95,11 +69,32 @@ pub(crate) enum TargetOp {
     Show,
     Stage,
     Unstage,
+
+    Submenu(SubmenuOp),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub(crate) enum SubmenuOp {
+    Any,
+    Branch,
+    Commit,
+    Fetch,
+    Help,
+    Log,
+    #[default]
+    None,
+    Pull,
+    Push,
+    Rebase,
+    Reset,
 }
 
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
+            Op::Quit => Box::new(editor::Quit),
+            Op::Submenu(submenu) => Box::new(editor::Submenu(submenu)),
+            Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::SelectNext => Box::new(editor::SelectNext),
             Op::SelectPrevious => Box::new(editor::SelectPrevious),
@@ -117,62 +112,18 @@ impl Op {
             Op::RebaseAbort => Box::new(rebase::RebaseAbort),
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::ShowRefs => Box::new(show_refs::ShowRefs),
-            Op::Target(TargetOp::Discard) => Box::new(discard::Discard),
-            op => unimplemented!("{:?}", op),
-        }
-    }
-}
 
-impl TargetOp {
-    pub fn implementation(self) -> Box<dyn TargetOpTrait> {
-        match self {
-            TargetOp::CommitFixup => Box::new(commit::CommitFixup),
-            TargetOp::Discard => Box::new(discard::Discard),
-            TargetOp::LogOther => Box::new(log::LogOther),
-            TargetOp::RebaseAutosquash => Box::new(rebase::RebaseAutosquash),
-            TargetOp::RebaseInteractive => Box::new(rebase::RebaseInteractive),
-            TargetOp::ResetSoft => Box::new(reset::ResetSoft),
-            TargetOp::ResetMixed => Box::new(reset::ResetMixed),
-            TargetOp::ResetHard => Box::new(reset::ResetHard),
-            TargetOp::Show => Box::new(show::Show),
-            TargetOp::Stage => Box::new(stage::Stage),
-            TargetOp::Unstage => Box::new(unstage::Unstage),
-        }
-    }
-}
-
-pub(crate) fn get_action(target_data: Option<TargetData>, target_op: TargetOp) -> Option<Action> {
-    target_data.and_then(|data| TargetOpTrait::get_action(&target_op, data))
-}
-
-impl OpTrait for Op {
-    fn trigger(&self, state: &mut State, term: &mut Term) -> Res<()> {
-        self.implementation().trigger(state, term)?;
-        Ok(())
-    }
-
-    fn format_prompt(&self, state: &State) -> Cow<'static, str> {
-        self.implementation().format_prompt(state)
-    }
-
-    fn prompt_update(&self, status: Status, arg: &mut State, term: &mut Term) -> Res<()> {
-        self.implementation().prompt_update(status, arg, term)?;
-        Ok(())
-    }
-}
-
-impl TargetOpTrait for TargetOp {
-    fn get_action(&self, target: TargetData) -> Option<Action> {
-        self.implementation().get_action(target)
-    }
-}
-
-impl Display for Op {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Op::Quit => f.write_str("Quit"),
-            Op::Refresh => f.write_str("Refresh"),
-            _ => self.implementation().fmt(f),
+            Op::CommitFixup => Box::new(commit::CommitFixup),
+            Op::Discard => Box::new(discard::Discard),
+            Op::LogOther => Box::new(log::LogOther),
+            Op::RebaseAutosquash => Box::new(rebase::RebaseAutosquash),
+            Op::RebaseInteractive => Box::new(rebase::RebaseInteractive),
+            Op::ResetSoft => Box::new(reset::ResetSoft),
+            Op::ResetMixed => Box::new(reset::ResetMixed),
+            Op::ResetHard => Box::new(reset::ResetHard),
+            Op::Show => Box::new(show::Show),
+            Op::Stage => Box::new(stage::Stage),
+            Op::Unstage => Box::new(unstage::Unstage),
         }
     }
 }
@@ -195,26 +146,14 @@ impl Display for SubmenuOp {
     }
 }
 
-impl Display for TargetOp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.implementation().fmt(f)
-    }
+pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Action {
+    Rc::new(move |state, term| state.run_external_cmd(term, &input, command()))
 }
 
-pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Option<Action> {
-    Some(Box::new(move |state, term| {
-        state.run_external_cmd(term, &input, command())
-    }))
+pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
+    Rc::new(move |state, term| state.run_external_cmd(term, &[], command(&arg)))
 }
 
-pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action> {
-    Some(Box::new(move |state, term| {
-        state.run_external_cmd(term, &[], command(&arg))
-    }))
-}
-
-pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Option<Action> {
-    Some(Box::new(move |state, term| {
-        state.issue_subscreen_command(term, command(&arg))
-    }))
+pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
+    Rc::new(move |state, term| state.issue_subscreen_command(term, command(&arg)))
 }
