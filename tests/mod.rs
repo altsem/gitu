@@ -384,6 +384,133 @@ mod stash {
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
+
+    fn setup_two_stashes() -> (TestContext, State) {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('z'),
+                    key('i'),
+                    key('f'),
+                    key('i'),
+                    key('l'),
+                    key('e'),
+                    key('-'),
+                    key('o'),
+                    key('n'),
+                    key('e'),
+                    key_code(KeyCode::Enter),
+                    key('z'),
+                    key('z'),
+                    key('f'),
+                    key('i'),
+                    key('l'),
+                    key('e'),
+                    key('-'),
+                    key('t'),
+                    key('w'),
+                    key('o'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        (ctx, state)
+    }
+
+    #[test]
+    pub(crate) fn stash_pop_prompt() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state.update(&mut ctx.term, &[key('z'), key('p')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_pop() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('z'), key('p'), key('1'), key_code(KeyCode::Enter)],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_pop_default() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('z'), key('p'), key_code(KeyCode::Enter)],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_apply_prompt() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state.update(&mut ctx.term, &[key('z'), key('a')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_apply() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('z'), key('a'), key('1'), key_code(KeyCode::Enter)],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_apply_default() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('z'), key('a'), key_code(KeyCode::Enter)],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_drop_prompt() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state.update(&mut ctx.term, &[key('z'), key('k')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_drop() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('z'), key('k'), key('1'), key_code(KeyCode::Enter)],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_drop_default() {
+        let (mut ctx, mut state) = setup_two_stashes();
+        state
+            .update(
+                &mut ctx.term,
+                &[key('z'), key('k'), key_code(KeyCode::Enter)],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 mod discard {
