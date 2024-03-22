@@ -1,11 +1,9 @@
-## [0.7.2] - 2024-03-16
+## [0.8.0] - 2024-03-22
 
 ### 🚀 Features
 
-- Add --version flag
-- Add Nix flake via ipetkov/crane
-
-### 🐛 Bug Fixes
-
-- Crate would not build (due to trying to get version via git)
+- Show stash status, add 'save', 'pop', 'apply' and 'drop' actions
+- Unstage all staged changes by hovering 'Staged' section
+- Stage all unstaged changes by hover 'Unstaged' section
+- Stage all untracked files by hovering 'Untracked' section
 
