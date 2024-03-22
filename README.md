@@ -15,7 +15,7 @@ A rough list of so-far supported features:
 - Show (view commits / open EDITOR at line)
 - Show branches
 - Branch:
-  - checkout
+  - checkout, checkout new
 - Commit:
   - commit, amend, fixup
 - Fetch:
@@ -26,6 +26,10 @@ A rough list of so-far supported features:
   - remote
 - Rebase:
   - abort, continue, autosquash, interactive
+- Reset:
+  - Soft, Mixed, Hard
+- Stash:
+  - save, pop, apply, drop
 
 ### Keybinds
 A help-menu can be shown by pressing the `h` key.
