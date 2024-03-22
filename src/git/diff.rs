@@ -32,26 +32,42 @@ pub(crate) struct Hunk {
     pub content: Text<'static>,
 }
 
+#[derive(Debug)]
+pub(crate) enum PatchMode {
+    Normal,
+    Reverse,
+}
+
 impl Hunk {
     pub(crate) fn format_patch(&self) -> String {
         format!("{}{}\n{}\n", &self.file_header, self.header, self.content)
     }
 
-    pub(crate) fn format_line_patch(&self, line_range: Range<usize>) -> String {
+    pub(crate) fn format_line_patch(&self, line_range: Range<usize>, mode: PatchMode) -> String {
         let modified_content = self
             .content
             .lines
             .iter()
             .enumerate()
             .filter_map(|(i, line)| {
+                let add = match mode {
+                    PatchMode::Normal => '+',
+                    PatchMode::Reverse => '-',
+                };
+
+                let remove = match mode {
+                    PatchMode::Normal => '-',
+                    PatchMode::Reverse => '+',
+                };
+
                 let patch_line = format!("{line}");
 
                 if line_range.contains(&i) {
                     Some(patch_line)
-                } else if patch_line.starts_with('+') {
+                } else if patch_line.starts_with(add) {
                     None
-                } else if let Some(removed) = patch_line.strip_prefix('-') {
-                    Some(format!(" {}", removed))
+                } else if let Some(stripped) = patch_line.strip_prefix(remove) {
+                    Some(format!(" {}", stripped))
                 } else {
                     Some(patch_line)
                 }

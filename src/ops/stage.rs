@@ -1,5 +1,11 @@
 use super::{cmd, cmd_arg, OpTrait};
-use crate::{git, items::TargetData, state::State, term::Term, Action};
+use crate::{
+    git::{self, diff::PatchMode},
+    items::TargetData,
+    state::State,
+    term::Term,
+    Action,
+};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
@@ -15,7 +21,8 @@ impl OpTrait for Stage {
             Some(TargetData::Delta(d)) => cmd_arg(git::stage_file_cmd, d.new_file.into()),
             Some(TargetData::Hunk(h)) => cmd(h.format_patch().into_bytes(), git::stage_patch_cmd),
             Some(TargetData::HunkLine(h, i)) => cmd(
-                h.format_line_patch(i..(i + 1)).into_bytes(),
+                h.format_line_patch(i..(i + 1), PatchMode::Normal)
+                    .into_bytes(),
                 git::stage_line_cmd,
             ),
             _ => return None,

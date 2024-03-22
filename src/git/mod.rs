@@ -176,6 +176,9 @@ pub(crate) fn unstage_file_cmd(file: &OsStr) -> Command {
 pub(crate) fn unstage_patch_cmd() -> Command {
     git(["apply", "--cached", "--reverse"])
 }
+pub(crate) fn unstage_line_cmd() -> Command {
+    git(["apply", "--cached", "--reverse", "--recount"])
+}
 pub(crate) fn discard_unstaged_patch_cmd() -> Command {
     git(["apply", "--reverse"])
 }
