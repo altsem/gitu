@@ -180,11 +180,25 @@ impl Screen {
     }
 
     pub(crate) fn update(&mut self) -> Res<()> {
+        let nav_mode = self.selected_item_nav_mode();
+
         self.items = (self.refresh_items)()?;
         self.update_line_index();
+
         self.clamp_cursor();
-        self.move_from_unselectable();
+        self.move_from_unselectable(nav_mode);
         Ok(())
+    }
+
+    fn selected_item_nav_mode(&mut self) -> NavMode {
+        if self.items.is_empty() {
+            return NavMode::Normal;
+        }
+
+        match self.get_selected_item().target_data {
+            Some(TargetData::HunkLine(_, _)) => NavMode::IncludeHunkLines,
+            _ => NavMode::Normal,
+        }
     }
 
     fn update_line_index(&mut self) {
@@ -216,12 +230,12 @@ impl Screen {
             .clamp(0, self.line_index.len().saturating_sub(1));
     }
 
-    fn move_from_unselectable(&mut self) {
+    fn move_from_unselectable(&mut self, nav_mode: NavMode) {
         if self.get_selected_item().unselectable {
-            self.select_previous(NavMode::Normal);
+            self.select_next(nav_mode);
         }
         if self.get_selected_item().unselectable {
-            self.select_next(NavMode::Normal);
+            self.select_previous(nav_mode);
         }
     }
 
