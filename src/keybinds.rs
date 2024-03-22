@@ -126,6 +126,15 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::None, Enter, Op::Show),
     // Show refs
     Keybind::nomod(SubmenuOp::None, Char('y'), Op::ShowRefs),
+    // Stash
+    Keybind::nomod(SubmenuOp::None, Char('z'), Op::Submenu(SubmenuOp::Stash)),
+    Keybind::nomod(SubmenuOp::Stash, Char('z'), Op::Stash),
+    Keybind::nomod(SubmenuOp::Stash, Char('i'), Op::StashIndex),
+    Keybind::nomod(SubmenuOp::Stash, Char('w'), Op::StashWorktree),
+    Keybind::nomod(SubmenuOp::Stash, Char('x'), Op::StashKeepIndex),
+    Keybind::nomod(SubmenuOp::Stash, Char('p'), Op::StashPop),
+    Keybind::nomod(SubmenuOp::Stash, Char('a'), Op::StashApply),
+    Keybind::nomod(SubmenuOp::Stash, Char('k'), Op::StashDrop),
     // Discard
     Keybind::shift(SubmenuOp::None, Char('K'), Op::Discard),
     // Target actions

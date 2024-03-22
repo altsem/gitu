@@ -13,6 +13,7 @@ impl OpTrait for Show {
             Some(TargetData::File(u)) => editor(u.as_path(), None),
             Some(TargetData::Delta(d)) => editor(d.new_file.as_path(), None),
             Some(TargetData::Hunk(h)) => editor(h.new_file.as_path(), Some(h.first_diff_line())),
+            Some(TargetData::Stash { id: _, commit }) => goto_show_screen(commit.clone()),
             _ => None,
         }
     }
