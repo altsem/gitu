@@ -359,6 +359,29 @@ mod stash {
     }
 
     #[test]
+    pub(crate) fn stash_working_tree_then_index_and_then_pop() {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('z'),
+                    key('w'),
+                    key_code(KeyCode::Enter),
+                    key('z'),
+                    key('i'),
+                    key_code(KeyCode::Enter),
+                    key('z'),
+                    key('p'),
+                    key('1'),
+                    key_code(KeyCode::Enter),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
     pub(crate) fn stash_keeping_index_prompt() {
         let (mut ctx, mut state) = setup();
         state.update(&mut ctx.term, &[key('z'), key('x')]).unwrap();

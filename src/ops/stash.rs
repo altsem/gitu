@@ -30,15 +30,15 @@ impl OpTrait for StashWorktree {
         let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
             if state.prompt.state.status().is_done() {
                 let input = state.prompt.state.value().to_string();
-                // TODO: How to show all 3 commands? We show only git reset in the current
+                // TODO: How to show all 3 commands? We show only the last one in the current
                 // implementation.
 
-                // 1. Commit index
+                // 1. Stash index (stash@0: index, ...)
                 let mut cmd = Command::new("git");
-                cmd.args(["commit", "--message", "TEMP"]);
+                cmd.args(["stash", "push", "--staged"]);
                 state.run_external_cmd(term, &[], cmd)?;
 
-                // 2. Stash everything else
+                // 2. Stash everything else (stash@0: worktree, stash@1: index, ...)
                 let mut cmd = Command::new("git");
                 cmd.args(["stash", "push", "--include-untracked"]);
                 if !input.is_empty() {
@@ -46,9 +46,9 @@ impl OpTrait for StashWorktree {
                 }
                 state.run_external_cmd(term, &[], cmd)?;
 
-                // 3. Reset index
+                // 3. Pop stash with index (at stash@1)
                 let mut cmd = Command::new("git");
-                cmd.args(["reset", "--soft", "HEAD^1"]);
+                cmd.args(["stash", "pop", "1"]);
                 state.run_external_cmd(term, &[], cmd)?;
 
                 state.prompt.reset(term)?;
