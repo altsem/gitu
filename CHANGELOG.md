@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2024-03-23
+
+### 🐛 Bug Fixes
+
+- Crash when trying to show diff of binary files
+
 ## [0.9.0] - 2024-03-23
 
 ### 🚀 Features
