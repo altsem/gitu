@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2024-03-23
+
+### 🚀 Features
+
+- Unstage individual lines with ctrl-up/down and 'u'
+- Stage individual lines with ctrl-up/down and 's'
+- Add configurable quit confirmation
+
+### 🐛 Bug Fixes
+
+- Cursor now skips unselectable lines more deterministically
+
 ## [0.8.0] - 2024-03-22
 
 ### 🚀 Features
