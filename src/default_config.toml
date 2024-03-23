@@ -2,6 +2,9 @@
 # It is possible to override settings with an equivalent file at:
 # `~/.config/gitu/config.toml`
 
+[general]
+confirm_quit.enabled = false
+
 [style]
 # fg / bg can be either of:
 # - a hex value: "#707070"
