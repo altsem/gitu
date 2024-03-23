@@ -11,7 +11,7 @@ Gitu aims to implement many of the core features of Magit over time.
 It should be familiar to any previous Magit users.
 
 A rough list of so-far supported features:
-- File/Hunk-level stage/unstage
+- File/Hunk/Line-level stage/unstage
 - Show (view commits / open EDITOR at line)
 - Show branches
 - Branch:
