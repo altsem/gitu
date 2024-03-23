@@ -53,6 +53,19 @@ fn unstaged_changes() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
+#[test]
+fn binary_file() {
+    let mut ctx = TestContext::setup_init(80, 20);
+    fs::write(ctx.dir.child("binary-file"), [255]).expect("error writing to file");
+    run(ctx.dir.path(), &["git", "add", "."]);
+
+    let mut state = ctx.init_state();
+    state
+        .update(&mut ctx.term, &[key('j'), key('j'), key_code(KeyCode::Tab)])
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
 mod unstage {
     use super::*;
 

@@ -104,41 +104,57 @@ pub(crate) fn convert_diff(
 ) -> Res<Diff> {
     let mut deltas = vec![];
 
-    diff.print(git2::DiffFormat::PatchHeader, |delta, _maybe_hunk, line| {
-        let line_content = str::from_utf8(line.content()).unwrap();
-        let is_new_header = line_content.starts_with("diff")
-            && line.origin_value() == git2::DiffLineType::FileHeader;
+    diff.print(
+        git2::DiffFormat::PatchHeader,
+        |diffdelta, _maybe_hunk, line| {
+            let line_content = str::from_utf8(line.content()).unwrap();
+            let is_new_header = line_content.starts_with("diff")
+                && line.origin_value() == git2::DiffLineType::FileHeader;
 
-        if is_new_header {
-            let old_content = read_blob(repo, &delta.old_file());
-            let new_content = if workdir {
-                read_workdir(repo, &delta.new_file())
+            if is_new_header {
+                let mut delta = Delta {
+                    file_header: line_content.to_string(),
+                    old_file: path(&diffdelta.old_file()),
+                    new_file: path(&diffdelta.new_file()),
+                    hunks: vec![],
+                    status: diffdelta.status(),
+                };
+
+                if let Ok(hunks) = diff_files(repo, diffdelta, workdir, config, &delta) {
+                    delta.hunks = hunks;
+                }
+
+                deltas.push(delta);
             } else {
-                read_blob(repo, &delta.new_file())
-            };
+                let delta = deltas.last_mut().unwrap();
+                delta.file_header.push_str(line_content);
+            }
 
-            let mut delta = Delta {
-                file_header: line_content.to_string(),
-                old_file: path(&delta.old_file()),
-                new_file: path(&delta.new_file()),
-                hunks: vec![],
-                status: delta.status(),
-            };
-
-            delta.hunks = diff_files(config, &delta, old_content, new_content).unwrap();
-            deltas.push(delta);
-        } else {
-            let delta = deltas.last_mut().unwrap();
-            delta.file_header.push_str(line_content);
-        }
-
-        true
-    })?;
+            true
+        },
+    )?;
 
     Ok(Diff { deltas })
 }
 
 fn diff_files(
+    repo: &Repository,
+    diffdelta: git2::DiffDelta<'_>,
+    workdir: bool,
+    config: &Config,
+    delta: &Delta,
+) -> Res<Vec<Rc<Hunk>>> {
+    let old_content = read_blob(repo, &diffdelta.old_file())?;
+    let new_content = if workdir {
+        read_workdir(repo, &diffdelta.new_file())?
+    } else {
+        read_blob(repo, &diffdelta.new_file())?
+    };
+
+    diff_content(config, delta, old_content, new_content)
+}
+
+fn diff_content(
     config: &Config,
     delta: &Delta,
     old_content: String,
@@ -224,19 +240,18 @@ fn format_line_change(config: &Config, change: &similar::InlineChange<str>) -> L
     Line::from(spans)
 }
 
-fn read_workdir(repo: &Repository, new_file: &git2::DiffFile<'_>) -> String {
-    fs::read_to_string(
+fn read_workdir(repo: &Repository, new_file: &git2::DiffFile<'_>) -> Res<String> {
+    Ok(fs::read_to_string(
         repo.workdir()
             .expect("No workdir")
             .join(new_file.path().unwrap()),
-    )
-    .unwrap()
+    )?)
 }
 
-fn read_blob(repo: &Repository, file: &git2::DiffFile<'_>) -> String {
+fn read_blob(repo: &Repository, file: &git2::DiffFile<'_>) -> Res<String> {
     let blob = repo.find_blob(file.id());
-    blob.map(|blob| String::from_utf8(blob.content().to_vec()).unwrap())
-        .unwrap_or("".to_string())
+    blob.map(|blob| Ok(String::from_utf8(blob.content().to_vec())?))
+        .unwrap_or(Ok("".to_string()))
 }
 
 fn path(file: &git2::DiffFile) -> PathBuf {
