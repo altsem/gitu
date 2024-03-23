@@ -33,7 +33,8 @@ pub(crate) enum TargetData {
     Commit(String),
     Delta(Delta),
     File(PathBuf),
-    Hunk(Hunk),
+    Hunk(Rc<Hunk>),
+    HunkLine(Rc<Hunk>, usize),
     Stash { commit: String, id: usize },
 }
 
@@ -67,6 +68,7 @@ pub(crate) fn create_diff_items<'a>(
             delta
                 .hunks
                 .iter()
+                .cloned()
                 .flat_map(move |hunk| create_hunk_items(Rc::clone(&config), hunk, *depth + 1)),
         )
     })
@@ -74,10 +76,10 @@ pub(crate) fn create_diff_items<'a>(
 
 fn create_hunk_items(
     config: Rc<Config>,
-    hunk: &Hunk,
+    hunk: Rc<Hunk>,
     depth: usize,
-) -> impl Iterator<Item = Item> + '_ {
-    let target_data = TargetData::Hunk(hunk.clone());
+) -> impl Iterator<Item = Item> {
+    let target_data = TargetData::Hunk(Rc::clone(&hunk));
 
     iter::once(Item {
         id: hunk.format_patch().into(),
@@ -90,14 +92,19 @@ fn create_hunk_items(
     .chain(format_diff_hunk_items(depth + 1, hunk))
 }
 
-fn format_diff_hunk_items(depth: usize, hunk: &Hunk) -> impl Iterator<Item = Item> + '_ {
-    hunk.content.lines.iter().map(move |line| Item {
-        display: line.clone(),
-        unselectable: true,
-        depth,
-        target_data: None,
-        ..Default::default()
-    })
+fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
+    hunk.content
+        .lines
+        .iter()
+        .enumerate()
+        .map(|(i, line)| Item {
+            display: line.clone(),
+            unselectable: line.spans.first().unwrap().content.starts_with(' '),
+            depth,
+            target_data: Some(TargetData::HunkLine(Rc::clone(&hunk), i)),
+            ..Default::default()
+        })
+        .collect()
 }
 
 pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {
