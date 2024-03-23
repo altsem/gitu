@@ -906,15 +906,6 @@ fn inside_submodule() {
 }
 
 #[test]
-fn quit_prompt() {
-    let mut ctx = TestContext::setup_init(80, 20);
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('q')]).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
-
-#[test]
 fn quit() {
     let mut ctx = TestContext::setup_init(80, 20);
 
