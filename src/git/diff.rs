@@ -1,10 +1,11 @@
 use git2::Repository;
+use itertools::Itertools;
 use ratatui::{
     style::Style,
     text::{Line, Span, Text},
 };
 use similar::{udiff::UnifiedDiffHunk, Algorithm, ChangeTag, TextDiff};
-use std::{fmt::Display, fs, iter, path::PathBuf, str};
+use std::{fs, iter, ops::Range, path::PathBuf, rc::Rc, str};
 
 use crate::{config::Config, Res};
 
@@ -18,7 +19,7 @@ pub(crate) struct Delta {
     pub file_header: String,
     pub old_file: PathBuf,
     pub new_file: PathBuf,
-    pub hunks: Vec<Hunk>,
+    pub hunks: Vec<Rc<Hunk>>,
     pub status: git2::Delta,
 }
 
@@ -31,9 +32,52 @@ pub(crate) struct Hunk {
     pub content: Text<'static>,
 }
 
+#[derive(Debug)]
+pub(crate) enum PatchMode {
+    Normal,
+    Reverse,
+}
+
 impl Hunk {
     pub(crate) fn format_patch(&self) -> String {
-        format!("{}{}", &self.file_header, self)
+        format!("{}{}\n{}\n", &self.file_header, self.header, self.content)
+    }
+
+    pub(crate) fn format_line_patch(&self, line_range: Range<usize>, mode: PatchMode) -> String {
+        let modified_content = self
+            .content
+            .lines
+            .iter()
+            .enumerate()
+            .filter_map(|(i, line)| {
+                let add = match mode {
+                    PatchMode::Normal => '+',
+                    PatchMode::Reverse => '-',
+                };
+
+                let remove = match mode {
+                    PatchMode::Normal => '-',
+                    PatchMode::Reverse => '+',
+                };
+
+                let patch_line = format!("{line}");
+
+                if line_range.contains(&i) {
+                    Some(patch_line)
+                } else if patch_line.starts_with(add) {
+                    None
+                } else if let Some(stripped) = patch_line.strip_prefix(remove) {
+                    Some(format!(" {}", stripped))
+                } else {
+                    Some(patch_line)
+                }
+            })
+            .join("\n");
+
+        format!(
+            "{}{}\n{}\n",
+            &self.file_header, self.header, modified_content
+        )
     }
 
     pub(crate) fn first_diff_line(&self) -> u32 {
@@ -49,14 +93,6 @@ impl Hunk {
             .next()
             .unwrap_or(0) as u32
             + self.new_start
-    }
-}
-
-impl Display for Hunk {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.header)?;
-        write!(f, "\n{}\n", self.content)?;
-        Ok(())
     }
 }
 
@@ -107,7 +143,7 @@ fn diff_files(
     delta: &Delta,
     old_content: String,
     new_content: String,
-) -> Res<Vec<Hunk>> {
+) -> Res<Vec<Rc<Hunk>>> {
     let text_diff = TextDiff::configure()
         .algorithm(Algorithm::Patience)
         .diff_lines(&old_content, &new_content);
@@ -129,13 +165,13 @@ fn diff_files(
                 .parse()
                 .unwrap();
 
-            Hunk {
+            Rc::new(Hunk {
                 file_header: delta.file_header.clone(),
                 new_file: delta.new_file.clone(),
                 new_start,
                 header: format!("{}", hunk.header()),
                 content: formatted_hunk,
-            }
+            })
         })
         .collect::<Vec<_>>())
 }
