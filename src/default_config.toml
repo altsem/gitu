@@ -3,11 +3,6 @@
 # `~/.config/gitu/config.toml`
 
 [general]
-
-# enabled can be either of:
-# - true
-# - false
-
 confirm_quit.enabled = false
 
 [style]
