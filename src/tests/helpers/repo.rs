@@ -14,7 +14,6 @@ impl RepoTestContext {
 
         set_env_vars();
         run(dir.path(), &["git", "init", "--initial-branch=main"]);
-        set_config(dir.path());
 
         Self { dir, remote_dir }
     }
@@ -29,14 +28,12 @@ impl RepoTestContext {
             remote_dir.path(),
             &["git", "init", "--bare", "--initial-branch=main"],
         );
-        set_config(remote_dir.path());
 
         clone_and_commit(&remote_dir, "initial-file", "hello");
         run(
             dir.path(),
             &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
         );
-        set_config(dir.path());
 
         Self { dir, remote_dir }
     }
@@ -67,11 +64,6 @@ pub fn run(dir: &Path, cmd: &[&str]) -> String {
     .unwrap()
 }
 
-fn set_config(path: &Path) {
-    run(path, &["git", "config", "user.email", "ci@example.com"]);
-    run(path, &["git", "config", "user.name", "CI"]);
-}
-
 pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &str) {
     let other_dir = TempDir::new().unwrap();
 
@@ -79,8 +71,6 @@ pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &st
         other_dir.path(),
         &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
     );
-
-    set_config(other_dir.path());
 
     commit(other_dir.path(), file_name, file_content);
     run(other_dir.path(), &["git", "push"]);
