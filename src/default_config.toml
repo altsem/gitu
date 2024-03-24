@@ -29,9 +29,10 @@ line_removed.fg = "red"
 line_highlight.changed.mods = "BOLD"
 line_highlight.unchanged.mods = "DIM"
 
-selection_line.mods = "BOLD"
+cursor.fg = "blue"
 selection_bar.fg = "blue"
 selection_bar.mods = "DIM"
+selection_line.mods = "BOLD"
 # You may want to set `selection_area.bg` to a nice background color.
 # Looks horrible with regular terminal colors, so is therefore not set.
 selection_area.bg = "reset"

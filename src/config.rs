@@ -35,6 +35,7 @@ pub struct StyleConfig {
     pub line_removed: StyleConfigEntry,
     pub line_highlight: LineHighlightConfig,
 
+    pub cursor: StyleConfigEntry,
     pub selection_line: StyleConfigEntry,
     pub selection_bar: StyleConfigEntry,
     pub selection_area: StyleConfigEntry,

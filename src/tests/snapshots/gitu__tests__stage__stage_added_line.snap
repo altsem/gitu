@@ -1,5 +1,5 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
@@ -13,7 +13,7 @@ Buffer {
         " -testing                                                                       ",
         " -testtest                                                                      ",
         "  weehooo                                                                       ",
-        "🢒+blrergh                                                                       ",
+        "▌+blrergh                                                                       ",
         "                                                                                ",
         " Staged changes (1)                                                             ",
         " modified   firstfile                                                           ",
@@ -40,7 +40,7 @@ Buffer {
         x: 9, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 6, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
         x: 10, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 8, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
         x: 1, y: 8, fg: Green, bg: Reset, underline: Reset, modifier: BOLD,
         x: 9, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
         x: 0, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,

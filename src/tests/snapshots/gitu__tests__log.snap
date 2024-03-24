@@ -1,11 +1,11 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
     area: Rect { x: 0, y: 0, width: 80, height: 20 },
     content: [
-        "🢒_______ main a-tag add secondfile                                              ",
+        "▌_______ main a-tag add secondfile                                              ",
         " _______ annotated add firstfile                                                ",
         " _______ origin/main add initial-file                                           ",
         "                                                                                ",
@@ -27,7 +27,7 @@ Buffer {
         "                                                                                ",
     ],
     styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 0, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
         x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
         x: 8, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
         x: 9, y: 0, fg: Green, bg: Reset, underline: Reset, modifier: BOLD,

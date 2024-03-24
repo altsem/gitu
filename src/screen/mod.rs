@@ -301,8 +301,11 @@ impl Widget for &Screen {
                 let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
                 buf.get_mut(line_end, line_i as u16).set_char('…');
             }
+
             if self.line_index[self.cursor] == item_i {
-                buf.get_mut(0, line_i as u16).set_char('🢒');
+                buf.get_mut(0, line_i as u16)
+                    .set_char('▌')
+                    .set_style(&style.cursor);
             }
         }
     }

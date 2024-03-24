@@ -1,12 +1,12 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
     area: Rect { x: 0, y: 0, width: 80, height: 10 },
     content: [
         " Branches                                                                       ",
-        "🢒* main   origin/main                                                           ",
+        "▌* main   origin/main                                                           ",
         "   other-branch                                                                 ",
         "                                                                                ",
         "                                                                                ",
@@ -19,7 +19,8 @@ Buffer {
     styles: [
         x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
         x: 3, y: 1, fg: Green, bg: Reset, underline: Reset, modifier: BOLD,
         x: 7, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
         x: 10, y: 1, fg: Red, bg: Reset, underline: Reset, modifier: BOLD,

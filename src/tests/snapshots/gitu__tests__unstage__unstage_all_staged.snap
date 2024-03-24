@@ -1,5 +1,5 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
@@ -10,7 +10,7 @@ Buffer {
         " Untracked files                                                                ",
         " one                                                                            ",
         " two                                                                            ",
-        "🢒unaffected                                                                     ",
+        "▌unaffected                                                                     ",
         "                                                                                ",
         " Recent commits                                                                 ",
         "                                                                                ",
@@ -35,7 +35,7 @@ Buffer {
         x: 1, y: 3, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
         x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 4, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 5, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
         x: 1, y: 5, fg: Magenta, bg: Reset, underline: Reset, modifier: BOLD,
         x: 0, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 7, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,

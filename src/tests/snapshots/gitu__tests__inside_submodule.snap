@@ -1,11 +1,11 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 Buffer {
     area: Rect { x: 0, y: 0, width: 80, height: 20 },
     content: [
-        "🢒On branch main                                                                 ",
+        "▌On branch main                                                                 ",
         "▌Your branch is up to date with 'origin/main'.                                  ",
         "                                                                                ",
         " Recent commits                                                                 ",
@@ -27,7 +27,7 @@ Buffer {
         "                                                                                ",
     ],
     styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 0, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
         x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
         x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
         x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
