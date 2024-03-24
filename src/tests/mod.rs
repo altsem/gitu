@@ -1,9 +1,10 @@
-use crate::helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
 use crossterm::event::KeyCode;
 use itertools::Itertools;
 use std::fs;
 
 mod helpers;
+
+use helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
 
 #[test]
 fn no_repo() {
@@ -368,12 +369,12 @@ fn pull() {
 }
 
 mod stash {
-    use crate::helpers::key;
-    use crate::helpers::key_code;
-    use crate::helpers::run;
-    use crate::helpers::TestContext;
+    use super::helpers::key;
+    use super::helpers::key_code;
+    use super::helpers::run;
+    use super::helpers::TestContext;
+    use crate::state::State;
     use crossterm::event::KeyCode;
-    use gitu::state::State;
     use std::fs;
 
     fn setup() -> (TestContext, State) {
@@ -652,11 +653,11 @@ mod stash {
 }
 
 mod discard {
-    use crate::helpers::commit;
-    use crate::helpers::key;
-    use crate::helpers::key_code;
-    use crate::helpers::run;
-    use crate::helpers::TestContext;
+    use super::helpers::commit;
+    use super::helpers::key;
+    use super::helpers::key_code;
+    use super::helpers::run;
+    use super::helpers::TestContext;
     use crossterm::event::KeyCode;
     use std::fs;
 
@@ -762,9 +763,9 @@ mod discard {
 }
 
 mod reset {
-    use crate::helpers::commit;
-    use crate::helpers::key;
-    use crate::helpers::TestContext;
+    use super::helpers::commit;
+    use super::helpers::key;
+    use super::helpers::TestContext;
 
     #[test]
     pub(crate) fn reset_menu() {
@@ -836,10 +837,10 @@ fn show_refs() {
 }
 
 mod checkout {
-    use crate::helpers::key;
-    use crate::helpers::key_code;
-    use crate::helpers::run;
-    use crate::helpers::TestContext;
+    use super::helpers::key;
+    use super::helpers::key_code;
+    use super::helpers::run;
+    use super::helpers::TestContext;
     use crossterm::event::KeyCode;
 
     #[test]
