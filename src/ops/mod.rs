@@ -19,6 +19,7 @@ pub(crate) mod reset;
 pub(crate) mod show;
 pub(crate) mod show_refs;
 pub(crate) mod stage;
+pub(crate) mod stash;
 pub(crate) mod unstage;
 
 pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
@@ -41,8 +42,10 @@ pub(crate) enum Op {
     Refresh,
 
     ToggleSection,
-    SelectNext,
-    SelectPrevious,
+    MoveDown,
+    MoveUp,
+    MoveDownLine,
+    MoveUpLine,
     HalfPageUp,
     HalfPageDown,
 
@@ -57,6 +60,13 @@ pub(crate) enum Op {
     RebaseAbort,
     RebaseContinue,
     ShowRefs,
+    Stash,
+    StashApply,
+    StashIndex,
+    StashWorktree,
+    StashKeepIndex,
+    StashPop,
+    StashDrop,
 
     CommitFixup,
     Discard,
@@ -87,6 +97,7 @@ pub(crate) enum SubmenuOp {
     Push,
     Rebase,
     Reset,
+    Stash,
 }
 
 impl Op {
@@ -96,8 +107,10 @@ impl Op {
             Op::Submenu(submenu) => Box::new(editor::Submenu(submenu)),
             Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleSection => Box::new(editor::ToggleSection),
-            Op::SelectNext => Box::new(editor::SelectNext),
-            Op::SelectPrevious => Box::new(editor::SelectPrevious),
+            Op::MoveDown => Box::new(editor::MoveDown),
+            Op::MoveUp => Box::new(editor::MoveUp),
+            Op::MoveDownLine => Box::new(editor::MoveDownLine),
+            Op::MoveUpLine => Box::new(editor::MoveUpLine),
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
 
@@ -112,6 +125,13 @@ impl Op {
             Op::RebaseAbort => Box::new(rebase::RebaseAbort),
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::ShowRefs => Box::new(show_refs::ShowRefs),
+            Op::Stash => Box::new(stash::Stash),
+            Op::StashApply => Box::new(stash::StashApply),
+            Op::StashIndex => Box::new(stash::StashIndex),
+            Op::StashWorktree => Box::new(stash::StashWorktree),
+            Op::StashKeepIndex => Box::new(stash::StashKeepIndex),
+            Op::StashPop => Box::new(stash::StashPop),
+            Op::StashDrop => Box::new(stash::StashDrop),
 
             Op::CommitFixup => Box::new(commit::CommitFixup),
             Op::Discard => Box::new(discard::Discard),
@@ -142,6 +162,7 @@ impl Display for SubmenuOp {
             SubmenuOp::Push => "Push",
             SubmenuOp::Rebase => "Rebase",
             SubmenuOp::Reset => "Reset",
+            SubmenuOp::Stash => "Stash",
         })
     }
 }

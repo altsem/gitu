@@ -2,7 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.7.2] - 2024-03-16
+## [0.9.1] - 2024-03-23
+
+### 🐛 Bug Fixes
+
+- Crash when trying to show diff of binary files
+
+## [0.9.0] - 2024-03-23
+
+### 🚀 Features
+
+- Unstage individual lines with ctrl-up/down and 'u'
+- Stage individual lines with ctrl-up/down and 's'
+- Add configurable quit confirmation
+
+### 🐛 Bug Fixes
+
+- Cursor now skips unselectable lines more deterministically
+
+## [0.8.0] - 2024-03-22
+
+### 🚀 Features
+
+- Show stash status, add 'save', 'pop', 'apply' and 'drop' actions
+- Unstage all staged changes by hovering 'Staged' section
+- Stage all unstaged changes by hover 'Unstaged' section
+- Stage all untracked files by hovering 'Untracked' section
+
+## [0.7.0] - 2024-03-16
 
 ### 🚀 Features
 

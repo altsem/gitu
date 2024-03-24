@@ -8,9 +8,6 @@ use git2::Repository;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
-use similar::Algorithm;
-use similar::ChangeTag;
-use similar::TextDiff;
 use std::borrow::Cow;
 use std::iter;
 use std::path::PathBuf;
@@ -36,7 +33,9 @@ pub(crate) enum TargetData {
     Commit(String),
     Delta(Delta),
     File(PathBuf),
-    Hunk(Hunk),
+    Hunk(Rc<Hunk>),
+    HunkLine(Rc<Hunk>, usize),
+    Stash { commit: String, id: usize },
 }
 
 pub(crate) fn create_diff_items<'a>(
@@ -69,13 +68,18 @@ pub(crate) fn create_diff_items<'a>(
             delta
                 .hunks
                 .iter()
+                .cloned()
                 .flat_map(move |hunk| create_hunk_items(Rc::clone(&config), hunk, *depth + 1)),
         )
     })
 }
 
-fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iterator<Item = Item> {
-    let target_data = TargetData::Hunk(hunk.clone());
+fn create_hunk_items(
+    config: Rc<Config>,
+    hunk: Rc<Hunk>,
+    depth: usize,
+) -> impl Iterator<Item = Item> {
+    let target_data = TargetData::Hunk(Rc::clone(&hunk));
 
     iter::once(Item {
         id: hunk.format_patch().into(),
@@ -85,82 +89,63 @@ fn create_hunk_items(config: Rc<Config>, hunk: &Hunk, depth: usize) -> impl Iter
         target_data: Some(target_data),
         ..Default::default()
     })
-    .chain(format_diff_hunk_items(&config, depth + 1, hunk))
+    .chain(format_diff_hunk_items(depth + 1, hunk))
 }
 
-fn format_diff_hunk_items(
-    config: &Config,
-    depth: usize,
-    hunk: &Hunk,
-) -> impl Iterator<Item = Item> {
-    let old = hunk.old_content();
-    let new = hunk.new_content();
-
-    let diff = TextDiff::configure()
-        .algorithm(Algorithm::Patience)
-        .diff_lines(&old, &new);
-
-    let changes = diff
-        .ops()
+fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
+    hunk.content
+        .lines
         .iter()
-        .flat_map(|op| diff.iter_inline_changes(op))
-        .collect::<Vec<_>>();
-
-    format_changes(config, &changes)
-        .into_iter()
-        .map(move |line| Item {
-            display: line,
-            unselectable: true,
+        .enumerate()
+        .map(|(i, line)| Item {
+            display: line.clone(),
+            unselectable: line.spans.first().unwrap().content.starts_with(' '),
             depth,
-            target_data: None,
+            target_data: Some(TargetData::HunkLine(Rc::clone(&hunk), i)),
             ..Default::default()
         })
+        .collect()
 }
 
-fn format_changes(
-    config: &Config,
-    changes: &[similar::InlineChange<'_, str>],
-) -> Vec<Line<'static>> {
+pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {
     let style = &config.style;
-    let lines = changes
+
+    Ok(repo
+        .reflog("refs/stash")?
         .iter()
-        .map(|change| {
-            let line_style = match change.tag() {
-                ChangeTag::Equal => Style::new(),
-                ChangeTag::Delete => (&style.line_removed).into(),
-                ChangeTag::Insert => (&style.line_added).into(),
-            };
-
-            let prefix = match change.tag() {
-                ChangeTag::Equal => " ",
-                ChangeTag::Delete => "-",
-                ChangeTag::Insert => "+",
-            };
-
-            let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
-
-            Line::from(
-                iter::once(Span::styled(prefix, line_style))
-                    .chain(change.iter_strings_lossy().map(|(emph, value)| {
-                        Span::styled(
-                            value.to_string(),
-                            if some_emph {
-                                if emph {
-                                    line_style.patch(&style.line_highlight.changed)
-                                } else {
-                                    line_style.patch(&style.line_highlight.unchanged)
-                                }
-                            } else {
-                                line_style
-                            },
-                        )
-                    }))
-                    .collect::<Vec<_>>(),
+        .enumerate()
+        .map(|(i, stash)| -> Res<Item> {
+            let spans = itertools::intersperse(
+                iter::once(Span::styled(format!("stash@{i}"), &style.hash)).chain([stash
+                    .message()
+                    .unwrap_or("")
+                    .to_string()
+                    .into()]),
+                Span::raw(" "),
             )
-        })
-        .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
-    lines
+            Ok(Item {
+                id: stash.id_new().to_string().into(),
+                display: Line::from(spans),
+                depth: 1,
+                target_data: Some(TargetData::Stash {
+                    commit: stash.id_new().to_string(),
+                    id: i,
+                }),
+                ..Default::default()
+            })
+        })
+        .map(|result| match result {
+            Ok(item) => item,
+            Err(err) => Item {
+                id: err.to_string().into(),
+                display: err.to_string().into(),
+                ..Default::default()
+            },
+        })
+        .take(limit)
+        .collect::<Vec<_>>())
 }
 
 pub(crate) fn log(

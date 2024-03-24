@@ -79,12 +79,18 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::None, Char('g'), Op::Refresh),
     // Editor
     Keybind::nomod(SubmenuOp::None, Tab, Op::ToggleSection),
-    Keybind::nomod(SubmenuOp::None, Char('k'), Op::SelectPrevious),
-    Keybind::nomod(SubmenuOp::None, Char('p'), Op::SelectPrevious),
-    Keybind::nomod(SubmenuOp::None, KeyCode::Up, Op::SelectPrevious),
-    Keybind::nomod(SubmenuOp::None, Char('j'), Op::SelectNext),
-    Keybind::nomod(SubmenuOp::None, Char('n'), Op::SelectNext),
-    Keybind::nomod(SubmenuOp::None, KeyCode::Down, Op::SelectNext),
+    Keybind::nomod(SubmenuOp::None, Char('k'), Op::MoveUp),
+    Keybind::nomod(SubmenuOp::None, Char('p'), Op::MoveUp),
+    Keybind::nomod(SubmenuOp::None, KeyCode::Up, Op::MoveUp),
+    Keybind::nomod(SubmenuOp::None, Char('j'), Op::MoveDown),
+    Keybind::nomod(SubmenuOp::None, Char('n'), Op::MoveDown),
+    Keybind::nomod(SubmenuOp::None, KeyCode::Down, Op::MoveDown),
+    Keybind::ctrl(SubmenuOp::None, Char('k'), Op::MoveUpLine),
+    Keybind::ctrl(SubmenuOp::None, Char('p'), Op::MoveUpLine),
+    Keybind::ctrl(SubmenuOp::None, KeyCode::Up, Op::MoveUpLine),
+    Keybind::ctrl(SubmenuOp::None, Char('j'), Op::MoveDownLine),
+    Keybind::ctrl(SubmenuOp::None, Char('n'), Op::MoveDownLine),
+    Keybind::ctrl(SubmenuOp::None, KeyCode::Down, Op::MoveDownLine),
     Keybind::ctrl(SubmenuOp::None, Char('u'), Op::HalfPageUp),
     Keybind::ctrl(SubmenuOp::None, Char('d'), Op::HalfPageDown),
     // Help
@@ -126,6 +132,15 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::None, Enter, Op::Show),
     // Show refs
     Keybind::nomod(SubmenuOp::None, Char('y'), Op::ShowRefs),
+    // Stash
+    Keybind::nomod(SubmenuOp::None, Char('z'), Op::Submenu(SubmenuOp::Stash)),
+    Keybind::nomod(SubmenuOp::Stash, Char('z'), Op::Stash),
+    Keybind::nomod(SubmenuOp::Stash, Char('i'), Op::StashIndex),
+    Keybind::nomod(SubmenuOp::Stash, Char('w'), Op::StashWorktree),
+    Keybind::nomod(SubmenuOp::Stash, Char('x'), Op::StashKeepIndex),
+    Keybind::nomod(SubmenuOp::Stash, Char('p'), Op::StashPop),
+    Keybind::nomod(SubmenuOp::Stash, Char('a'), Op::StashApply),
+    Keybind::nomod(SubmenuOp::Stash, Char('k'), Op::StashDrop),
     // Discard
     Keybind::shift(SubmenuOp::None, Char('K'), Op::Discard),
     // Target actions

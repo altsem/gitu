@@ -12,6 +12,12 @@ pub(crate) mod status;
 
 const BOTTOM_CONTEXT_LINES: usize = 2;
 
+#[derive(Copy, Clone, Debug)]
+pub(crate) enum NavMode {
+    Normal,
+    IncludeHunkLines,
+}
+
 pub(crate) struct Screen {
     pub(crate) cursor: usize,
     pub(crate) scroll: usize,
@@ -75,8 +81,8 @@ impl Screen {
         &self.items[self.line_index[line_i]]
     }
 
-    pub(crate) fn select_next(&mut self) {
-        self.cursor = self.find_next();
+    pub(crate) fn select_next(&mut self, nav_mode: NavMode) {
+        self.cursor = self.find_next(nav_mode);
         self.scroll_fit_end();
         self.scroll_fit_start();
     }
@@ -111,17 +117,31 @@ impl Screen {
         }
     }
 
-    pub(crate) fn find_next(&mut self) -> usize {
+    pub(crate) fn find_next(&mut self, nav_mode: NavMode) -> usize {
         (self.cursor..self.line_index.len())
             .skip(1)
-            .find(|&line_i| !self.at_line(line_i).unselectable)
+            .find(|&line_i| self.nav_filter(line_i, nav_mode))
             .unwrap_or(self.cursor)
     }
 
-    pub(crate) fn select_previous(&mut self) {
+    fn nav_filter(&mut self, line_i: usize, nav_mode: NavMode) -> bool {
+        let item = self.at_line(line_i);
+        match nav_mode {
+            NavMode::Normal => {
+                let target_data = item.target_data.as_ref();
+                let is_hunk_line =
+                    target_data.is_some_and(|d| matches!(d, TargetData::HunkLine(_, _)));
+
+                !item.unselectable && !is_hunk_line
+            }
+            NavMode::IncludeHunkLines => !item.unselectable,
+        }
+    }
+
+    pub(crate) fn select_previous(&mut self, nav_mode: NavMode) {
         self.cursor = (0..self.cursor)
             .rev()
-            .find(|&line_i| !self.at_line(line_i).unselectable)
+            .find(|&line_i| self.nav_filter(line_i, nav_mode))
             .unwrap_or(self.cursor);
 
         self.scroll_fit_start();
@@ -160,11 +180,25 @@ impl Screen {
     }
 
     pub(crate) fn update(&mut self) -> Res<()> {
+        let nav_mode = self.selected_item_nav_mode();
+
         self.items = (self.refresh_items)()?;
         self.update_line_index();
+
         self.clamp_cursor();
-        self.move_from_unselectable();
+        self.move_from_unselectable(nav_mode);
         Ok(())
+    }
+
+    fn selected_item_nav_mode(&mut self) -> NavMode {
+        if self.items.is_empty() {
+            return NavMode::Normal;
+        }
+
+        match self.get_selected_item().target_data {
+            Some(TargetData::HunkLine(_, _)) => NavMode::IncludeHunkLines,
+            _ => NavMode::Normal,
+        }
     }
 
     fn update_line_index(&mut self) {
@@ -196,12 +230,12 @@ impl Screen {
             .clamp(0, self.line_index.len().saturating_sub(1));
     }
 
-    fn move_from_unselectable(&mut self) {
+    fn move_from_unselectable(&mut self, nav_mode: NavMode) {
         if self.get_selected_item().unselectable {
-            self.select_previous();
+            self.select_next(nav_mode);
         }
         if self.get_selected_item().unselectable {
-            self.select_next();
+            self.select_previous(nav_mode);
         }
     }
 
