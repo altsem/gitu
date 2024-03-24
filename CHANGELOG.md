@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2024-03-24
+
+### 🚀 Features
+
+- Prompt input rev for 'log other'
+
+### 🎨 Styling
+
+- Style.selection_area now includes cursor line
+- Change cursor to a vertical bar, add config `style.cursor`
+
 ## [0.9.1] - 2024-03-23
 
 ### 🐛 Bug Fixes
