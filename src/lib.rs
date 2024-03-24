@@ -9,6 +9,8 @@ mod prompt;
 mod screen;
 pub mod state;
 pub mod term;
+#[cfg(test)]
+mod tests;
 mod ui;
 
 use crossterm::event::{self};

@@ -1,17 +1,14 @@
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-use git2::Repository;
-use gitu::{
+use crate::{
     cli::Args,
     config,
     state::State,
     term::{Term, TermBackend},
+    tests::helpers::RepoTestContext,
 };
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+use git2::Repository;
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::path::PathBuf;
 use temp_dir::TempDir;
 
 pub struct TestContext {
@@ -24,45 +21,24 @@ pub struct TestContext {
 impl TestContext {
     pub fn setup_init(width: u16, height: u16) -> Self {
         let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
-        let remote_dir = TempDir::new().unwrap();
-        let dir = TempDir::new().unwrap();
-
-        set_env_vars();
-        run(dir.path(), &["git", "init", "--initial-branch=main"]);
-        set_config(dir.path());
+        let repo_ctx = RepoTestContext::setup_init();
 
         Self {
             term,
-            dir,
-            remote_dir,
+            dir: repo_ctx.dir,
+            remote_dir: repo_ctx.remote_dir,
             size: Rect::new(0, 0, width, height),
         }
     }
 
     pub fn setup_clone(width: u16, height: u16) -> Self {
         let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
-        let remote_dir = TempDir::new().unwrap();
-        let dir = TempDir::new().unwrap();
-
-        set_env_vars();
-
-        run(
-            remote_dir.path(),
-            &["git", "init", "--bare", "--initial-branch=main"],
-        );
-        set_config(remote_dir.path());
-
-        clone_and_commit(&remote_dir, "initial-file", "hello");
-        run(
-            dir.path(),
-            &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
-        );
-        set_config(dir.path());
+        let repo_ctx = RepoTestContext::setup_clone();
 
         Self {
             term,
-            dir,
-            remote_dir,
+            dir: repo_ctx.dir,
+            remote_dir: repo_ctx.remote_dir,
             size: Rect::new(0, 0, width, height),
         }
     }
@@ -118,61 +94,6 @@ impl TestContext {
 fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
     let text = temp_dir.path().to_str().unwrap();
     *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
-}
-
-pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &str) {
-    let other_dir = TempDir::new().unwrap();
-
-    run(
-        other_dir.path(),
-        &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
-    );
-
-    set_config(other_dir.path());
-
-    commit(other_dir.path(), file_name, file_content);
-    run(other_dir.path(), &["git", "push"]);
-}
-
-fn set_env_vars() {
-    // https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
-    env::set_var("GIT_CONFIG_GLOBAL", "/dev/null");
-    env::set_var("GIT_CONFIG_SYSTEM", "/dev/null");
-    env::set_var("GIT_AUTHOR_NAME", "Author Name");
-    env::set_var("GIT_AUTHOR_EMAIL", "author@email.com");
-    env::set_var("GIT_AUTHOR_DATE", "Fri Feb 16 11:11 2024 +0100");
-    env::set_var("GIT_COMMITTER_NAME", "Committer Name");
-    env::set_var("GIT_COMMITTER_EMAIL", "committer@email.com");
-    env::set_var("GIT_COMMITTER_DATE", "Sun Feb 18 14:00 2024 +0100");
-    env::set_var("LC_ALL", "C");
-}
-
-fn set_config(path: &Path) {
-    run(path, &["git", "config", "user.email", "ci@example.com"]);
-    run(path, &["git", "config", "user.name", "CI"]);
-}
-
-pub fn commit(dir: &Path, file_name: &str, contents: &str) {
-    let path = dir.to_path_buf().join(file_name);
-    let message = match path.try_exists() {
-        Ok(true) => format!("modify {}\n\nCommit body goes here\n", file_name),
-        _ => format!("add {}\n\nCommit body goes here\n", file_name),
-    };
-    fs::write(path, contents).expect("error writing to file");
-    run(dir, &["git", "add", file_name]);
-    run(dir, &["git", "commit", "-m", &message]);
-}
-
-pub fn run(dir: &Path, cmd: &[&str]) -> String {
-    String::from_utf8(
-        Command::new(cmd[0])
-            .args(&cmd[1..])
-            .current_dir(dir)
-            .output()
-            .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd))
-            .stderr,
-    )
-    .unwrap()
 }
 
 pub fn key(char: char) -> Event {
