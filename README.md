@@ -67,23 +67,28 @@ binary into your `$PATH`. A common valid path location is `/usr/local/bin`.
 #### Using Nix flakes
 To build from `master` on flaked Nix platforms add this repo to your inputs:
 
-```
+```nix
 inputs = {
   nixpkgs.url = "nixpkgs/nixos-unstable";
   gitu.url = "github:altsem/gitu";
-  gitu.inputs.nixpkgs.follows = "nixpkgs";
 };
 ```
 
 Then wherever you install your packages (i.e., `home-manager`):
 
+```nix
+{ inputs, pkgs, ... }: {
+  home.packages = [ inputs.gitu.packages.${pkgs.system}.default ];
+}
 ```
-{ inputs, pkgs, lib, system, ... }: 
-{
-home.packages = with pkgs;
-  [
-    inputs.gitu.packages.${system}.default
-  ];
+
+You can also use this repo's binary cache to avoid building gitu:
+
+```nix
+nix.settings = {
+  extra-substituters = [ "https://gitu.cachix.org" ];
+  extra-trusted-public-keys =
+    [ "gitu.cachix.org-1:iUIaNys1l3W1LF/M8OXzaTl7N/OinGOlzdUJUSc+5eY=" ];
 }
 ```
 
