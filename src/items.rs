@@ -4,6 +4,7 @@ use crate::git::diff::Diff;
 use crate::git::diff::Hunk;
 use crate::Res;
 use git2::Commit;
+use git2::Oid;
 use git2::Repository;
 use ratatui::style::Style;
 use ratatui::text::Line;
@@ -152,13 +153,12 @@ pub(crate) fn log(
     config: &Config,
     repo: &Repository,
     limit: usize,
-    reference: Option<String>,
+    rev: Option<Oid>,
 ) -> Res<Vec<Item>> {
     let style = &config.style;
     let mut revwalk = repo.revwalk()?;
-    if let Some(r) = reference {
-        let oid = repo.revparse_single(&r)?.id();
-        revwalk.push(oid)?;
+    if let Some(r) = rev {
+        revwalk.push(r)?;
     } else if revwalk.push_head().is_err() {
         return Ok(vec![]);
     }

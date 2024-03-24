@@ -3,6 +3,7 @@ use itertools::Itertools;
 use std::fs;
 
 mod helpers;
+mod log;
 
 use helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
 
@@ -238,22 +239,6 @@ fn log() {
 
     let mut state = ctx.init_state();
     state.update(&mut ctx.term, &[key('l'), key('l')]).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
-
-#[test]
-fn log_other() {
-    let mut ctx = TestContext::setup_clone(80, 20);
-    commit(ctx.dir.path(), "this-should-be-at-the-top", "");
-    commit(ctx.dir.path(), "this-should-not-be-visible", "");
-
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('l'), key('o')],
-        )
-        .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
