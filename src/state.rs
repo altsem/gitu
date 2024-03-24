@@ -17,7 +17,6 @@ use crate::handle_op;
 use crate::keybinds;
 use crate::ops::SubmenuOp;
 use crate::prompt;
-use crate::prompt::PromptData;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term;
@@ -38,19 +37,6 @@ pub struct State {
     pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
     pub(crate) error_buffer: Option<ErrorBuffer>,
     pub(crate) prompt: prompt::Prompt,
-}
-
-fn quit_prompt_update(state: &mut State, term: &mut Term) -> Res<()> {
-    if state.prompt.state.status().is_pending() {
-        match state.prompt.state.value() {
-            "y" => {
-                state.quit = true;
-            }
-            "" => (),
-            _ => state.prompt.reset(term)?,
-        }
-    }
-    Ok(())
 }
 
 impl State {
@@ -142,34 +128,6 @@ impl State {
 
             if let Err(error) = result {
                 self.error_buffer = Some(ErrorBuffer(error.to_string()));
-            }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn handle_quit(&mut self) -> Res<()> {
-        match self.pending_submenu_op {
-            SubmenuOp::None => {
-                if self.screens.len() == 1 {
-                    if self.config.general.confirm_quit.enabled {
-                        self.prompt.set(PromptData {
-                            prompt_text: "Really quit? (y or n)".into(),
-                            update_fn: Rc::new(quit_prompt_update),
-                        });
-                    } else {
-                        self.quit = true;
-                    }
-                } else {
-                    self.screens.pop();
-                    if let Some(screen) = self.screens.last_mut() {
-                        screen.update()?;
-                    }
-                }
-            }
-            _ => {
-                self.pending_submenu_op = SubmenuOp::None;
-                return Ok(());
             }
         }
 
