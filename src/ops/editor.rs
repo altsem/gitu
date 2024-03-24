@@ -1,28 +1,29 @@
 use super::{Action, OpTrait, SubmenuOp};
-use crate::{
-    items::TargetData, prompt::PromptData, screen::NavMode, state::State, term::Term, Res,
-};
+use crate::{items::TargetData, screen::NavMode, state::State, term::Term};
 use derive_more::Display;
 use std::rc::Rc;
-use tui_prompts::State as _;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Quit")]
 pub(crate) struct Quit;
 impl OpTrait for Quit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state, _term| {
+        Some(Rc::new(|state, term| {
             match state.pending_submenu_op {
                 SubmenuOp::None => {
                     if state.screens.len() == 1 {
-                        if state.config.general.confirm_quit.enabled {
-                            state.prompt.set(PromptData {
-                                prompt_text: "Really quit? (y or n)".into(),
-                                update_fn: Rc::new(quit_prompt_update),
-                            });
-                        } else {
+                        let quit = Rc::new(|state: &mut State, _term: &mut Term| {
                             state.quit = true;
-                        }
+                            Ok(())
+                        });
+
+                        let mut action = if state.config.general.confirm_quit.enabled {
+                            super::create_y_n_prompt(quit, "Really quit?")
+                        } else {
+                            quit
+                        };
+
+                        Rc::get_mut(&mut action).unwrap()(state, term)?;
                     } else {
                         state.screens.pop();
                         if let Some(screen) = state.screens.last_mut() {
@@ -39,19 +40,6 @@ impl OpTrait for Quit {
             Ok(())
         }))
     }
-}
-
-fn quit_prompt_update(state: &mut State, term: &mut Term) -> Res<()> {
-    if state.prompt.state.status().is_pending() {
-        match state.prompt.state.value() {
-            "y" => {
-                state.quit = true;
-            }
-            "" => (),
-            _ => state.prompt.reset(term)?,
-        }
-    }
-    Ok(())
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
