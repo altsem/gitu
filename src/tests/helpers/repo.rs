@@ -5,6 +5,12 @@ use temp_dir::TempDir;
 pub struct RepoTestContext {
     pub dir: TempDir,
     pub remote_dir: TempDir,
+    pub local_repo: git2::Repository,
+    pub remote_repo: git2::Repository,
+}
+
+fn open_repo(dir: &TempDir) -> git2::Repository {
+    git2::Repository::open(dir.path().to_path_buf()).unwrap()
 }
 
 impl RepoTestContext {
@@ -16,7 +22,12 @@ impl RepoTestContext {
         run(dir.path(), &["git", "init", "--initial-branch=main"]);
         set_config(dir.path());
 
-        Self { dir, remote_dir }
+        Self {
+            local_repo: open_repo(&dir),
+            remote_repo: open_repo(&remote_dir),
+            dir,
+            remote_dir,
+        }
     }
 
     pub fn setup_clone() -> Self {
@@ -38,7 +49,12 @@ impl RepoTestContext {
         );
         set_config(dir.path());
 
-        Self { dir, remote_dir }
+        Self {
+            local_repo: open_repo(&dir),
+            remote_repo: open_repo(&remote_dir),
+            dir,
+            remote_dir,
+        }
     }
 }
 

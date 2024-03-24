@@ -2,7 +2,7 @@ use crossterm::event::KeyCode;
 use itertools::Itertools;
 use std::fs;
 
-mod helpers;
+pub mod helpers;
 
 use helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
 
