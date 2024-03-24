@@ -21,7 +21,7 @@ A rough list of so-far supported features:
 - Fetch:
   - all
 - Log:
-  - current
+  - current, other
 - Pull / Push:
   - remote
 - Rebase:
