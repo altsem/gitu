@@ -62,12 +62,11 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         Popup::Table(table) => frame.render_widget(table, layout[1]),
     }
 
-    if let Some(prompt_data) = state.prompt.data.take() {
+    if let Some(prompt_data) = &state.prompt.data {
         let prompt = TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block());
         frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
-        state.prompt.data = Some(prompt_data);
     }
 }
 
