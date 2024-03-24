@@ -1,4 +1,6 @@
-use crate::{items::TargetData, state::State, term::Term, Res};
+use tui_prompts::State as _;
+
+use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, ErrorBuffer, Res};
 use std::{
     ffi::{OsStr, OsString},
     fmt::Display,
@@ -177,4 +179,32 @@ pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
 
 pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
     Rc::new(move |state, term| state.issue_subscreen_command(term, command(&arg)))
+}
+
+pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
+    let update_fn = Rc::new(move |state: &mut State, term: &mut Term| {
+        if state.prompt.state.status().is_pending() {
+            match state.prompt.state.value() {
+                "y" => {
+                    Rc::get_mut(&mut action).unwrap()(state, term)?;
+                    state.prompt.reset(term)?;
+                }
+                "" => (),
+                _ => {
+                    state.error_buffer = Some(ErrorBuffer("Aborted".to_string()));
+                    state.prompt.reset(term)?;
+                }
+            }
+        }
+        Ok(())
+    });
+
+    Rc::new(move |state: &mut State, _term: &mut Term| {
+        state.prompt.set(PromptData {
+            prompt_text: format!("{} (y or n)", prompt).into(),
+            update_fn: update_fn.clone(),
+        });
+
+        Ok(())
+    })
 }
