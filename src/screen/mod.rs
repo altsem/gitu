@@ -283,14 +283,14 @@ impl Widget for &Screen {
             let indented_line_area = Rect { x: 1, ..line_area };
 
             if highlight_depth.is_some() {
+                buf.set_style(line_area, &style.selection_area);
+
                 if self.line_index[self.cursor] == item_i {
                     buf.set_style(line_area, &style.selection_line);
                 } else {
                     buf.get_mut(0, line_i as u16)
                         .set_char('▌')
                         .set_style(&style.selection_bar);
-
-                    buf.set_style(line_area, &style.selection_area);
                 }
             }
 
