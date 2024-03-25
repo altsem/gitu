@@ -4,14 +4,14 @@ use crossterm::event::{self, KeyCode, KeyModifiers};
 use KeyCode::*;
 
 pub(crate) struct Keybind {
-    pub menu: Menu,
+    pub menu: Option<Menu>,
     pub mods: KeyModifiers,
     pub key: KeyCode,
     pub op: Op,
 }
 
 impl Keybind {
-    const fn nomod(menu: Menu, key: KeyCode, op: Op) -> Self {
+    const fn nomod(menu: Option<Menu>, key: KeyCode, op: Op) -> Self {
         Self {
             menu,
             mods: KeyModifiers::NONE,
@@ -20,7 +20,7 @@ impl Keybind {
         }
     }
 
-    const fn ctrl(menu: Menu, key: KeyCode, op: Op) -> Self {
+    const fn ctrl(menu: Option<Menu>, key: KeyCode, op: Op) -> Self {
         Self {
             menu,
             mods: KeyModifiers::CONTROL,
@@ -29,7 +29,7 @@ impl Keybind {
         }
     }
 
-    const fn shift(menu: Menu, key: KeyCode, op: Op) -> Self {
+    const fn shift(menu: Option<Menu>, key: KeyCode, op: Op) -> Self {
         Self {
             menu,
             mods: KeyModifiers::SHIFT,
@@ -74,101 +74,101 @@ impl Keybind {
 
 pub(crate) const KEYBINDS: &[Keybind] = &[
     // Generic
-    Keybind::nomod(Menu::None, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::None, Esc, Op::Quit),
-    Keybind::nomod(Menu::None, Char('g'), Op::Refresh),
+    Keybind::nomod(None, Char('q'), Op::Quit),
+    Keybind::nomod(None, Esc, Op::Quit),
+    Keybind::nomod(None, Char('g'), Op::Refresh),
     // Editor
-    Keybind::nomod(Menu::None, Tab, Op::ToggleSection),
-    Keybind::nomod(Menu::None, Char('k'), Op::MoveUp),
-    Keybind::nomod(Menu::None, Char('p'), Op::MoveUp),
-    Keybind::nomod(Menu::None, KeyCode::Up, Op::MoveUp),
-    Keybind::nomod(Menu::None, Char('j'), Op::MoveDown),
-    Keybind::nomod(Menu::None, Char('n'), Op::MoveDown),
-    Keybind::nomod(Menu::None, KeyCode::Down, Op::MoveDown),
-    Keybind::ctrl(Menu::None, Char('k'), Op::MoveUpLine),
-    Keybind::ctrl(Menu::None, Char('p'), Op::MoveUpLine),
-    Keybind::ctrl(Menu::None, KeyCode::Up, Op::MoveUpLine),
-    Keybind::ctrl(Menu::None, Char('j'), Op::MoveDownLine),
-    Keybind::ctrl(Menu::None, Char('n'), Op::MoveDownLine),
-    Keybind::ctrl(Menu::None, KeyCode::Down, Op::MoveDownLine),
-    Keybind::ctrl(Menu::None, Char('u'), Op::HalfPageUp),
-    Keybind::ctrl(Menu::None, Char('d'), Op::HalfPageDown),
+    Keybind::nomod(None, Tab, Op::ToggleSection),
+    Keybind::nomod(None, Char('k'), Op::MoveUp),
+    Keybind::nomod(None, Char('p'), Op::MoveUp),
+    Keybind::nomod(None, KeyCode::Up, Op::MoveUp),
+    Keybind::nomod(None, Char('j'), Op::MoveDown),
+    Keybind::nomod(None, Char('n'), Op::MoveDown),
+    Keybind::nomod(None, KeyCode::Down, Op::MoveDown),
+    Keybind::ctrl(None, Char('k'), Op::MoveUpLine),
+    Keybind::ctrl(None, Char('p'), Op::MoveUpLine),
+    Keybind::ctrl(None, KeyCode::Up, Op::MoveUpLine),
+    Keybind::ctrl(None, Char('j'), Op::MoveDownLine),
+    Keybind::ctrl(None, Char('n'), Op::MoveDownLine),
+    Keybind::ctrl(None, KeyCode::Down, Op::MoveDownLine),
+    Keybind::ctrl(None, Char('u'), Op::HalfPageUp),
+    Keybind::ctrl(None, Char('d'), Op::HalfPageDown),
     // Help
-    Keybind::nomod(Menu::None, Char('h'), Op::Menu(Menu::Help)),
-    Keybind::nomod(Menu::Help, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Help, Esc, Op::Quit),
+    Keybind::nomod(None, Char('h'), Op::Menu(Menu::Help)),
+    Keybind::nomod(Some(Menu::Help), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Help), Esc, Op::Quit),
     // Branch
-    Keybind::nomod(Menu::None, Char('b'), Op::Menu(Menu::Branch)),
-    Keybind::nomod(Menu::Branch, Char('b'), Op::Checkout),
-    Keybind::nomod(Menu::Branch, Char('c'), Op::CheckoutNewBranch),
-    Keybind::nomod(Menu::Branch, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Branch, Esc, Op::Quit),
+    Keybind::nomod(None, Char('b'), Op::Menu(Menu::Branch)),
+    Keybind::nomod(Some(Menu::Branch), Char('b'), Op::Checkout),
+    Keybind::nomod(Some(Menu::Branch), Char('c'), Op::CheckoutNewBranch),
+    Keybind::nomod(Some(Menu::Branch), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Branch), Esc, Op::Quit),
     // Commit
-    Keybind::nomod(Menu::None, Char('c'), Op::Menu(Menu::Commit)),
-    Keybind::nomod(Menu::Commit, Char('c'), Op::Commit),
-    Keybind::nomod(Menu::Commit, Char('a'), Op::CommitAmend),
-    Keybind::nomod(Menu::Commit, Char('f'), Op::CommitFixup),
-    Keybind::nomod(Menu::Commit, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Commit, Esc, Op::Quit),
+    Keybind::nomod(None, Char('c'), Op::Menu(Menu::Commit)),
+    Keybind::nomod(Some(Menu::Commit), Char('c'), Op::Commit),
+    Keybind::nomod(Some(Menu::Commit), Char('a'), Op::CommitAmend),
+    Keybind::nomod(Some(Menu::Commit), Char('f'), Op::CommitFixup),
+    Keybind::nomod(Some(Menu::Commit), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Commit), Esc, Op::Quit),
     // Fetch
-    Keybind::nomod(Menu::None, Char('f'), Op::Menu(Menu::Fetch)),
-    Keybind::nomod(Menu::Fetch, Char('a'), Op::FetchAll),
-    Keybind::nomod(Menu::Fetch, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Fetch, Esc, Op::Quit),
+    Keybind::nomod(None, Char('f'), Op::Menu(Menu::Fetch)),
+    Keybind::nomod(Some(Menu::Fetch), Char('a'), Op::FetchAll),
+    Keybind::nomod(Some(Menu::Fetch), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Fetch), Esc, Op::Quit),
     // Log
-    Keybind::nomod(Menu::None, Char('l'), Op::Menu(Menu::Log)),
-    Keybind::nomod(Menu::Log, Char('l'), Op::LogCurrent),
-    Keybind::nomod(Menu::Log, Char('o'), Op::LogOther),
-    Keybind::nomod(Menu::Log, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Log, Esc, Op::Quit),
+    Keybind::nomod(None, Char('l'), Op::Menu(Menu::Log)),
+    Keybind::nomod(Some(Menu::Log), Char('l'), Op::LogCurrent),
+    Keybind::nomod(Some(Menu::Log), Char('o'), Op::LogOther),
+    Keybind::nomod(Some(Menu::Log), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Log), Esc, Op::Quit),
     // Pull
-    Keybind::shift(Menu::None, Char('F'), Op::Menu(Menu::Pull)),
-    Keybind::nomod(Menu::Pull, Char('p'), Op::Pull),
-    Keybind::nomod(Menu::Pull, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Pull, Esc, Op::Quit),
+    Keybind::shift(None, Char('F'), Op::Menu(Menu::Pull)),
+    Keybind::nomod(Some(Menu::Pull), Char('p'), Op::Pull),
+    Keybind::nomod(Some(Menu::Pull), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Pull), Esc, Op::Quit),
     // Push
-    Keybind::shift(Menu::None, Char('P'), Op::Menu(Menu::Push)),
-    Keybind::nomod(Menu::Push, Char('p'), Op::Push),
-    Keybind::nomod(Menu::Push, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Push, Esc, Op::Quit),
+    Keybind::shift(None, Char('P'), Op::Menu(Menu::Push)),
+    Keybind::nomod(Some(Menu::Push), Char('p'), Op::Push),
+    Keybind::nomod(Some(Menu::Push), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Push), Esc, Op::Quit),
     // Rebase
-    Keybind::nomod(Menu::None, Char('r'), Op::Menu(Menu::Rebase)),
-    Keybind::nomod(Menu::Rebase, Char('i'), Op::RebaseInteractive),
-    Keybind::nomod(Menu::Rebase, Char('a'), Op::RebaseAbort),
-    Keybind::nomod(Menu::Rebase, Char('c'), Op::RebaseContinue),
-    Keybind::nomod(Menu::Rebase, Char('f'), Op::RebaseAutosquash),
-    Keybind::nomod(Menu::Rebase, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Rebase, Esc, Op::Quit),
+    Keybind::nomod(None, Char('r'), Op::Menu(Menu::Rebase)),
+    Keybind::nomod(Some(Menu::Rebase), Char('i'), Op::RebaseInteractive),
+    Keybind::nomod(Some(Menu::Rebase), Char('a'), Op::RebaseAbort),
+    Keybind::nomod(Some(Menu::Rebase), Char('c'), Op::RebaseContinue),
+    Keybind::nomod(Some(Menu::Rebase), Char('f'), Op::RebaseAutosquash),
+    Keybind::nomod(Some(Menu::Rebase), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Rebase), Esc, Op::Quit),
     // Reset
-    Keybind::shift(Menu::None, Char('X'), Op::Menu(Menu::Reset)),
-    Keybind::nomod(Menu::Reset, Char('s'), Op::ResetSoft),
-    Keybind::nomod(Menu::Reset, Char('m'), Op::ResetMixed),
-    Keybind::nomod(Menu::Reset, Char('h'), Op::ResetHard),
-    Keybind::nomod(Menu::Reset, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Reset, Esc, Op::Quit),
+    Keybind::shift(None, Char('X'), Op::Menu(Menu::Reset)),
+    Keybind::nomod(Some(Menu::Reset), Char('s'), Op::ResetSoft),
+    Keybind::nomod(Some(Menu::Reset), Char('m'), Op::ResetMixed),
+    Keybind::nomod(Some(Menu::Reset), Char('h'), Op::ResetHard),
+    Keybind::nomod(Some(Menu::Reset), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Reset), Esc, Op::Quit),
     // Show
-    Keybind::nomod(Menu::None, Enter, Op::Show),
+    Keybind::nomod(None, Enter, Op::Show),
     // Show refs
-    Keybind::nomod(Menu::None, Char('y'), Op::ShowRefs),
+    Keybind::nomod(None, Char('y'), Op::ShowRefs),
     // Stash
-    Keybind::nomod(Menu::None, Char('z'), Op::Menu(Menu::Stash)),
-    Keybind::nomod(Menu::Stash, Char('z'), Op::Stash),
-    Keybind::nomod(Menu::Stash, Char('i'), Op::StashIndex),
-    Keybind::nomod(Menu::Stash, Char('w'), Op::StashWorktree),
-    Keybind::nomod(Menu::Stash, Char('x'), Op::StashKeepIndex),
-    Keybind::nomod(Menu::Stash, Char('p'), Op::StashPop),
-    Keybind::nomod(Menu::Stash, Char('a'), Op::StashApply),
-    Keybind::nomod(Menu::Stash, Char('k'), Op::StashDrop),
-    Keybind::nomod(Menu::Stash, Char('q'), Op::Quit),
-    Keybind::nomod(Menu::Stash, Esc, Op::Quit),
+    Keybind::nomod(None, Char('z'), Op::Menu(Menu::Stash)),
+    Keybind::nomod(Some(Menu::Stash), Char('z'), Op::Stash),
+    Keybind::nomod(Some(Menu::Stash), Char('i'), Op::StashIndex),
+    Keybind::nomod(Some(Menu::Stash), Char('w'), Op::StashWorktree),
+    Keybind::nomod(Some(Menu::Stash), Char('x'), Op::StashKeepIndex),
+    Keybind::nomod(Some(Menu::Stash), Char('p'), Op::StashPop),
+    Keybind::nomod(Some(Menu::Stash), Char('a'), Op::StashApply),
+    Keybind::nomod(Some(Menu::Stash), Char('k'), Op::StashDrop),
+    Keybind::nomod(Some(Menu::Stash), Char('q'), Op::Quit),
+    Keybind::nomod(Some(Menu::Stash), Esc, Op::Quit),
     // Discard
-    Keybind::shift(Menu::None, Char('K'), Op::Discard),
+    Keybind::shift(None, Char('K'), Op::Discard),
     // Target actions
-    Keybind::nomod(Menu::None, Char('s'), Op::Stage),
-    Keybind::nomod(Menu::None, Char('u'), Op::Unstage),
+    Keybind::nomod(None, Char('s'), Op::Stage),
+    Keybind::nomod(None, Char('u'), Op::Unstage),
 ];
 
-pub(crate) fn op_of_key_event(pending: Menu, key: event::KeyEvent) -> Option<Op> {
+pub(crate) fn op_of_key_event(pending: Option<Menu>, key: event::KeyEvent) -> Option<Op> {
     KEYBINDS
         .iter()
         .find(|keybind| {
@@ -179,9 +179,9 @@ pub(crate) fn op_of_key_event(pending: Menu, key: event::KeyEvent) -> Option<Op>
 
 pub(crate) fn list(pending: &Menu) -> impl Iterator<Item = &Keybind> {
     let expected = if pending == &Menu::Help {
-        Menu::None
+        None
     } else {
-        *pending
+        Some(*pending)
     };
 
     KEYBINDS

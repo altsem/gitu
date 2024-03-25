@@ -17,7 +17,7 @@ use crossterm::event::{self};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Menu, Op};
+use ops::{Action, Op};
 use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
@@ -94,6 +94,6 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
 fn close_menu(state: &mut State, op: Op) {
     match op {
         Op::Menu(_) => (),
-        _ => state.pending_menu = Menu::None,
+        _ => state.pending_menu = None,
     }
 }

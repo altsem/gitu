@@ -33,7 +33,7 @@ pub struct State {
     pub(crate) config: Rc<Config>,
     pub quit: bool,
     pub(crate) screens: Vec<Screen>,
-    pub(crate) pending_menu: Menu,
+    pub(crate) pending_menu: Option<Menu>,
     pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
     pub(crate) error_buffer: Option<ErrorBuffer>,
     pub(crate) prompt: prompt::Prompt,
@@ -65,7 +65,7 @@ impl State {
             config,
             quit: false,
             screens,
-            pending_menu: Menu::None,
+            pending_menu: None,
             cmd_meta_buffer: None,
             error_buffer: None,
             prompt: prompt::Prompt::new(),
@@ -117,8 +117,8 @@ impl State {
     }
 
     pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
-        let pending = if self.pending_menu == Menu::Help {
-            Menu::None
+        let pending = if self.pending_menu == Some(Menu::Help) {
+            None
         } else {
             self.pending_menu
         };

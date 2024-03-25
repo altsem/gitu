@@ -85,15 +85,13 @@ pub(crate) enum Op {
     Menu(Menu),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Menu {
     Branch,
     Commit,
     Fetch,
     Help,
     Log,
-    #[default]
-    None,
     Pull,
     Push,
     Rebase,
@@ -157,7 +155,6 @@ impl Display for Menu {
             Menu::Fetch => "Fetch",
             Menu::Help => "Help",
             Menu::Log => "Log",
-            Menu::None => "None",
             Menu::Pull => "Pull",
             Menu::Push => "Push",
             Menu::Rebase => "Rebase",

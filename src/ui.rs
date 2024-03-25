@@ -28,12 +28,8 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     } else if let Some(ref cmd) = state.cmd_meta_buffer {
         let text = format_command(&state.config, cmd);
         (text.lines.len(), command_popup(text))
-    } else if state.pending_menu != Menu::None {
-        format_keybinds_menu(
-            &state.config,
-            &state.pending_menu,
-            state.screen().get_selected_item(),
-        )
+    } else if let Some(ref menu) = state.pending_menu {
+        format_keybinds_menu(&state.config, menu, state.screen().get_selected_item())
     } else {
         (0, Popup::None)
     };
