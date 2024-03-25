@@ -4,7 +4,7 @@ use derive_more::Display;
 use std::rc::Rc;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Quit")]
+#[display(fmt = "Quit/Close")]
 pub(crate) struct Quit;
 impl OpTrait for Quit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

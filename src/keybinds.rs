@@ -74,8 +74,8 @@ impl Keybind {
 
 pub(crate) const KEYBINDS: &[Keybind] = &[
     // Generic
-    Keybind::nomod(SubmenuOp::Any, Char('q'), Op::Quit),
-    Keybind::nomod(SubmenuOp::Any, Esc, Op::Quit),
+    Keybind::nomod(SubmenuOp::None, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::None, Esc, Op::Quit),
     Keybind::nomod(SubmenuOp::None, Char('g'), Op::Refresh),
     // Editor
     Keybind::nomod(SubmenuOp::None, Tab, Op::ToggleSection),
@@ -95,39 +95,57 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::ctrl(SubmenuOp::None, Char('d'), Op::HalfPageDown),
     // Help
     Keybind::nomod(SubmenuOp::None, Char('h'), Op::Submenu(SubmenuOp::Help)),
+    Keybind::nomod(SubmenuOp::Help, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Help, Esc, Op::Quit),
     // Branch
     Keybind::nomod(SubmenuOp::None, Char('b'), Op::Submenu(SubmenuOp::Branch)),
     Keybind::nomod(SubmenuOp::Branch, Char('b'), Op::Checkout),
     Keybind::nomod(SubmenuOp::Branch, Char('c'), Op::CheckoutNewBranch),
+    Keybind::nomod(SubmenuOp::Branch, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Branch, Esc, Op::Quit),
     // Commit
     Keybind::nomod(SubmenuOp::None, Char('c'), Op::Submenu(SubmenuOp::Commit)),
     Keybind::nomod(SubmenuOp::Commit, Char('c'), Op::Commit),
     Keybind::nomod(SubmenuOp::Commit, Char('a'), Op::CommitAmend),
     Keybind::nomod(SubmenuOp::Commit, Char('f'), Op::CommitFixup),
+    Keybind::nomod(SubmenuOp::Commit, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Commit, Esc, Op::Quit),
     // Fetch
     Keybind::nomod(SubmenuOp::None, Char('f'), Op::Submenu(SubmenuOp::Fetch)),
     Keybind::nomod(SubmenuOp::Fetch, Char('a'), Op::FetchAll),
+    Keybind::nomod(SubmenuOp::Fetch, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Fetch, Esc, Op::Quit),
     // Log
     Keybind::nomod(SubmenuOp::None, Char('l'), Op::Submenu(SubmenuOp::Log)),
     Keybind::nomod(SubmenuOp::Log, Char('l'), Op::LogCurrent),
     Keybind::nomod(SubmenuOp::Log, Char('o'), Op::LogOther),
+    Keybind::nomod(SubmenuOp::Log, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Log, Esc, Op::Quit),
     // Pull
     Keybind::shift(SubmenuOp::None, Char('F'), Op::Submenu(SubmenuOp::Pull)),
     Keybind::nomod(SubmenuOp::Pull, Char('p'), Op::Pull),
+    Keybind::nomod(SubmenuOp::Pull, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Pull, Esc, Op::Quit),
     // Push
     Keybind::shift(SubmenuOp::None, Char('P'), Op::Submenu(SubmenuOp::Push)),
     Keybind::nomod(SubmenuOp::Push, Char('p'), Op::Push),
+    Keybind::nomod(SubmenuOp::Push, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Push, Esc, Op::Quit),
     // Rebase
     Keybind::nomod(SubmenuOp::None, Char('r'), Op::Submenu(SubmenuOp::Rebase)),
     Keybind::nomod(SubmenuOp::Rebase, Char('i'), Op::RebaseInteractive),
     Keybind::nomod(SubmenuOp::Rebase, Char('a'), Op::RebaseAbort),
     Keybind::nomod(SubmenuOp::Rebase, Char('c'), Op::RebaseContinue),
     Keybind::nomod(SubmenuOp::Rebase, Char('f'), Op::RebaseAutosquash),
+    Keybind::nomod(SubmenuOp::Rebase, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Rebase, Esc, Op::Quit),
     // Reset
     Keybind::shift(SubmenuOp::None, Char('X'), Op::Submenu(SubmenuOp::Reset)),
     Keybind::nomod(SubmenuOp::Reset, Char('s'), Op::ResetSoft),
     Keybind::nomod(SubmenuOp::Reset, Char('m'), Op::ResetMixed),
     Keybind::nomod(SubmenuOp::Reset, Char('h'), Op::ResetHard),
+    Keybind::nomod(SubmenuOp::Reset, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Reset, Esc, Op::Quit),
     // Show
     Keybind::nomod(SubmenuOp::None, Enter, Op::Show),
     // Show refs
@@ -141,6 +159,8 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(SubmenuOp::Stash, Char('p'), Op::StashPop),
     Keybind::nomod(SubmenuOp::Stash, Char('a'), Op::StashApply),
     Keybind::nomod(SubmenuOp::Stash, Char('k'), Op::StashDrop),
+    Keybind::nomod(SubmenuOp::Stash, Char('q'), Op::Quit),
+    Keybind::nomod(SubmenuOp::Stash, Esc, Op::Quit),
     // Discard
     Keybind::shift(SubmenuOp::None, Char('K'), Op::Discard),
     // Target actions
@@ -153,8 +173,6 @@ pub(crate) fn op_of_key_event(pending: SubmenuOp, key: event::KeyEvent) -> Optio
         .iter()
         .find(|keybind| {
             (keybind.submenu, keybind.mods, keybind.key) == (pending, key.modifiers, key.code)
-                || (keybind.submenu, keybind.mods, keybind.key)
-                    == (SubmenuOp::Any, key.modifiers, key.code)
         })
         .map(|keybind| keybind.op)
 }

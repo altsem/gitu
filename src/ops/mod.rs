@@ -87,7 +87,6 @@ pub(crate) enum Op {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub(crate) enum SubmenuOp {
-    Any,
     Branch,
     Commit,
     Fetch,
@@ -153,7 +152,6 @@ impl Op {
 impl Display for SubmenuOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            SubmenuOp::Any => "Any",
             SubmenuOp::Branch => "Branch",
             SubmenuOp::Commit => "Commit",
             SubmenuOp::Fetch => "Fetch",
