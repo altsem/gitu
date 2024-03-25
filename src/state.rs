@@ -15,7 +15,7 @@ use crate::cli;
 use crate::config::Config;
 use crate::handle_op;
 use crate::keybinds;
-use crate::ops::SubmenuOp;
+use crate::ops::Menu;
 use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
@@ -33,7 +33,7 @@ pub struct State {
     pub(crate) config: Rc<Config>,
     pub quit: bool,
     pub(crate) screens: Vec<Screen>,
-    pub(crate) pending_submenu_op: SubmenuOp,
+    pub(crate) pending_menu: Menu,
     pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
     pub(crate) error_buffer: Option<ErrorBuffer>,
     pub(crate) prompt: prompt::Prompt,
@@ -65,7 +65,7 @@ impl State {
             config,
             quit: false,
             screens,
-            pending_submenu_op: SubmenuOp::None,
+            pending_menu: Menu::None,
             cmd_meta_buffer: None,
             error_buffer: None,
             prompt: prompt::Prompt::new(),
@@ -117,10 +117,10 @@ impl State {
     }
 
     pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
-        let pending = if self.pending_submenu_op == SubmenuOp::Help {
-            SubmenuOp::None
+        let pending = if self.pending_menu == Menu::Help {
+            Menu::None
         } else {
-            self.pending_submenu_op
+            self.pending_menu
         };
 
         if let Some(op) = keybinds::op_of_key_event(pending, key) {

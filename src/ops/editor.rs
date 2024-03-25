@@ -1,4 +1,4 @@
-use super::{Action, OpTrait, SubmenuOp};
+use super::{Action, OpTrait};
 use crate::{items::TargetData, screen::NavMode, state::State, term::Term};
 use derive_more::Display;
 use std::rc::Rc;
@@ -9,8 +9,8 @@ pub(crate) struct Quit;
 impl OpTrait for Quit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, term| {
-            match state.pending_submenu_op {
-                SubmenuOp::None => {
+            match state.pending_menu {
+                super::Menu::None => {
                     if state.screens.len() == 1 {
                         let quit = Rc::new(|state: &mut State, _term: &mut Term| {
                             state.quit = true;
@@ -32,7 +32,7 @@ impl OpTrait for Quit {
                     }
                 }
                 _ => {
-                    state.pending_submenu_op = SubmenuOp::None;
+                    state.pending_menu = super::Menu::None;
                     return Ok(());
                 }
             }
@@ -44,12 +44,12 @@ impl OpTrait for Quit {
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Submenu")]
-pub(crate) struct Submenu(pub SubmenuOp);
-impl OpTrait for Submenu {
+pub(crate) struct Menu(pub super::Menu);
+impl OpTrait for Menu {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         let submenu = self.0;
         Some(Rc::new(move |state, _term| {
-            state.pending_submenu_op = submenu;
+            state.pending_menu = submenu;
             Ok(())
         }))
     }
