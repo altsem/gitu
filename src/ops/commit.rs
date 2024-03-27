@@ -3,6 +3,10 @@ use crate::{git, items::TargetData, state::State, term::Term};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Commit")]
 pub(crate) struct Commit;

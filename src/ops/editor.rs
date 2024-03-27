@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, screen::NavMode, state::State, term::Term};
+use crate::{items::TargetData, menu::PendingMenu, screen::NavMode, state::State, term::Term};
 use derive_more::Display;
 use std::rc::Rc;
 
@@ -44,12 +44,12 @@ impl OpTrait for Quit {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Submenu")]
-pub(crate) struct Menu(pub super::Menu);
+pub(crate) struct Menu(pub crate::menu::Menu);
 impl OpTrait for Menu {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         let submenu = self.0;
         Some(Rc::new(move |state, _term| {
-            state.pending_menu = Some(submenu);
+            state.pending_menu = Some(PendingMenu::init(submenu));
             Ok(())
         }))
     }
@@ -61,6 +61,22 @@ pub(crate) struct Refresh;
 impl OpTrait for Refresh {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| state.screen_mut().update()))
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = _.0)]
+pub(crate) struct ToggleArg(pub &'static str);
+impl OpTrait for ToggleArg {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            if let Some(menu) = &mut state.pending_menu {
+                menu.args
+                    .entry(self.0.into())
+                    .and_modify(|value| *value = !*value);
+            }
+            Ok(())
+        }))
     }
 }
 

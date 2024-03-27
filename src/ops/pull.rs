@@ -3,6 +3,10 @@ use crate::{items::TargetData, state::State, term::Term};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Pull")]
 pub(crate) struct Pull;

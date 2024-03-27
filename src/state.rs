@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use crossterm::event;
 use crossterm::event::Event;
+use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
 use git2::Repository;
 use ratatui::layout::Rect;
@@ -15,7 +16,8 @@ use crate::cli;
 use crate::config::Config;
 use crate::handle_op;
 use crate::keybinds;
-use crate::ops::Menu;
+use crate::menu::Menu;
+use crate::menu::PendingMenu;
 use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
@@ -33,10 +35,11 @@ pub struct State {
     pub(crate) config: Rc<Config>,
     pub quit: bool,
     pub(crate) screens: Vec<Screen>,
-    pub(crate) pending_menu: Option<Menu>,
+    pub(crate) pending_menu: Option<PendingMenu>,
     pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
     pub(crate) error_buffer: Option<ErrorBuffer>,
     pub(crate) prompt: prompt::Prompt,
+    next_input_is_arg: bool,
 }
 
 impl State {
@@ -69,6 +72,7 @@ impl State {
             cmd_meta_buffer: None,
             error_buffer: None,
             prompt: prompt::Prompt::new(),
+            next_input_is_arg: false,
         })
     }
 
@@ -117,13 +121,21 @@ impl State {
     }
 
     pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
-        let pending = if self.pending_menu == Some(Menu::Help) {
-            None
-        } else {
-            self.pending_menu
+        let pending = match &self.pending_menu {
+            None => None,
+            Some(menu) if menu.menu == Menu::Help => None,
+            Some(menu) => Some(menu.menu),
         };
 
-        if let Some(op) = keybinds::op_of_key_event(pending, key) {
+        let maybe_op = if self.next_input_is_arg {
+            keybinds::arg_op_of_key_event(pending, key)
+        } else {
+            keybinds::op_of_key_event(pending, key)
+        };
+
+        self.next_input_is_arg = key.code == KeyCode::Char('-');
+
+        if let Some(op) = maybe_op {
             let result = handle_op(self, op, term);
 
             if let Err(error) = result {

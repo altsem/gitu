@@ -323,14 +323,30 @@ fn new_commit() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
-#[test]
-fn push() {
-    let mut ctx = TestContext::setup_clone(80, 10);
-    commit(ctx.dir.path(), "new-file", "");
+mod push {
+    use super::*;
 
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('P'), key('p')]).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    #[test]
+    fn push() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "new-file", "");
+
+        let mut state = ctx.init_state();
+        state.update(&mut ctx.term, &[key('P'), key('p')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    fn force_push() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "new-file", "");
+
+        let mut state = ctx.init_state();
+        state
+            .update(&mut ctx.term, &[key('P'), key('-'), key('f'), key('p')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]

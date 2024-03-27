@@ -3,6 +3,10 @@ use crate::items::TargetData;
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Fetch all")]
 pub(crate) struct FetchAll;

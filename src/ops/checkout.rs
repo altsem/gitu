@@ -4,6 +4,10 @@ use derive_more::Display;
 use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Checkout branch/revision")]
 pub(crate) struct Checkout;

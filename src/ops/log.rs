@@ -7,6 +7,10 @@ use git2::Oid;
 use std::rc::Rc;
 use tui_prompts::State as _;
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Log current")]
 pub(crate) struct LogCurrent;
