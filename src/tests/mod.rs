@@ -347,6 +347,16 @@ mod push {
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
+
+    #[test]
+    fn open_push_menu_after_dash_input() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "new-file", "");
+
+        let mut state = ctx.init_state();
+        state.update(&mut ctx.term, &[key('-'), key('P')]).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]

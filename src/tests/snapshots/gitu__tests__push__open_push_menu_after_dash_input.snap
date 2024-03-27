@@ -1,0 +1,47 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+Buffer {
+    area: Rect { x: 0, y: 0, width: 80, height: 10 },
+    content: [
+        "▌On branch main                                                                 ",
+        "▌Your branch is ahead of 'origin/main' by 1 commit.                             ",
+        "                                                                                ",
+        " Recent commits                                                                 ",
+        " _______ main add new-file                                                      ",
+        " _______ origin/main add initial-file                                           ",
+        "────────────────────────────────────────────────────────────────────────────────",
+        "Push                                      Arguments                             ",
+        "p Push                                    -f --force-with-lease (off)           ",
+        "q esc Quit/Close                                                                ",
+    ],
+    styles: [
+        x: 0, y: 0, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
+        x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 4, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 8, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 9, y: 4, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
+        x: 13, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 5, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
+        x: 8, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 9, y: 5, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
+        x: 20, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
+        x: 0, y: 7, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 28, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 42, y: 7, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
+        x: 72, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 8, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 1, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 42, y: 8, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 44, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
+        x: 69, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 0, y: 9, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
+        x: 5, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+    ]
+}

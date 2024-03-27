@@ -133,7 +133,7 @@ impl State {
             keybinds::op_of_key_event(pending, key)
         };
 
-        self.next_input_is_arg = key.code == KeyCode::Char('-');
+        self.next_input_is_arg = pending.is_some() && key.code == KeyCode::Char('-');
 
         if let Some(op) = maybe_op {
             let result = handle_op(self, op, term);
