@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::items::Item;
 use crate::keybinds;
 use crate::keybinds::Keybind;
-use crate::ops::Menu;
+use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::state::State;
 use crate::CmdMetaBuffer;
@@ -83,17 +83,19 @@ fn format_command<'a>(config: &Config, cmd: &'a CmdMetaBuffer) -> Text<'a> {
 
 fn format_keybinds_menu<'b>(
     config: &Config,
-    pending: &'b Menu,
+    pending: &'b PendingMenu,
     item: &'b Item,
 ) -> (usize, Popup<'b>) {
     let style = &config.style;
 
-    let non_target_binds = keybinds::list(pending)
+    let arg_binds = keybinds::arg_list(&pending.menu).collect::<Vec<_>>();
+
+    let non_target_binds = keybinds::list(&pending.menu)
         .filter(|keybind| !keybind.op.implementation().is_target_op())
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
-    pending_binds_column.push(Line::styled(format!("{}", pending), &style.command));
+    pending_binds_column.push(Line::styled(format!("{}", pending.menu), &style.command));
     for (op, binds) in non_target_binds
         .iter()
         .group_by(|bind| bind.op)
@@ -132,9 +134,9 @@ fn format_keybinds_menu<'b>(
         ]));
     }
 
-    let mut target_binds_column = vec![];
+    let mut right_column = vec![];
     if let Some(target_data) = &item.target_data {
-        let target_binds = keybinds::list(pending)
+        let target_binds = keybinds::list(&pending.menu)
             .filter(|keybind| keybind.op.implementation().is_target_op())
             .filter(|keybind| {
                 keybind
@@ -146,21 +148,45 @@ fn format_keybinds_menu<'b>(
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
-            target_binds_column.push(item.display.clone());
+            right_column.push(item.display.clone());
         }
 
         for bind in target_binds {
-            target_binds_column.push(Line::from(vec![
+            right_column.push(Line::from(vec![
                 Span::styled(Keybind::format_key(bind), &style.hotkey),
                 Span::styled(format!(" {}", bind.op.implementation()), Style::new()),
             ]));
         }
     }
 
+    if !arg_binds.is_empty() {
+        right_column.push(Line::styled("Arguments", &style.command));
+    }
+
+    for bind in arg_binds {
+        let Op::ToggleArg(name) = bind.op else {
+            unreachable!();
+        };
+
+        let on = *pending.args.get(name).unwrap_or(&false);
+
+        right_column.push(Line::from(vec![
+            Span::styled(Keybind::format_key(bind), &style.hotkey),
+            Span::styled(
+                format!(
+                    " {} ({})",
+                    bind.op.implementation(),
+                    if on { "on" } else { "off" }
+                ),
+                if on { Style::new() } else { Style::new().dim() },
+            ),
+        ]));
+    }
+
     let rows = pending_binds_column
         .into_iter()
         .zip_longest(menu_binds_column)
-        .zip_longest(target_binds_column)
+        .zip_longest(right_column)
         .map(|lines| {
             let (ab, c) = lines.or(
                 EitherOrBoth::Both(Line::raw(""), Line::raw("")),
@@ -175,7 +201,7 @@ fn format_keybinds_menu<'b>(
     let widths = [
         Constraint::Max(28),
         Constraint::Max(12),
-        Constraint::Length(25),
+        Constraint::Length(30),
     ];
     (
         rows.len(),

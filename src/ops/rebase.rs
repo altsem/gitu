@@ -7,6 +7,10 @@ use std::{
     rc::Rc,
 };
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Rebase continue")]
 pub(crate) struct RebaseContinue;

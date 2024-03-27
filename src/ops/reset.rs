@@ -2,6 +2,10 @@ use super::{cmd_arg, OpTrait};
 use crate::{git, items::TargetData, Action};
 use derive_more::Display;
 
+pub(crate) fn args() -> &'static [(&'static str, bool)] {
+    &[]
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Reset soft")]
 pub(crate) struct ResetSoft;

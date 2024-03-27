@@ -1,5 +1,4 @@
-use crate::ops::Menu;
-use crate::ops::Op;
+use crate::{menu::Menu, ops::Op};
 use crossterm::event::{self, KeyCode, KeyModifiers};
 use KeyCode::*;
 
@@ -39,17 +38,20 @@ impl Keybind {
     }
 
     pub(crate) fn format_key(&self) -> String {
-        let modifiers = self
-            .mods
-            .iter_names()
-            .map(|(name, _)| match name {
-                "CONTROL" => "C-",
-                "SHIFT" => "",
-                _ => unimplemented!("format_key mod {}", name),
-            })
-            .collect::<String>();
+        let prefix = if matches!(self.op, Op::ToggleArg(_)) {
+            "-".to_string()
+        } else {
+            self.mods
+                .iter_names()
+                .map(|(name, _)| match name {
+                    "CONTROL" => "C-",
+                    "SHIFT" => "",
+                    _ => unimplemented!("format_key mod {}", name),
+                })
+                .collect::<String>()
+        };
 
-        modifiers
+        prefix
             + &match self.key {
                 KeyCode::Enter => "ret".to_string(),
                 KeyCode::Left => "←".to_string(),
@@ -128,6 +130,11 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Some(Menu::Pull), Esc, Op::Quit),
     // Push
     Keybind::shift(None, Char('P'), Op::Menu(Menu::Push)),
+    Keybind::nomod(
+        Some(Menu::Push),
+        Char('f'),
+        Op::ToggleArg("--force-with-lease"),
+    ),
     Keybind::nomod(Some(Menu::Push), Char('p'), Op::Push),
     Keybind::nomod(Some(Menu::Push), Char('q'), Op::Quit),
     Keybind::nomod(Some(Menu::Push), Esc, Op::Quit),
@@ -171,6 +178,17 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
 pub(crate) fn op_of_key_event(pending: Option<Menu>, key: event::KeyEvent) -> Option<Op> {
     KEYBINDS
         .iter()
+        .filter(|keybind| !matches!(keybind.op, Op::ToggleArg(_)))
+        .find(|keybind| {
+            (keybind.menu, keybind.mods, keybind.key) == (pending, key.modifiers, key.code)
+        })
+        .map(|keybind| keybind.op)
+}
+
+pub(crate) fn arg_op_of_key_event(pending: Option<Menu>, key: event::KeyEvent) -> Option<Op> {
+    KEYBINDS
+        .iter()
+        .filter(|keybind| matches!(keybind.op, Op::ToggleArg(_)))
         .find(|keybind| {
             (keybind.menu, keybind.mods, keybind.key) == (pending, key.modifiers, key.code)
         })
@@ -186,5 +204,19 @@ pub(crate) fn list(pending: &Menu) -> impl Iterator<Item = &Keybind> {
 
     KEYBINDS
         .iter()
+        .filter(|keybind| !matches!(keybind.op, Op::ToggleArg(_)))
+        .filter(move |keybind| keybind.menu == expected)
+}
+
+pub(crate) fn arg_list(pending: &Menu) -> impl Iterator<Item = &Keybind> {
+    let expected = if pending == &Menu::Help {
+        None
+    } else {
+        Some(*pending)
+    };
+
+    KEYBINDS
+        .iter()
+        .filter(|keybind| matches!(keybind.op, Op::ToggleArg(_)))
         .filter(move |keybind| keybind.menu == expected)
 }

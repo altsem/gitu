@@ -1,6 +1,8 @@
 use tui_prompts::State as _;
 
-use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, ErrorBuffer, Res};
+use crate::{
+    items::TargetData, menu::Menu, prompt::PromptData, state::State, term::Term, ErrorBuffer, Res,
+};
 use std::{
     ffi::{OsStr, OsString},
     fmt::Display,
@@ -43,6 +45,7 @@ pub(crate) enum Op {
     Quit,
     Refresh,
 
+    ToggleArg(&'static str),
     ToggleSection,
     MoveDown,
     MoveUp,
@@ -85,26 +88,13 @@ pub(crate) enum Op {
     Menu(Menu),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Menu {
-    Branch,
-    Commit,
-    Fetch,
-    Help,
-    Log,
-    Pull,
-    Push,
-    Rebase,
-    Reset,
-    Stash,
-}
-
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
             Op::Quit => Box::new(editor::Quit),
             Op::Menu(menu) => Box::new(editor::Menu(menu)),
             Op::Refresh => Box::new(editor::Refresh),
+            Op::ToggleArg(name) => Box::new(editor::ToggleArg(name)),
             Op::ToggleSection => Box::new(editor::ToggleSection),
             Op::MoveDown => Box::new(editor::MoveDown),
             Op::MoveUp => Box::new(editor::MoveUp),

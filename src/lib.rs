@@ -4,6 +4,7 @@ mod git;
 mod git2_opts;
 mod items;
 mod keybinds;
+mod menu;
 mod ops;
 mod prompt;
 mod screen;
@@ -94,6 +95,7 @@ pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
 fn close_menu(state: &mut State, op: Op) {
     match op {
         Op::Menu(_) => (),
+        Op::ToggleArg(_) => (),
         _ => state.pending_menu = None,
     }
 }
