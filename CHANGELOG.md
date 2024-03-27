@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2024-03-27
+
+### 🚀 Features
+
+- Togglable argument '--force-with-lease' when pushing
+
+### 🎨 Styling
+
+- Show quit/close keybind on all menus
+
 ## [0.10.0] - 2024-03-24
 
 ### 🚀 Features

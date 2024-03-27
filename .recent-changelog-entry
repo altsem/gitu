@@ -1,11 +1,10 @@
-## [0.10.0] - 2024-03-24
+## [0.11.0] - 2024-03-27
 
 ### 🚀 Features
 
-- Prompt input rev for 'log other'
+- Togglable argument '--force-with-lease' when pushing
 
 ### 🎨 Styling
 
-- Style.selection_area now includes cursor line
-- Change cursor to a vertical bar, add config `style.cursor`
+- Show quit/close keybind on all menus
 
