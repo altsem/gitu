@@ -25,9 +25,9 @@ use term::Term;
 
 pub type Res<T> = Result<T, Box<dyn Error>>;
 
-pub(crate) struct CmdMetaBuffer {
+pub(crate) struct CmdLogEntry {
     pub(crate) args: Cow<'static, str>,
-    pub(crate) out: Option<String>,
+    pub(crate) out: Option<Cow<'static, str>>,
 }
 
 pub(crate) struct ErrorBuffer(String);

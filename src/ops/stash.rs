@@ -34,8 +34,6 @@ impl OpTrait for StashWorktree {
         let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
             if state.prompt.state.status().is_done() {
                 let input = state.prompt.state.value().to_string();
-                // TODO: How to show all 3 commands? We show only the last one in the current
-                // implementation.
 
                 // 1. Stash index (stash@0: index, ...)
                 let mut cmd = Command::new("git");
