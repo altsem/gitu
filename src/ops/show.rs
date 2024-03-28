@@ -68,7 +68,7 @@ fn editor(file: &Path, line: Option<u32>) -> Option<Action> {
         cmd.args(args);
 
         state
-            .issue_subscreen_command(term, cmd)
+            .run_cmd_interactive(term, cmd)
             .map_err(|err| format!("Couldn't open editor {} due to: {}", editor, err))?;
 
         state.screen_mut().update()

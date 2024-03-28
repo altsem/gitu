@@ -163,7 +163,7 @@ pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
 }
 
 pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
-    Rc::new(move |state, term| state.issue_subscreen_command(term, command(&arg)))
+    Rc::new(move |state, term| state.run_cmd_interactive(term, command(&arg)))
 }
 
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {

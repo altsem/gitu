@@ -16,7 +16,7 @@ impl OpTrait for Commit {
             let mut cmd = Command::new("git");
             cmd.args(["commit"]);
 
-            state.issue_subscreen_command(term, cmd)?;
+            state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
     }
@@ -31,7 +31,7 @@ impl OpTrait for CommitAmend {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend"]);
 
-            state.issue_subscreen_command(term, cmd)?;
+            state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
     }

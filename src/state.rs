@@ -181,7 +181,7 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn issue_subscreen_command(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
+    pub(crate) fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());

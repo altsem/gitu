@@ -20,7 +20,7 @@ impl OpTrait for RebaseContinue {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--continue"]);
 
-            state.issue_subscreen_command(term, cmd)?;
+            state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
     }
