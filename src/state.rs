@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::process::Command;
 use std::process::Stdio;
 use std::rc::Rc;
@@ -166,34 +165,22 @@ impl State {
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
-        self.run_cmd(term, command_args(&cmd), |_state| {
-            let mut child = cmd.spawn()?;
+        let display = command_args(&cmd);
 
-            use std::io::Write;
-            child.stdin.take().unwrap().write_all(input)?;
-
-            let out = String::from_utf8(child.wait_with_output()?.stderr.clone())
-                .expect("Error turning command output to String");
-
-            Ok(out)
-        })?;
-
-        Ok(())
-    }
-
-    pub(crate) fn run_cmd<S: Into<Cow<'static, str>>, F: FnMut(&mut Self) -> Res<String>>(
-        &mut self,
-        term: &mut Term,
-        display: S,
-        mut cmd: F,
-    ) -> Res<()> {
         self.cmd_meta_buffer = Some(CmdMetaBuffer {
-            args: display.into(),
+            args: display,
             out: None,
         });
         term.draw(|frame| ui::ui(frame, self))?;
 
-        self.cmd_meta_buffer.as_mut().unwrap().out = Some(cmd(self)?);
+        let mut child = cmd.spawn()?;
+
+        use std::io::Write;
+        child.stdin.take().unwrap().write_all(input)?;
+
+        let out = String::from_utf8(child.wait_with_output()?.stderr.clone())?;
+
+        self.cmd_meta_buffer.as_mut().unwrap().out = Some(out);
         self.screen_mut().update()?;
 
         Ok(())
