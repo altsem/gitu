@@ -5,7 +5,7 @@ use crate::keybinds::Keybind;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::state::State;
-use crate::CmdMetaBuffer;
+use crate::CmdLogEntry;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
 use ratatui::prelude::*;
@@ -25,8 +25,14 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     let (popup_line_count, popup): (usize, Popup) = if let Some(ref error) = state.error_buffer {
         let text = error.0.clone().red().bold();
         (1, command_popup(text.into()))
-    } else if let Some(ref cmd) = state.cmd_meta_buffer {
-        let text = format_command(&state.config, cmd);
+    } else if !state.current_cmd_log_entries.is_empty() {
+        let text: Text = state
+            .current_cmd_log_entries
+            .iter()
+            .flat_map(|cmd| format_command(&state.config, cmd))
+            .collect::<Vec<_>>()
+            .into();
+
         (text.lines.len(), command_popup(text))
     } else if let Some(ref menu) = state.pending_menu {
         format_keybinds_menu(&state.config, menu, state.screen().get_selected_item())
@@ -66,7 +72,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     }
 }
 
-fn format_command<'a>(config: &Config, cmd: &'a CmdMetaBuffer) -> Text<'a> {
+fn format_command<'a>(config: &Config, cmd: &'a CmdLogEntry) -> impl Iterator<Item = Line<'a>> {
     [Line::styled(
         format!(
             "$ {}{}",
@@ -76,9 +82,11 @@ fn format_command<'a>(config: &Config, cmd: &'a CmdMetaBuffer) -> Text<'a> {
         &config.style.command,
     )]
     .into_iter()
-    .chain(cmd.out.iter().flat_map(|out| Text::raw(out).lines))
-    .collect::<Vec<Line>>()
-    .into()
+    .chain(
+        cmd.out
+            .iter()
+            .flat_map(|out| Text::raw(out.to_string()).lines),
+    )
 }
 
 fn format_keybinds_menu<'b>(

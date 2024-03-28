@@ -25,7 +25,7 @@ use crate::term::Term;
 use crate::ui;
 
 use super::command_args;
-use super::CmdMetaBuffer;
+use super::CmdLogEntry;
 use super::ErrorBuffer;
 use super::Res;
 
@@ -35,7 +35,7 @@ pub(crate) struct State {
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
-    pub cmd_meta_buffer: Option<CmdMetaBuffer>,
+    pub current_cmd_log_entries: Vec<CmdLogEntry>,
     pub error_buffer: Option<ErrorBuffer>,
     pub prompt: prompt::Prompt,
     next_input_is_arg: bool,
@@ -68,7 +68,7 @@ impl State {
             quit: false,
             screens,
             pending_menu: None,
-            cmd_meta_buffer: None,
+            current_cmd_log_entries: vec![],
             error_buffer: None,
             prompt: prompt::Prompt::new(),
             next_input_is_arg: false,
@@ -87,7 +87,7 @@ impl State {
                     if self.prompt.state.is_focused() {
                         self.prompt.state.handle_key_event(key)
                     } else if key.kind == KeyEventKind::Press {
-                        self.cmd_meta_buffer = None;
+                        self.current_cmd_log_entries.clear();
                         self.error_buffer = None;
 
                         self.handle_key_input(term, key)?;
@@ -162,7 +162,7 @@ impl State {
 
         let display = command_args(&cmd);
 
-        self.cmd_meta_buffer = Some(CmdMetaBuffer {
+        self.current_cmd_log_entries.push(CmdLogEntry {
             args: display,
             out: None,
         });
@@ -175,7 +175,7 @@ impl State {
 
         let out = String::from_utf8(child.wait_with_output()?.stderr.clone())?;
 
-        self.cmd_meta_buffer.as_mut().unwrap().out = Some(out);
+        self.current_cmd_log_entries.last_mut().unwrap().out = Some(out.into());
         self.screen_mut().update()?;
 
         Ok(())
@@ -189,11 +189,12 @@ impl State {
 
         let out = child.wait_with_output()?;
 
-        self.cmd_meta_buffer = Some(CmdMetaBuffer {
+        self.current_cmd_log_entries.push(CmdLogEntry {
             args: command_args(&cmd),
             out: Some(
                 String::from_utf8(out.stderr.clone())
-                    .expect("Error turning command output to String"),
+                    .expect("Error turning command output to String")
+                    .into(),
             ),
         });
 
