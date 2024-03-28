@@ -193,3 +193,46 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
         Ok(())
     })
 }
+
+pub(crate) fn create_rev_prompt(
+    prompt: &'static str,
+    callback: fn(&mut State, &mut Term, &str) -> Res<()>,
+) -> Action {
+    Rc::new(move |state: &mut State, _term: &mut Term| {
+        let prompt_text = if let Some(default) = default_rev(state) {
+            format!("{} (default {}):", prompt, default).into()
+        } else {
+            format!("{}:", prompt).into()
+        };
+
+        state.prompt.set(PromptData {
+            prompt_text,
+            update_fn: Rc::new(move |state, term| {
+                if state.prompt.state.status().is_done() {
+                    let input = state.prompt.state.value().to_string();
+                    let default_rev = default_rev(state);
+                    let rev = match (input.as_str(), &default_rev) {
+                        ("", None) => "",
+                        ("", Some(default)) => default,
+                        (value, _) => value,
+                    };
+
+                    let result = callback(state, term, rev);
+
+                    state.prompt.reset(term)?;
+                    result?
+                }
+                Ok(())
+            }),
+        });
+        Ok(())
+    })
+}
+
+fn default_rev(state: &State) -> Option<String> {
+    match &state.screen().get_selected_item().target_data {
+        Some(TargetData::Branch(branch)) => Some(branch.to_owned()),
+        Some(TargetData::Commit(commit)) => Some(commit.to_owned()),
+        _ => None,
+    }
+}
