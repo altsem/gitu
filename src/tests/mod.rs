@@ -789,9 +789,7 @@ mod discard {
 }
 
 mod reset {
-    use super::helpers::commit;
-    use super::helpers::key;
-    use super::helpers::TestContext;
+    use super::*;
 
     #[test]
     pub(crate) fn reset_menu() {
@@ -806,7 +804,7 @@ mod reset {
     }
 
     #[test]
-    pub(crate) fn reset_soft() {
+    pub(crate) fn reset_soft_prompt() {
         let mut ctx = TestContext::setup_clone(80, 10);
         commit(ctx.dir.path(), "unwanted-file", "");
 
@@ -821,6 +819,29 @@ mod reset {
     }
 
     #[test]
+    pub(crate) fn reset_soft() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "unwanted-file", "");
+
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('l'),
+                    key('l'),
+                    key('j'),
+                    key('X'),
+                    key('s'),
+                    key_code(KeyCode::Enter),
+                    key('q'),
+                ],
+            )
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
     pub(crate) fn reset_mixed() {
         let mut ctx = TestContext::setup_clone(80, 10);
         commit(ctx.dir.path(), "unwanted-file", "");
@@ -829,7 +850,15 @@ mod reset {
         state
             .update(
                 &mut ctx.term,
-                &[key('l'), key('l'), key('j'), key('X'), key('m'), key('q')],
+                &[
+                    key('l'),
+                    key('l'),
+                    key('j'),
+                    key('X'),
+                    key('m'),
+                    key_code(KeyCode::Enter),
+                    key('q'),
+                ],
             )
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
@@ -844,7 +873,15 @@ mod reset {
         state
             .update(
                 &mut ctx.term,
-                &[key('l'), key('l'), key('j'), key('X'), key('h'), key('q')],
+                &[
+                    key('l'),
+                    key('l'),
+                    key('j'),
+                    key('X'),
+                    key('h'),
+                    key_code(KeyCode::Enter),
+                    key('q'),
+                ],
             )
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
