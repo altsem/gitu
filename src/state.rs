@@ -29,15 +29,15 @@ use super::CmdMetaBuffer;
 use super::ErrorBuffer;
 use super::Res;
 
-pub struct State {
+pub(crate) struct State {
     pub repo: Rc<Repository>,
-    pub(crate) config: Rc<Config>,
+    pub config: Rc<Config>,
     pub quit: bool,
-    pub(crate) screens: Vec<Screen>,
-    pub(crate) pending_menu: Option<PendingMenu>,
-    pub(crate) cmd_meta_buffer: Option<CmdMetaBuffer>,
-    pub(crate) error_buffer: Option<ErrorBuffer>,
-    pub(crate) prompt: prompt::Prompt,
+    pub screens: Vec<Screen>,
+    pub pending_menu: Option<PendingMenu>,
+    pub cmd_meta_buffer: Option<CmdMetaBuffer>,
+    pub error_buffer: Option<ErrorBuffer>,
+    pub prompt: prompt::Prompt,
     next_input_is_arg: bool,
 }
 
@@ -106,7 +106,7 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
+    fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
         if self.prompt.state.status() == Status::Aborted {
             self.prompt.reset(term)?;
         } else if let Some(mut prompt_data) = self.prompt.data.take() {
@@ -119,7 +119,7 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
+    fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
         let pending = match &self.pending_menu {
             None => None,
             Some(menu) if menu.menu == Menu::Help => None,
@@ -145,15 +145,15 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn screen_mut(&mut self) -> &mut Screen {
+    pub fn screen_mut(&mut self) -> &mut Screen {
         self.screens.last_mut().expect("No screen")
     }
 
-    pub(crate) fn screen(&self) -> &Screen {
+    pub fn screen(&self) -> &Screen {
         self.screens.last().expect("No screen")
     }
 
-    pub(crate) fn run_cmd(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
+    pub fn run_cmd(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
@@ -181,7 +181,7 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
+    pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
