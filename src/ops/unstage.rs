@@ -31,7 +31,7 @@ fn unstage_staged() -> Action {
     Rc::new(move |state: &mut State, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["reset", "HEAD", "--"]);
-        state.run_external_cmd(term, &[], cmd)
+        state.run_cmd(term, &[], cmd)
     })
 }
 

@@ -153,12 +153,7 @@ impl State {
         self.screens.last().expect("No screen")
     }
 
-    pub(crate) fn run_external_cmd(
-        &mut self,
-        term: &mut Term,
-        input: &[u8],
-        mut cmd: Command,
-    ) -> Res<()> {
+    pub(crate) fn run_cmd(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());

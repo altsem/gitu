@@ -35,7 +35,7 @@ impl OpTrait for RebaseAbort {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--abort"]);
 
-            state.run_external_cmd(term, &[], cmd)?;
+            state.run_cmd(term, &[], cmd)?;
             Ok(())
         }))
     }

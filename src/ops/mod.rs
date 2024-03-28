@@ -155,11 +155,11 @@ impl Display for Menu {
 }
 
 pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Action {
-    Rc::new(move |state, term| state.run_external_cmd(term, &input, command()))
+    Rc::new(move |state, term| state.run_cmd(term, &input, command()))
 }
 
 pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
-    Rc::new(move |state, term| state.run_external_cmd(term, &[], command(&arg)))
+    Rc::new(move |state, term| state.run_cmd(term, &[], command(&arg)))
 }
 
 pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {

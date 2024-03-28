@@ -40,7 +40,7 @@ impl OpTrait for StashWorktree {
                 // 1. Stash index (stash@0: index, ...)
                 let mut cmd = Command::new("git");
                 cmd.args(["stash", "push", "--staged"]);
-                state.run_external_cmd(term, &[], cmd)?;
+                state.run_cmd(term, &[], cmd)?;
 
                 // 2. Stash everything else (stash@0: worktree, stash@1: index, ...)
                 let mut cmd = Command::new("git");
@@ -48,12 +48,12 @@ impl OpTrait for StashWorktree {
                 if !input.is_empty() {
                     cmd.args(["--message", &input]);
                 }
-                state.run_external_cmd(term, &[], cmd)?;
+                state.run_cmd(term, &[], cmd)?;
 
                 // 3. Pop stash with index (at stash@1)
                 let mut cmd = Command::new("git");
                 cmd.args(["stash", "pop", "1"]);
-                state.run_external_cmd(term, &[], cmd)?;
+                state.run_cmd(term, &[], cmd)?;
 
                 state.prompt.reset(term)?;
             }
@@ -105,7 +105,7 @@ fn stash_push_action_prompt_update<const N: usize>(
                 cmd.args(["--message".into(), input]);
             }
 
-            state.run_external_cmd(term, &[], cmd)?;
+            state.run_cmd(term, &[], cmd)?;
             state.prompt.reset(term)?;
         }
         Ok(())
@@ -170,7 +170,7 @@ fn stash_target_action_prompt_update(
             let mut cmd = Command::new("git");
             cmd.args(["stash", command, stash_id.to_string().as_str()]);
 
-            state.run_external_cmd(term, &[], cmd)?;
+            state.run_cmd(term, &[], cmd)?;
             state.prompt.reset(term)?;
         }
         Ok(())

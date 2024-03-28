@@ -33,7 +33,7 @@ fn stage_unstaged() -> Action {
     Rc::new(move |state: &mut State, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["add", "-u", "."]);
-        state.run_external_cmd(term, &[], cmd)
+        state.run_cmd(term, &[], cmd)
     })
 }
 
@@ -42,7 +42,7 @@ fn stage_untracked(untracked: Vec<std::path::PathBuf>) -> Action {
         let mut cmd = Command::new("git");
         cmd.arg("add");
         cmd.args(untracked.clone());
-        state.run_external_cmd(term, &[], cmd)
+        state.run_cmd(term, &[], cmd)
     })
 }
 

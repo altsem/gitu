@@ -41,7 +41,7 @@ fn checkout_prompt_update(state: &mut State, term: &mut Term) -> Res<()> {
         let mut cmd = Command::new("git");
         cmd.args(["checkout", &branch_or_revision]);
 
-        state.run_external_cmd(term, &[], cmd)?;
+        state.run_cmd(term, &[], cmd)?;
         state.prompt.reset(term)?;
     }
     Ok(())
@@ -76,7 +76,7 @@ fn checkout_new_branch_prompt_update(state: &mut State, term: &mut Term) -> Res<
         let mut cmd = Command::new("git");
         cmd.args(["checkout", "-b", &name]);
 
-        state.run_external_cmd(term, &[], cmd)?;
+        state.run_cmd(term, &[], cmd)?;
         state.prompt.reset(term)?;
     }
     Ok(())
