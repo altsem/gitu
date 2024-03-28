@@ -4,7 +4,6 @@ use itertools::Itertools;
 use self::{commit::Commit, diff::Diff, merge_status::MergeStatus, rebase_status::RebaseStatus};
 use crate::{config::Config, git2_opts, Res};
 use std::{
-    ffi::OsStr,
     fs,
     path::Path,
     process::Command,
@@ -159,59 +158,4 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
         hash: commit.id().to_string(),
         details,
     })
-}
-
-pub(crate) fn stage_file_cmd(file: &OsStr) -> Command {
-    git([OsStr::new("add"), file])
-}
-pub(crate) fn stage_patch_cmd() -> Command {
-    git(["apply", "--cached"])
-}
-pub(crate) fn stage_line_cmd() -> Command {
-    git(["apply", "--cached", "--recount"])
-}
-pub(crate) fn unstage_file_cmd(file: &OsStr) -> Command {
-    git([OsStr::new("restore"), OsStr::new("--staged"), file])
-}
-pub(crate) fn unstage_patch_cmd() -> Command {
-    git(["apply", "--cached", "--reverse"])
-}
-pub(crate) fn unstage_line_cmd() -> Command {
-    git(["apply", "--cached", "--reverse", "--recount"])
-}
-pub(crate) fn discard_unstaged_patch_cmd() -> Command {
-    git(["apply", "--reverse"])
-}
-pub(crate) fn discard_branch(branch: &OsStr) -> Command {
-    git([OsStr::new("branch"), OsStr::new("-d"), branch])
-}
-pub(crate) fn commit_fixup_cmd(reference: &OsStr) -> Command {
-    git([OsStr::new("commit"), OsStr::new("--fixup"), reference])
-}
-pub(crate) fn reset_soft_cmd(reference: &OsStr) -> Command {
-    git([OsStr::new("reset"), OsStr::new("--soft"), reference])
-}
-pub(crate) fn reset_mixed_cmd(reference: &OsStr) -> Command {
-    git([OsStr::new("reset"), OsStr::new("--mixed"), reference])
-}
-pub(crate) fn reset_hard_cmd(reference: &OsStr) -> Command {
-    git([OsStr::new("reset"), OsStr::new("--hard"), reference])
-}
-pub(crate) fn checkout_file_cmd(file: &OsStr) -> Command {
-    git([
-        OsStr::new("checkout"),
-        OsStr::new("HEAD"),
-        OsStr::new("--"),
-        file,
-    ])
-}
-
-pub(crate) fn git<I, S>(args: I) -> Command
-where
-    I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>,
-{
-    let mut cmd = Command::new("git");
-    cmd.args(args);
-    cmd
 }

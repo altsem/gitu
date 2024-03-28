@@ -1,7 +1,7 @@
 use super::{subscreen_arg, Action, OpTrait};
-use crate::{git, items::TargetData, state::State, term::Term};
+use crate::{items::TargetData, state::State, term::Term};
 use derive_more::Display;
-use std::{process::Command, rc::Rc};
+use std::{ffi::OsStr, process::Command, rc::Rc};
 
 pub(crate) fn args() -> &'static [(&'static str, bool)] {
     &[]
@@ -43,7 +43,7 @@ pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
-            Some(TargetData::Commit(r)) => subscreen_arg(git::commit_fixup_cmd, r.into()),
+            Some(TargetData::Commit(r)) => subscreen_arg(commit_fixup_cmd, r.into()),
             _ => return None,
         };
 
@@ -52,4 +52,11 @@ impl OpTrait for CommitFixup {
     fn is_target_op(&self) -> bool {
         true
     }
+}
+
+fn commit_fixup_cmd(reference: &OsStr) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["commit", "--fixup"]);
+    cmd.arg(reference);
+    cmd
 }
