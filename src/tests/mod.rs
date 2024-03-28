@@ -761,6 +761,21 @@ mod discard {
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
+    #[test]
+    pub(crate) fn discard_staged_file() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
+        fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+        run(ctx.dir.path(), &["git", "add", "."]);
+
+        let mut state = ctx.init_state();
+
+        state
+            .update(&mut ctx.term, &[key('j'), key('j'), key('K'), key('y')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
     // FIXME Deleting branches doesn't work with the test-setup
     // #[test]
     // fn discard_branch() {
