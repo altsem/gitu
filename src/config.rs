@@ -1,4 +1,4 @@
-use crate::{Res, APP_NAME};
+use crate::Res;
 use figment::{
     providers::{Format, Toml},
     Figment,
@@ -80,7 +80,7 @@ impl From<&StyleConfigEntry> for Style {
 }
 
 pub(crate) fn init_config() -> Res<Config> {
-    let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", APP_NAME) {
+    let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", "gitu") {
         Figment::new()
             .merge(Toml::string(DEFAULT_CONFIG))
             .merge(Toml::file(app_dirs.config_dir().join("config.toml")))

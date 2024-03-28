@@ -23,8 +23,6 @@ use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
 
-const APP_NAME: &str = "gitu";
-
 pub type Res<T> = Result<T, Box<dyn Error>>;
 
 pub(crate) struct CmdMetaBuffer {

@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Default, Debug, Parser)]
-#[command(name = crate::APP_NAME)]
+#[command(name = "gitu")]
 #[command(flatten_help = true)]
 pub struct Args {
     #[command(subcommand)]
