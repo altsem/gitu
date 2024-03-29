@@ -34,6 +34,7 @@ impl OpTrait for StashWorktree {
         let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
             if state.prompt.state.status().is_done() {
                 let input = state.prompt.state.value().to_string();
+                state.prompt.reset(term)?;
 
                 // 1. Stash index (stash@0: index, ...)
                 let mut cmd = Command::new("git");
@@ -52,8 +53,6 @@ impl OpTrait for StashWorktree {
                 let mut cmd = Command::new("git");
                 cmd.args(["stash", "pop", "1"]);
                 state.run_cmd(term, &[], cmd)?;
-
-                state.prompt.reset(term)?;
             }
             Ok(())
         };
@@ -95,6 +94,7 @@ fn stash_push_action_prompt_update<const N: usize>(
     move |state: &mut State, term: &mut Term| -> Res<()> {
         if state.prompt.state.status().is_done() {
             let input = state.prompt.state.value().to_string();
+            state.prompt.reset(term)?;
 
             let mut cmd = Command::new("git");
             cmd.args(["stash", "push"]);
@@ -104,7 +104,6 @@ fn stash_push_action_prompt_update<const N: usize>(
             }
 
             state.run_cmd(term, &[], cmd)?;
-            state.prompt.reset(term)?;
         }
         Ok(())
     }
@@ -159,6 +158,8 @@ fn stash_target_action_prompt_update(
     |state: &mut State, term: &mut Term| -> Res<()> {
         if state.prompt.state.status().is_done() {
             let input = state.prompt.state.value().to_string();
+            state.prompt.reset(term)?;
+
             let stash_id: usize = match (input.parse(), default_target_stash(state)) {
                 (Err(_), None) => 0,
                 (Err(_), Some(default)) => default,
@@ -169,7 +170,6 @@ fn stash_target_action_prompt_update(
             cmd.args(["stash", command, stash_id.to_string().as_str()]);
 
             state.run_cmd(term, &[], cmd)?;
-            state.prompt.reset(term)?;
         }
         Ok(())
     }

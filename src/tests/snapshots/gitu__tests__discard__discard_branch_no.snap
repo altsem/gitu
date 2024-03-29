@@ -11,5 +11,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Aborted                                                                         |
-styles_hash: 15995b30d609d81f
+! Aborted                                                                       |
+styles_hash: 504879f0f4947fda

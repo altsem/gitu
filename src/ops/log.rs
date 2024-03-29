@@ -1,5 +1,5 @@
 use super::{create_rev_prompt, Action, OpTrait};
-use crate::{items::TargetData, screen, state::State, term::Term, ErrorBuffer, Res};
+use crate::{items::TargetData, screen, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::Oid;
 use std::rc::Rc;
@@ -31,13 +31,9 @@ impl OpTrait for LogOther {
 
 fn log_other(state: &mut State, _term: &mut Term, result: &str) -> Res<()> {
     let oid = match state.repo.revparse_single(result) {
-        Ok(rev) => rev.id(),
-        Err(err) => {
-            state.error_buffer = Some(ErrorBuffer(format!("Failed due to: {:?}", err.code())));
-            // TODO Don't return Ok here. Let it be handled at a higher level
-            return Ok(());
-        }
-    };
+        Ok(rev) => Ok(rev.id()),
+        Err(err) => Err(format!("Failed due to: {:?}", err.code())),
+    }?;
 
     goto_log_screen(state, Some(oid));
     Ok(())

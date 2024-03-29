@@ -43,11 +43,11 @@ impl OpTrait for CheckoutNewBranch {
 fn checkout_new_branch_prompt_update(state: &mut State, term: &mut Term) -> Res<()> {
     if state.prompt.state.status().is_done() {
         let name = state.prompt.state.value().to_string();
+        state.prompt.reset(term)?;
+
         let mut cmd = Command::new("git");
         cmd.args(["checkout", "-b", &name]);
-
         state.run_cmd(term, &[], cmd)?;
-        state.prompt.reset(term)?;
     }
     Ok(())
 }

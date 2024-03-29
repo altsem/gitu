@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Failed due to: InvalidSpec                                                      |
-styles_hash: 4021e85ffca94520
+! Failed due to: InvalidSpec                                                    |
+styles_hash: a2ec62a8d607c12b

@@ -1,7 +1,7 @@
 use tui_prompts::State as _;
 
 use crate::{
-    items::TargetData, menu::Menu, prompt::PromptData, state::State, term::Term, ErrorBuffer, Res,
+    items::TargetData, menu::Menu, prompt::PromptData, state::State, term::Term, CmdLogEntry, Res,
 };
 use std::{
     ffi::{OsStr, OsString},
@@ -176,7 +176,9 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
                 }
                 "" => (),
                 _ => {
-                    state.error_buffer = Some(ErrorBuffer("Aborted".to_string()));
+                    state
+                        .current_cmd_log_entries
+                        .push(CmdLogEntry::Error("Aborted".to_string()));
                     state.prompt.reset(term)?;
                 }
             }
@@ -210,6 +212,8 @@ pub(crate) fn create_rev_prompt(
             update_fn: Rc::new(move |state, term| {
                 if state.prompt.state.status().is_done() {
                     let input = state.prompt.state.value().to_string();
+                    state.prompt.reset(term)?;
+
                     let default_rev = default_rev(state);
                     let rev = match (input.as_str(), &default_rev) {
                         ("", None) => "",
@@ -217,10 +221,7 @@ pub(crate) fn create_rev_prompt(
                         (value, _) => value,
                     };
 
-                    let result = callback(state, term, rev);
-
-                    state.prompt.reset(term)?;
-                    result?
+                    callback(state, term, rev)?;
                 }
                 Ok(())
             }),
