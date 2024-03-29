@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/unstage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --reverse --recount                                        |
-styles_hash: 6847c43f05d43e7
+styles_hash: 165bb077049621bc

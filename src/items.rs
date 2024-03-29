@@ -100,7 +100,10 @@ fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
         .enumerate()
         .map(|(i, line)| Item {
             display: line.clone(),
-            unselectable: line.spans.first().unwrap().content.starts_with(' '),
+            unselectable: line
+                .spans
+                .first()
+                .is_some_and(|s| s.content.starts_with(' ')),
             depth,
             target_data: Some(TargetData::HunkLine(Rc::clone(&hunk), i)),
             ..Default::default()

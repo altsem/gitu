@@ -2,17 +2,18 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- No branch                                                                      |
+ On branch main                                                                 |
                                                                                 |
- Untracked files                                                                |
-▌a                                                                              |
-                                                                                |
- Staged changes (1)                                                             |
- added   b                                                                      |
- @@ -0,0 +1 @@                                                                  |
- +test                                                                          |
+ Unstaged changes (1)                                                           |
+▌modified   syntax-highlighted.rs                                               |
+▌@@ -1,3 +1,3 @@                                                                |
+▌ fn main() {                                                                   |
+▌-    println!("Hey");                                                          |
+▌+    println!("Bye");                                                          |
+▌ }                                                                             |
                                                                                 |
  Recent commits                                                                 |
+ _______ main add syntax-highlighted.rs                                         |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-styles_hash: 622ae95542f426ad
+styles_hash: 9b614570dda17662

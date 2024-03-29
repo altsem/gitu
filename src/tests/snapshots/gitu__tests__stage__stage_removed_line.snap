@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --recount                                                  |
-styles_hash: be9d3fbe3835322c
+styles_hash: 39bc9c9743e64d70

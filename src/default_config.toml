@@ -24,10 +24,35 @@ section_header = { fg = "yellow" }
 file_header = { fg = "magenta" }
 hunk_header = { fg = "blue" }
 
-line_added = { fg = "green" }
-line_removed = { fg = "red" }
-line_highlight.changed = { mods = "BOLD" }
-line_highlight.unchanged = { mods = "DIM" }
+diff_highlight.tag_old = { fg = "red", mods = "BOLD" }
+diff_highlight.tag_new = { fg = "green", mods = "BOLD" }
+diff_highlight.unchanged_old = { mods = "DIM" }
+diff_highlight.unchanged_new = { mods = "DIM" }
+diff_highlight.changed_old = { fg = "red" }
+diff_highlight.changed_new = { fg = "green"}
+
+syntax_highlight.attribute = { fg = "yellow" }
+syntax_highlight.comment = { fg = "gray" }
+syntax_highlight.constant_builtin = {}
+syntax_highlight.constant = {}
+syntax_highlight.constructor = {}
+syntax_highlight.embedded = {}
+syntax_highlight.function_builtin = { fg = "cyan" }
+syntax_highlight.function = { fg = "blue" }
+syntax_highlight.keyword = { fg = "magenta" }
+syntax_highlight.number = {}
+syntax_highlight.module = { fg = "cyan" }
+syntax_highlight.property = {}
+syntax_highlight.operator = {}
+syntax_highlight.punctuation_bracket = {}
+syntax_highlight.punctuation_delimiter = {}
+syntax_highlight.string_special = { fg = "yellow" }
+syntax_highlight.string = { fg = "yellow" }
+syntax_highlight.tag = {}
+syntax_highlight.type = { fg = "yellow" }
+syntax_highlight.type_builtin = { fg = "yellow" }
+syntax_highlight.variable_builtin = {}
+syntax_highlight.variable_parameter = {}
 
 cursor = { fg = "blue" }
 selection_bar = { fg = "blue", mods = "DIM" }

@@ -4,8 +4,16 @@ use ratatui::{
     style::Style,
     text::{Line, Span, Text},
 };
-use similar::{udiff::UnifiedDiffHunk, Algorithm, ChangeTag, TextDiff};
-use std::{fs, iter, ops::Range, path::PathBuf, rc::Rc, str};
+use similar::{Algorithm, DiffTag, DiffableStr, TextDiff};
+use std::{
+    fs,
+    iter::{self},
+    ops::Range,
+    path::PathBuf,
+    rc::Rc,
+    str,
+};
+use tree_sitter_highlight::Highlighter;
 
 use crate::{config::Config, Res};
 
@@ -151,24 +159,264 @@ fn diff_files(
         read_blob(repo, &diffdelta.new_file())?
     };
 
-    diff_content(config, delta, old_content, new_content)
+    diff_content(config, delta, &old_content, &new_content)
 }
 
+mod syntax_highlight {
+    use crate::config::Config;
+
+    use super::split_at_newlines;
+    use ratatui::style::Style;
+    use std::ops::Range;
+    use tree_sitter_highlight::{Highlight, HighlightConfiguration, HighlightEvent, Highlighter};
+
+    const HIGHLIGHT_NAMES: &[&str] = &[
+        "attribute",
+        "comment",
+        "constant.builtin",
+        "constant",
+        "constructor",
+        "embedded",
+        "function.builtin",
+        "function",
+        "keyword",
+        "number",
+        "module",
+        "property",
+        "operator",
+        "punctuation.bracket",
+        "punctuation.delimiter",
+        "string.special",
+        "string",
+        "tag",
+        "type",
+        "type.builtin",
+        "variable.builtin",
+        "variable.parameter",
+    ];
+
+    pub(crate) fn create_config() -> HighlightConfiguration {
+        // TODO Add more languages, only Rust is used for now
+        let mut rust_config = HighlightConfiguration::new(
+            tree_sitter_rust::language(),
+            tree_sitter_rust::HIGHLIGHT_QUERY,
+            tree_sitter_rust::INJECTIONS_QUERY,
+            "",
+        )
+        .unwrap();
+
+        rust_config.configure(HIGHLIGHT_NAMES);
+        rust_config
+    }
+
+    pub(crate) fn iter_highlights<'a>(
+        config: &Config,
+        highlighter: &'a mut Highlighter,
+        syntax_highlight_config: &'a HighlightConfiguration,
+        content: &'a str,
+    ) -> impl Iterator<Item = (Range<usize>, Style)> + 'a {
+        let style = &config.style;
+
+        let styles = [
+            (&style.syntax_highlight.attribute).into(),
+            (&style.syntax_highlight.comment).into(),
+            (&style.syntax_highlight.constant_builtin).into(),
+            (&style.syntax_highlight.constant).into(),
+            (&style.syntax_highlight.constructor).into(),
+            (&style.syntax_highlight.embedded).into(),
+            (&style.syntax_highlight.function_builtin).into(),
+            (&style.syntax_highlight.function).into(),
+            (&style.syntax_highlight.keyword).into(),
+            (&style.syntax_highlight.number).into(),
+            (&style.syntax_highlight.module).into(),
+            (&style.syntax_highlight.property).into(),
+            (&style.syntax_highlight.operator).into(),
+            (&style.syntax_highlight.punctuation_bracket).into(),
+            (&style.syntax_highlight.punctuation_delimiter).into(),
+            (&style.syntax_highlight.string_special).into(),
+            (&style.syntax_highlight.string).into(),
+            (&style.syntax_highlight.tag).into(),
+            (&style.syntax_highlight.type_regular).into(),
+            (&style.syntax_highlight.type_builtin).into(),
+            (&style.syntax_highlight.variable_builtin).into(),
+            (&style.syntax_highlight.variable_parameter).into(),
+        ];
+
+        highlighter
+            .highlight(syntax_highlight_config, content.as_bytes(), None, |_| None)
+            .unwrap()
+            .scan((0..0, Style::new()), move |current, event| {
+                match event.unwrap() {
+                    HighlightEvent::Source { start, end } => Some(Some((start..end, current.1))),
+                    HighlightEvent::HighlightStart(Highlight(highlight)) => {
+                        current.1 = styles[highlight];
+                        Some(None)
+                    }
+                    HighlightEvent::HighlightEnd => {
+                        current.1 = Style::new();
+                        Some(None)
+                    }
+                }
+            })
+            .flatten()
+            .flat_map(|style_range| split_at_newlines(content, style_range))
+    }
+}
+
+fn split_at_newlines(
+    content: &str,
+    (range, style): (Range<usize>, Style),
+) -> impl Iterator<Item = (Range<usize>, Style)> + '_ {
+    let range_indices = iter::once(range.start)
+        .chain(
+            content[range.clone()]
+                .match_indices('\n')
+                .map(move |(i, _)| i + 1 + range.start),
+        )
+        .chain([range.end]);
+
+    range_indices
+        .tuple_windows()
+        .map(move |(a, b)| (a..b, style))
+}
 fn diff_content(
     config: &Config,
     delta: &Delta,
-    old_content: String,
-    new_content: String,
+    old_content: &str,
+    new_content: &str,
 ) -> Res<Vec<Rc<Hunk>>> {
+    let style = &config.style;
+    let old_lines = old_content.tokenize_lines();
+    let new_lines = new_content.tokenize_lines();
+
+    let old_line_indices = byte_ranges(&old_lines);
+    let new_line_indices = byte_ranges(&new_lines);
+
     let text_diff = TextDiff::configure()
         .algorithm(Algorithm::Patience)
-        .diff_lines(&old_content, &new_content);
+        .diff_slices(&old_lines, &new_lines);
+
+    let syntax_highlight_config = syntax_highlight::create_config();
+    let old_highlighter = &mut Highlighter::new();
+    let new_highlighter = &mut Highlighter::new();
+    let old_syntax_highlights = &mut syntax_highlight::iter_highlights(
+        config,
+        old_highlighter,
+        &syntax_highlight_config,
+        old_content,
+    )
+    .peekable();
+
+    let new_syntax_highlights = &mut syntax_highlight::iter_highlights(
+        config,
+        new_highlighter,
+        &syntax_highlight_config,
+        new_content,
+    )
+    .peekable();
 
     Ok(text_diff
         .unified_diff()
         .iter_hunks()
         .map(|hunk| {
-            let formatted_hunk = format_hunk(config, &hunk, &text_diff);
+            let mut lines = vec![];
+
+            hunk.ops().iter().for_each(|op| {
+                let (line_tag, old_line, new_line) = op.as_tag_tuple();
+
+                let old_prefix = match line_tag {
+                    DiffTag::Equal => Span::raw(" "),
+                    _ => Span::styled("-", &style.diff_highlight.tag_old),
+                };
+
+                let old_lines_range = total_range(&old_line_indices[old_line.clone()]);
+                let new_lines_range = total_range(&new_line_indices[new_line.clone()]);
+
+                let old_words = old_content[old_lines_range.clone()].tokenize_unicode_words();
+                let new_words = new_content[new_lines_range.clone()].tokenize_unicode_words();
+
+                let old_word_indices = byte_ranges(&old_words);
+                let new_word_indices = byte_ranges(&new_words);
+
+                let word_diff = TextDiff::configure()
+                    .algorithm(Algorithm::Myers)
+                    .diff_slices(&old_words, &new_words);
+
+                let word_diff_style_ranges = word_diff
+                    .ops()
+                    .iter()
+                    .map(|word_op| {
+                        let (word_tag, word_token_old, word_token_new) = word_op.as_tag_tuple();
+                        let word_old = total_range(&old_word_indices[word_token_old]);
+                        let word_new = total_range(&new_word_indices[word_token_new]);
+
+                        (
+                            word_tag,
+                            (old_lines_range.start + word_old.start)
+                                ..(old_lines_range.start + word_old.end),
+                            (new_lines_range.start + word_new.start)
+                                ..(new_lines_range.start + word_new.end),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                let mut old_diff_highlights = word_diff_style_ranges
+                    .iter()
+                    .filter(|(_, word_old, _)| !word_old.is_empty())
+                    .map(|(word_tag, word_old, _)| {
+                        let diff_style = match word_tag {
+                            DiffTag::Equal => Style::from(&style.diff_highlight.unchanged_old),
+                            DiffTag::Delete => Style::from(&style.diff_highlight.changed_old),
+                            DiffTag::Insert => unreachable!(),
+                            DiffTag::Replace => Style::from(&style.diff_highlight.changed_old),
+                        };
+
+                        (word_old.clone(), diff_style)
+                    })
+                    .flat_map(|style_range| split_at_newlines(old_content, style_range))
+                    .peekable();
+
+                let mut new_diff_highlights = word_diff_style_ranges
+                    .iter()
+                    .filter(|(_, _, word_new)| !word_new.is_empty())
+                    .map(|(word_tag, _, word_new)| {
+                        let diff_style = match word_tag {
+                            DiffTag::Equal => Style::from(&style.diff_highlight.unchanged_new),
+                            DiffTag::Delete => unreachable!(),
+                            DiffTag::Insert => Style::from(&style.diff_highlight.changed_new),
+                            DiffTag::Replace => Style::from(&style.diff_highlight.changed_new),
+                        };
+
+                        (word_new.clone(), diff_style)
+                    })
+                    .flat_map(|style_range| split_at_newlines(new_content, style_range))
+                    .peekable();
+
+                create_lines(
+                    &old_line_indices[old_line.clone()],
+                    old_syntax_highlights,
+                    &mut old_diff_highlights,
+                    old_prefix,
+                    old_content,
+                    &mut lines,
+                );
+
+                // Don't print both old/new if equal
+                if line_tag != DiffTag::Equal {
+                    let new_prefix = Span::styled("+", &style.diff_highlight.tag_new);
+
+                    create_lines(
+                        &new_line_indices[new_line.clone()],
+                        new_syntax_highlights,
+                        &mut new_diff_highlights,
+                        new_prefix,
+                        new_content,
+                        &mut lines,
+                    );
+                }
+            });
+
+            let formatted_hunk = Text::from(lines);
 
             let new_start = hunk
                 .header()
@@ -192,54 +440,141 @@ fn diff_content(
         .collect::<Vec<_>>())
 }
 
-fn format_hunk<'diff, 'old, 'new, 'bufs>(
-    config: &Config,
-    hunk: &UnifiedDiffHunk<'diff, 'old, 'new, 'bufs, str>,
-    text_diff: &'diff TextDiff<'old, 'new, 'bufs, str>,
-) -> Text<'static>
-where
-    'diff: 'old + 'new,
-{
-    let formatted_hunk = hunk.ops().iter().flat_map(|op| {
-        text_diff
-            .iter_inline_changes(op)
-            .map(|change| format_line_change(config, &change))
-    });
-
-    formatted_hunk.collect::<Vec<_>>().into()
+fn byte_ranges(tokens: &[&str]) -> Vec<Range<usize>> {
+    tokens
+        .iter()
+        .scan(0, |count, x| {
+            let len = x.len();
+            let start = *count;
+            let end = start + len;
+            *count = end;
+            Some(start..end)
+        })
+        .collect::<Vec<_>>()
 }
 
-fn format_line_change(config: &Config, change: &similar::InlineChange<str>) -> Line<'static> {
-    let style = &config.style;
+fn total_range(lines: &[Range<usize>]) -> Range<usize> {
+    lines
+        .last()
+        .map(|last| lines[0].start..last.end)
+        .unwrap_or(0..0)
+}
 
-    let line_style = match change.tag() {
-        ChangeTag::Equal => Style::new(),
-        ChangeTag::Delete => (&style.line_removed).into(),
-        ChangeTag::Insert => (&style.line_added).into(),
+fn create_lines(
+    line_indices: &[Range<usize>],
+    syntax_highlights: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    diff_highlights: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    prefix: Span<'static>,
+    content: &str,
+    lines: &mut Vec<Line<'_>>,
+) {
+    for line in line_indices {
+        advance_to(syntax_highlights, line.start);
+        advance_to(diff_highlights, line.start);
+
+        let a = &mut syntax_highlights
+            .peeking_take_while(|(h_range, _)| h_range.start < line.end)
+            .peekable();
+
+        let b = &mut diff_highlights
+            .peeking_take_while(|(h_range, _)| h_range.start < line.end)
+            .peekable();
+
+        let spans = iter::once(prefix.clone())
+            .chain(
+                iter::from_fn(|| next_merged_style_range(a, b))
+                    .flatten()
+                    .map(|(h_range, h_style)| {
+                        (
+                            // clamp to line
+                            line.start.max(h_range.start)..line.end.min(h_range.end),
+                            h_style,
+                        )
+                    })
+                    .map(|(h_range, h_style)| {
+                        Span::styled(
+                            content[h_range]
+                                // TODO only need to do this for the last span
+                                .trim_end_matches(|s| s == '\r' || s == '\n')
+                                .to_string(),
+                            h_style,
+                        )
+                    }),
+            )
+            .collect::<Vec<_>>();
+
+        lines.push(Line::from(spans));
+    }
+}
+
+fn advance_to(iter: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>, to: usize) {
+    while let Some((range, _style)) = iter.peek() {
+        if range.end <= to {
+            iter.next();
+        } else {
+            break;
+        }
+    }
+}
+
+/// Merges overlapping style-ranges from two iterators.
+/// This should produce a continuous range, given that a and b are continuous.
+fn next_merged_style_range(
+    a: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    b: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+) -> Option<Option<(Range<usize>, Style)>> {
+    let ((a_range, a_style), (b_range, b_style)) = match (a.peek(), b.peek()) {
+        (Some(a), Some(b)) => (a, b),
+        (Some(_), None) => {
+            return a.next().map(Some);
+        }
+        (None, Some(_)) => {
+            return b.next().map(Some);
+        }
+        (None, None) => {
+            return None;
+        }
     };
 
-    let some_emph = change.iter_strings_lossy().any(|(emph, _value)| emph);
-
-    let spans = iter::once(Span::styled(format!("{}", change.tag()), line_style))
-        .chain(change.iter_strings_lossy().map(|(emph, value)| {
-            Span::styled(
-                value
-                    .trim_end_matches(|s| s == '\r' || s == '\n')
-                    .to_string(),
-                if some_emph {
-                    if emph {
-                        line_style.patch(&style.line_highlight.changed)
-                    } else {
-                        line_style.patch(&style.line_highlight.unchanged)
-                    }
-                } else {
-                    line_style
-                },
-            )
-        }))
-        .collect::<Vec<_>>();
-
-    Line::from(spans)
+    if a_range.end == b_range.end {
+        let next = (
+            a_range.start.max(b_range.start)..a_range.end,
+            a_style.patch(*b_style),
+        );
+        a.next();
+        b.next();
+        Some(Some(next))
+    } else if a_range.contains(&b_range.start) {
+        if a_range.contains(&(b_range.end - 1)) {
+            // a: (       )
+            // b:   ( X )
+            let next = (b_range.start..b_range.end, a_style.patch(*b_style));
+            b.next();
+            Some(Some(next))
+        } else {
+            // a: ( X )
+            // b:   (   )
+            let next = (b_range.start..a_range.end, a_style.patch(*b_style));
+            a.next();
+            Some(Some(next))
+        }
+    } else if b_range.contains(&a_range.start) {
+        if b_range.contains(&(a_range.end - 1)) {
+            // a:   ( X )
+            // b: (       )
+            let next = (a_range.start..a_range.end, a_style.patch(*b_style));
+            a.next();
+            Some(Some(next))
+        } else {
+            // a:   (   )
+            // b: ( X )
+            let next = (a_range.start..b_range.end, a_style.patch(*b_style));
+            b.next();
+            Some(Some(next))
+        }
+    } else {
+        unreachable!("ranges are disjoint: a: {:?} b: {:?}", a_range, b_range);
+    }
 }
 
 fn read_workdir(repo: &Repository, new_file: &git2::DiffFile<'_>) -> Res<String> {
@@ -287,8 +622,8 @@ mod tests {
                 hunks: vec![],
                 status: git2::Delta::Modified,
             },
-            old_content.to_string(),
-            new_content.to_string(),
+            old_content,
+            new_content,
         )
         .unwrap()
     }
