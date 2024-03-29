@@ -25,12 +25,13 @@ use term::Term;
 
 pub type Res<T> = Result<T, Box<dyn Error>>;
 
-pub(crate) struct CmdLogEntry {
-    pub(crate) args: Cow<'static, str>,
-    pub(crate) out: Option<Cow<'static, str>>,
+pub(crate) enum CmdLogEntry {
+    Cmd {
+        args: Cow<'static, str>,
+        out: Option<Cow<'static, str>>,
+    },
+    Error(String),
 }
-
-pub(crate) struct ErrorBuffer(String);
 
 fn command_args(cmd: &Command) -> Cow<'static, str> {
     iter::once(cmd.get_program().to_string_lossy())
@@ -82,9 +83,15 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
 pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
     let target = state.screen().get_selected_item().target_data.as_ref();
     if let Some(mut action) = op.implementation().get_action(target) {
-        Rc::get_mut(&mut action).unwrap()(state, term)?;
+        let result = Rc::get_mut(&mut action).unwrap()(state, term);
 
         close_menu(state, op);
+
+        if let Err(error) = result {
+            state
+                .current_cmd_log_entries
+                .push(CmdLogEntry::Error(error.to_string()));
+        }
     }
 
     Ok(())

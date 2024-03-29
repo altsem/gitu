@@ -22,10 +22,7 @@ enum Popup<'a> {
 }
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let (popup_line_count, popup): (usize, Popup) = if let Some(ref error) = state.error_buffer {
-        let text = error.0.clone().red().bold();
-        (1, command_popup(text.into()))
-    } else if !state.current_cmd_log_entries.is_empty() {
+    let (popup_line_count, popup): (usize, Popup) = if !state.current_cmd_log_entries.is_empty() {
         let text: Text = state
             .current_cmd_log_entries
             .iter()
@@ -72,21 +69,22 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     }
 }
 
-fn format_command<'a>(config: &Config, cmd: &'a CmdLogEntry) -> impl Iterator<Item = Line<'a>> {
-    [Line::styled(
-        format!(
-            "$ {}{}",
-            cmd.args,
-            if cmd.out.is_some() { "" } else { "..." }
-        ),
-        &config.style.command,
-    )]
-    .into_iter()
-    .chain(
-        cmd.out
-            .iter()
-            .flat_map(|out| Text::raw(out.to_string()).lines),
-    )
+fn format_command<'a>(config: &Config, log: &'a CmdLogEntry) -> Vec<Line<'a>> {
+    match log {
+        CmdLogEntry::Cmd { args, out } => [Line::styled(
+            format!("$ {}{}", args, if out.is_some() { "" } else { "..." }),
+            &config.style.command,
+        )]
+        .into_iter()
+        .chain(out.iter().flat_map(|out| Text::raw(out.to_string()).lines))
+        .collect::<Vec<_>>(),
+        CmdLogEntry::Error(err) => {
+            vec![Line::styled(
+                format!("! {}", err),
+                Style::new().red().bold(),
+            )]
+        }
+    }
 }
 
 fn format_keybinds_menu<'b>(
