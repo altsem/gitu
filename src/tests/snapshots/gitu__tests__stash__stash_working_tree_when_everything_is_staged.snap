@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+▌Staged changes (2)                                                             |
+▌added   file-one…                                                              |
+▌added   file-two                                                               |
+▌@@ -0,0 +1 @@                                                                  |
+▌+blahonga                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 7c1d9944e66300a6

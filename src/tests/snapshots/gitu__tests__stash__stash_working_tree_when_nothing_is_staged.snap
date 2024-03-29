@@ -1,18 +1,19 @@
 ---
 source: src/tests/mod.rs
+assertion_line: 532
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
-                                                                                |
- Untracked files                                                                |
- file-two                                                                       |
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Stashes                                                                        |
- stash@0 WIP on main: _______ add initial-file                                  |
+ stash@0 On main: test                                                          |
                                                                                 |
  Recent commits                                                                 |
- _______ main origin/main add initial-file                                      |
+▌_______ main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +22,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git stash pop 1                                                               |
-styles_hash: 1051e7e46b0801a2
+$ git stash push --include-untracked --message test                             |
+styles_hash: a5aaa93bdd9a3cbd

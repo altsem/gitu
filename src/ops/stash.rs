@@ -1,6 +1,7 @@
 use super::{Action, OpTrait};
 use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, Res};
 use derive_more::Display;
+use git2::{Repository, Status, StatusOptions};
 use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
@@ -33,15 +34,21 @@ impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
             if state.prompt.state.status().is_done() {
+                if is_working_tree_empty(&state.repo)? {
+                    state.prompt.reset(term)?;
+                    return Ok(());
+                }
                 let input = state.prompt.state.value().to_string();
                 state.prompt.reset(term)?;
 
-                // 1. Stash index (stash@0: index, ...)
-                let mut cmd = Command::new("git");
-                cmd.args(["stash", "push", "--staged"]);
-                state.run_cmd(term, &[], cmd)?;
+                let need_to_stash_index = is_something_staged(&state.repo)?;
 
-                // 2. Stash everything else (stash@0: worktree, stash@1: index, ...)
+                if need_to_stash_index {
+                    let mut cmd = Command::new("git");
+                    cmd.args(["stash", "push", "--staged"]);
+                    state.run_cmd(term, &[], cmd)?;
+                }
+
                 let mut cmd = Command::new("git");
                 cmd.args(["stash", "push", "--include-untracked"]);
                 if !input.is_empty() {
@@ -49,10 +56,11 @@ impl OpTrait for StashWorktree {
                 }
                 state.run_cmd(term, &[], cmd)?;
 
-                // 3. Pop stash with index (at stash@1)
-                let mut cmd = Command::new("git");
-                cmd.args(["stash", "pop", "1"]);
-                state.run_cmd(term, &[], cmd)?;
+                if need_to_stash_index {
+                    let mut cmd = Command::new("git");
+                    cmd.args(["stash", "pop", "1"]);
+                    state.run_cmd(term, &[], cmd)?;
+                }
             }
             Ok(())
         };
@@ -67,6 +75,44 @@ impl OpTrait for StashWorktree {
             },
         ))
     }
+}
+
+fn is_working_tree_empty(repo: &Repository) -> Res<bool> {
+    let statuses = repo.statuses(Some(
+        StatusOptions::new()
+            .include_untracked(true)
+            .include_ignored(false),
+    ))?;
+
+    let is_working_tree_not_empty = statuses.iter().any(|e| {
+        e.status().intersects(
+            Status::WT_NEW
+                | Status::WT_MODIFIED
+                | Status::WT_DELETED
+                | Status::WT_RENAMED
+                | Status::WT_TYPECHANGE,
+        )
+    });
+
+    Ok(!is_working_tree_not_empty)
+}
+
+fn is_something_staged(repo: &Repository) -> Res<bool> {
+    let statuses = repo.statuses(Some(
+        StatusOptions::new()
+            .include_untracked(true)
+            .include_ignored(false),
+    ))?;
+
+    Ok(statuses.iter().any(|e| {
+        e.status().intersects(
+            Status::INDEX_NEW
+                | Status::INDEX_MODIFIED
+                | Status::INDEX_DELETED
+                | Status::INDEX_RENAMED
+                | Status::INDEX_TYPECHANGE,
+        )
+    }))
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
