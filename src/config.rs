@@ -35,9 +35,11 @@ pub struct StyleConfig {
     pub file_header: StyleConfigEntry,
     pub hunk_header: StyleConfigEntry,
 
-    pub line_added: StyleConfigEntry,
-    pub line_removed: StyleConfigEntry,
-    pub line_highlight: LineHighlightConfig,
+    #[serde(default)]
+    pub diff_highlight: DiffHighlightConfig,
+
+    #[serde(default)]
+    pub syntax_highlight: SyntaxHighlightConfig,
 
     pub cursor: StyleConfigEntry,
     pub selection_line: StyleConfigEntry,
@@ -55,11 +57,68 @@ pub struct StyleConfig {
 }
 
 #[derive(Default, Debug, Deserialize)]
-pub struct LineHighlightConfig {
+pub struct DiffHighlightConfig {
     #[serde(default)]
-    pub changed: StyleConfigEntry,
+    pub tag_old: StyleConfigEntry,
     #[serde(default)]
-    pub unchanged: StyleConfigEntry,
+    pub tag_new: StyleConfigEntry,
+    #[serde(default)]
+    pub unchanged_old: StyleConfigEntry,
+    #[serde(default)]
+    pub unchanged_new: StyleConfigEntry,
+    #[serde(default)]
+    pub changed_old: StyleConfigEntry,
+    #[serde(default)]
+    pub changed_new: StyleConfigEntry,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct SyntaxHighlightConfig {
+    #[serde(default)]
+    pub attribute: StyleConfigEntry,
+    #[serde(default)]
+    pub comment: StyleConfigEntry,
+    #[serde(default)]
+    pub constant_builtin: StyleConfigEntry,
+    #[serde(default)]
+    pub constant: StyleConfigEntry,
+    #[serde(default)]
+    pub constructor: StyleConfigEntry,
+    #[serde(default)]
+    pub embedded: StyleConfigEntry,
+    #[serde(default)]
+    pub function_builtin: StyleConfigEntry,
+    #[serde(default)]
+    pub function: StyleConfigEntry,
+    #[serde(default)]
+    pub keyword: StyleConfigEntry,
+    #[serde(default)]
+    pub number: StyleConfigEntry,
+    #[serde(default)]
+    pub module: StyleConfigEntry,
+    #[serde(default)]
+    pub property: StyleConfigEntry,
+    #[serde(default)]
+    pub operator: StyleConfigEntry,
+    #[serde(default)]
+    pub punctuation_bracket: StyleConfigEntry,
+    #[serde(default)]
+    pub punctuation_delimiter: StyleConfigEntry,
+    #[serde(default)]
+    pub string_special: StyleConfigEntry,
+    #[serde(default)]
+    pub string: StyleConfigEntry,
+    #[serde(default)]
+    pub tag: StyleConfigEntry,
+    #[serde(default)]
+    #[serde(rename = "type")]
+    pub type_regular: StyleConfigEntry,
+    #[serde(default)]
+    pub type_builtin: StyleConfigEntry,
+    #[serde(default)]
+    pub variable_builtin: StyleConfigEntry,
+    #[serde(default)]
+    pub variable_parameter: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]
@@ -131,13 +190,13 @@ mod tests {
             .merge(Toml::string(
                 r#"
                 [style]
-                line_added.bg = "light green"
+                hunk_header.bg = "light green"
                 "#,
             ))
             .extract()
             .unwrap();
 
-        assert_eq!(config.style.line_added.bg, Some(Color::LightGreen));
-        assert_eq!(config.style.line_added.fg, Some(Color::Green));
+        assert_eq!(config.style.hunk_header.bg, Some(Color::LightGreen));
+        assert_eq!(config.style.hunk_header.fg, Some(Color::Blue));
     }
 }

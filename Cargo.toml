@@ -35,3 +35,6 @@ similar = { version = "2.5.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
 toml = "0.8.12"
 tui-prompts = "0.3.10"
+tree-sitter = "0.20.0"
+tree-sitter-highlight = "0.20.1"
+tree-sitter-rust = "0.20.4"
