@@ -1,5 +1,5 @@
-use super::{subscreen_arg, Action, OpTrait};
-use crate::{items::TargetData, state::State, term::Term};
+use super::{create_rev_prompt, subscreen_arg, Action, OpTrait};
+use crate::{items::TargetData, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
@@ -39,6 +39,24 @@ impl OpTrait for RebaseAbort {
             Ok(())
         }))
     }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[display(fmt = "Rebase elsewhere")]
+pub(crate) struct RebaseElsewhere;
+impl OpTrait for RebaseElsewhere {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_rev_prompt("Rebase onto", rebase_elsewhere))
+    }
+}
+
+fn rebase_elsewhere(state: &mut State, term: &mut Term, result: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["rebase"]);
+    cmd.arg(result);
+
+    state.run_cmd_interactive(term, cmd)?;
+    Ok(())
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]

@@ -1,0 +1,25 @@
+---
+source: src/tests/rebase.rs
+expression: ctx.redact_buffer()
+---
+▌On branch other-branch                                                         |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main other-branch add new-file                                         |
+ _______ origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git rebase main                                                               |
+                                                                                |
+styles_hash: 66509308af71a94c

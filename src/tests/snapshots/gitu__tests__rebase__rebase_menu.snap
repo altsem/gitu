@@ -1,0 +1,25 @@
+---
+source: src/tests/rebase.rs
+expression: ctx.redact_buffer()
+---
+▌On branch other-branch                                                         |
+                                                                                |
+ Recent commits                                                                 |
+ _______ other-branch origin/main add initial-file                              |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Rebase                                                                          |
+a Rebase abort                                                                  |
+c Rebase continue                                                               |
+e Rebase elsewhere                                                              |
+q esc Quit/Close                                                                |
+styles_hash: 48d768c8558a77a3

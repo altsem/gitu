@@ -4,6 +4,7 @@ use std::fs;
 
 mod helpers;
 mod log;
+mod rebase;
 
 use helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
 

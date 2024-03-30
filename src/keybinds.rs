@@ -143,6 +143,7 @@ pub(crate) const KEYBINDS: &[Keybind] = &[
     Keybind::nomod(Some(Menu::Rebase), Char('i'), Op::RebaseInteractive),
     Keybind::nomod(Some(Menu::Rebase), Char('a'), Op::RebaseAbort),
     Keybind::nomod(Some(Menu::Rebase), Char('c'), Op::RebaseContinue),
+    Keybind::nomod(Some(Menu::Rebase), Char('e'), Op::RebaseElsewhere),
     Keybind::nomod(Some(Menu::Rebase), Char('f'), Op::RebaseAutosquash),
     Keybind::nomod(Some(Menu::Rebase), Char('q'), Op::Quit),
     Keybind::nomod(Some(Menu::Rebase), Esc, Op::Quit),
