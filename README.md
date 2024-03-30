@@ -97,3 +97,7 @@ The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this or
 
 Configuration is also loaded from `~/.config/gitu/config.toml`,
 you could copy the [default configuration](src/default_config.toml).
+
+### Contributing
+PRs are welcome!
+This may help to get you started: [Development & Tooling](docs/dev-tooling.md)
