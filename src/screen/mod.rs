@@ -246,64 +246,78 @@ impl Screen {
     pub(crate) fn get_selected_item(&self) -> &Item {
         &self.items[self.line_index[self.cursor]]
     }
+
+    fn line_views(&self, area: Rect) -> impl Iterator<Item = LineView> {
+        let scan_start = self.scroll.min(self.cursor);
+        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
+        let scan_highlight_range = scan_start..(scan_end);
+        let context_lines = self.scroll - scan_start;
+
+        self.line_index[scan_highlight_range]
+            .iter()
+            .scan(None, |highlight_depth, item_i| {
+                let item = &self.items[*item_i];
+                if self.line_index[self.cursor] == *item_i {
+                    *highlight_depth = Some(item.depth);
+                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
+                    *highlight_depth = None;
+                };
+
+                Some(LineView {
+                    item_index: *item_i,
+                    item,
+                    display: &item.display,
+                    highlighted: highlight_depth.is_some(),
+                })
+            })
+            .skip(context_lines)
+    }
+}
+
+struct LineView<'a> {
+    item_index: usize,
+    item: &'a Item,
+    display: &'a Line<'a>,
+    highlighted: bool,
 }
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let style = &self.config.style;
 
-        let scan_start = self.scroll.min(self.cursor);
-        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
-        let scan_highlight_range = scan_start..(scan_end);
-        let context_lines = self.scroll - scan_start;
-
-        for (line_i, (item_i, item, line, highlight_depth)) in self.line_index[scan_highlight_range]
-            .iter()
-            .copied()
-            .scan(None, |highlight_depth, item_i| {
-                let item = &self.items[item_i];
-                if self.line_index[self.cursor] == item_i {
-                    *highlight_depth = Some(item.depth);
-                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                    *highlight_depth = None;
-                };
-
-                Some((item_i, item, &item.display, *highlight_depth))
-            })
-            .skip(context_lines)
-            .enumerate()
-        {
+        for (line_index, line) in self.line_views(area).enumerate() {
             let line_area = Rect {
                 x: 0,
-                y: line_i as u16,
+                y: line_index as u16,
                 width: buf.area.width,
                 height: 1,
             };
 
             let indented_line_area = Rect { x: 1, ..line_area };
 
-            if highlight_depth.is_some() {
+            if line.highlighted {
                 buf.set_style(line_area, &style.selection_area);
 
-                if self.line_index[self.cursor] == item_i {
+                if self.line_index[self.cursor] == line.item_index {
                     buf.set_style(line_area, &style.selection_line);
                 } else {
-                    buf.get_mut(0, line_i as u16)
+                    buf.get_mut(0, line_index as u16)
                         .set_char('▌')
                         .set_style(&style.selection_bar);
                 }
             }
 
-            line.render(indented_line_area, buf);
-            let overflow = line.width() > line_area.width as usize;
+            line.display.render(indented_line_area, buf);
+            let overflow = line.display.width() > line_area.width as usize;
 
-            if self.is_collapsed(item) && line.width() > 0 || overflow {
-                let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
-                buf.get_mut(line_end, line_i as u16).set_char('…');
+            if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
+                let line_end =
+                    (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
+                buf.get_mut(line_end, line_index as u16).set_char('…');
             }
 
-            if self.line_index[self.cursor] == item_i {
-                buf.get_mut(0, line_i as u16)
+            if self.line_index[self.cursor] == line.item_index {
+                buf.get_mut(0, line_index as u16)
                     .set_char('▌')
                     .set_style(&style.cursor);
             }
