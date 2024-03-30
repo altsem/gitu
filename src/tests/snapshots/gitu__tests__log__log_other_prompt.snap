@@ -1,50 +1,25 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        " _______ main add this-should-not-be-visible                                    ",
-        "▌_______ add this-should-be-at-the-top                                          ",
-        " _______ origin/main add initial-file                                           ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "? Log rev (default ________________________________________): ›                 ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 0, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 1, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 8, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 2, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 20, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 19, fg: Cyan, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 2, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 61, y: 19, fg: Cyan, bg: Reset, underline: Reset, modifier: DIM,
-        x: 64, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+ _______ main add this-should-not-be-visible                                    |
+▌_______ add this-should-be-at-the-top                                          |
+ _______ origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+? Log rev (default ________________________________________): ›                 |
+styles_hash: 6c7f54757c817537

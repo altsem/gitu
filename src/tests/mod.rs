@@ -1044,24 +1044,61 @@ fn go_down_past_collapsed() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
-#[test]
-fn scroll_down() {
-    let mut ctx = TestContext::setup_init(80, 20);
-    commit(ctx.dir.path(), "file-one", "");
-    fs::write(
-        ctx.dir.child("file-one"),
-        (1..=100).map(|i| format!("line {}", i)).join("\n"),
-    )
-    .unwrap();
+mod scroll {
+    use super::*;
 
-    let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[key('j'), key('j'), key_code(KeyCode::Tab), ctrl('d')],
-        )
-        .unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    fn setup_scroll() -> (TestContext, crate::state::State) {
+        let mut ctx = TestContext::setup_init(80, 20);
+        for file in ["file-1", "file-2", "file-3"] {
+            commit(ctx.dir.path(), file, "");
+            fs::write(
+                ctx.dir.child(file),
+                (1..=20)
+                    .map(|i| format!("line {} ({})", i, file))
+                    .join("\n"),
+            )
+            .unwrap();
+        }
+
+        let mut state = ctx.init_state();
+        state
+            .update(
+                &mut ctx.term,
+                &[
+                    key('j'),
+                    key('j'),
+                    key('j'),
+                    key('j'),
+                    key_code(KeyCode::Tab),
+                    key('k'),
+                    key_code(KeyCode::Tab),
+                    key('k'),
+                    key_code(KeyCode::Tab),
+                ],
+            )
+            .unwrap();
+        (ctx, state)
+    }
+
+    #[test]
+    fn scroll_down() {
+        let (mut ctx, mut state) = setup_scroll();
+
+        state.update(&mut ctx.term, &[ctrl('d')]).unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    fn scroll_past_selection() {
+        let (mut ctx, mut state) = setup_scroll();
+
+        state
+            .update(&mut ctx.term, &[ctrl('d'), ctrl('d'), ctrl('d')])
+            .unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]

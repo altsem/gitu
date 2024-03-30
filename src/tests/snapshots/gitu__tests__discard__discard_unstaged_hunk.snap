@@ -2,36 +2,14 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 10 },
-    content: [
-        " Your branch is ahead of 'origin/main' by 1 commit.                             ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        " _______ main add file-one                                                      ",
-        "▌_______ origin/main add initial-file                                           ",
-        "                                                                                ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "$ git apply --reverse                                                           ",
-        "                                                                                ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 3, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 4, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 4, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 8, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 9, y: 4, fg: Red, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 20, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 8, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 21, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+ Your branch is ahead of 'origin/main' by 1 commit.                             |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main add file-one                                                      |
+▌_______ origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --reverse                                                           |
+                                                                                |
+styles_hash: b7434e430a720897

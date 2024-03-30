@@ -553,6 +553,7 @@ dependencies = [
  "temp-dir",
  "toml",
  "tui-prompts",
+ "unicode-width",
 ]
 
 [[package]]

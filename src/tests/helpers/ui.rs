@@ -11,6 +11,10 @@ use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::path::PathBuf;
 use temp_dir::TempDir;
 
+use self::buffer::TestBuffer;
+
+mod buffer;
+
 pub struct TestContext {
     pub term: Term,
     pub dir: TempDir,
@@ -64,7 +68,7 @@ impl TestContext {
         let TermBackend::Test(test_backend) = self.term.backend() else {
             unreachable!();
         };
-        let mut debug_output = format!("{:#?}", test_backend.buffer());
+        let mut debug_output = format!("{:?}", TestBuffer(test_backend.buffer()));
 
         [&self.dir, &self.remote_dir]
             .iter()

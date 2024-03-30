@@ -14,6 +14,7 @@ pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
 insta = "1.38.0"
+unicode-width = "0.1.11"
 
 [dependencies]
 chrono = "0.4.37"

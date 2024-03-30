@@ -2,53 +2,24 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        "▌On branch main                                                                 ",
-        "▌Your branch is up to date with 'origin/main'.                                  ",
-        "                                                                                ",
-        " Staged changes (1)                                                             ",
-        " added   file-one…                                                              ",
-        "                                                                                ",
-        " Stashes                                                                        ",
-        " stash@0 On main: file-two                                                      ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        " _______ main origin/main add initial-file                                      ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "$ git stash pop 1                                                               ",
-        "                                                                                ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 15, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 4, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 6, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 7, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 9, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 10, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 10, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 14, y: 10, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 25, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 18, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 17, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Staged changes (1)                                                             |
+ added   file-one…                                                              |
+                                                                                |
+ Stashes                                                                        |
+ stash@0 On main: file-two                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git stash pop 1                                                               |
+                                                                                |
+styles_hash: a77b409cef95669e

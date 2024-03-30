@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ +line 4 (file-2)                                                               |
+ +line 5 (file-2)                                                               |
+ +line 6 (file-2)                                                               |
+ +line 7 (file-2)                                                               |
+ +line 8 (file-2)                                                               |
+ +line 9 (file-2)                                                               |
+ +line 10 (file-2)                                                              |
+ +line 11 (file-2)                                                              |
+ +line 12 (file-2)                                                              |
+ +line 13 (file-2)                                                              |
+ +line 14 (file-2)                                                              |
+ +line 15 (file-2)                                                              |
+ +line 16 (file-2)                                                              |
+ +line 17 (file-2)                                                              |
+ +line 18 (file-2)                                                              |
+ +line 19 (file-2)                                                              |
+ +line 20 (file-2)                                                              |
+ modified   file-3                                                              |
+ @@ -0,0 +1,20 @@                                                               |
+ +line 1 (file-3)                                                               |
+styles_hash: 55132c91106371d1

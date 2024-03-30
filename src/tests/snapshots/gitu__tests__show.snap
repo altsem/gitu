@@ -2,38 +2,24 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        " commit ________________________________________                                ",
-        " Author: Author Name <author@email.com>                                         ",
-        " Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        ",
-        "                                                                                ",
-        "     add firstfile                                                              ",
-        "                                                                                ",
-        "     Commit body goes here                                                      ",
-        "                                                                                ",
-        " added   firstfile                                                              ",
-        "▌@@ -0,0 +1 @@                                                                  ",
-        "▌+This should be visible                                                        ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 8, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 9, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 10, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 10, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 24, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+ commit ________________________________________                                |
+ Author: Author Name <author@email.com>                                         |
+ Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+                                                                                |
+     add firstfile                                                              |
+                                                                                |
+     Commit body goes here                                                      |
+                                                                                |
+ added   firstfile                                                              |
+▌@@ -0,0 +1 @@                                                                  |
+▌+This should be visible                                                        |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 44614a3f74e4311b
