@@ -13,11 +13,11 @@ harness = false
 pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
-insta = "1.36.1"
+insta = "1.38.0"
 
 [dependencies]
-chrono = "0.4.34"
-clap = { version = "4.5.3", features = ["derive"] }
+chrono = "0.4.37"
+clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
 directories = "5.0.1"
@@ -28,7 +28,7 @@ itertools = "0.12.0"
 log = "0.4.21"
 ratatui = { version = "0.26.1", features = ["serde"] }
 serde = { version = "1.0.152", features = ["derive"] }
-similar = { version = "2.4.0", features = ["unicode", "inline"] }
+similar = { version = "2.5.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
 toml = "0.8.12"
 tui-prompts = "0.3.8"
