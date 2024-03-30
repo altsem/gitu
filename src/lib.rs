@@ -23,6 +23,43 @@ use state::State;
 use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
 use term::Term;
 
+//                                An overview of Gitu's ui and terminology:
+//
+//                Screen (src/screen/*)
+//                  │
+//                  ▼
+//                 ┌──────────────────────────────────────────────────────────────────┐
+//        Item───┬─► On branch master                                                 │
+//        Item   └─► Your branch is up to date with 'origin/master'.                  │
+//        ...      │                                                                  │
+//                 │ Untracked files                                                  │
+//                 │ src/tests/rebase.rs                                              │
+//                 │                                                                  │
+//                 │ Unstaged changes (4)                                             │
+//                 │▌modified   src/keybinds.rs…                                      │
+//                 │ modified   src/ops/mod.rs…                                       │
+//                 │ modified   src/ops/rebase.rs…                                    │
+//                 │ modified   src/tests/mod.rs…                                     │
+//                 │                                                                  │
+//                 │ Stashes                                                          │
+//                 │ stash@0 On master: scroll                                        │
+//                 │ stash@1 WIP on fix/run-cmd-error-on-bad-exit: 098d14a feat: prom…│
+//                 │                                                                  │
+//                 │ Recent commits                                                   │
+// Ops (src/ops/*) ├──────────────────────────────────────────────────────────────────┤
+//       │         │Help                        Submenu      modified   src/keybinds.r│
+//       └─────┬───►g Refresh                   h Help       ret Show                 │
+//             └───►tab Toggle section          b Branch     K Discard                │
+//                 │k p ↑ Move up               c Commit     s Stage                  │
+//                 │j n ↓ Move down             f Fetch      u Unstage                │
+// Submenu ───────►│C-k C-p C-↑ Move up line    l Log                                 │
+//                 │C-j C-n C-↓ Move down line  F Pull                                │
+//                 │C-u Half page up            P Push                                │
+//                 │C-d Half page down          r Rebase                              │
+//                 │y Show refs                 X Reset                               │
+//                 │                            z Stash                               │
+//                 └──────────────────────────────────────────────────────────────────┘
+
 pub type Res<T> = Result<T, Box<dyn Error>>;
 
 pub(crate) enum CmdLogEntry {
