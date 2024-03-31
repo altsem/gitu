@@ -4,7 +4,7 @@
 
 A terminal user interface for Git. Inspired by Magit, and launched straight from the terminal.
 
-<img src="vhs/rec.gif"/>
+<img style="width: 720px" src="vhs/rec.gif"/>
 
 ### Features
 Gitu aims to implement many of the core features of Magit over time. 
@@ -34,16 +34,19 @@ A rough list of so-far supported features:
 ### Keybinds
 A help-menu can be shown by pressing the `h` key.
 
-<img src="vhs/help.png"/>
-
-### Installing Gitu
-[Installing Gitu](docs/installing.md)
+<img style="width: 720px" src="vhs/help.png"/>
 
 ### Configuration
 The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
 
 Configuration is also loaded from `~/.config/gitu/config.toml`,
 you could copy the [default configuration](src/default_config.toml).
+### Installing Gitu
+Pick your package manager:
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/gitu.svg)](https://repology.org/project/gitu/versions)
+
+...or follow the install instructions: [Installing Gitu](docs/installing.md)
 
 ### Contributing
 PRs are welcome!
