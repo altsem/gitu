@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
  +weehooo                                                                       |
  +blrergh                                                                       |
                                                                                 |
+ Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --reverse --recount                                        |
-                                                                                |
-styles_hash: c4fba1d39978c6e7
+styles_hash: 6847c43f05d43e7

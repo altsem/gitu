@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add -u .                                                                  |
-                                                                                |
-styles_hash: 578c69ac5f3fad82
+styles_hash: da5cd136a9bf8912

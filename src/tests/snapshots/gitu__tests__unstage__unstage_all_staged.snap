@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git reset HEAD --                                                             |
-                                                                                |
-styles_hash: 1e37dbcf2d9ecc04
+styles_hash: d392b4980ef581b2

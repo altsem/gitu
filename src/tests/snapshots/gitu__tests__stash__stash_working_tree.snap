@@ -15,11 +15,11 @@ expression: ctx.redact_buffer()
  _______ main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --staged                                                       |
-                                                                                |
 $ git stash push --include-untracked --message test                             |
-                                                                                |
 $ git stash pop 1                                                               |
-                                                                                |
-styles_hash: efc13709fc47701b
+styles_hash: 276caf6db4468d52

@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash pop 1                                                               |
-                                                                                |
-styles_hash: a77b409cef95669e
+styles_hash: ed1d8470a3b89318

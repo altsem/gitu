@@ -28,10 +28,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
                 .collect::<Vec<_>>()
                 .into();
 
-            (
-                text.lines.len() + 1,
-                Some(Paragraph::new(text).block(popup_block())),
-            )
+            (text.lines.len(), Some(Paragraph::new(text)))
         } else {
             (0, None)
         };
@@ -40,47 +37,64 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         let (lines, table) =
             format_keybinds_menu(&state.config, menu, state.screen().get_selected_item());
 
-        (lines + 1, Some(table.block(popup_block())))
+        (lines, Some(table))
     } else {
         (0, None)
     };
+
+    let menu_top_padding = if menu_len > 0 { 1 } else { 0 };
+    let prompt_top_padding = if state.prompt.data.is_some() { 1 } else { 0 };
+    let log_top_padding = if log_len > 0 { 1 } else { 0 };
 
     let layout = Layout::new(
         Direction::Vertical,
         [
             Constraint::Min(1),
-            Constraint::Length(log_len as u16),
+            Constraint::Length(menu_top_padding),
             Constraint::Length(menu_len as u16),
-            Constraint::Length(if state.prompt.data.is_some() { 2 } else { 0 }),
+            Constraint::Length(prompt_top_padding),
+            Constraint::Length(if state.prompt.data.is_some() { 1 } else { 0 }),
+            Constraint::Length(log_top_padding),
+            Constraint::Length(log_len as u16),
         ],
     )
     .split(frame.size());
 
     frame.render_widget(state.screen(), layout[0]);
 
-    if let Some(log) = maybe_log {
-        frame.render_widget(log, layout[1]);
-    }
     if let Some(menu) = maybe_menu {
+        frame.render_widget(popup_block(), layout[1]);
         frame.render_widget(menu, layout[2]);
     }
 
     if let Some(prompt_data) = &state.prompt.data {
-        let prompt = TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block());
-        frame.render_stateful_widget(prompt, layout[3], &mut state.prompt.state);
+        frame.render_widget(popup_block(), layout[3]);
+        let prompt = TextPrompt::new(prompt_data.prompt_text.clone());
+        frame.render_stateful_widget(prompt, layout[4], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
+    }
+
+    if let Some(log) = maybe_log {
+        frame.render_widget(popup_block(), layout[5]);
+        frame.render_widget(log, layout[6]);
     }
 }
 
 fn format_command<'a>(config: &Config, log: &Arc<RwLock<CmdLogEntry>>) -> Vec<Line<'a>> {
     match &*log.read().unwrap() {
         CmdLogEntry::Cmd { args, out } => [Line::styled(
-            format!("$ {}{}", args, if out.is_some() { "" } else { "..." }),
+            format!("{}{}", if out.is_some() { "$ " } else { "Running: " }, args),
             &config.style.command,
         )]
         .into_iter()
-        .chain(out.iter().flat_map(|out| Text::raw(out.to_string()).lines))
+        .chain(out.iter().flat_map(|out| {
+            if out.is_empty() {
+                vec![]
+            } else {
+                Text::raw(out.to_string()).lines
+            }
+        }))
         .collect::<Vec<_>>(),
         CmdLogEntry::Error(err) => {
             vec![Line::styled(

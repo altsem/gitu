@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git rebase main                                                               |
-                                                                                |
-styles_hash: 66509308af71a94c
+styles_hash: 6daa3533e8314a9e
