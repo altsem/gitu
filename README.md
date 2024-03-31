@@ -7,31 +7,22 @@ A terminal user interface for Git. Inspired by Magit, and launched straight from
 <img style="width: 720px" src="vhs/rec.gif"/>
 
 ### Features
-Gitu aims to implement many of the core features of Magit over time. 
-It should be familiar to any previous Magit users.
-
-A rough list of so-far supported features:
-- File/Hunk/Line-level stage/unstage
-- Show (view commits / open EDITOR at line)
-- Show branches
-- Branch:
-  - checkout, checkout new
-- Commit:
-  - commit, amend, fixup
-- Fetch:
-  - all
-- Log:
-  - current, other
-- Pull / Push:
-  - remote
-- Rebase:
-  - abort, continue, autosquash, interactive
-- Reset:
-  - Soft, Mixed, Hard
-- Stash:
-  - save, pop, apply, drop
+Gitu aims to implement many of the core features of Magit over time.
+It should be familiar to any previous Magit users.\
+Here's a list of so-far supported features:
+- **Staging/Unstaging** _(file, hunk, line)_ 
+- **Showing** _(view commits / open EDITOR at line)_
+- **Branching** _(checkout, checkout new)_
+- **Commiting** _(commit, amend, fixup)_
+- **Fetching**
+- **Logging** _(current, other)_
+- **Pulling / Pushing** _(You may want to configure a [push.default](https://git-scm.com/docs/git-config/#Documentation/git-config.txt-pushdefault))_
+- **Rebasing** _(elsewhere, abort, continue, autosquash, interactive)_
+- **Resetting** _(soft, mixed, hard)_
+- **Stashing** _(save, pop, apply, drop)_
 
 ### Keybinds
+Keybinds try mimic Magit and Vim.
 A help-menu can be shown by pressing the `h` key.
 
 <img style="width: 720px" src="vhs/help.png"/>
