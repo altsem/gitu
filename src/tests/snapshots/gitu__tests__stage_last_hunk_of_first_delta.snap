@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
  _______ add file-one                                                           |
  _______ origin/main add initial-file                                           |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached                                                            |
-                                                                                |
-styles_hash: 3974ddc8dcf079d7
+styles_hash: d68295efec82de5f

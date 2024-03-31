@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --include-untracked --message test                             |
-                                                                                |
-styles_hash: a21f2b277eae9406
+styles_hash: 3cf025e810662146

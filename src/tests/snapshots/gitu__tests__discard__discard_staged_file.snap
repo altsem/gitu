@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
 ▌_______ main add file-one                                                      |
  _______ origin/main add initial-file                                           |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout HEAD -- file-one                                                 |
-                                                                                |
-styles_hash: 3443e97838d7c625
+styles_hash: a3f19b2153c6a71

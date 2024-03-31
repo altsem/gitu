@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add file-a file-b                                                         |
-                                                                                |
-styles_hash: eb0fe93ebd344926
+styles_hash: 8de03ccd9895ecb7
