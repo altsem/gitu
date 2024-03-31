@@ -14,7 +14,7 @@ impl OpTrait for FetchAll {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, term| {
             let mut cmd = Command::new("git");
-            cmd.args(["fetch", "--all"]);
+            cmd.args(["fetch", "--all", "--jobs", "10"]);
 
             state.run_cmd_async(term, &[], cmd)?;
             Ok(())
