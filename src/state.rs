@@ -1,6 +1,12 @@
+use std::error::Error;
+use std::io::Read;
+use std::ops::DerefMut;
+use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::RwLock;
 
 use crossterm::event;
 use crossterm::event::Event;
@@ -13,10 +19,10 @@ use tui_prompts::Status;
 
 use crate::cli;
 use crate::config::Config;
-use crate::handle_op;
 use crate::keybinds;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
+use crate::ops::Op;
 use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
@@ -34,13 +40,21 @@ pub(crate) struct State {
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
-    pub current_cmd_log_entries: Vec<CmdLogEntry>,
+    pub pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
+    enable_async_cmds: bool,
+    pub current_cmd_log_entries: Vec<Arc<RwLock<CmdLogEntry>>>,
     pub prompt: prompt::Prompt,
     next_input_is_arg: bool,
 }
 
 impl State {
-    pub fn create(repo: Repository, size: Rect, args: &cli::Args, config: Config) -> Res<Self> {
+    pub fn create(
+        repo: Repository,
+        size: Rect,
+        args: &cli::Args,
+        config: Config,
+        enable_async_cmds: bool,
+    ) -> Res<Self> {
         let repo = Rc::new(repo);
         let config = Rc::new(config);
 
@@ -63,8 +77,10 @@ impl State {
         Ok(Self {
             repo,
             config,
+            enable_async_cmds,
             quit: false,
             screens,
+            pending_cmd: None,
             pending_menu: None,
             current_cmd_log_entries: vec![],
             prompt: prompt::Prompt::new(),
@@ -84,7 +100,9 @@ impl State {
                     if self.prompt.state.is_focused() {
                         self.prompt.state.handle_key_event(key)
                     } else if key.kind == KeyEventKind::Press {
-                        self.current_cmd_log_entries.clear();
+                        if self.pending_cmd.is_none() {
+                            self.current_cmd_log_entries.clear();
+                        }
 
                         self.handle_key_input(term, key)?;
                     }
@@ -95,7 +113,14 @@ impl State {
             self.update_prompt(term)?;
         }
 
-        if self.screens.last_mut().is_some() {
+        let handle_pending_cmd_result = self.handle_pending_cmd();
+        let pending_cmd_done = self
+            .handle_result(handle_pending_cmd_result)
+            .unwrap_or(true);
+
+        let needs_redraw = !events.is_empty() || pending_cmd_done;
+
+        if needs_redraw && self.screens.last_mut().is_some() {
             term.draw(|frame| ui::ui(frame, self))?;
         }
 
@@ -116,7 +141,7 @@ impl State {
                 }
                 Err(error) => self
                     .current_cmd_log_entries
-                    .push(CmdLogEntry::Error(error.to_string())),
+                    .push(Arc::new(RwLock::new(CmdLogEntry::Error(error.to_string())))),
             }
         }
 
@@ -139,10 +164,42 @@ impl State {
         self.next_input_is_arg = pending.is_some() && key.code == KeyCode::Char('-');
 
         if let Some(op) = maybe_op {
-            handle_op(self, op, term)?;
+            self.handle_op(op, term)?;
         }
 
         Ok(())
+    }
+
+    pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
+        let target = self.screen().get_selected_item().target_data.as_ref();
+        if let Some(mut action) = op.implementation().get_action(target) {
+            let result = Rc::get_mut(&mut action).unwrap()(self, term);
+
+            self.close_menu(op);
+            self.handle_result(result);
+        }
+
+        Ok(())
+    }
+
+    fn handle_result<T>(&mut self, result: Result<T, Box<dyn Error>>) -> Option<T> {
+        match result {
+            Ok(value) => Some(value),
+            Err(error) => {
+                self.current_cmd_log_entries
+                    .push(Arc::new(RwLock::new(CmdLogEntry::Error(error.to_string()))));
+
+                None
+            }
+        }
+    }
+
+    fn close_menu(&mut self, op: Op) {
+        match op {
+            Op::Menu(_) => (),
+            Op::ToggleArg(_) => (),
+            _ => self.pending_menu = None,
+        }
     }
 
     pub fn screen_mut(&mut self) -> &mut Screen {
@@ -153,7 +210,22 @@ impl State {
         self.screens.last().expect("No screen")
     }
 
-    pub fn run_cmd(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
+    /// Runs a `Command` and handles its output.
+    /// Will block awaiting its completion.
+    pub fn run_cmd(&mut self, term: &mut Term, input: &[u8], cmd: Command) -> Res<()> {
+        self.run_cmd_async(term, input, cmd)?;
+        self.await_pending_cmd()?;
+        self.handle_pending_cmd()?;
+        Ok(())
+    }
+
+    /// Runs a `Command` and handles its output asynchronously (if async commands are enabled).
+    /// Will return `Ok(())` if one is already running.
+    pub fn run_cmd_async(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
+        if self.pending_cmd.is_some() {
+            return Err("A command is already running".into());
+        }
+
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
@@ -162,10 +234,11 @@ impl State {
 
         let display = command_args(&cmd);
 
-        self.current_cmd_log_entries.push(CmdLogEntry::Cmd {
+        let log_entry = Arc::new(RwLock::new(CmdLogEntry::Cmd {
             args: display,
             out: None,
-        });
+        }));
+        self.current_cmd_log_entries.push(Arc::clone(&log_entry));
         term.draw(|frame| ui::ui(frame, self))?;
 
         let mut child = cmd.spawn()?;
@@ -173,34 +246,47 @@ impl State {
         use std::io::Write;
         child.stdin.take().unwrap().write_all(input)?;
 
-        let out = child.wait_with_output()?;
-        let out_string = String::from_utf8(out.stderr.clone())?;
+        self.pending_cmd = Some((child, log_entry));
 
-        let Some(CmdLogEntry::Cmd { out: out_log, args }) = self.current_cmd_log_entries.last_mut()
-        else {
-            unreachable!();
-        };
-
-        *out_log = Some(out_string.into());
-
-        if !out.status.success() {
-            return Err(format!(
-                "'{}' exited with code: {}",
-                args,
-                out.status
-                    .code()
-                    .map(|c| c.to_string())
-                    .unwrap_or("".to_string())
-            )
-            .into());
+        if !self.enable_async_cmds {
+            self.await_pending_cmd()?;
         }
-
-        self.screen_mut().update()?;
 
         Ok(())
     }
 
+    fn await_pending_cmd(&mut self) -> Res<()> {
+        if let Some((child, _)) = &mut self.pending_cmd {
+            child.wait()?;
+        }
+        Ok(())
+    }
+
+    /// Handles any pending_cmd in State without blocking. Returns `true` if a cmd was handled.
+    pub fn handle_pending_cmd(&mut self) -> Res<bool> {
+        let Some((ref mut child, ref mut log_rwlock)) = self.pending_cmd else {
+            return Ok(false);
+        };
+
+        let Some(status) = child.try_wait()? else {
+            return Ok(false);
+        };
+
+        log::debug!("pending cmd finished with {:?}", status);
+
+        let result = write_child_output_to_log(log_rwlock, child, status);
+        self.pending_cmd = None;
+        result?;
+
+        self.screen_mut().update()?;
+        Ok(true)
+    }
+
     pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
+        if self.pending_cmd.is_some() {
+            return Err("A command is already running".into());
+        }
+
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
@@ -208,14 +294,15 @@ impl State {
 
         let out = child.wait_with_output()?;
 
-        self.current_cmd_log_entries.push(CmdLogEntry::Cmd {
-            args: command_args(&cmd),
-            out: Some(
-                String::from_utf8(out.stderr.clone())
-                    .expect("Error turning command output to String")
-                    .into(),
-            ),
-        });
+        self.current_cmd_log_entries
+            .push(Arc::new(RwLock::new(CmdLogEntry::Cmd {
+                args: command_args(&cmd),
+                out: Some(
+                    String::from_utf8(out.stderr.clone())
+                        .expect("Error turning command output to String")
+                        .into(),
+                ),
+            })));
 
         // Prevents cursor flash when exiting editor
         term.hide_cursor()?;
@@ -239,4 +326,45 @@ impl State {
 
         Ok(())
     }
+}
+
+fn write_child_output_to_log(
+    log_rwlock: &mut Arc<RwLock<CmdLogEntry>>,
+    child: &mut Child,
+    status: std::process::ExitStatus,
+) -> Result<(), Box<dyn Error>> {
+    let mut log = log_rwlock.write().unwrap();
+
+    let CmdLogEntry::Cmd { args, out: out_log } = log.deref_mut() else {
+        unreachable!("pending_cmd is always CmdLogEntry::Cmd variant");
+    };
+
+    drop(child.stdin.take());
+
+    let mut stderr = vec![];
+    log::debug!("Reading stderr");
+
+    child
+        .stderr
+        .take()
+        .unwrap()
+        .read_to_end(&mut stderr)
+        .map_err(|e| format!("Couldn't read cmd output: {}", e))?;
+
+    let out_string = String::from_utf8(stderr.clone())?;
+    *out_log = Some(out_string.into());
+
+    if !status.success() {
+        return Err(format!(
+            "'{}' exited with code: {}",
+            args,
+            status
+                .code()
+                .map(|c| c.to_string())
+                .unwrap_or("".to_string())
+        )
+        .into());
+    }
+
+    Ok(())
 }

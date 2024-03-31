@@ -57,10 +57,12 @@ impl TestContext {
             self.size,
             &Args::default(),
             config::init_test_config().unwrap(),
+            false,
         )
         .unwrap();
 
-        state.update(&mut self.term, &[]).unwrap();
+        // hack: Pass in an event just to force re-rendering
+        state.update(&mut self.term, &[Event::FocusGained]).unwrap();
         state
     }
 

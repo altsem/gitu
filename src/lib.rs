@@ -14,13 +14,12 @@ pub mod term;
 mod tests;
 mod ui;
 
-use crossterm::event::{self};
+use crossterm::event::{self, Event};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
-use ops::{Action, Op};
-use state::State;
-use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
+use ops::Action;
+use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, time::Duration};
 use term::Term;
 
 //                                An overview of Gitu's ui and terminology:
@@ -97,47 +96,24 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let config = config::init_config()?;
 
     log::debug!("Creating initial state");
-    let mut state = state::State::create(repo, term.size()?, args, config)?;
+    let mut state = state::State::create(repo, term.size()?, args, config, true)?;
 
-    log::debug!("Drawing initial frame");
-    term.draw(|frame| ui::ui(frame, &mut state))?;
+    log::debug!("Initial update");
+    state.update(term, &[Event::FocusGained])?;
 
     if args.print {
         return Ok(());
     }
 
     while !state.quit {
-        log::debug!("Awaiting event");
-        let event = event::read()?;
+        let events = if event::poll(Duration::from_millis(100))? {
+            vec![event::read()?]
+        } else {
+            vec![]
+        };
 
-        log::debug!("Updating");
-        state.update(term, &[event])?;
+        state.update(term, &events)?;
     }
 
     Ok(())
-}
-
-pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
-    let target = state.screen().get_selected_item().target_data.as_ref();
-    if let Some(mut action) = op.implementation().get_action(target) {
-        let result = Rc::get_mut(&mut action).unwrap()(state, term);
-
-        close_menu(state, op);
-
-        if let Err(error) = result {
-            state
-                .current_cmd_log_entries
-                .push(CmdLogEntry::Error(error.to_string()));
-        }
-    }
-
-    Ok(())
-}
-
-fn close_menu(state: &mut State, op: Op) {
-    match op {
-        Op::Menu(_) => (),
-        Op::ToggleArg(_) => (),
-        _ => state.pending_menu = None,
-    }
 }

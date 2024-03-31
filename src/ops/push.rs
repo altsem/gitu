@@ -17,7 +17,7 @@ impl OpTrait for Push {
             cmd.args(["push"]);
             cmd.args(state.pending_menu.as_ref().unwrap().args());
 
-            state.run_cmd(term, &[], cmd)?;
+            state.run_cmd_async(term, &[], cmd)?;
             Ok(())
         }))
     }

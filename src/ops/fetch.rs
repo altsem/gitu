@@ -16,7 +16,7 @@ impl OpTrait for FetchAll {
             let mut cmd = Command::new("git");
             cmd.args(["fetch", "--all"]);
 
-            state.run_cmd(term, &[], cmd)?;
+            state.run_cmd_async(term, &[], cmd)?;
             Ok(())
         }))
     }
