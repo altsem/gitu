@@ -16,7 +16,7 @@ impl OpTrait for Pull {
             let mut cmd = Command::new("git");
             cmd.args(["pull"]);
 
-            state.run_cmd(term, &[], cmd)?;
+            state.run_cmd_async(term, &[], cmd)?;
             Ok(())
         }))
     }

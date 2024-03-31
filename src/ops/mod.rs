@@ -8,6 +8,7 @@ use std::{
     fmt::Display,
     process::Command,
     rc::Rc,
+    sync::{Arc, RwLock},
 };
 
 pub(crate) mod checkout;
@@ -169,24 +170,25 @@ pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Ac
 }
 
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
-    let update_fn = Rc::new(move |state: &mut State, term: &mut Term| {
-        if state.prompt.state.status().is_pending() {
-            match state.prompt.state.value() {
-                "y" => {
-                    Rc::get_mut(&mut action).unwrap()(state, term)?;
-                    state.prompt.reset(term)?;
-                }
-                "" => (),
-                _ => {
-                    state
-                        .current_cmd_log_entries
-                        .push(CmdLogEntry::Error("Aborted".to_string()));
-                    state.prompt.reset(term)?;
+    let update_fn =
+        Rc::new(move |state: &mut State, term: &mut Term| {
+            if state.prompt.state.status().is_pending() {
+                match state.prompt.state.value() {
+                    "y" => {
+                        Rc::get_mut(&mut action).unwrap()(state, term)?;
+                        state.prompt.reset(term)?;
+                    }
+                    "" => (),
+                    _ => {
+                        state.current_cmd_log_entries.push(Arc::new(RwLock::new(
+                            CmdLogEntry::Error("Aborted".to_string()),
+                        )));
+                        state.prompt.reset(term)?;
+                    }
                 }
             }
-        }
-        Ok(())
-    });
+            Ok(())
+        });
 
     Rc::new(move |state: &mut State, _term: &mut Term| {
         state.prompt.set(PromptData {
