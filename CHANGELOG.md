@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] - 2024-04-01
+
+### 🚀 Features
+
+- Set '--jobs' to 10 when running 'git fetch'
+- Run fetch, pull and push without blocking the ui
+- Implement 'rebase elsewhere', it prompts you where to rebase
+- Prompt for rev on reset soft/mixed/hard
+- Show multiple command outputs in popup
+
+### 🐛 Bug Fixes
+
+- Improve error-handling of external commands
+- Discarding staged files wouldn't work
+
+### 🎨 Styling
+
+- Change command popup to be more intuitive
+
 ## [0.11.0] - 2024-03-27
 
 ### 🚀 Features
