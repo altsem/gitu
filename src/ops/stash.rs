@@ -34,10 +34,6 @@ impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
             if state.prompt.state.status().is_done() {
-                if is_working_tree_empty(&state.repo)? {
-                    state.prompt.reset(term)?;
-                    return Ok(());
-                }
                 let input = state.prompt.state.value().to_string();
                 state.prompt.reset(term)?;
 
@@ -67,11 +63,13 @@ impl OpTrait for StashWorktree {
 
         Some(Rc::new(
             move |state: &mut State, _term: &mut Term| -> Res<()> {
-                state.prompt.set(PromptData {
+                if is_working_tree_empty(&state.repo)? {
+                    return Ok(());
+                }
+                Ok(state.prompt.set(PromptData {
                     prompt_text: "Name of the stash:".into(),
                     update_fn: Rc::new(update_fn),
-                });
-                Ok(())
+                }))
             },
         ))
     }
