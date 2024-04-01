@@ -13,12 +13,7 @@ fn setup_log() -> (TestContext, crate::state::State) {
 fn log_other_prompt() {
     let (mut ctx, mut state) = setup_log();
 
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('l'), key('j'), key('l'), key('o')],
-        )
-        .unwrap();
+    state.update(&mut ctx.term, &keys("lljlo")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -26,19 +21,7 @@ fn log_other_prompt() {
 fn log_other() {
     let (mut ctx, mut state) = setup_log();
 
-    state
-        .update(
-            &mut ctx.term,
-            &[
-                key('l'),
-                key('l'),
-                key('j'),
-                key('l'),
-                key('o'),
-                key_code(KeyCode::Enter),
-            ],
-        )
-        .unwrap();
+    state.update(&mut ctx.term, &keys("lljlo<enter>")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -47,20 +30,7 @@ fn log_other_input() {
     let (mut ctx, mut state) = setup_log();
 
     state
-        .update(
-            &mut ctx.term,
-            &[
-                key('l'),
-                key('o'),
-                key('m'),
-                key('a'),
-                key('i'),
-                key('n'),
-                key('~'),
-                key('1'),
-                key_code(KeyCode::Enter),
-            ],
-        )
+        .update(&mut ctx.term, &keys("lomain~1<enter>"))
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -69,11 +39,6 @@ fn log_other_input() {
 fn log_other_invalid() {
     let (mut ctx, mut state) = setup_log();
 
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('o'), key(' '), key_code(KeyCode::Enter)],
-        )
-        .unwrap();
+    state.update(&mut ctx.term, &keys("lo <enter>")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
