@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  _______ main add initial-file                                                  |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git fetch --all                                                               |
+$ git fetch --all --jobs 10                                                     |
 From                                                                            |
    _______.._______  main       -> origin/main                                  |
-styles_hash: e3067664e8c49cab
+styles_hash: 9abd69e9f3959610
