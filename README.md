@@ -22,7 +22,7 @@ Here's a list of so-far supported features:
 - **Stashing** _(save, pop, apply, drop)_
 
 ### Keybinds
-Keybinds try mimic Magit and Vim.
+Keybinds try mimic Magit, while staying Vim-like.
 A help-menu can be shown by pressing the `h` key.
 
 <img style="width: 720px" src="vhs/help.png"/>
@@ -33,11 +33,10 @@ The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this or
 Configuration is also loaded from `~/.config/gitu/config.toml`,
 you could copy the [default configuration](src/default_config.toml).
 ### Installing Gitu
-Pick your package manager:
+Follow the install instructions: [Installing Gitu](docs/installing.md)\
+Or install from your package manager:
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/gitu.svg)](https://repology.org/project/gitu/versions)
-
-...or follow the install instructions: [Installing Gitu](docs/installing.md)
 
 ### Contributing
 PRs are welcome!
