@@ -490,20 +490,7 @@ mod stash {
     pub(crate) fn stash_working_tree_when_everything_is_staged() {
         let (mut ctx, mut state) = setup();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('j'),
-                    key('s'),
-                    key('z'),
-                    key('w'),
-                    key('t'),
-                    key('e'),
-                    key('s'),
-                    key('t'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
+            .update(&mut ctx.term, &[key('j'), key('s'), key('z'), key('w')])
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }

@@ -20,6 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: 7c1d9944e66300a6
+────────────────────────────────────────────────────────────────────────────────|
+! Cannot stash: working tree is empty                                           |
+styles_hash: e729373ba41fd709
