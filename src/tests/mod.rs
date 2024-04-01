@@ -228,6 +228,20 @@ mod stage {
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
+
+    #[test]
+    fn stage_changes_crlf() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        commit(ctx.dir.path(), "testfile", "testing\r\ntesttest");
+        fs::write(ctx.dir.child("testfile"), "test\r\ntesttest").expect("error writing to file");
+
+        let mut state = ctx.init_state();
+        state
+            .update(&mut ctx.term, &[key('j'), key('j'), key_code(KeyCode::Tab)])
+            .unwrap();
+
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
 }
 
 #[test]

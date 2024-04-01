@@ -223,7 +223,9 @@ fn format_line_change(config: &Config, change: &similar::InlineChange<str>) -> L
     let spans = iter::once(Span::styled(format!("{}", change.tag()), line_style))
         .chain(change.iter_strings_lossy().map(|(emph, value)| {
             Span::styled(
-                value.trim_end_matches('\n').to_string(),
+                value
+                    .trim_end_matches(|s| s == '\r' || s == '\n')
+                    .to_string(),
                 if some_emph {
                     if emph {
                         line_style.patch(&style.line_highlight.changed)
