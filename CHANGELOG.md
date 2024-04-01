@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.1] - 2024-04-01
+
+### 🐛 Bug Fixes
+
+- Resolve issue showing files with crlf
+
 ## [0.12.0] - 2024-04-01
 
 ### 🚀 Features
