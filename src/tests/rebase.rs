@@ -15,7 +15,7 @@ fn setup_rebase() -> (TestContext, crate::state::State) {
 fn rebase_menu() {
     let (mut ctx, mut state) = setup_rebase();
 
-    state.update(&mut ctx.term, &[key('r')]).unwrap();
+    state.update(&mut ctx.term, &keys("r")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -23,7 +23,7 @@ fn rebase_menu() {
 fn rebase_elsewhere_prompt() {
     let (mut ctx, mut state) = setup_rebase();
 
-    state.update(&mut ctx.term, &[key('r'), key('e')]).unwrap();
+    state.update(&mut ctx.term, &keys("re")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -31,19 +31,6 @@ fn rebase_elsewhere_prompt() {
 fn rebase_elsewhere() {
     let (mut ctx, mut state) = setup_rebase();
 
-    state
-        .update(
-            &mut ctx.term,
-            &[
-                key('r'),
-                key('e'),
-                key('m'),
-                key('a'),
-                key('i'),
-                key('n'),
-                key_code(KeyCode::Enter),
-            ],
-        )
-        .unwrap();
+    state.update(&mut ctx.term, &keys("remain<enter>")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }

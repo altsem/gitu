@@ -1,4 +1,3 @@
-use crossterm::event::KeyCode;
 use itertools::Itertools;
 use std::fs;
 
@@ -6,7 +5,7 @@ mod helpers;
 mod log;
 mod rebase;
 
-use helpers::{clone_and_commit, commit, ctrl, key, key_code, run, TestContext};
+use helpers::{clone_and_commit, commit, keys, run, TestContext};
 
 #[test]
 fn no_repo() {
@@ -21,7 +20,7 @@ fn help_menu() {
     let mut ctx = TestContext::setup_init(80, 20);
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('h')]).unwrap();
+    state.update(&mut ctx.term, &keys("h")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -49,9 +48,7 @@ fn unstaged_changes() {
     fs::write(ctx.dir.child("testfile"), "test\ntesttest").expect("error writing to file");
 
     let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('j'), key('j'), key_code(KeyCode::Tab)])
-        .unwrap();
+    state.update(&mut ctx.term, &keys("jj<tab>")).unwrap();
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -63,9 +60,7 @@ fn binary_file() {
     run(ctx.dir.path(), &["git", "add", "."]);
 
     let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('j'), key('j'), key_code(KeyCode::Tab)])
-        .unwrap();
+    state.update(&mut ctx.term, &keys("jj<tab>")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -79,9 +74,7 @@ mod unstage {
         run(ctx.dir.path(), &["git", "add", "one", "two"]);
 
         let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &[key('j'), key('j'), key('j'), key('u')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jjju")).unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -95,17 +88,7 @@ mod unstage {
 
         let mut state = ctx.init_state();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key_code(KeyCode::Tab),
-                    ctrl('j'),
-                    ctrl('j'),
-                    key('u'),
-                ],
-            )
+            .update(&mut ctx.term, &keys("jj<tab><ctrl+j><ctrl+j>u"))
             .unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
@@ -122,16 +105,7 @@ mod unstage {
         state
             .update(
                 &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key_code(KeyCode::Tab),
-                    ctrl('j'),
-                    ctrl('j'),
-                    ctrl('j'),
-                    ctrl('j'),
-                    key('u'),
-                ],
+                &keys("jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>u"),
             )
             .unwrap();
 
@@ -162,7 +136,7 @@ mod stage {
         fs::write(ctx.dir.child("secondfile"), "blahonga\n").unwrap();
 
         let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &[key('j'), key('s')]).unwrap();
+        state.update(&mut ctx.term, &keys("js")).unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -174,7 +148,7 @@ mod stage {
         run(ctx.dir.path(), &["touch", "file-b"]);
 
         let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &[key('j'), key('s')]).unwrap();
+        state.update(&mut ctx.term, &keys("js")).unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -187,17 +161,7 @@ mod stage {
 
         let mut state = ctx.init_state();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key_code(KeyCode::Tab),
-                    ctrl('j'),
-                    ctrl('j'),
-                    key('s'),
-                ],
-            )
+            .update(&mut ctx.term, &keys("jj<tab><ctrl+j><ctrl+j>s"))
             .unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
@@ -213,16 +177,7 @@ mod stage {
         state
             .update(
                 &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key_code(KeyCode::Tab),
-                    ctrl('j'),
-                    ctrl('j'),
-                    ctrl('j'),
-                    ctrl('j'),
-                    key('s'),
-                ],
+                &keys("jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>s"),
             )
             .unwrap();
 
@@ -236,9 +191,7 @@ mod stage {
         fs::write(ctx.dir.child("testfile"), "test\r\ntesttest").expect("error writing to file");
 
         let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &[key('j'), key('j'), key_code(KeyCode::Tab)])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jj<tab>")).unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -253,7 +206,7 @@ fn log() {
     run(ctx.dir.path(), &["git", "tag", "a-tag"]);
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('l'), key('l')]).unwrap();
+    state.update(&mut ctx.term, &keys("ll")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -263,12 +216,7 @@ fn show() {
     commit(ctx.dir.path(), "firstfile", "This should be visible\n");
 
     let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[key('l'), key('l'), key_code(KeyCode::Enter)],
-        )
-        .unwrap();
+    state.update(&mut ctx.term, &keys("ll<enter>")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -325,7 +273,7 @@ fn hide_untracked() {
     let mut state = ctx.init_state();
     let mut config = state.repo.config().unwrap();
     config.set_str("status.showUntrackedFiles", "off").unwrap();
-    state.update(&mut ctx.term, &[key('g')]).unwrap();
+    state.update(&mut ctx.term, &keys("g")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -347,7 +295,7 @@ mod push {
         commit(ctx.dir.path(), "new-file", "");
 
         let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &[key('P'), key('p')]).unwrap();
+        state.update(&mut ctx.term, &keys("Pp")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -357,9 +305,7 @@ mod push {
         commit(ctx.dir.path(), "new-file", "");
 
         let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &[key('P'), key('-'), key('f'), key('p')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("P-fp")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -369,7 +315,7 @@ mod push {
         commit(ctx.dir.path(), "new-file", "");
 
         let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &[key('-'), key('P')]).unwrap();
+        state.update(&mut ctx.term, &keys("-P")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 }
@@ -380,7 +326,7 @@ fn fetch_all() {
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('f'), key('a')]).unwrap();
+    state.update(&mut ctx.term, &keys("fa")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -390,18 +336,13 @@ fn pull() {
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('F'), key('p')]).unwrap();
+    state.update(&mut ctx.term, &keys("Fp")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 mod stash {
-    use super::helpers::key;
-    use super::helpers::key_code;
-    use super::helpers::run;
-    use super::helpers::TestContext;
+    use super::*;
     use crate::state::State;
-    use crossterm::event::KeyCode;
-    use std::fs;
 
     fn setup() -> (TestContext, State) {
         let mut ctx = TestContext::setup_clone(80, 20);
@@ -415,97 +356,56 @@ mod stash {
     #[test]
     pub(crate) fn stash_menu() {
         let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &[key('z')]).unwrap();
+        state.update(&mut ctx.term, &keys("z")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_prompt() {
         let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &[key('z'), key('z')]).unwrap();
+        state.update(&mut ctx.term, &keys("zz")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash() {
         let (mut ctx, mut state) = setup();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('z'),
-                    key('z'),
-                    key('t'),
-                    key('e'),
-                    key('s'),
-                    key('t'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zztest<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_index_prompt() {
         let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &[key('z'), key('i')]).unwrap();
+        state.update(&mut ctx.term, &keys("zi")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_index() {
         let (mut ctx, mut state) = setup();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('z'),
-                    key('i'),
-                    key('t'),
-                    key('e'),
-                    key('s'),
-                    key('t'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zitest<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_working_tree_prompt() {
         let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &[key('z'), key('w')]).unwrap();
+        state.update(&mut ctx.term, &keys("zw")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_working_tree() {
         let (mut ctx, mut state) = setup();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('z'),
-                    key('w'),
-                    key('t'),
-                    key('e'),
-                    key('s'),
-                    key('t'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zwtest<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_working_tree_when_everything_is_staged() {
         let (mut ctx, mut state) = setup();
-        state
-            .update(&mut ctx.term, &[key('j'), key('s'), key('z'), key('w')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jszw")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -513,22 +413,7 @@ mod stash {
     pub(crate) fn stash_working_tree_when_nothing_is_staged() {
         let (mut ctx, mut state) = setup();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key('j'),
-                    key('u'),
-                    key('z'),
-                    key('w'),
-                    key('t'),
-                    key('e'),
-                    key('s'),
-                    key('t'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
+            .update(&mut ctx.term, &keys("jjjuzwtest<enter>"))
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -536,60 +421,21 @@ mod stash {
     #[test]
     pub(crate) fn stash_keeping_index_prompt() {
         let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &[key('z'), key('x')]).unwrap();
+        state.update(&mut ctx.term, &keys("zx")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_keeping_index() {
         let (mut ctx, mut state) = setup();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('z'),
-                    key('x'),
-                    key('t'),
-                    key('e'),
-                    key('s'),
-                    key('t'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zxtest<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     fn setup_two_stashes() -> (TestContext, State) {
         let (mut ctx, mut state) = setup();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('z'),
-                    key('i'),
-                    key('f'),
-                    key('i'),
-                    key('l'),
-                    key('e'),
-                    key('-'),
-                    key('o'),
-                    key('n'),
-                    key('e'),
-                    key_code(KeyCode::Enter),
-                    key('z'),
-                    key('z'),
-                    key('f'),
-                    key('i'),
-                    key('l'),
-                    key('e'),
-                    key('-'),
-                    key('t'),
-                    key('w'),
-                    key('o'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
+            .update(&mut ctx.term, &keys("zifile-one<enter>zzfile-two<enter>"))
             .unwrap();
         (ctx, state)
     }
@@ -597,105 +443,69 @@ mod stash {
     #[test]
     pub(crate) fn stash_pop_prompt() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &[key('z'), key('p')]).unwrap();
+        state.update(&mut ctx.term, &keys("zp")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_pop() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('z'), key('p'), key('1'), key_code(KeyCode::Enter)],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zp1<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_pop_default() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('z'), key('p'), key_code(KeyCode::Enter)],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zp<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_apply_prompt() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &[key('z'), key('a')]).unwrap();
+        state.update(&mut ctx.term, &keys("za")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_apply() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('z'), key('a'), key('1'), key_code(KeyCode::Enter)],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("za1<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_apply_default() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('z'), key('a'), key_code(KeyCode::Enter)],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("za<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_drop_prompt() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &[key('z'), key('k')]).unwrap();
+        state.update(&mut ctx.term, &keys("zk")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_drop() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('z'), key('k'), key('1'), key_code(KeyCode::Enter)],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zk1<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
     #[test]
     pub(crate) fn stash_drop_default() {
         let (mut ctx, mut state) = setup_two_stashes();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('z'), key('k'), key_code(KeyCode::Enter)],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("zk<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 }
 
 mod discard {
-    use super::helpers::commit;
-    use super::helpers::key;
-    use super::helpers::key_code;
-    use super::helpers::run;
-    use super::helpers::TestContext;
-    use crossterm::event::KeyCode;
-    use std::fs;
+    use super::*;
 
     #[test]
     pub(crate) fn discard_branch_confirm_prompt() {
@@ -704,9 +514,7 @@ mod discard {
             run(ctx.dir.path(), &["git", "branch", "asd"]);
             let mut state = ctx.init_state();
 
-            state
-                .update(&mut ctx.term, &[key('y'), key('j'), key('K')])
-                .unwrap();
+            state.update(&mut ctx.term, &keys("yjK")).unwrap();
             ctx
         };
         insta::assert_snapshot!(ctx.redact_buffer());
@@ -718,9 +526,7 @@ mod discard {
         run(ctx.dir.path(), &["git", "branch", "asd"]);
         let mut state = ctx.init_state();
 
-        state
-            .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('y')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("yjKy")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -730,9 +536,7 @@ mod discard {
         run(ctx.dir.path(), &["git", "branch", "asd"]);
         let mut state = ctx.init_state();
 
-        state
-            .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('n')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("yjKn")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -742,9 +546,7 @@ mod discard {
         run(ctx.dir.path(), &["touch", "some-file"]);
         let mut state = ctx.init_state();
 
-        state
-            .update(&mut ctx.term, &[key('j'), key('j'), key('K'), key('y')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jjKy")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -756,9 +558,7 @@ mod discard {
 
         let mut state = ctx.init_state();
 
-        state
-            .update(&mut ctx.term, &[key('j'), key('j'), key('K'), key('y')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jjKy")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -770,19 +570,7 @@ mod discard {
 
         let mut state = ctx.init_state();
 
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key_code(KeyCode::Tab),
-                    key('j'),
-                    key('K'),
-                    key('y'),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jj<tab>jKy")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -795,9 +583,7 @@ mod discard {
 
         let mut state = ctx.init_state();
 
-        state
-            .update(&mut ctx.term, &[key('j'), key('j'), key('K'), key('y')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("jjKy")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -807,7 +593,7 @@ mod discard {
     //     let mut ctx = TestContext::setup_clone(80, 10);
     //     let mut state = ctx.init_state();
     //     state
-    //         .update(&mut ctx.term, &[key('y'), key('j'), key('K'), key('y')])
+    //         .update(&mut ctx.term, &keys("yjKy"))
     //         .unwrap();
     //     insta::assert_snapshot!(ctx.redact_buffer());
     // }
@@ -822,9 +608,7 @@ mod reset {
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &[key('l'), key('l'), key('j'), key('X')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("lljX")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -834,12 +618,7 @@ mod reset {
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &[key('l'), key('l'), key('j'), key('X'), key('s'), key('q')],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("lljXsq")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -849,20 +628,7 @@ mod reset {
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('l'),
-                    key('l'),
-                    key('j'),
-                    key('X'),
-                    key('s'),
-                    key_code(KeyCode::Enter),
-                    key('q'),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("lljXs<enter>q")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -872,20 +638,7 @@ mod reset {
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('l'),
-                    key('l'),
-                    key('j'),
-                    key('X'),
-                    key('m'),
-                    key_code(KeyCode::Enter),
-                    key('q'),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("lljXm<enter>q")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -895,20 +648,7 @@ mod reset {
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('l'),
-                    key('l'),
-                    key('j'),
-                    key('X'),
-                    key('h'),
-                    key_code(KeyCode::Enter),
-                    key('q'),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("lljXh<enter>q")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 }
@@ -920,16 +660,12 @@ fn show_refs() {
     run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('y')]).unwrap();
+    state.update(&mut ctx.term, &keys("y")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 mod checkout {
-    use super::helpers::key;
-    use super::helpers::key_code;
-    use super::helpers::run;
-    use super::helpers::TestContext;
-    use crossterm::event::KeyCode;
+    use super::*;
 
     #[test]
     pub(crate) fn checkout_menu() {
@@ -937,9 +673,7 @@ mod checkout {
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
         let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &[key('y'), key('j'), key('b')])
-            .unwrap();
+        state.update(&mut ctx.term, &keys("yjb")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -949,19 +683,7 @@ mod checkout {
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
         let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('y'),
-                    key('j'),
-                    key('j'),
-                    key('b'),
-                    key('b'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
-            .unwrap();
+        state.update(&mut ctx.term, &keys("yjjbb<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 
@@ -972,19 +694,7 @@ mod checkout {
 
         let mut state = ctx.init_state();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('y'),
-                    key('j'),
-                    key('j'),
-                    key('b'),
-                    key('b'),
-                    key('h'),
-                    key('i'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
+            .update(&mut ctx.term, &keys("yjjbbhi<enter>"))
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -995,20 +705,7 @@ mod checkout {
 
         let mut state = ctx.init_state();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('b'),
-                    key('c'),
-                    key('f'),
-                    // Don't want to create branch 'f', try again
-                    key_code(KeyCode::Esc),
-                    key('b'),
-                    key('c'),
-                    key('x'),
-                    key_code(KeyCode::Enter),
-                ],
-            )
+            .update(&mut ctx.term, &keys("bcf<esc>bcx<enter>"))
             .unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -1020,13 +717,11 @@ fn updated_externally() {
     fs::write(ctx.dir.child("b"), "test").unwrap();
 
     let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('j'), key('j'), key('s'), key('j')])
-        .unwrap();
+    state.update(&mut ctx.term, &keys("jjsj")).unwrap();
 
     fs::write(ctx.dir.child("a"), "test").unwrap();
 
-    state.update(&mut ctx.term, &[key('g')]).unwrap();
+    state.update(&mut ctx.term, &keys("g")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -1039,18 +734,7 @@ fn stage_last_hunk_of_first_delta() {
     fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
 
     let mut state = ctx.init_state();
-    state
-        .update(
-            &mut ctx.term,
-            &[
-                key('j'),
-                key('j'),
-                key_code(KeyCode::Tab),
-                key('j'),
-                key('s'),
-            ],
-        )
-        .unwrap();
+    state.update(&mut ctx.term, &keys("jj<tab>js")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -1063,9 +747,7 @@ fn go_down_past_collapsed() {
     fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
 
     let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &[key('j'), key('j'), key('j')])
-        .unwrap();
+    state.update(&mut ctx.term, &keys("jjj")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -1087,20 +769,7 @@ mod scroll {
 
         let mut state = ctx.init_state();
         state
-            .update(
-                &mut ctx.term,
-                &[
-                    key('j'),
-                    key('j'),
-                    key('j'),
-                    key('j'),
-                    key_code(KeyCode::Tab),
-                    key('k'),
-                    key_code(KeyCode::Tab),
-                    key('k'),
-                    key_code(KeyCode::Tab),
-                ],
-            )
+            .update(&mut ctx.term, &keys("jjjj<tab>k<tab>k<tab>"))
             .unwrap();
         (ctx, state)
     }
@@ -1109,7 +778,7 @@ mod scroll {
     fn scroll_down() {
         let (mut ctx, mut state) = setup_scroll();
 
-        state.update(&mut ctx.term, &[ctrl('d')]).unwrap();
+        state.update(&mut ctx.term, &keys("<ctrl+d>")).unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
     }
@@ -1119,7 +788,7 @@ mod scroll {
         let (mut ctx, mut state) = setup_scroll();
 
         state
-            .update(&mut ctx.term, &[ctrl('d'), ctrl('d'), ctrl('d')])
+            .update(&mut ctx.term, &keys("<ctrl+d><ctrl+d><ctrl+d>"))
             .unwrap();
 
         insta::assert_snapshot!(ctx.redact_buffer());
@@ -1152,6 +821,6 @@ fn quit() {
 
     // TODO init_state should probably accept `Config` as an arg?
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &[key('q'), key('y')]).unwrap();
+    state.update(&mut ctx.term, &keys("qy")).unwrap();
     assert!(state.quit);
 }

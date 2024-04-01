@@ -5,15 +5,16 @@ use crate::{
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
 };
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::path::PathBuf;
 use temp_dir::TempDir;
 
-use self::buffer::TestBuffer;
+use self::{buffer::TestBuffer, key_parser::parse_keys};
 
 mod buffer;
+pub mod key_parser;
 
 pub struct TestContext {
     pub term: Term,
@@ -102,20 +103,12 @@ fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
     *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
 }
 
-pub fn key(char: char) -> Event {
-    let mods = if char.is_uppercase() {
-        KeyModifiers::SHIFT
-    } else {
-        KeyModifiers::empty()
+pub fn keys(input: &str) -> Vec<Event> {
+    let ("", keys) = parse_keys(input).unwrap() else {
+        unreachable!();
     };
 
-    Event::Key(KeyEvent::new(KeyCode::Char(char), mods))
-}
-
-pub fn ctrl(char: char) -> Event {
-    Event::Key(KeyEvent::new(KeyCode::Char(char), KeyModifiers::CONTROL))
-}
-
-pub fn key_code(code: KeyCode) -> Event {
-    Event::Key(KeyEvent::new(code, KeyModifiers::empty()))
+    keys.into_iter()
+        .map(|(mods, key)| Event::Key(KeyEvent::new(key, mods)))
+        .collect()
 }
