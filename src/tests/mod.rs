@@ -501,21 +501,31 @@ mod stash {
     }
 
     #[test]
-    pub(crate) fn stash_working_tree_then_index_and_then_pop() {
+    pub(crate) fn stash_working_tree_when_everything_is_staged() {
+        let (mut ctx, mut state) = setup();
+        state
+            .update(&mut ctx.term, &[key('j'), key('s'), key('z'), key('w')])
+            .unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn stash_working_tree_when_nothing_is_staged() {
         let (mut ctx, mut state) = setup();
         state
             .update(
                 &mut ctx.term,
                 &[
+                    key('j'),
+                    key('j'),
+                    key('j'),
+                    key('u'),
                     key('z'),
                     key('w'),
-                    key_code(KeyCode::Enter),
-                    key('z'),
-                    key('i'),
-                    key_code(KeyCode::Enter),
-                    key('z'),
-                    key('p'),
-                    key('1'),
+                    key('t'),
+                    key('e'),
+                    key('s'),
+                    key('t'),
                     key_code(KeyCode::Enter),
                 ],
             )

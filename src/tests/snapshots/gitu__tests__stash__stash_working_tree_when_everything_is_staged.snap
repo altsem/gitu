@@ -2,14 +2,14 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Untracked files                                                                |
- file-two                                                                       |
-                                                                                |
- Stashes                                                                        |
- stash@0 WIP on main: _______ add initial-file                                  |
+▌Staged changes (2)                                                             |
+▌added   file-one…                                                              |
+▌added   file-two                                                               |
+▌@@ -0,0 +1 @@                                                                  |
+▌+blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
  _______ main origin/main add initial-file                                      |
@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git stash pop 1                                                               |
-styles_hash: 1051e7e46b0801a2
+! Cannot stash: working tree is empty                                           |
+styles_hash: e729373ba41fd709

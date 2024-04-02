@@ -1,7 +1,12 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, Res};
+use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, CmdLogEntry, Res};
 use derive_more::Display;
-use std::{process::Command, rc::Rc};
+use git2::{Repository, Status, StatusOptions};
+use std::{
+    process::Command,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 use tui_prompts::State as _;
 
 pub(crate) fn args() -> &'static [(&'static str, bool)] {
@@ -36,12 +41,14 @@ impl OpTrait for StashWorktree {
                 let input = state.prompt.state.value().to_string();
                 state.prompt.reset(term)?;
 
-                // 1. Stash index (stash@0: index, ...)
-                let mut cmd = Command::new("git");
-                cmd.args(["stash", "push", "--staged"]);
-                state.run_cmd(term, &[], cmd)?;
+                let need_to_stash_index = is_something_staged(&state.repo)?;
 
-                // 2. Stash everything else (stash@0: worktree, stash@1: index, ...)
+                if need_to_stash_index {
+                    let mut cmd = Command::new("git");
+                    cmd.args(["stash", "push", "--staged"]);
+                    state.run_cmd(term, &[], cmd)?;
+                }
+
                 let mut cmd = Command::new("git");
                 cmd.args(["stash", "push", "--include-untracked"]);
                 if !input.is_empty() {
@@ -49,16 +56,25 @@ impl OpTrait for StashWorktree {
                 }
                 state.run_cmd(term, &[], cmd)?;
 
-                // 3. Pop stash with index (at stash@1)
-                let mut cmd = Command::new("git");
-                cmd.args(["stash", "pop", "1"]);
-                state.run_cmd(term, &[], cmd)?;
+                if need_to_stash_index {
+                    let mut cmd = Command::new("git");
+                    cmd.args(["stash", "pop", "1"]);
+                    state.run_cmd(term, &[], cmd)?;
+                }
             }
             Ok(())
         };
 
         Some(Rc::new(
             move |state: &mut State, _term: &mut Term| -> Res<()> {
+                if is_working_tree_empty(&state.repo)? {
+                    state
+                        .current_cmd_log_entries
+                        .push(Arc::new(RwLock::new(CmdLogEntry::Error(
+                            "Cannot stash: working tree is empty".to_string(),
+                        ))));
+                    return Ok(());
+                }
                 state.prompt.set(PromptData {
                     prompt_text: "Name of the stash:".into(),
                     update_fn: Rc::new(update_fn),
@@ -67,6 +83,44 @@ impl OpTrait for StashWorktree {
             },
         ))
     }
+}
+
+fn is_working_tree_empty(repo: &Repository) -> Res<bool> {
+    let statuses = repo.statuses(Some(
+        StatusOptions::new()
+            .include_untracked(true)
+            .include_ignored(false),
+    ))?;
+
+    let is_working_tree_not_empty = statuses.iter().any(|e| {
+        e.status().intersects(
+            Status::WT_NEW
+                | Status::WT_MODIFIED
+                | Status::WT_DELETED
+                | Status::WT_RENAMED
+                | Status::WT_TYPECHANGE,
+        )
+    });
+
+    Ok(!is_working_tree_not_empty)
+}
+
+fn is_something_staged(repo: &Repository) -> Res<bool> {
+    let statuses = repo.statuses(Some(
+        StatusOptions::new()
+            .include_untracked(true)
+            .include_ignored(false),
+    ))?;
+
+    Ok(statuses.iter().any(|e| {
+        e.status().intersects(
+            Status::INDEX_NEW
+                | Status::INDEX_MODIFIED
+                | Status::INDEX_DELETED
+                | Status::INDEX_RENAMED
+                | Status::INDEX_TYPECHANGE,
+        )
+    }))
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
