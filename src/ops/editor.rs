@@ -93,7 +93,7 @@ impl OpTrait for ToggleSection {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Move up")]
+#[display(fmt = "Up")]
 pub(crate) struct MoveUp;
 impl OpTrait for MoveUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -105,7 +105,7 @@ impl OpTrait for MoveUp {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Move down")]
+#[display(fmt = "Down")]
 pub(crate) struct MoveDown;
 impl OpTrait for MoveDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -117,7 +117,7 @@ impl OpTrait for MoveDown {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Move down line")]
+#[display(fmt = "Down line")]
 pub(crate) struct MoveDownLine;
 impl OpTrait for MoveDownLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -129,7 +129,7 @@ impl OpTrait for MoveDownLine {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Move up line")]
+#[display(fmt = "Up line")]
 pub(crate) struct MoveUpLine;
 impl OpTrait for MoveUpLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

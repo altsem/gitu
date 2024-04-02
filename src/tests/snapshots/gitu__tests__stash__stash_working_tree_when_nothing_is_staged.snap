@@ -1,16 +1,15 @@
 ---
 source: src/tests/mod.rs
-assertion_line: 532
 expression: ctx.redact_buffer()
 ---
- On branch main                                                                 |
- Your branch is up to date with 'origin/main'.                                  |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Stashes                                                                        |
  stash@0 On main: test                                                          |
                                                                                 |
  Recent commits                                                                 |
-▌_______ main origin/main add initial-file                                      |
+ _______ main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -23,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --include-untracked --message test                             |
-styles_hash: a5aaa93bdd9a3cbd
+styles_hash: 3cf025e810662146

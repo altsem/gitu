@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  _______ main add new-file                                                      |
  _______ origin/main add initial-file                                           |
 ────────────────────────────────────────────────────────────────────────────────|
-Push                                      Arguments                             |
-p Push                                    -f --force-with-lease (off)           |
-q esc Quit/Close                                                                |
-styles_hash: 57f1cd023d2c153e
+Push                    Arguments                                               |
+p Push                  -f --force-with-lease (off)                             |
+q/<esc> Quit/Close                                                              |
+styles_hash: de55c41a83e8481c

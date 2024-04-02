@@ -411,10 +411,11 @@ mod stash {
 
     #[test]
     pub(crate) fn stash_working_tree_when_nothing_is_staged() {
-        let (mut ctx, mut state) = setup();
-        state
-            .update(&mut ctx.term, &keys("jjjuzwtest<enter>"))
-            .unwrap();
+        let mut ctx = TestContext::setup_clone(80, 20);
+        fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+        let mut state = ctx.init_state();
+
+        state.update(&mut ctx.term, &keys("zwtest<enter>")).unwrap();
         insta::assert_snapshot!(ctx.redact_buffer());
     }
 

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use std::sync::RwLock;
 
+use crate::bindings;
+use crate::bindings::Binding;
 use crate::config::Config;
 use crate::items::Item;
-use crate::keybinds;
-use crate::keybinds::Keybind;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::state::State;
@@ -34,8 +34,12 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         };
 
     let (menu_len, maybe_menu) = if let Some(ref menu) = state.pending_menu {
-        let (lines, table) =
-            format_keybinds_menu(&state.config, menu, state.screen().get_selected_item());
+        let (lines, table) = format_keybinds_menu(
+            &state.config,
+            &state.bindings,
+            menu,
+            state.screen().get_selected_item(),
+        );
 
         (lines, Some(table))
     } else {
@@ -107,14 +111,15 @@ fn format_command<'a>(config: &Config, log: &Arc<RwLock<CmdLogEntry>>) -> Vec<Li
 
 fn format_keybinds_menu<'b>(
     config: &Config,
+    bindings: &'b [Binding],
     pending: &'b PendingMenu,
     item: &'b Item,
 ) -> (usize, Table<'b>) {
     let style = &config.style;
 
-    let arg_binds = keybinds::arg_list(&pending.menu).collect::<Vec<_>>();
+    let arg_binds = bindings::arg_list(bindings, &pending.menu).collect::<Vec<_>>();
 
-    let non_target_binds = keybinds::list(&pending.menu)
+    let non_target_binds = bindings::list(bindings, &pending.menu)
         .filter(|keybind| !keybind.op.implementation().is_target_op())
         .collect::<Vec<_>>();
 
@@ -128,10 +133,7 @@ fn format_keybinds_menu<'b>(
     {
         pending_binds_column.push(Line::from(vec![
             Span::styled(
-                binds
-                    .into_iter()
-                    .map(|bind| Keybind::format_key(bind))
-                    .join(" "),
+                binds.into_iter().map(|bind| &bind.raw).join("/"),
                 &style.hotkey,
             ),
             Span::styled(format!(" {}", op.implementation()), Style::new()),
@@ -153,14 +155,14 @@ fn format_keybinds_menu<'b>(
         };
 
         menu_binds_column.push(Line::from(vec![
-            Span::styled(Keybind::format_key(bind), &style.hotkey),
+            Span::styled(&bind.raw, &style.hotkey),
             Span::styled(format!(" {}", menu), Style::new()),
         ]));
     }
 
     let mut right_column = vec![];
     if let Some(target_data) = &item.target_data {
-        let target_binds = keybinds::list(&pending.menu)
+        let target_binds = bindings::list(bindings, &pending.menu)
             .filter(|keybind| keybind.op.implementation().is_target_op())
             .filter(|keybind| {
                 keybind
@@ -177,7 +179,7 @@ fn format_keybinds_menu<'b>(
 
         for bind in target_binds {
             right_column.push(Line::from(vec![
-                Span::styled(Keybind::format_key(bind), &style.hotkey),
+                Span::styled(&bind.raw, &style.hotkey),
                 Span::styled(format!(" {}", bind.op.implementation()), Style::new()),
             ]));
         }
@@ -195,7 +197,7 @@ fn format_keybinds_menu<'b>(
         let on = *pending.args.get(name).unwrap_or(&false);
 
         right_column.push(Line::from(vec![
-            Span::styled(Keybind::format_key(bind), &style.hotkey),
+            Span::styled(&bind.raw, &style.hotkey),
             Span::styled(
                 format!(
                     " {} ({})",
@@ -206,6 +208,12 @@ fn format_keybinds_menu<'b>(
             ),
         ]));
     }
+
+    let widths = [
+        col_width(&pending_binds_column),
+        col_width(&menu_binds_column),
+        Constraint::Fill(1),
+    ];
 
     let rows = pending_binds_column
         .into_iter()
@@ -222,13 +230,11 @@ fn format_keybinds_menu<'b>(
         })
         .collect::<Vec<_>>();
 
-    let widths = [
-        Constraint::Max(28),
-        Constraint::Max(12),
-        Constraint::Length(30),
-    ];
+    (rows.len(), Table::new(rows, widths).column_spacing(3))
+}
 
-    (rows.len(), Table::new(rows, widths))
+fn col_width(column: &[Line<'_>]) -> Constraint {
+    Constraint::Length(column.iter().map(|line| line.width()).max().unwrap_or(0) as u16)
 }
 
 fn popup_block() -> Block<'static> {

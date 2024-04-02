@@ -12,14 +12,16 @@ use crossterm::event;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
+use crossterm::event::KeyModifiers;
 use git2::Repository;
 use ratatui::layout::Rect;
 use tui_prompts::State as _;
 use tui_prompts::Status;
 
+use crate::bindings;
+use crate::bindings::Binding;
 use crate::cli;
 use crate::config::Config;
-use crate::keybinds;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
@@ -37,6 +39,8 @@ use super::Res;
 pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
+    pub bindings: Vec<Binding>,
+    pending_keys: Vec<(KeyModifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
@@ -44,7 +48,6 @@ pub(crate) struct State {
     enable_async_cmds: bool,
     pub current_cmd_log_entries: Vec<Arc<RwLock<CmdLogEntry>>>,
     pub prompt: prompt::Prompt,
-    next_input_is_arg: bool,
 }
 
 impl State {
@@ -57,6 +60,7 @@ impl State {
     ) -> Res<Self> {
         let repo = Rc::new(repo);
         let config = Rc::new(config);
+        let bindings = bindings::bindings();
 
         let screens = match args.command {
             Some(cli::Commands::Show { ref reference }) => {
@@ -77,6 +81,8 @@ impl State {
         Ok(Self {
             repo,
             config,
+            bindings,
+            pending_keys: vec![],
             enable_async_cmds,
             quit: false,
             screens,
@@ -84,7 +90,6 @@ impl State {
             pending_menu: None,
             current_cmd_log_entries: vec![],
             prompt: prompt::Prompt::new(),
-            next_input_is_arg: false,
         })
     }
 
@@ -155,16 +160,20 @@ impl State {
             Some(menu) => Some(menu.menu),
         };
 
-        let maybe_op = if self.next_input_is_arg {
-            keybinds::arg_op_of_key_event(pending, key)
-        } else {
-            keybinds::op_of_key_event(pending, key)
-        };
+        self.pending_keys.push((key.modifiers, key.code));
+        let matching_bindings =
+            bindings::match_bindings(&self.bindings, &pending, &self.pending_keys)
+                .collect::<Vec<_>>();
 
-        self.next_input_is_arg = pending.is_some() && key.code == KeyCode::Char('-');
-
-        if let Some(op) = maybe_op {
-            self.handle_op(op, term)?;
+        match matching_bindings[..] {
+            [binding] => {
+                if binding.keys == self.pending_keys {
+                    self.handle_op(binding.op, term)?;
+                    self.pending_keys.clear();
+                }
+            }
+            [] => self.pending_keys.clear(),
+            [_, ..] => (),
         }
 
         Ok(())
