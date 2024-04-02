@@ -1,9 +1,10 @@
+mod bindings;
 pub mod cli;
 pub mod config;
 mod git;
 mod git2_opts;
 mod items;
-mod keybinds;
+mod key_parser;
 mod menu;
 mod ops;
 mod prompt;

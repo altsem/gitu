@@ -11,5 +11,5 @@ expression: ctx.redact_buffer()
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
-q esc Quit/Close                                                                |
-styles_hash: d5252b28c9567958
+q/<esc> Quit/Close                                                              |
+styles_hash: 98bb8dc5da646113

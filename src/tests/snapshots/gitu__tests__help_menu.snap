@@ -11,15 +11,15 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Help                         Submenu                                            |
-q esc Quit/Close             h Help                                             |
-g Refresh                    b Branch                                           |
-tab Toggle section           c Commit                                           |
-k p ↑ Move up                f Fetch                                            |
-j n ↓ Move down              l Log                                              |
-C-k C-p C-↑ Move up line     F Pull                                             |
-C-j C-n C-↓ Move down line   P Push                                             |
-C-u Half page up             r Rebase                                           |
-C-d Half page down           X Reset                                            |
-y Show refs                  z Stash                                            |
-styles_hash: b6701c3addbbbfc9
+Help                                      Submenu                               |
+q/<esc> Quit/Close                        h Help                                |
+g Refresh                                 b Branch                              |
+<tab> Toggle section                      c Commit                              |
+k/p/<up> Up                               f Fetch                               |
+j/n/<down> Down                           l Log                                 |
+<ctrl+k>/<ctrl+p>/<ctrl+up> Up line       F Pull                                |
+<ctrl+j>/<ctrl+n>/<ctrl+down> Down line   P Push                                |
+<ctrl+u> Half page up                     r Rebase                              |
+<ctrl+d> Half page down                   X Reset                               |
+y Show refs                               z Stash                               |
+styles_hash: fe79aee109acf5cc

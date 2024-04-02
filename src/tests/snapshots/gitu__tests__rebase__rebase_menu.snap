@@ -21,5 +21,5 @@ Rebase                                                                          
 a Rebase abort                                                                  |
 c Rebase continue                                                               |
 e Rebase elsewhere                                                              |
-q esc Quit/Close                                                                |
-styles_hash: 48d768c8558a77a3
+q/<esc> Quit/Close                                                              |
+styles_hash: 86e888a227bef504

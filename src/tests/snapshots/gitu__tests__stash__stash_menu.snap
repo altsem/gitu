@@ -21,5 +21,5 @@ x Stash keeping index                                                           
 p Pop stash                                                                     |
 a Apply stash                                                                   |
 k Drop stash                                                                    |
-q esc Quit/Close                                                                |
-styles_hash: f27228c6db28354c
+q/<esc> Quit/Close                                                              |
+styles_hash: 17e2924fd3b42efd

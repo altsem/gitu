@@ -1,6 +1,7 @@
 use crate::{
     cli::Args,
     config,
+    key_parser::parse_keys,
     state::State,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
@@ -11,10 +12,9 @@ use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
 use std::path::PathBuf;
 use temp_dir::TempDir;
 
-use self::{buffer::TestBuffer, key_parser::parse_keys};
+use self::buffer::TestBuffer;
 
 mod buffer;
-pub mod key_parser;
 
 pub struct TestContext {
     pub term: Term,
