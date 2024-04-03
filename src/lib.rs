@@ -15,7 +15,7 @@ pub mod term;
 mod tests;
 mod ui;
 
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use git2::Repository;
 use items::Item;
 use itertools::Itertools;
@@ -106,6 +106,13 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         return Ok(());
     }
 
+    if let Some(keys_string) = &args.keys {
+        let ("", keys) = key_parser::parse_keys(keys_string).expect("Couldn't parse keys") else {
+            panic!("Couldn't parse keys");
+        };
+        handle_initial_send_keys(&keys, &mut state, term)?;
+    }
+
     while !state.quit {
         let events = if event::poll(Duration::from_millis(100))? {
             vec![event::read()?]
@@ -114,6 +121,30 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         };
 
         state.update(term, &events)?;
+    }
+
+    Ok(())
+}
+
+fn handle_initial_send_keys(
+    keys: &[(KeyModifiers, KeyCode)],
+    state: &mut state::State,
+    term: &mut ratatui::prelude::Terminal<term::TermBackend>,
+) -> Result<(), Box<dyn Error>> {
+    let initial_events = keys
+        .iter()
+        .map(|(mods, key)| {
+            Event::Key(KeyEvent {
+                code: *key,
+                modifiers: *mods,
+                kind: event::KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if !initial_events.is_empty() {
+        state.update(term, &initial_events)?;
     }
 
     Ok(())
