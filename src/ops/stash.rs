@@ -1,12 +1,8 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, CmdLogEntry, Res};
+use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::{Repository, Status, StatusOptions};
-use std::{
-    process::Command,
-    rc::Rc,
-    sync::{Arc, RwLock},
-};
+use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
 pub(crate) fn args() -> &'static [(&'static str, bool)] {
@@ -68,12 +64,7 @@ impl OpTrait for StashWorktree {
         Some(Rc::new(
             move |state: &mut State, _term: &mut Term| -> Res<()> {
                 if is_working_tree_empty(&state.repo)? {
-                    state
-                        .current_cmd_log_entries
-                        .push(Arc::new(RwLock::new(CmdLogEntry::Error(
-                            "Cannot stash: working tree is empty".to_string(),
-                        ))));
-                    return Ok(());
+                    return Err("Cannot stash: working tree is empty".into());
                 }
                 state.prompt.set(PromptData {
                     prompt_text: "Name of the stash:".into(),
