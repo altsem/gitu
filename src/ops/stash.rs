@@ -182,11 +182,11 @@ impl OpTrait for StashDrop {
 }
 
 fn stash_target_action(command: &'static str) -> Action {
-    Rc::new(|state: &mut State, _term: &mut Term| -> Res<()> {
+    Rc::new(move |state: &mut State, _term: &mut Term| -> Res<()> {
         let prompt_text = if let Some(id) = default_target_stash(state) {
-            format!("Stash index (default {}):", id).into()
+            format!("Stash {} (default {}):", command, id).into()
         } else {
-            "Stash index (default 0):".into()
+            format!("Stash {} (default 0):", command).into()
         };
 
         state.prompt.set(PromptData {
