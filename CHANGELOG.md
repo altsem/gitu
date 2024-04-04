@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 2024-04-04
+
+### 🚀 Features
+
+- Support sending keys on startup with a cli flag (-k)
+
+### 🐛 Bug Fixes
+
+- Prompt stash action instead of always "Stash index"
+- Edge cases and error handling for stashing worktree (#103)
+
+### 🎨 Styling
+
+- Improve menu layout and define new keybind display
+
 ## [0.12.1] - 2024-04-01
 
 ### 🐛 Bug Fixes
