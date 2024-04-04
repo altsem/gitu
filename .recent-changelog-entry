@@ -1,15 +1,6 @@
-## [0.13.0] - 2024-04-04
-
-### 🚀 Features
-
-- Support sending keys on startup with a cli flag (-k)
+## [0.13.1] - 2024-04-04
 
 ### 🐛 Bug Fixes
 
-- Prompt stash action instead of always "Stash index"
-- Edge cases and error handling for stashing worktree (#103)
-
-### 🎨 Styling
-
-- Improve menu layout and define new keybind display
+- Handle EDITOR args, and better deal with absolute paths
 

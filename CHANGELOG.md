@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.1] - 2024-04-04
+
+### 🐛 Bug Fixes
+
+- Handle EDITOR args, and better deal with absolute paths
+
 ## [0.13.0] - 2024-04-04
 
 ### 🚀 Features
