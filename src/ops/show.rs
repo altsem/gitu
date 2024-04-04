@@ -37,7 +37,7 @@ fn goto_show_screen(r: String) -> Option<Action> {
     }))
 }
 
-fn editor(file: &Path, line: Option<u32>) -> Option<Action> {
+fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Rc::new(move |state, term| {
@@ -54,18 +54,7 @@ fn editor(file: &Path, line: Option<u32>) -> Option<Action> {
             .into());
         };
 
-        let mut cmd = Command::new(editor.clone());
-        let args = match line {
-            Some(line) => match editor.as_str() {
-                "vi" | "vim" | "nvim" | "nano" => {
-                    vec![format!("+{}", line), file.to_string()]
-                }
-                _ => vec![format!("{}:{}", file, line)],
-            },
-            None => vec![file.to_string()],
-        };
-
-        cmd.args(args);
+        let cmd = parse_editor_command(&editor, &file, maybe_line);
 
         state
             .run_cmd_interactive(term, cmd)
@@ -73,4 +62,42 @@ fn editor(file: &Path, line: Option<u32>) -> Option<Action> {
 
         state.screen_mut().update()
     }))
+}
+
+fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Command {
+    let args = &editor.split_whitespace().collect::<Vec<_>>();
+    let mut cmd = Command::new(args[0]);
+    cmd.args(&args[1..]);
+
+    let lower = args[0].to_lowercase();
+
+    if let Some(line) = maybe_line {
+        if lower.ends_with("vi")
+            || lower.ends_with("vim")
+            || lower.ends_with("nvim")
+            || lower.ends_with("nano")
+        {
+            cmd.args([&format!("+{}", line), file]);
+        } else {
+            cmd.args([&format!("{}:{}", file, line)]);
+        }
+    } else {
+        cmd.args([file.to_string()]);
+    }
+    cmd
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ffi::OsStr;
+
+    #[test]
+    fn parse_editor_command_test() {
+        let cmd = super::parse_editor_command("/bin/nAnO -f", "README.md", Some(42));
+        assert_eq!(cmd.get_program(), OsStr::new("/bin/nAnO"));
+        assert_eq!(
+            &cmd.get_args().collect::<Vec<_>>(),
+            &["-f", "+42", "README.md"]
+        );
+    }
 }
