@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use crate::bindings;
-use crate::bindings::Binding;
+use crate::bindings::Bindings;
 use crate::config::Config;
 use crate::items::Item;
 use crate::menu::PendingMenu;
@@ -111,15 +110,16 @@ fn format_command<'a>(config: &Config, log: &Arc<RwLock<CmdLogEntry>>) -> Vec<Li
 
 fn format_keybinds_menu<'b>(
     config: &Config,
-    bindings: &'b [Binding],
+    bindings: &'b Bindings,
     pending: &'b PendingMenu,
     item: &'b Item,
 ) -> (usize, Table<'b>) {
     let style = &config.style;
 
-    let arg_binds = bindings::arg_list(bindings, &pending.menu).collect::<Vec<_>>();
+    let arg_binds = bindings.arg_list(&pending.menu).collect::<Vec<_>>();
 
-    let non_target_binds = bindings::list(bindings, &pending.menu)
+    let non_target_binds = bindings
+        .list(&pending.menu)
         .filter(|keybind| !keybind.op.implementation().is_target_op())
         .collect::<Vec<_>>();
 
@@ -162,7 +162,8 @@ fn format_keybinds_menu<'b>(
 
     let mut right_column = vec![];
     if let Some(target_data) = &item.target_data {
-        let target_binds = bindings::list(bindings, &pending.menu)
+        let target_binds = bindings
+            .list(&pending.menu)
             .filter(|keybind| keybind.op.implementation().is_target_op())
             .filter(|keybind| {
                 keybind

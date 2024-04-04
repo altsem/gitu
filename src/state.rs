@@ -18,8 +18,7 @@ use ratatui::layout::Rect;
 use tui_prompts::State as _;
 use tui_prompts::Status;
 
-use crate::bindings;
-use crate::bindings::Binding;
+use crate::bindings::Bindings;
 use crate::cli;
 use crate::config::Config;
 use crate::menu::Menu;
@@ -39,7 +38,7 @@ use super::Res;
 pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
-    pub bindings: Vec<Binding>,
+    pub bindings: Bindings,
     pending_keys: Vec<(KeyModifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
@@ -60,8 +59,6 @@ impl State {
     ) -> Res<Self> {
         let repo = Rc::new(repo);
         let config = Rc::new(config);
-        let bindings = bindings::bindings();
-
         let screens = match args.command {
             Some(cli::Commands::Show { ref reference }) => {
                 vec![screen::show::create(
@@ -81,7 +78,7 @@ impl State {
         Ok(Self {
             repo,
             config,
-            bindings,
+            bindings: Bindings::default(),
             pending_keys: vec![],
             enable_async_cmds,
             quit: false,
@@ -161,9 +158,10 @@ impl State {
         };
 
         self.pending_keys.push((key.modifiers, key.code));
-        let matching_bindings =
-            bindings::match_bindings(&self.bindings, &pending, &self.pending_keys)
-                .collect::<Vec<_>>();
+        let matching_bindings = self
+            .bindings
+            .match_bindings(&pending, &self.pending_keys)
+            .collect::<Vec<_>>();
 
         match matching_bindings[..] {
             [binding] => {
