@@ -35,7 +35,7 @@ fn unstage_staged() -> Action {
     })
 }
 
-fn unstage_file_cmd(file: &OsStr) -> Command {
+pub fn unstage_file_cmd(file: &OsStr) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(["restore", "--staged"]);
     cmd.arg(file);

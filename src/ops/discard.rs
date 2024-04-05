@@ -1,7 +1,7 @@
-use super::{cmd, cmd_arg, Action, OpTrait};
+use super::{cmd, cmd_arg, unstage::unstage_file_cmd, Action, OpTrait};
 use crate::{items::TargetData, state::State, term::Term};
 use derive_more::Display;
-use std::{ffi::OsStr, path::PathBuf, process::Command, rc::Rc};
+use std::{ffi::OsStr, process::Command, rc::Rc};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Discard")]
@@ -10,20 +10,22 @@ impl OpTrait for Discard {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target.cloned() {
             Some(TargetData::Branch(r)) => cmd_arg(discard_branch, r.into()),
-            Some(TargetData::File(f)) => Rc::new(move |state: &mut State, _term: &mut Term| {
-                let path = PathBuf::from_iter([
-                    state.repo.workdir().expect("No workdir").to_path_buf(),
-                    f.clone(),
-                ]);
-                std::fs::remove_file(path)?;
-                state.screen_mut().update()
-            }),
+            Some(TargetData::File(f)) => cmd_arg(clean_file_cmd, f.into()),
             Some(TargetData::Delta(d)) => {
-                if d.old_file == d.new_file {
-                    cmd_arg(checkout_file_cmd, d.old_file.into())
-                } else {
-                    // TODO Discard file move
-                    return None;
+                match d.status {
+                    git2::Delta::Added => Rc::new(move |state: &mut State, term: &mut Term| {
+                        let file = d.new_file.as_os_str();
+                        state.run_cmd(term, &[], unstage_file_cmd(file))?;
+                        state.run_cmd(term, &[], clean_file_cmd(file))
+                    }),
+                    _ => {
+                        if d.old_file == d.new_file {
+                            cmd_arg(checkout_file_cmd, d.old_file.into())
+                        } else {
+                            // TODO Discard file move
+                            return None;
+                        }
+                    }
                 }
             }
             Some(TargetData::Hunk(h)) => {
@@ -43,6 +45,13 @@ impl OpTrait for Discard {
 fn discard_unstaged_patch_cmd() -> Command {
     let mut cmd = Command::new("git");
     cmd.args(["apply", "--reverse"]);
+    cmd
+}
+
+fn clean_file_cmd(file: &OsStr) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["clean", "--force"]);
+    cmd.arg(file);
     cmd
 }
 
