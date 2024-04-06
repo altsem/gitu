@@ -75,10 +75,12 @@ impl State {
             )?],
         };
 
+        let bindings = Bindings::from(&config.bindings);
+
         Ok(Self {
             repo,
             config,
-            bindings: Bindings::default(),
+            bindings,
             pending_keys: vec![],
             enable_async_cmds,
             quit: false,
@@ -151,22 +153,22 @@ impl State {
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
-        let pending = match &self.pending_menu {
-            None => None,
-            Some(menu) if menu.menu == Menu::Help => None,
-            Some(menu) => Some(menu.menu),
+        let menu = match &self.pending_menu {
+            None => Menu::Root,
+            Some(menu) if menu.menu == Menu::Help => Menu::Root,
+            Some(menu) => menu.menu,
         };
 
         self.pending_keys.push((key.modifiers, key.code));
         let matching_bindings = self
             .bindings
-            .match_bindings(&pending, &self.pending_keys)
+            .match_bindings(&menu, &self.pending_keys)
             .collect::<Vec<_>>();
 
         match matching_bindings[..] {
             [binding] => {
                 if binding.keys == self.pending_keys {
-                    self.handle_op(binding.op, term)?;
+                    self.handle_op(binding.op.clone(), term)?;
                     self.pending_keys.clear();
                 }
             }
@@ -179,7 +181,7 @@ impl State {
 
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
         let target = self.screen().get_selected_item().target_data.as_ref();
-        if let Some(mut action) = op.implementation().get_action(target) {
+        if let Some(mut action) = op.clone().implementation().get_action(target) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
 
             self.close_menu(op);
@@ -203,7 +205,7 @@ impl State {
 
     fn close_menu(&mut self, op: Op) {
         match op {
-            Op::Menu(_) => (),
+            Op::OpenMenu(_) => (),
             Op::ToggleArg(_) => (),
             _ => self.pending_menu = None,
         }

@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use tui_prompts::State as _;
 
 use crate::{
@@ -41,20 +42,9 @@ pub(crate) trait OpTrait: Display {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum Op {
-    Quit,
-    Refresh,
-
-    ToggleArg(&'static str),
-    ToggleSection,
-    MoveDown,
-    MoveUp,
-    MoveDownLine,
-    MoveUpLine,
-    HalfPageUp,
-    HalfPageDown,
-
     Checkout,
     CheckoutNewBranch,
     Commit,
@@ -74,27 +64,41 @@ pub(crate) enum Op {
     StashKeepIndex,
     StashPop,
     StashDrop,
-
     CommitFixup,
-    Discard,
     LogOther,
     RebaseAutosquash,
     RebaseInteractive,
     ResetSoft,
     ResetMixed,
     ResetHard,
-    Show,
+
     Stage,
     Unstage,
+    Show,
+    Discard,
 
-    Menu(Menu),
+    ToggleSection,
+    MoveDown,
+    MoveUp,
+    MoveDownLine,
+    MoveUpLine,
+    HalfPageUp,
+    HalfPageDown,
+
+    Refresh,
+    Quit,
+
+    #[serde(untagged)]
+    OpenMenu(Menu),
+    #[serde(untagged)]
+    ToggleArg(String),
 }
 
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
             Op::Quit => Box::new(editor::Quit),
-            Op::Menu(menu) => Box::new(editor::Menu(menu)),
+            Op::OpenMenu(menu) => Box::new(editor::OpenMenu(menu)),
             Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleArg(name) => Box::new(editor::ToggleArg(name)),
             Op::ToggleSection => Box::new(editor::ToggleSection),
@@ -143,6 +147,7 @@ impl Op {
 impl Display for Menu {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
+            Menu::Root => "Root",
             Menu::Branch => "Branch",
             Menu::Commit => "Commit",
             Menu::Fetch => "Fetch",
