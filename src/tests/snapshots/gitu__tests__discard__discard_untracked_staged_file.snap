@@ -1,6 +1,5 @@
 ---
 source: src/tests/mod.rs
-assertion_line: 562
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -15,7 +14,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git restore --staged some-file                                                |
-$ git clean --force some-file                                                   |
-styles_hash: 5107a055d39efe2
+$ git rm --force some-file                                                      |
+styles_hash: 83f8d1650eaed120

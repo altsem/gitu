@@ -1,7 +1,7 @@
-use super::{cmd, cmd_arg, unstage::unstage_file_cmd, Action, OpTrait};
-use crate::{items::TargetData, state::State, term::Term};
+use super::{cmd, cmd_arg, Action, OpTrait};
+use crate::items::TargetData;
 use derive_more::Display;
-use std::{ffi::OsStr, process::Command, rc::Rc};
+use std::{ffi::OsStr, process::Command};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Discard")]
@@ -13,11 +13,7 @@ impl OpTrait for Discard {
             Some(TargetData::File(f)) => cmd_arg(clean_file_cmd, f.into()),
             Some(TargetData::Delta(d)) => {
                 match d.status {
-                    git2::Delta::Added => Rc::new(move |state: &mut State, term: &mut Term| {
-                        let file = d.new_file.as_os_str();
-                        state.run_cmd(term, &[], unstage_file_cmd(file))?;
-                        state.run_cmd(term, &[], clean_file_cmd(file))
-                    }),
+                    git2::Delta::Added => cmd_arg(remove_file_cmd, d.new_file.into()),
                     _ => {
                         if d.old_file == d.new_file {
                             cmd_arg(checkout_file_cmd, d.old_file.into())
@@ -51,6 +47,13 @@ fn discard_unstaged_patch_cmd() -> Command {
 fn clean_file_cmd(file: &OsStr) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(["clean", "--force"]);
+    cmd.arg(file);
+    cmd
+}
+
+fn remove_file_cmd(file: &OsStr) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["rm", "--force"]);
     cmd.arg(file);
     cmd
 }
