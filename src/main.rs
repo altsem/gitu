@@ -41,6 +41,7 @@ fn setup_term_and_run(args: &Args) -> Res<()> {
 
     // Prevents cursor flash when opening gitu
     terminal.hide_cursor()?;
+    terminal.clear()?;
 
     log::debug!("Starting app");
     gitu::run(args, &mut terminal)
