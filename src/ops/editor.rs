@@ -44,8 +44,8 @@ impl OpTrait for Quit {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Submenu")]
-pub(crate) struct Menu(pub crate::menu::Menu);
-impl OpTrait for Menu {
+pub(crate) struct OpenMenu(pub crate::menu::Menu);
+impl OpTrait for OpenMenu {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         let submenu = self.0;
         Some(Rc::new(move |state, _term| {
@@ -64,15 +64,16 @@ impl OpTrait for Refresh {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Display)]
 #[display(fmt = _.0)]
-pub(crate) struct ToggleArg(pub &'static str);
+pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state, _term| {
+        let arg = self.0.clone();
+        Some(Rc::new(move |state, _term| {
             if let Some(menu) = &mut state.pending_menu {
                 menu.args
-                    .entry(self.0.into())
+                    .entry(arg.clone().into())
                     .and_modify(|value| *value = !*value);
             }
             Ok(())

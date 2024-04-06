@@ -2,19 +2,34 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 
+use serde::{Deserialize, Serialize};
+
 use crate::ops;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum Menu {
+    #[serde(rename = "root")]
+    Root,
+    #[serde(rename = "branch_menu")]
     Branch,
+    #[serde(rename = "commit_menu")]
     Commit,
+    #[serde(rename = "fetch_menu")]
     Fetch,
+    #[serde(rename = "help_menu")]
     Help,
+    #[serde(rename = "log_menu")]
     Log,
+    #[serde(rename = "pull_menu")]
     Pull,
+    #[serde(rename = "push_menu")]
     Push,
+    #[serde(rename = "rebase_menu")]
     Rebase,
+    #[serde(rename = "reset_menu")]
     Reset,
+    #[serde(rename = "stash_menu")]
     Stash,
 }
 
@@ -28,6 +43,7 @@ impl PendingMenu {
         Self {
             menu,
             args: match menu {
+                Menu::Root => &[],
                 Menu::Branch => ops::checkout::args(),
                 Menu::Commit => ops::commit::args(),
                 Menu::Fetch => ops::fetch::args(),

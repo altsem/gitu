@@ -1,4 +1,6 @@
-use crate::Res;
+use std::collections::BTreeMap;
+
+use crate::{menu::Menu, ops::Op, Res};
 use figment::{
     providers::{Format, Toml},
     Figment,
@@ -9,9 +11,10 @@ use serde::Deserialize;
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
 #[derive(Default, Debug, Deserialize)]
-pub struct Config {
+pub(crate) struct Config {
     pub general: GeneralConfig,
     pub style: StyleConfig,
+    pub bindings: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>,
 }
 
 #[derive(Default, Debug, Deserialize)]
@@ -92,7 +95,8 @@ pub(crate) fn init_config() -> Res<Config> {
     Ok(config)
 }
 
-pub fn init_test_config() -> Res<Config> {
+#[cfg(test)]
+pub(crate) fn init_test_config() -> Res<Config> {
     Ok(Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .extract()?)

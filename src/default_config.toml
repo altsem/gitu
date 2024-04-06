@@ -45,3 +45,75 @@ tag.fg = "yellow"
 command.fg = "blue"
 command.mods = "BOLD"
 hotkey.fg = "magenta"
+
+[bindings]
+root.quit = ["q", "<esc>"]
+root.refresh = ["g"]
+root.toggle_section = ["<tab>"]
+root.move_up = ["k", "p", "<up>"]
+root.move_down = ["j", "n", "<down>"]
+root.move_up_line = ["<ctrl+k>", "<ctrl+p>", "<ctrl+up>"]
+root.move_down_line = ["<ctrl+j>", "<ctrl+n>", "<ctrl+down>"]
+root.half_page_up = ["<ctrl+u>"]
+root.half_page_down = ["<ctrl+d>"]
+root.show_refs = ["y"]
+root.show = ["<enter>"]
+root.discard = ["K"]
+root.stage = ["s"]
+root.unstage = ["u"]
+
+root.help_menu = ["h"]
+help_menu.quit = ["q", "<esc>"]
+
+root.branch_menu = ["b"]
+branch_menu.checkout = ["b"]
+branch_menu.checkout_new_branch = ["c"]
+branch_menu.quit = ["q", "<esc>"]
+
+root.commit_menu = ["c"]
+commit_menu.commit = ["c"]
+commit_menu.commit_amend = ["a"]
+commit_menu.commit_fixup = ["f"]
+commit_menu.quit = ["q", "<esc>"]
+
+root.fetch_menu = ["f"]
+fetch_menu.fetch_all = ["a"]
+fetch_menu.quit = ["q", "<esc>"]
+
+root.log_menu = ["l"]
+log_menu.log_current = ["l"]
+log_menu.log_other = ["o"]
+log_menu.quit = ["q", "<esc>"]
+
+root.pull_menu = ["F"]
+pull_menu.pull = ["p"]
+pull_menu.quit = ["q", "<esc>"]
+
+root.push_menu = ["P"]
+push_menu.--force-with-lease = ["-f"]
+push_menu.push = ["p"]
+push_menu.quit = ["q", "<esc>"]
+
+root.rebase_menu = ["r"]
+rebase_menu.rebase_interactive = ["i"]
+rebase_menu.rebase_abort = ["a"]
+rebase_menu.rebase_continue = ["c"]
+rebase_menu.rebase_elsewhere = ["e"]
+rebase_menu.rebase_autosquash = ["f"]
+rebase_menu.quit = ["q", "<esc>"]
+
+root.reset_menu = ["X"]
+reset_menu.reset_soft = ["s"]
+reset_menu.reset_mixed = ["m"]
+reset_menu.reset_hard = ["h"]
+reset_menu.quit = ["q", "<esc>"]
+
+root.stash_menu = ["z"]
+stash_menu.stash = ["z"]
+stash_menu.stash_index = ["i"]
+stash_menu.stash_worktree = ["w"]
+stash_menu.stash_keep_index = ["x"]
+stash_menu.stash_pop = ["p"]
+stash_menu.stash_apply = ["a"]
+stash_menu.stash_drop = ["k"]
+stash_menu.quit = ["q", "<esc>"]

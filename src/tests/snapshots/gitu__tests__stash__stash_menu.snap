@@ -15,11 +15,11 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 Stash                                                                           |
 z Stash (include untracked)                                                     |
+a Apply stash                                                                   |
 i Stash index                                                                   |
 w Stash working tree                                                            |
 x Stash keeping index                                                           |
 p Pop stash                                                                     |
-a Apply stash                                                                   |
 k Drop stash                                                                    |
 q/<esc> Quit/Close                                                              |
 styles_hash: 17e2924fd3b42efd

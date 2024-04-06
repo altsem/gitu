@@ -116,33 +116,33 @@ fn format_keybinds_menu<'b>(
 ) -> (usize, Table<'b>) {
     let style = &config.style;
 
-    let arg_binds = bindings.arg_list(&pending.menu).collect::<Vec<_>>();
+    let arg_binds = bindings.arg_list(pending).collect::<Vec<_>>();
 
     let non_target_binds = bindings
         .list(&pending.menu)
-        .filter(|keybind| !keybind.op.implementation().is_target_op())
+        .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
         .collect::<Vec<_>>();
 
     let mut pending_binds_column = vec![];
     pending_binds_column.push(Line::styled(format!("{}", pending.menu), &style.command));
     for (op, binds) in non_target_binds
         .iter()
-        .group_by(|bind| bind.op)
+        .group_by(|bind| &bind.op)
         .into_iter()
-        .filter(|(op, _binds)| !matches!(op, Op::Menu(_)))
+        .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
     {
         pending_binds_column.push(Line::from(vec![
             Span::styled(
                 binds.into_iter().map(|bind| &bind.raw).join("/"),
                 &style.hotkey,
             ),
-            Span::styled(format!(" {}", op.implementation()), Style::new()),
+            Span::styled(format!(" {}", op.clone().implementation()), Style::new()),
         ]));
     }
 
     let menus = non_target_binds
         .iter()
-        .filter(|bind| matches!(bind.op, Op::Menu(_)))
+        .filter(|bind| matches!(bind.op, Op::OpenMenu(_)))
         .collect::<Vec<_>>();
 
     let mut menu_binds_column = vec![];
@@ -150,7 +150,7 @@ fn format_keybinds_menu<'b>(
         menu_binds_column.push(Line::styled("Submenu", &style.command));
     }
     for bind in menus {
-        let Op::Menu(menu) = bind.op else {
+        let Op::OpenMenu(menu) = bind.op else {
             unreachable!();
         };
 
@@ -164,10 +164,11 @@ fn format_keybinds_menu<'b>(
     if let Some(target_data) = &item.target_data {
         let target_binds = bindings
             .list(&pending.menu)
-            .filter(|keybind| keybind.op.implementation().is_target_op())
+            .filter(|keybind| keybind.op.clone().implementation().is_target_op())
             .filter(|keybind| {
                 keybind
                     .op
+                    .clone()
                     .implementation()
                     .get_action(Some(target_data))
                     .is_some()
@@ -181,7 +182,10 @@ fn format_keybinds_menu<'b>(
         for bind in target_binds {
             right_column.push(Line::from(vec![
                 Span::styled(&bind.raw, &style.hotkey),
-                Span::styled(format!(" {}", bind.op.implementation()), Style::new()),
+                Span::styled(
+                    format!(" {}", bind.op.clone().implementation()),
+                    Style::new(),
+                ),
             ]));
         }
     }
@@ -191,18 +195,18 @@ fn format_keybinds_menu<'b>(
     }
 
     for bind in arg_binds {
-        let Op::ToggleArg(name) = bind.op else {
+        let Op::ToggleArg(name) = &bind.op else {
             unreachable!();
         };
 
-        let on = *pending.args.get(name).unwrap_or(&false);
+        let on = *pending.args.get(name.as_str()).unwrap_or(&false);
 
         right_column.push(Line::from(vec![
             Span::styled(&bind.raw, &style.hotkey),
             Span::styled(
                 format!(
                     " {} ({})",
-                    bind.op.implementation(),
+                    bind.op.clone().implementation(),
                     if on { "on" } else { "off" }
                 ),
                 if on { Style::new() } else { Style::new().dim() },
