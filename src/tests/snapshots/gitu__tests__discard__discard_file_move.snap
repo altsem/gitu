@@ -1,0 +1,15 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 1 commit.                             |
+                                                                                |
+ Recent commits                                                                 |
+▌_______ main add new-file                                                      |
+ _______ origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git checkout HEAD -- new-file                                                 |
+styles_hash: a3f19b2153c6a71

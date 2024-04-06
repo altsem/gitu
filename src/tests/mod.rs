@@ -563,6 +563,18 @@ mod discard {
     }
 
     #[test]
+    pub(crate) fn discard_file_move() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "new-file", "hello");
+        run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
+        let mut state = ctx.init_state();
+
+        // TODO: Moved file is shown as 1 new and 1 deleted file.
+        state.update(&mut ctx.term, &keys("jjKyKy")).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
     pub(crate) fn discard_unstaged_delta() {
         let mut ctx = TestContext::setup_clone(80, 10);
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");

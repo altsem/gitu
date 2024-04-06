@@ -11,19 +11,10 @@ impl OpTrait for Discard {
         let action = match target.cloned() {
             Some(TargetData::Branch(r)) => cmd_arg(discard_branch, r.into()),
             Some(TargetData::File(f)) => cmd_arg(clean_file_cmd, f.into()),
-            Some(TargetData::Delta(d)) => {
-                match d.status {
-                    git2::Delta::Added => cmd_arg(remove_file_cmd, d.new_file.into()),
-                    _ => {
-                        if d.old_file == d.new_file {
-                            cmd_arg(checkout_file_cmd, d.old_file.into())
-                        } else {
-                            // TODO Discard file move
-                            return None;
-                        }
-                    }
-                }
-            }
+            Some(TargetData::Delta(d)) => match d.status {
+                git2::Delta::Added => cmd_arg(remove_file_cmd, d.new_file.into()),
+                _ => cmd_arg(checkout_file_cmd, d.old_file.into()),
+            },
             Some(TargetData::Hunk(h)) => {
                 cmd(h.format_patch().into_bytes(), discard_unstaged_patch_cmd)
             }
