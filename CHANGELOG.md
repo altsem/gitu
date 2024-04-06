@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0] - 2024-04-06
+
+### 🚀 Features
+
+- Remove move p/n from default bindings (move up/down)
+- Make keybinds configurable
+
+### 🐛 Bug Fixes
+
+- Existing terminal text would bleed into gitu on startup
+- Discarding staged files would not work & use git clean for removing untracked files
+
 ## [0.13.1] - 2024-04-04
 
 ### 🐛 Bug Fixes
