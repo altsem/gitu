@@ -552,6 +552,29 @@ mod discard {
     }
 
     #[test]
+    pub(crate) fn discard_untracked_staged_file() {
+        let mut ctx = TestContext::setup_clone(80, 15);
+        run(ctx.dir.path(), &["touch", "some-file"]);
+        run(ctx.dir.path(), &["git", "add", "some-file"]);
+        let mut state = ctx.init_state();
+
+        state.update(&mut ctx.term, &keys("jsjKy")).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
+    pub(crate) fn discard_file_move() {
+        let mut ctx = TestContext::setup_clone(80, 10);
+        commit(ctx.dir.path(), "new-file", "hello");
+        run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
+        let mut state = ctx.init_state();
+
+        // TODO: Moved file is shown as 1 new and 1 deleted file.
+        state.update(&mut ctx.term, &keys("jjKyKy")).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+    }
+
+    #[test]
     pub(crate) fn discard_unstaged_delta() {
         let mut ctx = TestContext::setup_clone(80, 10);
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");

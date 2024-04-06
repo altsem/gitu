@@ -1,6 +1,5 @@
 ---
 source: src/tests/mod.rs
-assertion_line: 551
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -11,6 +10,11 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git clean --force some-file                                                   |
-styles_hash: d6684a0a5609225a
+$ git rm --force some-file                                                      |
+styles_hash: 83f8d1650eaed120

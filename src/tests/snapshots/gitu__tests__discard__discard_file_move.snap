@@ -1,16 +1,15 @@
 ---
 source: src/tests/mod.rs
-assertion_line: 551
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
- Your branch is up to date with 'origin/main'.                                  |
+ Your branch is ahead of 'origin/main' by 1 commit.                             |
                                                                                 |
  Recent commits                                                                 |
-▌_______ main origin/main add initial-file                                      |
-                                                                                |
+▌_______ main add new-file                                                      |
+ _______ origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git clean --force some-file                                                   |
-styles_hash: d6684a0a5609225a
+$ git checkout HEAD -- new-file                                                 |
+styles_hash: a3f19b2153c6a71
