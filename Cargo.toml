@@ -33,4 +33,4 @@ serde = { version = "1.0.152", features = ["derive"] }
 similar = { version = "2.5.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
 toml = "0.8.12"
-tui-prompts = "0.3.8"
+tui-prompts = "0.3.10"
