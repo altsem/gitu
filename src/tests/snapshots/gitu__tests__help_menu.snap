@@ -11,15 +11,15 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Help                                      Submenu                               |
-y Show refs                               b Branch                              |
-<tab> Toggle section                      c Commit                              |
-k/p/<up> Up                               f Fetch                               |
-j/n/<down> Down                           h Help                                |
-<ctrl+k>/<ctrl+p>/<ctrl+up> Up line       l Log                                 |
-<ctrl+j>/<ctrl+n>/<ctrl+down> Down line   F Pull                                |
-<ctrl+u> Half page up                     P Push                                |
-<ctrl+d> Half page down                   r Rebase                              |
-g Refresh                                 X Reset                               |
-q/<esc> Quit/Close                        z Stash                               |
-styles_hash: 71deea3f4d344c94
+Help                             Submenu                                        |
+y Show refs                      b Branch                                       |
+<tab> Toggle section             c Commit                                       |
+k/<up> Up                        f Fetch                                        |
+j/<down> Down                    h Help                                         |
+<ctrl+k>/<ctrl+up> Up line       l Log                                          |
+<ctrl+j>/<ctrl+down> Down line   F Pull                                         |
+<ctrl+u> Half page up            P Push                                         |
+<ctrl+d> Half page down          r Rebase                                       |
+g Refresh                        X Reset                                        |
+q/<esc> Quit/Close               z Stash                                        |
+styles_hash: d513a8c50c752d47
