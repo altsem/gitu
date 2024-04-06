@@ -31,7 +31,7 @@ A help-menu can be shown by pressing the `h` key.
 The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
 
 Configuration is also loaded from `~/.config/gitu/config.toml`,
-you could copy the [default configuration](src/default_config.toml).
+refer to the [default configuration](src/default_config.toml).
 ### Installing Gitu
 Follow the install instructions: [Installing Gitu](docs/installing.md)\
 Or install from your package manager:
