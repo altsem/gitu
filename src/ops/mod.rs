@@ -78,10 +78,10 @@ pub(crate) enum Op {
     Discard,
 
     ToggleSection,
-    MoveDown,
     MoveUp,
-    MoveDownLine,
+    MoveDown,
     MoveUpLine,
+    MoveDownLine,
     HalfPageUp,
     HalfPageDown,
 
