@@ -1,7 +1,11 @@
-use super::{subscreen_arg, Action, OpTrait};
+use super::{Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term};
 use derive_more::Display;
-use std::{ffi::OsStr, process::Command, rc::Rc};
+use std::{
+    ffi::{OsStr, OsString},
+    process::Command,
+    rc::Rc,
+};
 
 pub(crate) const ARGS: &[Arg] = &[];
 
@@ -40,12 +44,16 @@ impl OpTrait for CommitAmend {
 pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        let action = match target {
-            Some(TargetData::Commit(r)) => subscreen_arg(commit_fixup_cmd, r.into()),
-            _ => return None,
-        };
+        match target {
+            Some(TargetData::Commit(r)) => {
+                let arg = OsString::from(r);
 
-        Some(action)
+                Some(Rc::new(move |state: &mut State, term: &mut Term| {
+                    state.run_cmd_interactive(term, commit_fixup_cmd(&arg))
+                }))
+            }
+            _ => None,
+        }
     }
     fn is_target_op(&self) -> bool {
         true
