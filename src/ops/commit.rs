@@ -7,7 +7,20 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) const ARGS: &[Arg] = &[
+    Arg::new("--all", "Stage all modified and deleted files", false),
+    Arg::new("--allow-empty", "Allow empty commit", false),
+    Arg::new("--verbose", "Show diff of changes to be committed", false),
+    Arg::new("--no-verify", "Disable hooks", false),
+    Arg::new(
+        "--reset-author",
+        "Claim authorship and reset author date",
+        false,
+    ),
+    // TODO -A Override the author (--author=)
+    Arg::new("--signoff", "Add Signed-off-by line", false),
+    // TODO -C Reuse commit message (--reuse-message=)
+];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Commit")]
@@ -17,6 +30,7 @@ impl OpTrait for Commit {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["commit"]);
+            cmd.args(state.pending_menu.as_ref().unwrap().args());
 
             state.run_cmd_interactive(term, cmd)?;
             Ok(())
@@ -32,6 +46,7 @@ impl OpTrait for CommitAmend {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend"]);
+            cmd.args(state.pending_menu.as_ref().unwrap().args());
 
             state.run_cmd_interactive(term, cmd)?;
             Ok(())
@@ -46,10 +61,11 @@ impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
             Some(TargetData::Commit(r)) => {
-                let arg = OsString::from(r);
+                let rev = OsString::from(r);
 
                 Some(Rc::new(move |state: &mut State, term: &mut Term| {
-                    state.run_cmd_interactive(term, commit_fixup_cmd(&arg))
+                    let args = state.pending_menu.as_ref().unwrap().args();
+                    state.run_cmd_interactive(term, commit_fixup_cmd(&args, &rev))
                 }))
             }
             _ => None,
@@ -60,9 +76,10 @@ impl OpTrait for CommitFixup {
     }
 }
 
-fn commit_fixup_cmd(reference: &OsStr) -> Command {
+fn commit_fixup_cmd(args: &[OsString], rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(["commit", "--fixup"]);
-    cmd.arg(reference);
+    cmd.arg(rev);
+    cmd.args(args);
     cmd
 }
