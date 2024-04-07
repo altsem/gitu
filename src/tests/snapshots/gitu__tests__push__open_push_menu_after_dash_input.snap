@@ -6,10 +6,10 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit.                             |
                                                                                 |
  Recent commits                                                                 |
- _______ main add new-file                                                      |
- _______ origin/main add initial-file                                           |
 ────────────────────────────────────────────────────────────────────────────────|
 Push                    Arguments                                               |
-p Push                  -f Force with lease (--force-with-lease)                |
-q/<esc> Quit/Close                                                              |
-styles_hash: 8a6c1fe657f0bd1f
+p Push                  -n Dry run (--dry-run)                                  |
+q/<esc> Quit/Close      -F Force (--force)                                      |
+                        -f Force with lease (--force-with-lease)                |
+                        -h Disable hooks (--no-verify)                          |
+styles_hash: 9d7dcd8ec357bbdc

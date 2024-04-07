@@ -3,7 +3,12 @@ use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[Arg::new("--force-with-lease", "Force with lease", false)];
+pub(crate) const ARGS: &[Arg] = &[
+    Arg::new("--force-with-lease", "Force with lease", false),
+    Arg::new("--force", "Force", false),
+    Arg::new("--no-verify", "Disable hooks", false),
+    Arg::new("--dry-run", "Dry run", false),
+];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Push")]

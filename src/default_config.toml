@@ -93,6 +93,9 @@ pull_menu.quit = ["q", "<esc>"]
 
 root.push_menu = ["P"]
 push_menu.--force-with-lease = ["-f"]
+push_menu.--force = ["-F"]
+push_menu.--no-verify = ["-h"]
+push_menu.--dry-run = ["-n"]
 push_menu.push = ["p"]
 push_menu.quit = ["q", "<esc>"]
 
