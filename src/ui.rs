@@ -1,9 +1,11 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 use std::sync::RwLock;
 
 use crate::bindings::Bindings;
 use crate::config::Config;
 use crate::items::Item;
+use crate::menu::arg::Arg;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::state::State;
@@ -199,18 +201,26 @@ fn format_keybinds_menu<'b>(
             unreachable!();
         };
 
-        let on = *pending.args.get(name.as_str()).unwrap_or(&false);
+        let on = pending
+            .args
+            .get(name.as_str())
+            .map(Arg::is_acive)
+            .unwrap_or(false);
 
         right_column.push(Line::from(vec![
             Span::styled(&bind.raw, &style.hotkey),
+            Span::raw(" "),
+            Span::raw(pending.args.get(&Cow::from(name)).unwrap().display),
+            Span::raw(" ("),
             Span::styled(
-                format!(
-                    " {} ({})",
-                    bind.op.clone().implementation(),
-                    if on { "on" } else { "off" }
-                ),
-                if on { Style::new() } else { Style::new().dim() },
+                format!("{}", bind.op.clone().implementation()),
+                if on {
+                    Style::from(&style.active_arg)
+                } else {
+                    Style::new()
+                },
             ),
+            Span::raw(")"),
         ]));
     }
 

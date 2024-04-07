@@ -44,6 +44,8 @@ tag.fg = "yellow"
 
 command.fg = "blue"
 command.mods = "BOLD"
+active_arg.fg = "light red"
+active_arg.mods = "BOLD"
 hotkey.fg = "magenta"
 
 [bindings]

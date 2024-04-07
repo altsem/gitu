@@ -49,6 +49,7 @@ pub struct StyleConfig {
     pub tag: StyleConfigEntry,
 
     pub command: StyleConfigEntry,
+    pub active_arg: StyleConfigEntry,
     pub hotkey: StyleConfigEntry,
 }
 

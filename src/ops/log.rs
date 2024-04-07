@@ -1,12 +1,10 @@
 use super::{create_rev_prompt, Action, OpTrait};
-use crate::{items::TargetData, screen, state::State, term::Term, Res};
+use crate::{items::TargetData, menu::arg::Arg, screen, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::Oid;
 use std::rc::Rc;
 
-pub(crate) fn args() -> &'static [(&'static str, bool)] {
-    &[]
-}
+pub(crate) const ARGS: &[Arg] = &[];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Log current")]

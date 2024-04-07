@@ -1,11 +1,9 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, state::State, term::Term};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
-pub(crate) fn args() -> &'static [(&'static str, bool)] {
-    &[("--force-with-lease", false)]
-}
+pub(crate) const ARGS: &[Arg] = &[Arg::new("--force-with-lease", "Force with lease", false)];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Push")]

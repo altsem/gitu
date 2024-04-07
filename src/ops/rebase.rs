@@ -1,5 +1,5 @@
 use super::{create_rev_prompt, subscreen_arg, Action, OpTrait};
-use crate::{items::TargetData, state::State, term::Term, Res};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
@@ -7,9 +7,7 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) fn args() -> &'static [(&'static str, bool)] {
-    &[]
-}
+pub(crate) const ARGS: &[Arg] = &[];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Rebase continue")]

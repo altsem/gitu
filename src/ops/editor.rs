@@ -1,5 +1,11 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, menu::PendingMenu, screen::NavMode, state::State, term::Term};
+use crate::{
+    items::TargetData,
+    menu::{arg::Arg, PendingMenu},
+    screen::NavMode,
+    state::State,
+    term::Term,
+};
 use derive_more::Display;
 use std::rc::Rc;
 
@@ -72,9 +78,7 @@ impl OpTrait for ToggleArg {
         let arg = self.0.clone();
         Some(Rc::new(move |state, _term| {
             if let Some(menu) = &mut state.pending_menu {
-                menu.args
-                    .entry(arg.clone().into())
-                    .and_modify(|value| *value = !*value);
+                menu.args.entry(arg.clone().into()).and_modify(Arg::toggle);
             }
             Ok(())
         }))

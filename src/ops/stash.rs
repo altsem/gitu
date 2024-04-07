@@ -1,13 +1,11 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, prompt::PromptData, state::State, term::Term, Res};
+use crate::{items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::{Repository, Status, StatusOptions};
 use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
-pub(crate) fn args() -> &'static [(&'static str, bool)] {
-    &[]
-}
+pub(crate) const ARGS: &[Arg] = &[];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Stash (include untracked)")]

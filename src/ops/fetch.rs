@@ -1,11 +1,9 @@
 use super::{Action, OpTrait};
-use crate::items::TargetData;
+use crate::{items::TargetData, menu::arg::Arg};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
-pub(crate) fn args() -> &'static [(&'static str, bool)] {
-    &[]
-}
+pub(crate) const ARGS: &[Arg] = &[];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Fetch all")]

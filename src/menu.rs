@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::ops;
 
+pub(crate) mod arg;
+
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum Menu {
@@ -35,7 +37,7 @@ pub(crate) enum Menu {
 
 pub(crate) struct PendingMenu {
     pub menu: Menu,
-    pub(crate) args: BTreeMap<Cow<'static, str>, bool>,
+    pub(crate) args: BTreeMap<Cow<'static, str>, arg::Arg>,
 }
 
 impl PendingMenu {
@@ -44,19 +46,19 @@ impl PendingMenu {
             menu,
             args: match menu {
                 Menu::Root => &[],
-                Menu::Branch => ops::checkout::args(),
-                Menu::Commit => ops::commit::args(),
-                Menu::Fetch => ops::fetch::args(),
+                Menu::Branch => ops::checkout::ARGS,
+                Menu::Commit => ops::commit::ARGS,
+                Menu::Fetch => ops::fetch::ARGS,
                 Menu::Help => &[],
-                Menu::Log => ops::log::args(),
-                Menu::Pull => ops::pull::args(),
-                Menu::Push => ops::push::args(),
-                Menu::Rebase => ops::rebase::args(),
-                Menu::Reset => ops::reset::args(),
-                Menu::Stash => ops::stash::args(),
+                Menu::Log => ops::log::ARGS,
+                Menu::Pull => ops::pull::ARGS,
+                Menu::Push => ops::push::ARGS,
+                Menu::Rebase => ops::rebase::ARGS,
+                Menu::Reset => ops::reset::ARGS,
+                Menu::Stash => ops::stash::ARGS,
             }
             .iter()
-            .map(|&(k, v)| (Cow::from(k), v))
+            .map(|arg| (Cow::from(arg.arg), arg.clone()))
             .collect(),
         }
     }
@@ -64,7 +66,7 @@ impl PendingMenu {
     pub fn args(&self) -> Vec<OsString> {
         self.args
             .iter()
-            .filter(|&(_k, &v)| v)
+            .filter(|&(_k, arg)| arg.state)
             .map(|(k, _v)| k.to_string().into())
             .collect()
     }

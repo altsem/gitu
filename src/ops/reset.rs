@@ -1,11 +1,9 @@
 use super::{create_rev_prompt, OpTrait};
-use crate::{items::TargetData, state::State, term::Term, Action, Res};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action, Res};
 use derive_more::Display;
 use std::process::Command;
 
-pub(crate) fn args() -> &'static [(&'static str, bool)] {
-    &[]
-}
+pub(crate) const ARGS: &[Arg] = &[];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Reset soft")]
