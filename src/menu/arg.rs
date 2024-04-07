@@ -2,7 +2,6 @@
 pub(crate) struct Arg {
     pub arg: &'static str,
     pub display: &'static str,
-    pub(crate) default: bool,
     pub(crate) state: bool,
 }
 
@@ -11,7 +10,6 @@ impl Arg {
         Arg {
             arg,
             display,
-            default,
             state: default,
         }
     }
@@ -21,6 +19,6 @@ impl Arg {
     }
 
     pub fn is_acive(&self) -> bool {
-        self.state != self.default
+        self.state
     }
 }
