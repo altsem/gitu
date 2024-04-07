@@ -88,6 +88,7 @@ log_menu.log_other = ["o"]
 log_menu.quit = ["q", "<esc>"]
 
 root.pull_menu = ["F"]
+pull_menu.--rebase = ["-r"]
 pull_menu.pull = ["p"]
 pull_menu.quit = ["q", "<esc>"]
 
