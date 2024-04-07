@@ -19,9 +19,9 @@ pub(crate) enum NavMode {
 }
 
 pub(crate) struct Screen {
-    pub(crate) cursor: usize,
-    pub(crate) scroll: usize,
     pub(crate) size: Rect,
+    cursor: usize,
+    scroll: usize,
     config: Rc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
