@@ -85,6 +85,8 @@ commit_menu.commit_fixup = ["f"]
 commit_menu.quit = ["q", "<esc>"]
 
 root.fetch_menu = ["f"]
+fetch_menu.--prune = ["-p"]
+fetch_menu.--tags = ["-t"]
 fetch_menu.fetch_all = ["a"]
 fetch_menu.quit = ["q", "<esc>"]
 

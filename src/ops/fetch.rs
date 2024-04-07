@@ -3,7 +3,10 @@ use crate::{items::TargetData, menu::arg::Arg};
 use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) const ARGS: &[Arg] = &[
+    Arg::new("--prune", "Prune deleted branches", false),
+    Arg::new("--tags", "Fetch all tags", false),
+];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Fetch all")]
@@ -13,6 +16,7 @@ impl OpTrait for FetchAll {
         Some(Rc::new(|state, term| {
             let mut cmd = Command::new("git");
             cmd.args(["fetch", "--all", "--jobs", "10"]);
+            cmd.args(state.pending_menu.as_ref().unwrap().args());
 
             state.run_cmd_async(term, &[], cmd)?;
             Ok(())
