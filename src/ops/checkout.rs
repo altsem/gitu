@@ -1,7 +1,7 @@
 use super::{create_rev_prompt, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, term::Term, Res};
 use derive_more::Display;
-use std::{process::Command, rc::Rc};
+use std::{ffi::OsString, process::Command, rc::Rc};
 use tui_prompts::State as _;
 
 pub(crate) const ARGS: &[Arg] = &[];
@@ -15,9 +15,11 @@ impl OpTrait for Checkout {
     }
 }
 
-fn checkout(state: &mut State, term: &mut Term, result: &str) -> Res<()> {
+fn checkout(state: &mut State, term: &mut Term, args: &[OsString], rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
-    cmd.args(["checkout", &result]);
+    cmd.args(["checkout"]);
+    cmd.args(args);
+    cmd.arg(rev);
 
     state.run_cmd(term, &[], cmd)?;
     Ok(())

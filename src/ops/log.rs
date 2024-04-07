@@ -2,7 +2,7 @@ use super::{create_rev_prompt, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, screen, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::Oid;
-use std::rc::Rc;
+use std::{ffi::OsString, rc::Rc};
 
 pub(crate) const ARGS: &[Arg] = &[];
 
@@ -27,7 +27,7 @@ impl OpTrait for LogOther {
     }
 }
 
-fn log_other(state: &mut State, _term: &mut Term, result: &str) -> Res<()> {
+fn log_other(state: &mut State, _term: &mut Term, _args: &[OsString], result: &str) -> Res<()> {
     let oid = match state.repo.revparse_single(result) {
         Ok(rev) => Ok(rev.id()),
         Err(err) => Err(format!("Failed due to: {:?}", err.code())),

@@ -1,4 +1,4 @@
-use super::{create_rev_prompt, subscreen_arg, Action, OpTrait};
+use super::{create_rev_prompt, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{
@@ -7,7 +7,19 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) const ARGS: &[Arg] = &[
+    Arg::new("--keep-empty", "Keep empty commits", false),
+    Arg::new("--preserve-merges", "Presere merges", false),
+    Arg::new(
+        "--committer-date-is-author-date",
+        "Lie about committer date",
+        false,
+    ),
+    Arg::new("--autosquash", "Autosquash", false),
+    Arg::new("--autostash", "Autostash", true),
+    Arg::new("--interactive", "Interactive", false),
+    Arg::new("--no-verify", "Disable hooks", false),
+];
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
 #[display(fmt = "Rebase continue")]
@@ -48,10 +60,11 @@ impl OpTrait for RebaseElsewhere {
     }
 }
 
-fn rebase_elsewhere(state: &mut State, term: &mut Term, result: &str) -> Res<()> {
+fn rebase_elsewhere(state: &mut State, term: &mut Term, args: &[OsString], rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
-    cmd.args(["rebase"]);
-    cmd.arg(result);
+    cmd.arg("rebase");
+    cmd.args(args);
+    cmd.arg(rev);
 
     state.run_cmd_interactive(term, cmd)?;
     Ok(())
@@ -64,7 +77,11 @@ impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                subscreen_arg(rebase_interactive_cmd, r.into())
+                let rev = OsString::from(r);
+                Rc::new(move |state: &mut State, term: &mut Term| {
+                    let args = state.pending_menu.as_ref().unwrap().args();
+                    state.run_cmd_interactive(term, rebase_interactive_cmd(&args, &rev))
+                })
             }
             _ => return None,
         };
@@ -76,15 +93,11 @@ impl OpTrait for RebaseInteractive {
     }
 }
 
-fn rebase_interactive_cmd(reference: &OsStr) -> Command {
+fn rebase_interactive_cmd(args: &[OsString], rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args([
-        OsStr::new("rebase"),
-        OsStr::new("-i"),
-        OsStr::new("--autostash"),
-        &parent(reference),
-    ]);
-
+    cmd.args(["rebase", "-i"]);
+    cmd.args(args);
+    cmd.arg(&parent(rev));
     cmd
 }
 
@@ -101,7 +114,11 @@ impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                subscreen_arg(rebase_autosquash_cmd, r.into())
+                let rev = OsString::from(r);
+                Rc::new(move |state: &mut State, term: &mut Term| {
+                    let args = state.pending_menu.as_ref().unwrap().args();
+                    state.run_cmd_interactive(term, rebase_autosquash_cmd(&args, &rev))
+                })
             }
             _ => return None,
         };
@@ -113,15 +130,10 @@ impl OpTrait for RebaseAutosquash {
     }
 }
 
-fn rebase_autosquash_cmd(reference: &OsStr) -> Command {
+fn rebase_autosquash_cmd(args: &[OsString], rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args([
-        OsStr::new("rebase"),
-        OsStr::new("-i"),
-        OsStr::new("--autosquash"),
-        OsStr::new("--keep-empty"),
-        OsStr::new("--autostash"),
-        &reference,
-    ]);
+    cmd.args(["rebase", "-i", "--autosquash", "--keep-empty"]);
+    cmd.args(args);
+    cmd.arg(rev);
     cmd
 }

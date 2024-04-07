@@ -170,10 +170,6 @@ pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
     Rc::new(move |state, term| state.run_cmd(term, &[], command(&arg)))
 }
 
-pub(crate) fn subscreen_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
-    Rc::new(move |state, term| state.run_cmd_interactive(term, command(&arg)))
-}
-
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
     let update_fn =
         Rc::new(move |state: &mut State, term: &mut Term| {
@@ -207,7 +203,7 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
 
 pub(crate) fn create_rev_prompt(
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &str) -> Res<()>,
+    callback: fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
 ) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| {
         let prompt_text = if let Some(default) = default_rev(state) {
@@ -215,6 +211,8 @@ pub(crate) fn create_rev_prompt(
         } else {
             format!("{}:", prompt).into()
         };
+
+        let args = state.pending_menu.as_ref().unwrap().args();
 
         state.prompt.set(PromptData {
             prompt_text,
@@ -230,7 +228,7 @@ pub(crate) fn create_rev_prompt(
                         (value, _) => value,
                     };
 
-                    callback(state, term, rev)?;
+                    callback(state, term, &args, rev)?;
                 }
                 Ok(())
             }),

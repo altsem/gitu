@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git rebase main                                                               |
-styles_hash: 6daa3533e8314a9e
+$ git rebase --autostash main                                                   |
+styles_hash: af3f42c744ef454b

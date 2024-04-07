@@ -1,7 +1,7 @@
 use super::{create_rev_prompt, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action, Res};
 use derive_more::Display;
-use std::process::Command;
+use std::{ffi::OsString, process::Command};
 
 pub(crate) const ARGS: &[Arg] = &[];
 
@@ -14,9 +14,10 @@ impl OpTrait for ResetSoft {
     }
 }
 
-fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_soft(state: &mut State, term: &mut Term, args: &[OsString], input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--soft"]);
+    cmd.args(args);
     cmd.arg(input);
     state.run_cmd(term, &[], cmd)
 }
@@ -30,9 +31,10 @@ impl OpTrait for ResetMixed {
     }
 }
 
-fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_mixed(state: &mut State, term: &mut Term, args: &[OsString], input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--mixed"]);
+    cmd.args(args);
     cmd.arg(input);
     state.run_cmd(term, &[], cmd)
 }
@@ -46,9 +48,10 @@ impl OpTrait for ResetHard {
     }
 }
 
-fn reset_hard(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_hard(state: &mut State, term: &mut Term, args: &[OsString], input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--hard"]);
+    cmd.args(args);
     cmd.arg(input);
     state.run_cmd(term, &[], cmd)
 }
