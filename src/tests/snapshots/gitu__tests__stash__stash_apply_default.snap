@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git stash apply 0                                                             |
-styles_hash: ad4552bb144bc8ec
+$ git stash apply -q 0                                                          |
+Already up to date.                                                             |
+styles_hash: 3fed1151179f36db

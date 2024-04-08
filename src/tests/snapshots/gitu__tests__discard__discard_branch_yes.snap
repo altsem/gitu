@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d asd                                                             |
-styles_hash: 81e21259cce6741e
+Deleted branch asd (was _______).                                               |
+styles_hash: 1396152e0c770793

@@ -350,17 +350,24 @@ fn write_child_output_to_log(
 
     drop(child.stdin.take());
 
-    let mut stderr = vec![];
+    let mut out_bytes = vec![];
     log::debug!("Reading stderr");
 
     child
         .stderr
         .take()
         .unwrap()
-        .read_to_end(&mut stderr)
+        .read_to_end(&mut out_bytes)
         .map_err(|e| format!("Couldn't read cmd output: {}", e))?;
 
-    let out_string = String::from_utf8(stderr.clone())?;
+    child
+        .stdout
+        .take()
+        .unwrap()
+        .read_to_end(&mut out_bytes)
+        .map_err(|e| format!("Couldn't read cmd output: {}", e))?;
+
+    let out_string = String::from_utf8(out_bytes.clone())?;
     *out_log = Some(out_string.into());
 
     if !status.success() {

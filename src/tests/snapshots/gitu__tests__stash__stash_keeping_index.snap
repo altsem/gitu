@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --keep-index --include-untracked --message test                |
-styles_hash: 496a7a1678ed9b44
+Saved working directory and index state On main: test                           |
+styles_hash: 47b6f234256a56ab

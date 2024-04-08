@@ -1,6 +1,5 @@
 ---
 source: src/tests/mod.rs
-assertion_line: 551
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -10,7 +9,7 @@ expression: ctx.redact_buffer()
 ▌_______ main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git clean --force some-file                                                   |
-styles_hash: d6684a0a5609225a
+Removing some-file                                                              |
+styles_hash: 776da37611753a60
