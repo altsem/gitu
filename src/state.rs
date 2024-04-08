@@ -285,9 +285,9 @@ impl State {
 
         let result = write_child_output_to_log(log_rwlock, child, status);
         self.pending_cmd = None;
+        self.screen_mut().update()?;
         result?;
 
-        self.screen_mut().update()?;
         Ok(true)
     }
 
