@@ -76,6 +76,7 @@ impl State {
         };
 
         let bindings = Bindings::from(&config.bindings);
+        let pending_menu = root_menu(&config).map(PendingMenu::init);
 
         Ok(Self {
             repo,
@@ -86,7 +87,7 @@ impl State {
             quit: false,
             screens,
             pending_cmd: None,
-            pending_menu: None,
+            pending_menu,
             current_cmd_log_entries: vec![],
             prompt: prompt::Prompt::new(),
         })
@@ -207,7 +208,7 @@ impl State {
         match op {
             Op::OpenMenu(_) => (),
             Op::ToggleArg(_) => (),
-            _ => self.pending_menu = None,
+            _ => self.pending_menu = root_menu(&self.config).map(PendingMenu::init),
         }
     }
 
@@ -334,6 +335,14 @@ impl State {
         }
 
         Ok(())
+    }
+}
+
+pub(crate) fn root_menu(config: &Config) -> Option<Menu> {
+    if config.general.always_show_help.enabled {
+        Some(Menu::Help)
+    } else {
+        None
     }
 }
 

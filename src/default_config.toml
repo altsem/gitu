@@ -3,6 +3,7 @@
 # `~/.config/gitu/config.toml`
 
 [general]
+always_show_help.enabled = false
 confirm_quit.enabled = false
 
 [style]

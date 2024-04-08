@@ -19,6 +19,7 @@ pub(crate) struct Config {
 
 #[derive(Default, Debug, Deserialize)]
 pub struct GeneralConfig {
+    pub always_show_help: BoolConfigEntry,
     pub confirm_quit: BoolConfigEntry,
 }
 
@@ -98,9 +99,12 @@ pub(crate) fn init_config() -> Res<Config> {
 
 #[cfg(test)]
 pub(crate) fn init_test_config() -> Res<Config> {
-    Ok(Figment::new()
+    let mut config: Config = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
-        .extract()?)
+        .extract()?;
+
+    config.general.always_show_help.enabled = false;
+    Ok(config)
 }
 
 #[cfg(test)]

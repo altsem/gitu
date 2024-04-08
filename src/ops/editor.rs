@@ -3,7 +3,7 @@ use crate::{
     items::TargetData,
     menu::{arg::Arg, PendingMenu},
     screen::NavMode,
-    state::State,
+    state::{root_menu, State},
     term::Term,
 };
 use derive_more::Display;
@@ -15,32 +15,34 @@ pub(crate) struct Quit;
 impl OpTrait for Quit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, term| {
-            match state.pending_menu {
-                None => {
-                    if state.screens.len() == 1 {
-                        let quit = Rc::new(|state: &mut State, _term: &mut Term| {
-                            state.quit = true;
-                            Ok(())
-                        });
+            let menu = state
+                .pending_menu
+                .as_ref()
+                .map(|pending_menu| pending_menu.menu);
 
-                        let mut action = if state.config.general.confirm_quit.enabled {
-                            super::create_y_n_prompt(quit, "Really quit?")
-                        } else {
-                            quit
-                        };
+            if menu == root_menu(&state.config) {
+                if state.screens.len() == 1 {
+                    let quit = Rc::new(|state: &mut State, _term: &mut Term| {
+                        state.quit = true;
+                        Ok(())
+                    });
 
-                        Rc::get_mut(&mut action).unwrap()(state, term)?;
+                    let mut action = if state.config.general.confirm_quit.enabled {
+                        super::create_y_n_prompt(quit, "Really quit?")
                     } else {
-                        state.screens.pop();
-                        if let Some(screen) = state.screens.last_mut() {
-                            screen.update()?;
-                        }
+                        quit
+                    };
+
+                    Rc::get_mut(&mut action).unwrap()(state, term)?;
+                } else {
+                    state.screens.pop();
+                    if let Some(screen) = state.screens.last_mut() {
+                        screen.update()?;
                     }
                 }
-                _ => {
-                    state.pending_menu = None;
-                    return Ok(());
-                }
+            } else {
+                state.pending_menu = root_menu(&state.config).map(PendingMenu::init);
+                return Ok(());
             }
 
             Ok(())
