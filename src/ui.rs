@@ -8,6 +8,7 @@ use crate::items::Item;
 use crate::menu::arg::Arg;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
+use crate::prompt::Prompt;
 use crate::state::State;
 use crate::CmdLogEntry;
 use itertools::EitherOrBoth;
@@ -34,12 +35,23 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
             (0, None)
         };
 
-    let (menu_len, maybe_menu) = if let Some(ref menu) = state.pending_menu {
+    let State {
+        screens,
+        prompt:
+            Prompt {
+                data: maybe_prompt_data,
+                state: prompt_state,
+            },
+        pending_menu,
+        ..
+    } = state;
+
+    let (menu_len, maybe_menu) = if let Some(ref menu) = pending_menu {
         let (lines, table) = format_keybinds_menu(
             &state.config,
             &state.bindings,
             menu,
-            state.screen().get_selected_item(),
+            screens.last().unwrap().get_selected_item(),
         );
 
         (lines, Some(table))
@@ -52,7 +64,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     let menu_top_padding = if menu_len > 0 { 1 } else { 0 };
     let log_top_padding = if log_len > 0 { 1 } else { 0 };
 
-    if let Some(prompt_data) = &state.prompt.data {
+    if let Some(prompt_data) = maybe_prompt_data {
         let layout = Layout::new(
             Direction::Vertical,
             [
@@ -65,11 +77,11 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         )
         .split(frame.size());
 
-        frame.render_widget(state.screen(), layout[0]);
+        frame.render_widget(screens.last().unwrap(), layout[0]);
 
         frame.render_widget(popup_block(), layout[1]);
         let prompt = TextPrompt::new(prompt_data.prompt_text.clone());
-        frame.render_stateful_widget(prompt, layout[2], &mut state.prompt.state);
+        frame.render_stateful_widget(prompt, layout[2], prompt_state);
 
         if let Some(log) = maybe_log {
             frame.render_widget(popup_block(), layout[3]);
@@ -78,6 +90,8 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
+
+        screens.last_mut().unwrap().size = layout[0];
     } else {
         let layout = Layout::new(
             Direction::Vertical,
@@ -91,7 +105,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         )
         .split(frame.size());
 
-        frame.render_widget(state.screen(), layout[0]);
+        frame.render_widget(screens.last().unwrap(), layout[0]);
 
         if let Some(menu) = maybe_menu {
             frame.render_widget(popup_block(), layout[1]);
@@ -102,6 +116,8 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
             frame.render_widget(popup_block(), layout[3]);
             frame.render_widget(log, layout[4]);
         }
+
+        screens.last_mut().unwrap().size = layout[0];
     }
 }
 
