@@ -52,7 +52,7 @@ impl OpTrait for StashWorktree {
 
                 if need_to_stash_index {
                     let mut cmd = Command::new("git");
-                    cmd.args(["stash", "pop", "1"]);
+                    cmd.args(["stash", "pop", "-q", "1"]);
                     state.run_cmd(term, &[], cmd)?;
                 }
             }
@@ -210,7 +210,7 @@ fn stash_target_action_prompt_update(
             };
 
             let mut cmd = Command::new("git");
-            cmd.args(["stash", command, stash_id.to_string().as_str()]);
+            cmd.args(["stash", command, "-q", stash_id.to_string().as_str()]);
 
             state.run_cmd(term, &[], cmd)?;
         }

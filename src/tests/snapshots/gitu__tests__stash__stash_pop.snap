@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git stash pop 1                                                               |
-styles_hash: ed1d8470a3b89318
+$ git stash pop -q 1                                                            |
+styles_hash: aab561f2aabc3fec

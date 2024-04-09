@@ -3,13 +3,13 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
-                                                                                |
- Recent commits                                                                 |
- _______ main origin/main add remote-file                                       |
- _______ add initial-file                                                       |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git pull                                                                      |
 From                                                                            |
    _______.._______  main       -> origin/main                                  |
-styles_hash: d924df8a7ea8abb8
+Updating _______.._______                                                       |
+Fast-forward                                                                    |
+ remote-file | 1 +                                                              |
+ 1 file changed, 1 insertion(+)                                                 |
+ create mode 100644 remote-file                                                 |
+styles_hash: 8e8cc922fc761888

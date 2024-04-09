@@ -14,7 +14,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git rm --force some-file                                                      |
-styles_hash: 83f8d1650eaed120
+rm 'some-file'                                                                  |
+styles_hash: bfb3fc338219cc85

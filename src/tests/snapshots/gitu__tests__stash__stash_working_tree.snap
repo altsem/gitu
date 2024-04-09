@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --staged                                                       |
+Saved working directory and index state WIP on main: _______ add initial-file   |
 $ git stash push --include-untracked --message test                             |
-$ git stash pop 1                                                               |
-styles_hash: 276caf6db4468d52
+Saved working directory and index state On main: test                           |
+$ git stash pop -q 1                                                            |
+styles_hash: 6973fd54b1052e05
