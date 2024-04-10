@@ -1,12 +1,21 @@
-## [0.14.0] - 2024-04-06
+## [0.15.0] - 2024-04-10
 
 ### 🚀 Features
 
-- Remove move p/n from default bindings (move up/down)
-- Make keybinds configurable
+- Config option: general.always_show_help.enabled
+- Add all args to rebase menu
+- Add --prune and --tags flags to Fetch menu
+- Add all on/off arg flags to Commit menu
+- Add --rebase pull arg
+- Add --force /--no-verify /--dry-run push args
 
 ### 🐛 Bug Fixes
 
-- Existing terminal text would bleed into gitu on startup
-- Discarding staged files would not work & use git clean for removing untracked files
+- Main screen is more smart about scrolling when menu is open
+- Redraw screen even if command failed
+- Only stderr would show in log popup
+
+### 🎨 Styling
+
+- Display args more like Magit
 

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0] - 2024-04-10
+
+### 🚀 Features
+
+- Config option: general.always_show_help.enabled
+- Add all args to rebase menu
+- Add --prune and --tags flags to Fetch menu
+- Add all on/off arg flags to Commit menu
+- Add --rebase pull arg
+- Add --force /--no-verify /--dry-run push args
+
+### 🐛 Bug Fixes
+
+- Main screen is more smart about scrolling when menu is open
+- Redraw screen even if command failed
+- Only stderr would show in log popup
+
+### 🎨 Styling
+
+- Display args more like Magit
+
 ## [0.14.0] - 2024-04-06
 
 ### 🚀 Features
