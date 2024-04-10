@@ -27,6 +27,7 @@ pub(crate) mod show_refs;
 pub(crate) mod stage;
 pub(crate) mod stash;
 pub(crate) mod unstage;
+pub(crate) mod copy_hash;
 
 pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
@@ -76,6 +77,7 @@ pub(crate) enum Op {
     Unstage,
     Show,
     Discard,
+    CopyHash,
 
     ToggleSection,
     MoveUp,
@@ -140,6 +142,7 @@ impl Op {
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
+            Op::CopyHash => Box::new(copy_hash::CopyHash),
         }
     }
 }

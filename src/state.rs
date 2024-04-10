@@ -8,6 +8,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::RwLock;
 
+use arboard::Clipboard;
 use crossterm::event;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
@@ -47,6 +48,7 @@ pub(crate) struct State {
     enable_async_cmds: bool,
     pub current_cmd_log: CmdLog,
     pub prompt: prompt::Prompt,
+    pub clipboard: Clipboard,
 }
 
 impl State {
@@ -76,6 +78,8 @@ impl State {
         let bindings = Bindings::from(&config.bindings);
         let pending_menu = root_menu(&config).map(PendingMenu::init);
 
+        let clipboard = Clipboard::new()?;
+
         Ok(Self {
             repo,
             config,
@@ -88,6 +92,7 @@ impl State {
             pending_menu,
             current_cmd_log: CmdLog::new(),
             prompt: prompt::Prompt::new(),
+            clipboard,
         })
     }
 
@@ -216,6 +221,11 @@ impl State {
 
     pub fn screen(&self) -> &Screen {
         self.screens.last().expect("No screen")
+    }
+
+    /// Displays an `Info` message to the CmdLog.
+    pub fn display_info(&mut self, message: String) {
+        self.current_cmd_log.push(CmdLogEntry::Info(message));
     }
 
     /// Runs a `Command` and handles its output.
