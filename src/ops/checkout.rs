@@ -6,7 +6,7 @@ use tui_prompts::State as _;
 
 pub(crate) const ARGS: &[Arg] = &[];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Checkout branch/revision")]
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
@@ -25,7 +25,7 @@ fn checkout(state: &mut State, term: &mut Term, args: &[OsString], rev: &str) ->
     Ok(())
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Checkout new branch")]
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {

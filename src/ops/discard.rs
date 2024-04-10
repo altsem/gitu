@@ -3,7 +3,7 @@ use crate::items::TargetData;
 use derive_more::Display;
 use std::{ffi::OsStr, process::Command};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Discard")]
 pub(crate) struct Discard;
 impl OpTrait for Discard {

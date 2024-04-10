@@ -5,7 +5,7 @@ use std::{ffi::OsString, process::Command};
 
 pub(crate) const ARGS: &[Arg] = &[];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Reset soft")]
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
@@ -22,7 +22,7 @@ fn reset_soft(state: &mut State, term: &mut Term, args: &[OsString], input: &str
     state.run_cmd(term, &[], cmd)
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Reset mixed")]
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
@@ -39,7 +39,7 @@ fn reset_mixed(state: &mut State, term: &mut Term, args: &[OsString], input: &st
     state.run_cmd(term, &[], cmd)
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Reset hard")]
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {

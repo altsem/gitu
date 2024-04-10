@@ -3,7 +3,7 @@ use crate::{items::TargetData, screen, Action};
 use derive_more::Display;
 use std::{path::Path, process::Command, rc::Rc};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Default, Clone, Copy, Debug, Display)]
 #[display(fmt = "Show")]
 pub(crate) struct Show;
 impl OpTrait for Show {

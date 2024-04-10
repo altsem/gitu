@@ -5,7 +5,7 @@ use std::{process::Command, rc::Rc};
 
 pub(crate) const ARGS: &[Arg] = &[Arg::new("--rebase", "Rebase local commits", false)];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Pull")]
 pub(crate) struct Pull;
 impl OpTrait for Pull {

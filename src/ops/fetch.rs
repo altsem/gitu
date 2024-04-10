@@ -8,7 +8,7 @@ pub(crate) const ARGS: &[Arg] = &[
     Arg::new("--tags", "Fetch all tags", false),
 ];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Fetch all")]
 pub(crate) struct FetchAll;
 impl OpTrait for FetchAll {

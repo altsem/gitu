@@ -6,7 +6,7 @@ use std::{ffi::OsString, rc::Rc};
 
 pub(crate) const ARGS: &[Arg] = &[];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Log current")]
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
@@ -18,7 +18,7 @@ impl OpTrait for LogCurrent {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Log other")]
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {

@@ -3,7 +3,7 @@ use crate::{git::diff::PatchMode, items::TargetData, state::State, term::Term, A
 use derive_more::Display;
 use std::{ffi::OsStr, process::Command, rc::Rc};
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Unstage")]
 pub(crate) struct Unstage;
 impl OpTrait for Unstage {

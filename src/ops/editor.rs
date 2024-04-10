@@ -9,7 +9,7 @@ use crate::{
 use derive_more::Display;
 use std::rc::Rc;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Quit/Close")]
 pub(crate) struct Quit;
 impl OpTrait for Quit {
@@ -50,7 +50,7 @@ impl OpTrait for Quit {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Submenu")]
 pub(crate) struct OpenMenu(pub crate::menu::Menu);
 impl OpTrait for OpenMenu {
@@ -63,7 +63,7 @@ impl OpTrait for OpenMenu {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Refresh")]
 pub(crate) struct Refresh;
 impl OpTrait for Refresh {
@@ -72,7 +72,7 @@ impl OpTrait for Refresh {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = _.0)]
 pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
@@ -87,7 +87,7 @@ impl OpTrait for ToggleArg {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Toggle section")]
 pub(crate) struct ToggleSection;
 impl OpTrait for ToggleSection {
@@ -99,7 +99,7 @@ impl OpTrait for ToggleSection {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Up")]
 pub(crate) struct MoveUp;
 impl OpTrait for MoveUp {
@@ -111,7 +111,7 @@ impl OpTrait for MoveUp {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Down")]
 pub(crate) struct MoveDown;
 impl OpTrait for MoveDown {
@@ -123,7 +123,7 @@ impl OpTrait for MoveDown {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Down line")]
 pub(crate) struct MoveDownLine;
 impl OpTrait for MoveDownLine {
@@ -135,7 +135,7 @@ impl OpTrait for MoveDownLine {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Up line")]
 pub(crate) struct MoveUpLine;
 impl OpTrait for MoveUpLine {
@@ -149,7 +149,7 @@ impl OpTrait for MoveUpLine {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Half page up")]
 pub(crate) struct HalfPageUp;
 impl OpTrait for HalfPageUp {
@@ -161,7 +161,7 @@ impl OpTrait for HalfPageUp {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Half page down")]
 pub(crate) struct HalfPageDown;
 impl OpTrait for HalfPageDown {

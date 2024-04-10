@@ -3,7 +3,7 @@ use crate::{items::TargetData, screen, state::State, term::Term};
 use derive_more::Display;
 use std::rc::Rc;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Show refs")]
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {

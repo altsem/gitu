@@ -21,7 +21,7 @@ pub(crate) const ARGS: &[Arg] = &[
     Arg::new("--no-verify", "Disable hooks", false),
 ];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Rebase continue")]
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
@@ -36,7 +36,7 @@ impl OpTrait for RebaseContinue {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Rebase abort")]
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
@@ -51,7 +51,7 @@ impl OpTrait for RebaseAbort {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Rebase elsewhere")]
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
@@ -70,7 +70,7 @@ fn rebase_elsewhere(state: &mut State, term: &mut Term, args: &[OsString], rev: 
     Ok(())
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Rebase interactive")]
 pub(crate) struct RebaseInteractive;
 impl OpTrait for RebaseInteractive {
@@ -107,7 +107,7 @@ fn parent(reference: &OsStr) -> OsString {
     parent
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Rebase autosquash")]
 pub(crate) struct RebaseAutosquash;
 impl OpTrait for RebaseAutosquash {

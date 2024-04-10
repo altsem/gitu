@@ -7,7 +7,7 @@ use tui_prompts::State as _;
 
 pub(crate) const ARGS: &[Arg] = &[];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Stash (include untracked)")]
 pub(crate) struct Stash;
 impl OpTrait for Stash {
@@ -16,7 +16,7 @@ impl OpTrait for Stash {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Stash index")]
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
@@ -25,7 +25,7 @@ impl OpTrait for StashIndex {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Stash working tree")]
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
@@ -112,7 +112,7 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
     }))
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Stash keeping index")]
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
@@ -152,7 +152,7 @@ fn stash_push_action_prompt_update<const N: usize>(
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Pop stash")]
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
@@ -161,7 +161,7 @@ impl OpTrait for StashPop {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Apply stash")]
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
@@ -170,7 +170,7 @@ impl OpTrait for StashApply {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Drop stash")]
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {

@@ -10,7 +10,7 @@ pub(crate) const ARGS: &[Arg] = &[
     Arg::new("--dry-run", "Dry run", false),
 ];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Push")]
 pub(crate) struct Push;
 impl OpTrait for Push {

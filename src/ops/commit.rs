@@ -22,7 +22,7 @@ pub(crate) const ARGS: &[Arg] = &[
     // TODO -C Reuse commit message (--reuse-message=)
 ];
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Commit")]
 pub(crate) struct Commit;
 impl OpTrait for Commit {
@@ -38,7 +38,7 @@ impl OpTrait for Commit {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Commit amend")]
 pub(crate) struct CommitAmend;
 impl OpTrait for CommitAmend {
@@ -54,7 +54,7 @@ impl OpTrait for CommitAmend {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Commit fixup")]
 pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
