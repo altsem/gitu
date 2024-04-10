@@ -44,25 +44,18 @@ fn new_file() {
 
 #[test]
 fn unstaged_changes() {
-    let mut ctx = TestContext::setup_init();
+    let ctx = TestContext::setup_init();
     commit(ctx.dir.path(), "testfile", "testing\ntesttest");
     fs::write(ctx.dir.child("testfile"), "test\ntesttest").expect("error writing to file");
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("jj<tab>")).unwrap();
-
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "jj<tab>");
 }
 
 #[test]
 fn binary_file() {
-    let mut ctx = TestContext::setup_init();
+    let ctx = TestContext::setup_init();
     fs::write(ctx.dir.child("binary-file"), [255]).expect("error writing to file");
     run(ctx.dir.path(), &["git", "add", "."]);
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("jj<tab>")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "jj<tab>");
 }
 
 mod unstage {
@@ -70,47 +63,28 @@ mod unstage {
 
     #[test]
     fn unstage_all_staged() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         run(ctx.dir.path(), &["touch", "one", "two", "unaffected"]);
         run(ctx.dir.path(), &["git", "add", "one", "two"]);
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("jjju")).unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jjju");
     }
 
     #[test]
     fn unstage_removed_line() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "."]);
-
-        let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &keys("jj<tab><ctrl+j><ctrl+j>u"))
-            .unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jj<tab><ctrl+j><ctrl+j>u");
     }
 
     #[test]
     fn unstage_added_line() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "."]);
-
-        let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &keys("jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>u"),
-            )
-            .unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>u");
     }
 }
 
@@ -129,96 +103,65 @@ mod stage {
 
     #[test]
     fn stage_all_unstaged() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
 
         fs::write(ctx.dir.child("firstfile"), "blahonga\n").unwrap();
         fs::write(ctx.dir.child("secondfile"), "blahonga\n").unwrap();
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("js")).unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "js");
     }
 
     #[test]
     fn stage_all_untracked() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         run(ctx.dir.path(), &["touch", "file-a"]);
         run(ctx.dir.path(), &["touch", "file-b"]);
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("js")).unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "js");
     }
 
     #[test]
     fn stage_removed_line() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
-
-        let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &keys("jj<tab><ctrl+j><ctrl+j>s"))
-            .unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jj<tab><ctrl+j><ctrl+j>s");
     }
 
     #[test]
     fn stage_added_line() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
 
-        let mut state = ctx.init_state();
-        state
-            .update(
-                &mut ctx.term,
-                &keys("jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>s"),
-            )
-            .unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>s");
     }
 
     #[test]
     fn stage_changes_crlf() {
-        let mut ctx = TestContext::setup_init();
+        let ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "testfile", "testing\r\ntesttest");
         fs::write(ctx.dir.child("testfile"), "test\r\ntesttest").expect("error writing to file");
 
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("jj<tab>")).unwrap();
-
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jj<tab>");
     }
 }
 
 #[test]
 fn log() {
-    let mut ctx = TestContext::setup_clone();
+    let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
     run(ctx.dir.path(), &["git", "tag", "-am", ".", "annotated"]);
     commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
     run(ctx.dir.path(), &["git", "tag", "a-tag"]);
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("ll")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "ll");
 }
 
 #[test]
 fn show() {
-    let mut ctx = TestContext::setup_clone();
+    let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "firstfile", "This should be visible\n");
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("ll<enter>")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "ll<enter>");
 }
 
 #[test]
@@ -274,6 +217,7 @@ fn hide_untracked() {
     let mut state = ctx.init_state();
     let mut config = state.repo.config().unwrap();
     config.set_str("status.showUntrackedFiles", "off").unwrap();
+
     state.update(&mut ctx.term, &keys("g")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -292,217 +236,172 @@ mod push {
 
     #[test]
     fn push() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("Pp")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "Pp");
     }
 
     #[test]
     fn force_push() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("P-fp")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "P-fp");
     }
 
     #[test]
     fn open_push_menu_after_dash_input() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("-P")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "-P");
     }
 }
 
 #[test]
 fn fetch_all() {
-    let mut ctx = TestContext::setup_clone();
+    let ctx = TestContext::setup_clone();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("fa")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "fa");
 }
 
 #[test]
 fn pull() {
-    let mut ctx = TestContext::setup_clone();
+    let ctx = TestContext::setup_clone();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("Fp")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "Fp");
 }
 
 mod stash {
     use super::*;
-    use crate::state::State;
 
-    fn setup() -> (TestContext, State) {
-        let mut ctx = TestContext::setup_clone();
+    fn setup() -> TestContext {
+        let ctx = TestContext::setup_clone();
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
         fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "file-one"]);
-        let state = ctx.init_state();
-        (ctx, state)
+        ctx
     }
 
     #[test]
     pub(crate) fn stash_menu() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("z")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "z");
     }
 
     #[test]
     pub(crate) fn stash_prompt() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zz")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zz");
     }
 
     #[test]
     pub(crate) fn stash() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zztest<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zztest<enter>");
     }
 
     #[test]
     pub(crate) fn stash_index_prompt() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zi")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zi");
     }
 
     #[test]
     pub(crate) fn stash_index() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zitest<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zitest<enter>");
     }
 
     #[test]
     pub(crate) fn stash_working_tree_prompt() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zw")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zw");
     }
 
     #[test]
     pub(crate) fn stash_working_tree() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zwtest<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zwtest<enter>");
     }
 
     #[test]
     pub(crate) fn stash_working_tree_when_everything_is_staged() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("jszw")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "jszw");
     }
 
     #[test]
     pub(crate) fn stash_working_tree_when_nothing_is_staged() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("zwtest<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "zwtest<enter>");
     }
 
     #[test]
     pub(crate) fn stash_keeping_index_prompt() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zx")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zx");
     }
 
     #[test]
     pub(crate) fn stash_keeping_index() {
-        let (mut ctx, mut state) = setup();
-        state.update(&mut ctx.term, &keys("zxtest<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "zxtest<enter>");
     }
 
-    fn setup_two_stashes() -> (TestContext, State) {
-        let (mut ctx, mut state) = setup();
-        state
-            .update(&mut ctx.term, &keys("zifile-one<enter>zzfile-two<enter>"))
-            .unwrap();
-        (ctx, state)
+    fn setup_two_stashes() -> TestContext {
+        let ctx = setup();
+        run(
+            ctx.dir.path(),
+            &["git", "stash", "push", "--staged", "--message", "file-one"],
+        );
+        run(
+            ctx.dir.path(),
+            &[
+                "git",
+                "stash",
+                "push",
+                "--include-untracked",
+                "--message",
+                "file-two",
+            ],
+        );
+
+        ctx
     }
 
     #[test]
     pub(crate) fn stash_pop_prompt() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("zp")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "zp");
     }
 
     #[test]
     pub(crate) fn stash_pop() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("zp1<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "zp1<enter>");
     }
 
     #[test]
     pub(crate) fn stash_pop_default() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("zp<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "zp<enter>");
     }
 
     #[test]
     pub(crate) fn stash_apply_prompt() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("za")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "za");
     }
 
     #[test]
     pub(crate) fn stash_apply() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("za1<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "za1<enter>");
     }
 
     #[test]
     pub(crate) fn stash_apply_default() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("za<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "za<enter>");
     }
 
     #[test]
     pub(crate) fn stash_drop_prompt() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("zk")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "zk");
     }
 
     #[test]
     pub(crate) fn stash_drop() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("zk1<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "zk1<enter>");
     }
 
     #[test]
     pub(crate) fn stash_drop_default() {
-        let (mut ctx, mut state) = setup_two_stashes();
-        state.update(&mut ctx.term, &keys("zk<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup_two_stashes(), "zk<enter>");
     }
 }
 
@@ -511,105 +410,73 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_branch_confirm_prompt() {
-        let ctx = {
-            let mut ctx = TestContext::setup_clone();
-            run(ctx.dir.path(), &["git", "branch", "asd"]);
-            let mut state = ctx.init_state();
-
-            state.update(&mut ctx.term, &keys("yjK")).unwrap();
-            ctx
-        };
-        insta::assert_snapshot!(ctx.redact_buffer());
+        let ctx = TestContext::setup_clone();
+        run(ctx.dir.path(), &["git", "branch", "asd"]);
+        snapshot!(ctx, "yjK");
     }
 
     #[test]
     pub(crate) fn discard_branch_yes() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "asd"]);
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("yjKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "yjKy");
     }
 
     #[test]
     pub(crate) fn discard_branch_no() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "asd"]);
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("yjKn")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "yjKn");
     }
 
     #[test]
     pub(crate) fn discard_untracked_file() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["touch", "some-file"]);
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("jjKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jjKy");
     }
 
     #[test]
     pub(crate) fn discard_untracked_staged_file() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["touch", "some-file"]);
         run(ctx.dir.path(), &["git", "add", "some-file"]);
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("jsjKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jsjKy");
     }
 
     #[test]
     pub(crate) fn discard_file_move() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "hello");
         run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
-        let mut state = ctx.init_state();
 
         // TODO: Moved file is shown as 1 new and 1 deleted file.
-        state.update(&mut ctx.term, &keys("jjKyKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jjKyKy");
     }
 
     #[test]
     pub(crate) fn discard_unstaged_delta() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
-
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("jjKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jjKy");
     }
 
     #[test]
     pub(crate) fn discard_unstaged_hunk() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
-
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("jj<tab>jKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jj<tab>jKy");
     }
 
     #[test]
     pub(crate) fn discard_staged_file() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "."]);
-
-        let mut state = ctx.init_state();
-
-        state.update(&mut ctx.term, &keys("jjKy")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "jjKy");
     }
 
     // FIXME Deleting branches doesn't work with the test-setup
@@ -627,66 +494,44 @@ mod discard {
 mod reset {
     use super::*;
 
+    fn setup() -> TestContext {
+        let ctx = TestContext::setup_clone();
+        commit(ctx.dir.path(), "unwanted-file", "");
+        ctx
+    }
+
     #[test]
     pub(crate) fn reset_menu() {
-        let mut ctx = TestContext::setup_clone();
-        commit(ctx.dir.path(), "unwanted-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("lljX")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "lljX");
     }
 
     #[test]
     pub(crate) fn reset_soft_prompt() {
-        let mut ctx = TestContext::setup_clone();
-        commit(ctx.dir.path(), "unwanted-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("lljXsq")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "lljXsq");
     }
 
     #[test]
     pub(crate) fn reset_soft() {
-        let mut ctx = TestContext::setup_clone();
-        commit(ctx.dir.path(), "unwanted-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("lljXs<enter>q")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "lljXs<enter>q");
     }
 
     #[test]
     pub(crate) fn reset_mixed() {
-        let mut ctx = TestContext::setup_clone();
-        commit(ctx.dir.path(), "unwanted-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("lljXm<enter>q")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "lljXm<enter>q");
     }
 
     #[test]
     fn reset_hard() {
-        let mut ctx = TestContext::setup_clone();
-        commit(ctx.dir.path(), "unwanted-file", "");
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("lljXh<enter>q")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(setup(), "lljXh<enter>q");
     }
 }
 
 #[test]
 fn show_refs() {
-    let mut ctx = TestContext::setup_clone();
+    let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "tag", "same-name"]);
     run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
-
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("y")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "y");
 }
 
 mod checkout {
@@ -694,45 +539,28 @@ mod checkout {
 
     #[test]
     pub(crate) fn checkout_menu() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("yjb")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "yjb");
     }
 
     #[test]
     pub(crate) fn switch_branch_selected() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
-
-        let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys("yjjbb<enter>")).unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "yjjbb<enter>");
     }
 
     #[test]
     pub(crate) fn switch_branch_input() {
-        let mut ctx = TestContext::setup_clone();
+        let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "hi"]);
-
-        let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &keys("yjjbbhi<enter>"))
-            .unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(ctx, "yjjbbhi<enter>");
     }
 
     #[test]
     pub(crate) fn checkout_new_branch() {
-        let mut ctx = TestContext::setup_clone();
-
-        let mut state = ctx.init_state();
-        state
-            .update(&mut ctx.term, &keys("bcf<esc>bcx<enter>"))
-            .unwrap();
-        insta::assert_snapshot!(ctx.redact_buffer());
+        snapshot!(TestContext::setup_clone(), "bcf<esc>bcx<enter>");
     }
 }
 
@@ -752,28 +580,24 @@ fn updated_externally() {
 
 #[test]
 fn stage_last_hunk_of_first_delta() {
-    let mut ctx = TestContext::setup_clone();
+    let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
     commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
     fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
     fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
 
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("jj<tab>js")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "jj<tab>js");
 }
 
 #[test]
 fn go_down_past_collapsed() {
-    let mut ctx = TestContext::setup_init();
+    let ctx = TestContext::setup_init();
     commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
     commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
     fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
     fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
 
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("jjj")).unwrap();
-    insta::assert_snapshot!(ctx.redact_buffer());
+    snapshot!(ctx, "jjj");
 }
 
 mod scroll {

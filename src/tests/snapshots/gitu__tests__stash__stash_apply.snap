@@ -6,7 +6,9 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Staged changes (1)                                                             |
- added   file-one…                                                              |
+ added   file-one                                                               |
+ @@ -0,0 +1 @@                                                                  |
+ +blahonga                                                                      |
                                                                                 |
  Stashes                                                                        |
  stash@0 On main: file-two                                                      |
@@ -18,8 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash apply -q 1                                                          |
-styles_hash: aba18d8d8bc47296
+styles_hash: 8fb436f4d6293516
