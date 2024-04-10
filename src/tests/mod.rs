@@ -10,7 +10,7 @@ use helpers::{clone_and_commit, commit, keys, run, TestContext};
 
 #[test]
 fn no_repo() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
 
     ctx.init_state();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -18,7 +18,7 @@ fn no_repo() {
 
 #[test]
 fn help_menu() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
 
     let mut state = ctx.init_state();
     state.update(&mut ctx.term, &keys("h")).unwrap();
@@ -27,7 +27,7 @@ fn help_menu() {
 
 #[test]
 fn fresh_init() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
 
     ctx.init_state();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -35,7 +35,7 @@ fn fresh_init() {
 
 #[test]
 fn new_file() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
     run(ctx.dir.path(), &["touch", "new-file"]);
 
     ctx.init_state();
@@ -44,7 +44,7 @@ fn new_file() {
 
 #[test]
 fn unstaged_changes() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
     commit(ctx.dir.path(), "testfile", "testing\ntesttest");
     fs::write(ctx.dir.child("testfile"), "test\ntesttest").expect("error writing to file");
 
@@ -56,7 +56,7 @@ fn unstaged_changes() {
 
 #[test]
 fn binary_file() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
     fs::write(ctx.dir.child("binary-file"), [255]).expect("error writing to file");
     run(ctx.dir.path(), &["git", "add", "."]);
 
@@ -70,7 +70,7 @@ mod unstage {
 
     #[test]
     fn unstage_all_staged() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         run(ctx.dir.path(), &["touch", "one", "two", "unaffected"]);
         run(ctx.dir.path(), &["git", "add", "one", "two"]);
 
@@ -82,7 +82,7 @@ mod unstage {
 
     #[test]
     fn unstage_removed_line() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "."]);
@@ -97,7 +97,7 @@ mod unstage {
 
     #[test]
     fn unstage_added_line() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "."]);
@@ -119,7 +119,7 @@ mod stage {
 
     #[test]
     fn staged_file() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         run(ctx.dir.path(), &["touch", "new-file"]);
         run(ctx.dir.path(), &["git", "add", "new-file"]);
 
@@ -129,7 +129,7 @@ mod stage {
 
     #[test]
     fn stage_all_unstaged() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
 
@@ -144,7 +144,7 @@ mod stage {
 
     #[test]
     fn stage_all_untracked() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         run(ctx.dir.path(), &["touch", "file-a"]);
         run(ctx.dir.path(), &["touch", "file-b"]);
 
@@ -156,7 +156,7 @@ mod stage {
 
     #[test]
     fn stage_removed_line() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
 
@@ -170,7 +170,7 @@ mod stage {
 
     #[test]
     fn stage_added_line() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
         fs::write(ctx.dir.child("firstfile"), "weehooo\nblrergh\n").unwrap();
 
@@ -187,7 +187,7 @@ mod stage {
 
     #[test]
     fn stage_changes_crlf() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         commit(ctx.dir.path(), "testfile", "testing\r\ntesttest");
         fs::write(ctx.dir.child("testfile"), "test\r\ntesttest").expect("error writing to file");
 
@@ -200,7 +200,7 @@ mod stage {
 
 #[test]
 fn log() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
     run(ctx.dir.path(), &["git", "tag", "-am", ".", "annotated"]);
     commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
@@ -213,7 +213,7 @@ fn log() {
 
 #[test]
 fn show() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "firstfile", "This should be visible\n");
 
     let mut state = ctx.init_state();
@@ -223,7 +223,7 @@ fn show() {
 
 #[test]
 fn rebase_conflict() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");
 
     run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
@@ -241,7 +241,7 @@ fn rebase_conflict() {
 
 #[test]
 fn merge_conflict() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");
 
     run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
@@ -258,7 +258,7 @@ fn merge_conflict() {
 
 #[test]
 fn moved_file() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");
     run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
 
@@ -268,7 +268,7 @@ fn moved_file() {
 
 #[test]
 fn hide_untracked() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+    let mut ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["touch", "i-am-untracked"]);
 
     let mut state = ctx.init_state();
@@ -280,7 +280,7 @@ fn hide_untracked() {
 
 #[test]
 fn new_commit() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "");
 
     ctx.init_state();
@@ -292,7 +292,7 @@ mod push {
 
     #[test]
     fn push() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "");
 
         let mut state = ctx.init_state();
@@ -302,7 +302,7 @@ mod push {
 
     #[test]
     fn force_push() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "");
 
         let mut state = ctx.init_state();
@@ -312,7 +312,7 @@ mod push {
 
     #[test]
     fn open_push_menu_after_dash_input() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "");
 
         let mut state = ctx.init_state();
@@ -323,7 +323,7 @@ mod push {
 
 #[test]
 fn fetch_all() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+    let mut ctx = TestContext::setup_clone();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
 
     let mut state = ctx.init_state();
@@ -333,7 +333,7 @@ fn fetch_all() {
 
 #[test]
 fn pull() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+    let mut ctx = TestContext::setup_clone();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
 
     let mut state = ctx.init_state();
@@ -346,7 +346,7 @@ mod stash {
     use crate::state::State;
 
     fn setup() -> (TestContext, State) {
-        let mut ctx = TestContext::setup_clone(80, 20);
+        let mut ctx = TestContext::setup_clone();
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
         fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "file-one"]);
@@ -412,7 +412,7 @@ mod stash {
 
     #[test]
     pub(crate) fn stash_working_tree_when_nothing_is_staged() {
-        let mut ctx = TestContext::setup_clone(80, 20);
+        let mut ctx = TestContext::setup_clone();
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
         let mut state = ctx.init_state();
 
@@ -512,7 +512,7 @@ mod discard {
     #[test]
     pub(crate) fn discard_branch_confirm_prompt() {
         let ctx = {
-            let mut ctx = TestContext::setup_clone(80, 10);
+            let mut ctx = TestContext::setup_clone();
             run(ctx.dir.path(), &["git", "branch", "asd"]);
             let mut state = ctx.init_state();
 
@@ -524,7 +524,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_branch_yes() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "asd"]);
         let mut state = ctx.init_state();
 
@@ -534,7 +534,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_branch_no() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "asd"]);
         let mut state = ctx.init_state();
 
@@ -544,7 +544,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_untracked_file() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["touch", "some-file"]);
         let mut state = ctx.init_state();
 
@@ -554,7 +554,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_untracked_staged_file() {
-        let mut ctx = TestContext::setup_clone(80, 15);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["touch", "some-file"]);
         run(ctx.dir.path(), &["git", "add", "some-file"]);
         let mut state = ctx.init_state();
@@ -565,7 +565,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_file_move() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "new-file", "hello");
         run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
         let mut state = ctx.init_state();
@@ -577,7 +577,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_unstaged_delta() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
 
@@ -589,7 +589,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_unstaged_hunk() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
 
@@ -601,7 +601,7 @@ mod discard {
 
     #[test]
     pub(crate) fn discard_staged_file() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
         fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
         run(ctx.dir.path(), &["git", "add", "."]);
@@ -615,7 +615,7 @@ mod discard {
     // FIXME Deleting branches doesn't work with the test-setup
     // #[test]
     // fn discard_branch() {
-    //     let mut ctx = TestContext::setup_clone(80, 10);
+    //     let mut ctx = TestContext::setup_clone();
     //     let mut state = ctx.init_state();
     //     state
     //         .update(&mut ctx.term, &keys("yjKy"))
@@ -629,7 +629,7 @@ mod reset {
 
     #[test]
     pub(crate) fn reset_menu() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
@@ -639,7 +639,7 @@ mod reset {
 
     #[test]
     pub(crate) fn reset_soft_prompt() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
@@ -649,7 +649,7 @@ mod reset {
 
     #[test]
     pub(crate) fn reset_soft() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
@@ -659,7 +659,7 @@ mod reset {
 
     #[test]
     pub(crate) fn reset_mixed() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
@@ -669,7 +669,7 @@ mod reset {
 
     #[test]
     fn reset_hard() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         commit(ctx.dir.path(), "unwanted-file", "");
 
         let mut state = ctx.init_state();
@@ -680,7 +680,7 @@ mod reset {
 
 #[test]
 fn show_refs() {
-    let mut ctx = TestContext::setup_clone(80, 10);
+    let mut ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "tag", "same-name"]);
     run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
 
@@ -694,7 +694,7 @@ mod checkout {
 
     #[test]
     pub(crate) fn checkout_menu() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
         let mut state = ctx.init_state();
@@ -704,7 +704,7 @@ mod checkout {
 
     #[test]
     pub(crate) fn switch_branch_selected() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
 
         let mut state = ctx.init_state();
@@ -714,7 +714,7 @@ mod checkout {
 
     #[test]
     pub(crate) fn switch_branch_input() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "hi"]);
 
         let mut state = ctx.init_state();
@@ -726,7 +726,7 @@ mod checkout {
 
     #[test]
     pub(crate) fn checkout_new_branch() {
-        let mut ctx = TestContext::setup_clone(80, 10);
+        let mut ctx = TestContext::setup_clone();
 
         let mut state = ctx.init_state();
         state
@@ -738,7 +738,7 @@ mod checkout {
 
 #[test]
 fn updated_externally() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
     fs::write(ctx.dir.child("b"), "test").unwrap();
 
     let mut state = ctx.init_state();
@@ -752,7 +752,7 @@ fn updated_externally() {
 
 #[test]
 fn stage_last_hunk_of_first_delta() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
     commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
     fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
@@ -765,7 +765,7 @@ fn stage_last_hunk_of_first_delta() {
 
 #[test]
 fn go_down_past_collapsed() {
-    let mut ctx = TestContext::setup_init(80, 20);
+    let mut ctx = TestContext::setup_init();
     commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
     commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
     fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
@@ -780,7 +780,7 @@ mod scroll {
     use super::*;
 
     fn setup_scroll() -> (TestContext, crate::state::State) {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         for file in ["file-1", "file-2", "file-3"] {
             commit(ctx.dir.path(), file, "");
             fs::write(
@@ -822,7 +822,7 @@ mod scroll {
 
 #[test]
 fn inside_submodule() {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     run(
         ctx.dir.path(),
         &[
@@ -845,19 +845,19 @@ mod quit {
 
     #[test]
     pub(crate) fn quit() {
-        let state = snapshot!(TestContext::setup_init(80, 20), "q");
+        let state = snapshot!(TestContext::setup_init(), "q");
         assert!(state.quit);
     }
 
     #[test]
     pub(crate) fn quit_from_menu() {
-        let state = snapshot!(TestContext::setup_init(80, 20), "hq");
+        let state = snapshot!(TestContext::setup_init(), "hq");
         assert!(!state.quit);
     }
 
     #[test]
     pub(crate) fn confirm_quit_prompt() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         ctx.config().general.confirm_quit.enabled = true;
 
         let state = snapshot!(ctx, "q");
@@ -866,7 +866,7 @@ mod quit {
 
     #[test]
     pub(crate) fn confirm_quit() {
-        let mut ctx = TestContext::setup_init(80, 20);
+        let mut ctx = TestContext::setup_init();
         ctx.config().general.confirm_quit.enabled = true;
 
         let state = snapshot!(ctx, "qy");

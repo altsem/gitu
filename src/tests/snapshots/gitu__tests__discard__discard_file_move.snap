@@ -10,6 +10,16 @@ expression: ctx.redact_buffer()
  _______ origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout HEAD -- new-file                                                 |
-styles_hash: a3f19b2153c6a71
+styles_hash: 19cf9a9796ec3951

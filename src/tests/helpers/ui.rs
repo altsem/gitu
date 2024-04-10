@@ -36,7 +36,9 @@ pub struct TestContext {
 }
 
 impl TestContext {
-    pub fn setup_init(width: u16, height: u16) -> Self {
+    pub fn setup_init() -> Self {
+        let width = 80;
+        let height = 20;
         let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
         let repo_ctx = RepoTestContext::setup_init();
         Self {
@@ -48,7 +50,9 @@ impl TestContext {
         }
     }
 
-    pub fn setup_clone(width: u16, height: u16) -> Self {
+    pub fn setup_clone() -> Self {
+        let width = 80;
+        let height = 20;
         let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
         let repo_ctx = RepoTestContext::setup_clone();
         Self {

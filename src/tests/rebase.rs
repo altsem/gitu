@@ -1,7 +1,7 @@
 use super::*;
 
 fn setup_rebase() -> (TestContext, crate::state::State) {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
     run(ctx.dir.path(), &["git", "checkout", "main"]);
     commit(ctx.dir.path(), "new-file", "hello");

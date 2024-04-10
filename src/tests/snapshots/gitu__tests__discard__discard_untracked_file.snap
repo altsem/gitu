@@ -9,7 +9,17 @@ expression: ctx.redact_buffer()
 ▌_______ main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git clean --force some-file                                                   |
 Removing some-file                                                              |
-styles_hash: 776da37611753a60
+styles_hash: ad9bddbf35584d2f

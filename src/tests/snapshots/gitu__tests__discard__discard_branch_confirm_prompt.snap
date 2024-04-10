@@ -10,6 +10,16 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Really discard? (y or n) ›                                                    |
-styles_hash: bd166237ddb515be
+styles_hash: 39d564956ca9d163

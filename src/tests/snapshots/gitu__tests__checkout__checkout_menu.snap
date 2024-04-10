@@ -7,9 +7,19 @@ expression: ctx.redact_buffer()
    other-branch                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
 q/<esc> Quit/Close                                                              |
-styles_hash: 98bb8dc5da646113
+styles_hash: fea19a6a70bb7bc9

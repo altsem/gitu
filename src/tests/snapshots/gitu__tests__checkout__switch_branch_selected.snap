@@ -9,7 +9,17 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout other-branch                                                     |
 Switched to branch 'other-branch'                                               |
-styles_hash: fb57fc31c7be43d1
+styles_hash: 16f0f037c67634af

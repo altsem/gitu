@@ -1,7 +1,7 @@
 use super::*;
 
 fn setup_log() -> (TestContext, crate::state::State) {
-    let mut ctx = TestContext::setup_clone(80, 20);
+    let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "this-should-be-at-the-top", "");
     commit(ctx.dir.path(), "this-should-not-be-visible", "");
 

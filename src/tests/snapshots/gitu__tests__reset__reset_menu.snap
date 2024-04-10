@@ -6,10 +6,20 @@ expression: ctx.redact_buffer()
 ▌_______ origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Reset                                                                           |
 s Reset soft                                                                    |
 m Reset mixed                                                                   |
 h Reset hard                                                                    |
 q/<esc> Quit/Close                                                              |
-styles_hash: b019894492ede372
+styles_hash: 887f50ccce685158
