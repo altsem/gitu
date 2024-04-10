@@ -21,7 +21,7 @@ use tui_prompts::State as _;
 use tui_prompts::TextPrompt;
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let (log_len, maybe_log): (usize, Option<Paragraph>) =
+    let (log_len, maybe_log): (u16, Option<Paragraph>) =
         if !state.current_cmd_log_entries.is_empty() {
             let text: Text = state
                 .current_cmd_log_entries
@@ -30,7 +30,10 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
                 .collect::<Vec<_>>()
                 .into();
 
-            (text.lines.len(), Some(Paragraph::new(text)))
+            (
+                1 + text.lines.len() as u16,
+                Some(Paragraph::new(text).block(popup_block())),
+            )
         } else {
             (0, None)
         };
@@ -54,71 +57,46 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
             screens.last().unwrap().get_selected_item(),
         );
 
-        (lines, Some(table))
+        (1 + lines as u16, Some(table.block(popup_block())))
     } else {
         (0, None)
     };
 
-    // TODO Clean this up...
-
-    let menu_top_padding = if menu_len > 0 { 1 } else { 0 };
-    let log_top_padding = if log_len > 0 { 1 } else { 0 };
-
-    if let Some(prompt_data) = maybe_prompt_data {
-        let layout = Layout::new(
-            Direction::Vertical,
-            [
-                Constraint::Min(1),
-                Constraint::Length(1),
-                Constraint::Length(1),
-                Constraint::Length(log_top_padding),
-                Constraint::Length(log_len as u16),
-            ],
-        )
-        .split(frame.size());
-
-        frame.render_widget(screens.last().unwrap(), layout[0]);
-
-        frame.render_widget(popup_block(), layout[1]);
+    let (prompt_len, maybe_prompt) = if let Some(prompt_data) = maybe_prompt_data {
         let prompt = TextPrompt::new(prompt_data.prompt_text.clone());
-        frame.render_stateful_widget(prompt, layout[2], prompt_state);
+        (2, Some(prompt.with_block(popup_block())))
+    } else {
+        (0, None)
+    };
 
-        if let Some(log) = maybe_log {
-            frame.render_widget(popup_block(), layout[3]);
-            frame.render_widget(log, layout[4]);
-        }
+    let layout = Layout::new(
+        Direction::Vertical,
+        [
+            Constraint::Min(1),
+            Constraint::Length(prompt_len),
+            Constraint::Length(menu_len),
+            Constraint::Length(log_len),
+        ],
+    )
+    .split(frame.size());
 
+    frame.render_widget(screens.last().unwrap(), layout[0]);
+
+    if let Some(prompt) = maybe_prompt {
+        frame.render_stateful_widget(prompt, layout[1], prompt_state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
-
-        screens.last_mut().unwrap().size = layout[0];
-    } else {
-        let layout = Layout::new(
-            Direction::Vertical,
-            [
-                Constraint::Min(1),
-                Constraint::Length(menu_top_padding),
-                Constraint::Length(menu_len as u16),
-                Constraint::Length(log_top_padding),
-                Constraint::Length(log_len as u16),
-            ],
-        )
-        .split(frame.size());
-
-        frame.render_widget(screens.last().unwrap(), layout[0]);
-
-        if let Some(menu) = maybe_menu {
-            frame.render_widget(popup_block(), layout[1]);
-            frame.render_widget(menu, layout[2]);
-        }
-
-        if let Some(log) = maybe_log {
-            frame.render_widget(popup_block(), layout[3]);
-            frame.render_widget(log, layout[4]);
-        }
-
-        screens.last_mut().unwrap().size = layout[0];
     }
+
+    if let Some(menu) = maybe_menu {
+        frame.render_widget(menu, layout[2]);
+    }
+
+    if let Some(log) = maybe_log {
+        frame.render_widget(log, layout[3]);
+    }
+
+    screens.last_mut().unwrap().size = layout[0];
 }
 
 fn format_command<'a>(config: &Config, log: &Arc<RwLock<CmdLogEntry>>) -> Vec<Line<'a>> {
