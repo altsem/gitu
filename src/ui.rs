@@ -1,7 +1,3 @@
-use std::borrow::Cow;
-use std::sync::Arc;
-use std::sync::RwLock;
-
 use crate::bindings::Bindings;
 use crate::config::Config;
 use crate::items::Item;
@@ -10,33 +6,27 @@ use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt::Prompt;
 use crate::state::State;
-use crate::CmdLogEntry;
 use itertools::EitherOrBoth;
 use itertools::Itertools;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use ratatui::widgets::*;
 use ratatui::Frame;
+use std::borrow::Cow;
 use tui_prompts::State as _;
 use tui_prompts::TextPrompt;
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let (log_len, maybe_log): (u16, Option<Paragraph>) =
-        if !state.current_cmd_log_entries.is_empty() {
-            let text: Text = state
-                .current_cmd_log_entries
-                .iter()
-                .flat_map(|cmd| format_command(&state.config, cmd))
-                .collect::<Vec<_>>()
-                .into();
+    let (log_len, maybe_log): (u16, Option<Paragraph>) = if !state.current_cmd_log.is_empty() {
+        let text: Text = state.current_cmd_log.format_log(&state.config);
 
-            (
-                1 + text.lines.len() as u16,
-                Some(Paragraph::new(text).block(popup_block())),
-            )
-        } else {
-            (0, None)
-        };
+        (
+            1 + text.lines.len() as u16,
+            Some(Paragraph::new(text).block(popup_block())),
+        )
+    } else {
+        (0, None)
+    };
 
     let State {
         screens,
@@ -97,30 +87,6 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     }
 
     screens.last_mut().unwrap().size = layout[0];
-}
-
-fn format_command<'a>(config: &Config, log: &Arc<RwLock<CmdLogEntry>>) -> Vec<Line<'a>> {
-    match &*log.read().unwrap() {
-        CmdLogEntry::Cmd { args, out } => [Line::styled(
-            format!("{}{}", if out.is_some() { "$ " } else { "Running: " }, args),
-            &config.style.command,
-        )]
-        .into_iter()
-        .chain(out.iter().flat_map(|out| {
-            if out.is_empty() {
-                vec![]
-            } else {
-                Text::raw(out.to_string()).lines
-            }
-        }))
-        .collect::<Vec<_>>(),
-        CmdLogEntry::Error(err) => {
-            vec![Line::styled(
-                format!("! {}", err),
-                Style::new().red().bold(),
-            )]
-        }
-    }
 }
 
 fn format_keybinds_menu<'b>(

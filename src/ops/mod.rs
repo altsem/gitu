@@ -2,14 +2,14 @@ use serde::{Deserialize, Serialize};
 use tui_prompts::State as _;
 
 use crate::{
-    items::TargetData, menu::Menu, prompt::PromptData, state::State, term::Term, CmdLogEntry, Res,
+    cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State,
+    term::Term, Res,
 };
 use std::{
     ffi::{OsStr, OsString},
     fmt::Display,
     process::Command,
     rc::Rc,
-    sync::{Arc, RwLock},
 };
 
 pub(crate) mod checkout;
@@ -171,25 +171,24 @@ pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
 }
 
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
-    let update_fn =
-        Rc::new(move |state: &mut State, term: &mut Term| {
-            if state.prompt.state.status().is_pending() {
-                match state.prompt.state.value() {
-                    "y" => {
-                        Rc::get_mut(&mut action).unwrap()(state, term)?;
-                        state.prompt.reset(term)?;
-                    }
-                    "" => (),
-                    _ => {
-                        state.current_cmd_log_entries.push(Arc::new(RwLock::new(
-                            CmdLogEntry::Error("Aborted".to_string()),
-                        )));
-                        state.prompt.reset(term)?;
-                    }
+    let update_fn = Rc::new(move |state: &mut State, term: &mut Term| {
+        if state.prompt.state.status().is_pending() {
+            match state.prompt.state.value() {
+                "y" => {
+                    Rc::get_mut(&mut action).unwrap()(state, term)?;
+                    state.prompt.reset(term)?;
+                }
+                "" => (),
+                _ => {
+                    state
+                        .current_cmd_log
+                        .push(CmdLogEntry::Error("Aborted".to_string()));
+                    state.prompt.reset(term)?;
                 }
             }
-            Ok(())
-        });
+        }
+        Ok(())
+    });
 
     Rc::new(move |state: &mut State, _term: &mut Term| {
         state.prompt.set(PromptData {

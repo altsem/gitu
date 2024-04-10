@@ -1,5 +1,6 @@
 mod bindings;
 pub mod cli;
+mod cmd_log;
 pub mod config;
 mod git;
 mod git2_opts;
@@ -18,9 +19,8 @@ mod ui;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use git2::Repository;
 use items::Item;
-use itertools::Itertools;
 use ops::Action;
-use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, time::Duration};
+use std::{error::Error, path::PathBuf, process::Command, time::Duration};
 use term::Term;
 
 //                                An overview of Gitu's ui and terminology:
@@ -61,21 +61,6 @@ use term::Term;
 //                 └──────────────────────────────────────────────────────────────────┘
 
 pub type Res<T> = Result<T, Box<dyn Error>>;
-
-pub(crate) enum CmdLogEntry {
-    Cmd {
-        args: Cow<'static, str>,
-        out: Option<Cow<'static, str>>,
-    },
-    Error(String),
-}
-
-fn command_args(cmd: &Command) -> Cow<'static, str> {
-    iter::once(cmd.get_program().to_string_lossy())
-        .chain(cmd.get_args().map(|arg| arg.to_string_lossy()))
-        .join(" ")
-        .into()
-}
 
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     log::debug!("Finding git dir");

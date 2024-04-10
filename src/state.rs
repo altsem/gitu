@@ -20,6 +20,8 @@ use tui_prompts::Status;
 
 use crate::bindings::Bindings;
 use crate::cli;
+use crate::cmd_log::CmdLog;
+use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
@@ -31,8 +33,6 @@ use crate::term;
 use crate::term::Term;
 use crate::ui;
 
-use super::command_args;
-use super::CmdLogEntry;
 use super::Res;
 
 pub(crate) struct State {
@@ -45,7 +45,7 @@ pub(crate) struct State {
     pub pending_menu: Option<PendingMenu>,
     pub pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
     enable_async_cmds: bool,
-    pub current_cmd_log_entries: Vec<Arc<RwLock<CmdLogEntry>>>,
+    pub current_cmd_log: CmdLog,
     pub prompt: prompt::Prompt,
 }
 
@@ -88,7 +88,7 @@ impl State {
             screens,
             pending_cmd: None,
             pending_menu,
-            current_cmd_log_entries: vec![],
+            current_cmd_log: CmdLog::new(),
             prompt: prompt::Prompt::new(),
         })
     }
@@ -106,7 +106,7 @@ impl State {
                         self.prompt.state.handle_key_event(key)
                     } else if key.kind == KeyEventKind::Press {
                         if self.pending_cmd.is_none() {
-                            self.current_cmd_log_entries.clear();
+                            self.current_cmd_log.clear();
                         }
 
                         self.handle_key_input(term, key)?;
@@ -145,8 +145,8 @@ impl State {
                     }
                 }
                 Err(error) => self
-                    .current_cmd_log_entries
-                    .push(Arc::new(RwLock::new(CmdLogEntry::Error(error.to_string())))),
+                    .current_cmd_log
+                    .push(CmdLogEntry::Error(error.to_string())),
             }
         }
 
@@ -196,8 +196,8 @@ impl State {
         match result {
             Ok(value) => Some(value),
             Err(error) => {
-                self.current_cmd_log_entries
-                    .push(Arc::new(RwLock::new(CmdLogEntry::Error(error.to_string()))));
+                self.current_cmd_log
+                    .push(CmdLogEntry::Error(error.to_string()));
 
                 None
             }
@@ -242,13 +242,7 @@ impl State {
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
-        let display = command_args(&cmd);
-
-        let log_entry = Arc::new(RwLock::new(CmdLogEntry::Cmd {
-            args: display,
-            out: None,
-        }));
-        self.current_cmd_log_entries.push(Arc::clone(&log_entry));
+        let log_entry = self.current_cmd_log.push_cmd(&cmd);
         term.draw(|frame| ui::ui(frame, self))?;
 
         let mut child = cmd.spawn()?;
@@ -303,16 +297,11 @@ impl State {
         let child = cmd.spawn()?;
 
         let out = child.wait_with_output()?;
+        let out_utf8 = String::from_utf8(out.stderr.clone())
+            .expect("Error turning command output to String")
+            .into();
 
-        self.current_cmd_log_entries
-            .push(Arc::new(RwLock::new(CmdLogEntry::Cmd {
-                args: command_args(&cmd),
-                out: Some(
-                    String::from_utf8(out.stderr.clone())
-                        .expect("Error turning command output to String")
-                        .into(),
-                ),
-            })));
+        self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
 
         // Prevents cursor flash when exiting editor
         term.hide_cursor()?;
