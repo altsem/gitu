@@ -23,7 +23,8 @@ Here's a list of so-far supported features:
 
 ### Keybinds
 Keybinds try mimic Magit, while staying Vim-like.
-A help-menu can be shown by pressing the `h` key.
+A help-menu can be shown by pressing the `h` key, or by configuring `general.always_show_help.enabled = true`
+
 
 <img style="width: 720px" src="vhs/help.png"/>
 
