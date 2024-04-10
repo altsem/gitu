@@ -51,14 +51,12 @@ pub(crate) struct State {
 
 impl State {
     pub fn create(
-        repo: Repository,
+        repo: Rc<Repository>,
         size: Rect,
         args: &cli::Args,
-        config: Config,
+        config: Rc<Config>,
         enable_async_cmds: bool,
     ) -> Res<Self> {
-        let repo = Rc::new(repo);
-        let config = Rc::new(config);
         let screens = match args.command {
             Some(cli::Commands::Show { ref reference }) => {
                 vec![screen::show::create(

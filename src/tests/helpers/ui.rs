@@ -1,6 +1,6 @@
 use crate::{
     cli::Args,
-    config,
+    config::{self, Config},
     key_parser::parse_keys,
     state::State,
     term::{Term, TermBackend},
@@ -9,43 +9,59 @@ use crate::{
 use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
-use std::path::PathBuf;
+use std::{path::PathBuf, rc::Rc};
 use temp_dir::TempDir;
 
 use self::buffer::TestBuffer;
 
 mod buffer;
 
+#[macro_export]
+macro_rules! snapshot {
+    ($ctx:expr, $keys:expr) => {{
+        let mut ctx = $ctx;
+        let mut state = ctx.init_state();
+        state.update(&mut ctx.term, &keys($keys)).unwrap();
+        insta::assert_snapshot!(ctx.redact_buffer());
+        state
+    }};
+}
+
 pub struct TestContext {
     pub term: Term,
     pub dir: TempDir,
     pub remote_dir: TempDir,
     pub size: Rect,
+    config: Rc<Config>,
 }
 
 impl TestContext {
     pub fn setup_init(width: u16, height: u16) -> Self {
         let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
         let repo_ctx = RepoTestContext::setup_init();
-
         Self {
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
             size: Rect::new(0, 0, width, height),
+            config: Rc::new(config::init_test_config().unwrap()),
         }
     }
 
     pub fn setup_clone(width: u16, height: u16) -> Self {
         let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
         let repo_ctx = RepoTestContext::setup_clone();
-
         Self {
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
             size: Rect::new(0, 0, width, height),
+            config: Rc::new(config::init_test_config().unwrap()),
         }
+    }
+
+    pub fn config(&mut self) -> &mut Config {
+        Rc::get_mut(&mut self.config).unwrap()
     }
 
     pub fn init_state(&mut self) -> State {
@@ -54,10 +70,10 @@ impl TestContext {
 
     pub fn init_state_at_path(&mut self, path: PathBuf) -> State {
         let mut state = State::create(
-            Repository::open(path).unwrap(),
+            Rc::new(Repository::open(path).unwrap()),
             self.size,
             &Args::default(),
-            config::init_test_config().unwrap(),
+            Rc::clone(&self.config),
             false,
         )
         .unwrap();

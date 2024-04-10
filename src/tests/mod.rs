@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use std::fs;
 
+#[macro_use]
 mod helpers;
 mod log;
 mod rebase;
@@ -839,12 +840,36 @@ fn inside_submodule() {
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
-#[test]
-fn quit() {
-    let mut ctx = TestContext::setup_init(80, 20);
+mod quit {
+    use super::*;
 
-    // TODO init_state should probably accept `Config` as an arg?
-    let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("qy")).unwrap();
-    assert!(state.quit);
+    #[test]
+    pub(crate) fn quit() {
+        let state = snapshot!(TestContext::setup_init(80, 20), "q");
+        assert!(state.quit);
+    }
+
+    #[test]
+    pub(crate) fn quit_from_menu() {
+        let state = snapshot!(TestContext::setup_init(80, 20), "hq");
+        assert!(!state.quit);
+    }
+
+    #[test]
+    pub(crate) fn confirm_quit_prompt() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        ctx.config().general.confirm_quit.enabled = true;
+
+        let state = snapshot!(ctx, "q");
+        assert!(!state.quit);
+    }
+
+    #[test]
+    pub(crate) fn confirm_quit() {
+        let mut ctx = TestContext::setup_init(80, 20);
+        ctx.config().general.confirm_quit.enabled = true;
+
+        let state = snapshot!(ctx, "qy");
+        assert!(state.quit);
+    }
 }

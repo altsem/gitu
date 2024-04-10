@@ -20,7 +20,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifie
 use git2::Repository;
 use items::Item;
 use ops::Action;
-use std::{error::Error, path::PathBuf, process::Command, time::Duration};
+use std::{error::Error, path::PathBuf, process::Command, rc::Rc, time::Duration};
 use term::Term;
 
 //                                An overview of Gitu's ui and terminology:
@@ -82,7 +82,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let config = config::init_config()?;
 
     log::debug!("Creating initial state");
-    let mut state = state::State::create(repo, term.size()?, args, config, true)?;
+    let mut state = state::State::create(Rc::new(repo), term.size()?, args, Rc::new(config), true)?;
 
     log::debug!("Initial update");
     state.update(term, &[Event::FocusGained])?;
