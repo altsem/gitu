@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stash.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
                                                                                 |
  Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Stash                                                                           |
-z Stash (include untracked)                                                     |
-a Apply stash                                                                   |
+Stash                      Arguments                                            |
+z Stash                    -a Also save untracked and ignored files (--all)     |
+a Apply stash              -u Also save untracked files (--include-untracked)   |
 i Stash index                                                                   |
 w Stash working tree                                                            |
 x Stash keeping index                                                           |
 p Pop stash                                                                     |
 k Drop stash                                                                    |
 q/<esc> Quit/Close                                                              |
-styles_hash: 17e2924fd3b42efd
+styles_hash: dddae6831deb0c8a

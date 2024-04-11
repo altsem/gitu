@@ -131,6 +131,8 @@ reset_menu.reset_hard = ["h"]
 reset_menu.quit = ["q", "<esc>"]
 
 root.stash_menu = ["z"]
+stash_menu.--all = ["-a"]
+stash_menu.--include-untracked = ["-u"]
 stash_menu.stash = ["z"]
 stash_menu.stash_index = ["i"]
 stash_menu.stash_worktree = ["w"]

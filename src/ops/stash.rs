@@ -1,19 +1,33 @@
-use super::{Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, term::Term, Res};
+use super::{create_prompt, create_prompt_with_default, Action, OpTrait};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::{Repository, Status, StatusOptions};
-use std::{process::Command, rc::Rc};
-use tui_prompts::State as _;
+use std::{ffi::OsString, process::Command, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) const ARGS: &[Arg] = &[
+    Arg::new("--include-untracked", "Also save untracked files", true),
+    Arg::new("--all", "Also save untracked and ignored files", false),
+];
 
 #[derive(Display)]
-#[display(fmt = "Stash (include untracked)")]
+#[display(fmt = "Stash")]
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_push_action(["--include-untracked"]))
+        Some(create_prompt("Name of the stash", stash_push))
     }
+}
+
+fn stash_push(state: &mut State, term: &mut Term, args: &[OsString], input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "push"]);
+    cmd.args(args);
+    if !input.is_empty() {
+        cmd.args(["--message", input]);
+    }
+
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
 #[derive(Display)]
@@ -21,8 +35,25 @@ impl OpTrait for Stash {
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_push_action(["--staged"]))
+        Some(create_prompt("Name of the stash", stash_push_index))
     }
+}
+
+fn stash_push_index(
+    state: &mut State,
+    term: &mut Term,
+    _args: &[OsString],
+    input: &str,
+) -> Res<()> {
+    let mut cmd = Command::new("git");
+    // --all / --unclude-untracked are not allowed together with --staged
+    cmd.args(["stash", "push", "--staged"]);
+    if !input.is_empty() {
+        cmd.args(["--message", input]);
+    }
+
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
 #[derive(Display)]
@@ -30,47 +61,15 @@ impl OpTrait for StashIndex {
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        let update_fn = move |state: &mut State, term: &mut Term| -> Res<()> {
-            if state.prompt.state.status().is_done() {
-                let input = state.prompt.state.value().to_string();
-                state.prompt.reset(term)?;
-
-                let need_to_stash_index = is_something_staged(&state.repo)?;
-
-                if need_to_stash_index {
-                    let mut cmd = Command::new("git");
-                    cmd.args(["stash", "push", "--staged"]);
-                    state.run_cmd(term, &[], cmd)?;
-                }
-
-                let mut cmd = Command::new("git");
-                cmd.args(["stash", "push", "--include-untracked"]);
-                if !input.is_empty() {
-                    cmd.args(["--message", &input]);
-                }
-                state.run_cmd(term, &[], cmd)?;
-
-                if need_to_stash_index {
-                    let mut cmd = Command::new("git");
-                    cmd.args(["stash", "pop", "-q", "1"]);
-                    state.run_cmd(term, &[], cmd)?;
-                }
+        Some(Rc::new(|state: &mut State, term: &mut Term| -> Res<()> {
+            if is_working_tree_empty(&state.repo)? {
+                return Err("Cannot stash: working tree is empty".into());
             }
-            Ok(())
-        };
 
-        Some(Rc::new(
-            move |state: &mut State, _term: &mut Term| -> Res<()> {
-                if is_working_tree_empty(&state.repo)? {
-                    return Err("Cannot stash: working tree is empty".into());
-                }
-                state.prompt.set(PromptData {
-                    prompt_text: "Name of the stash:".into(),
-                    update_fn: Rc::new(update_fn),
-                });
-                Ok(())
-            },
-        ))
+            let mut create_prompt = create_prompt("Name of the stash", stash_worktree);
+            Rc::get_mut(&mut create_prompt).unwrap()(state, term)?;
+            Ok(())
+        }))
     }
 }
 
@@ -92,6 +91,32 @@ fn is_working_tree_empty(repo: &Repository) -> Res<bool> {
     });
 
     Ok(!is_working_tree_not_empty)
+}
+
+fn stash_worktree(state: &mut State, term: &mut Term, args: &[OsString], input: &str) -> Res<()> {
+    let need_to_stash_index = is_something_staged(&state.repo)?;
+
+    if need_to_stash_index {
+        let mut cmd = Command::new("git");
+        cmd.args(["stash", "push", "--staged"]);
+        state.run_cmd(term, &[], cmd)?;
+    }
+
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "push"]);
+    cmd.args(args);
+    if !input.is_empty() {
+        cmd.args(["--message", &input]);
+    }
+    state.run_cmd(term, &[], cmd)?;
+
+    if need_to_stash_index {
+        let mut cmd = Command::new("git");
+        cmd.args(["stash", "pop", "-q", "1"]);
+        state.run_cmd(term, &[], cmd)?;
+    }
+
+    Ok(())
 }
 
 fn is_something_staged(repo: &Repository) -> Res<bool> {
@@ -117,39 +142,25 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_push_action(["--keep-index", "--include-untracked"]))
+        Some(create_prompt("Name of the stash", stash_push_keep_index))
     }
 }
 
-fn stash_push_action<const N: usize>(args: [&'static str; N]) -> Action {
-    Rc::new(move |state: &mut State, _term: &mut Term| -> Res<()> {
-        state.prompt.set(PromptData {
-            prompt_text: "Name of the stash:".into(),
-            update_fn: Rc::new(stash_push_action_prompt_update(args)),
-        });
-        Ok(())
-    })
-}
-
-fn stash_push_action_prompt_update<const N: usize>(
-    args: [&'static str; N],
-) -> impl FnMut(&mut State, &mut Term) -> Res<()> + 'static {
-    move |state: &mut State, term: &mut Term| -> Res<()> {
-        if state.prompt.state.status().is_done() {
-            let input = state.prompt.state.value().to_string();
-            state.prompt.reset(term)?;
-
-            let mut cmd = Command::new("git");
-            cmd.args(["stash", "push"]);
-            cmd.args(args);
-            if !input.is_empty() {
-                cmd.args(["--message".into(), input]);
-            }
-
-            state.run_cmd(term, &[], cmd)?;
-        }
-        Ok(())
+fn stash_push_keep_index(
+    state: &mut State,
+    term: &mut Term,
+    args: &[OsString],
+    input: &str,
+) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "push", "--keep-index"]);
+    cmd.args(args);
+    if !input.is_empty() {
+        cmd.args(["--message", input]);
     }
+
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
 #[derive(Display)]
@@ -157,8 +168,20 @@ fn stash_push_action_prompt_update<const N: usize>(
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_target_action("pop"))
+        Some(create_prompt_with_default(
+            "Stash pop",
+            stash_pop,
+            selected_stash,
+        ))
     }
+}
+
+fn stash_pop(state: &mut State, term: &mut Term, _args: &[OsString], input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "pop", "-q"]);
+    cmd.arg(input);
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
 #[derive(Display)]
@@ -166,8 +189,20 @@ impl OpTrait for StashPop {
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_target_action("apply"))
+        Some(create_prompt_with_default(
+            "Stash apply",
+            stash_apply,
+            selected_stash,
+        ))
     }
+}
+
+fn stash_apply(state: &mut State, term: &mut Term, _args: &[OsString], input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "apply", "-q"]);
+    cmd.arg(input);
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
 #[derive(Display)]
@@ -175,52 +210,25 @@ impl OpTrait for StashApply {
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(stash_target_action("drop"))
+        Some(create_prompt_with_default(
+            "Stash drop",
+            stash_drop,
+            selected_stash,
+        ))
     }
 }
 
-fn stash_target_action(command: &'static str) -> Action {
-    Rc::new(move |state: &mut State, _term: &mut Term| -> Res<()> {
-        let prompt_text = if let Some(id) = default_target_stash(state) {
-            format!("Stash {} (default {}):", command, id).into()
-        } else {
-            format!("Stash {} (default 0):", command).into()
-        };
-
-        state.prompt.set(PromptData {
-            prompt_text,
-            update_fn: Rc::new(stash_target_action_prompt_update(command)),
-        });
-        Ok(())
-    })
+fn stash_drop(state: &mut State, term: &mut Term, _args: &[OsString], input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "drop"]);
+    cmd.arg(input);
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
-fn stash_target_action_prompt_update(
-    command: &str,
-) -> impl FnMut(&mut State, &mut Term) -> Res<()> + '_ {
-    |state: &mut State, term: &mut Term| -> Res<()> {
-        if state.prompt.state.status().is_done() {
-            let input = state.prompt.state.value().to_string();
-            state.prompt.reset(term)?;
-
-            let stash_id: usize = match (input.parse(), default_target_stash(state)) {
-                (Err(_), None) => 0,
-                (Err(_), Some(default)) => default,
-                (Ok(value), _) => value,
-            };
-
-            let mut cmd = Command::new("git");
-            cmd.args(["stash", command, "-q", stash_id.to_string().as_str()]);
-
-            state.run_cmd(term, &[], cmd)?;
-        }
-        Ok(())
-    }
-}
-
-fn default_target_stash(state: &State) -> Option<usize> {
+fn selected_stash(state: &State) -> Option<String> {
     match state.screen().get_selected_item().target_data {
-        Some(TargetData::Stash { id, commit: _ }) => Some(id),
-        _ => None,
+        Some(TargetData::Stash { id, commit: _ }) => Some(id.to_string()),
+        _ => Some("0".to_string()),
     }
 }

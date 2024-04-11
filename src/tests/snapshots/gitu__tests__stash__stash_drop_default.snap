@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stash.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git stash drop -q 0                                                           |
-styles_hash: 8297e338dec91d6
+$ git stash drop 0                                                              |
+Dropped refs/stash@{0} (866ae6e6fb018bbc32c37e658e097d95dceee8c0)               |
+styles_hash: dfd2a495b8602e3f
