@@ -118,6 +118,18 @@ fn merge_conflict() {
 }
 
 #[test]
+fn revert_conflict() {
+    let mut ctx = TestContext::setup_clone();
+    commit(ctx.dir.path(), "new-file", "hey");
+    commit(ctx.dir.path(), "new-file", "hi");
+
+    run(ctx.dir.path(), &["git", "revert", "HEAD~1"]);
+
+    ctx.init_state();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn moved_file() {
     let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");

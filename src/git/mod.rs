@@ -72,6 +72,33 @@ pub(crate) fn merge_status(repo: &Repository) -> Res<Option<MergeStatus>> {
     }
 }
 
+pub(crate) struct RevertStatus {
+    pub head: String,
+}
+
+pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
+    let dir = repo.workdir().expect("No workdir");
+    let mut revert_head_file = dir.to_path_buf();
+    revert_head_file.push(".git/REVERT_HEAD");
+
+    match fs::read_to_string(&revert_head_file) {
+        Ok(content) => {
+            let head = content.trim().to_string();
+            Ok(Some(RevertStatus {
+                head: branch_name(dir, &head)?.unwrap_or(head[..7].to_string()),
+            }))
+        }
+        Err(err) => {
+            log::warn!(
+                "Couldn't read {}, due to {}",
+                revert_head_file.to_string_lossy(),
+                err
+            );
+            Ok(None)
+        }
+    }
+}
+
 // TODO replace with libgit2
 fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
     let out = Command::new("git")
