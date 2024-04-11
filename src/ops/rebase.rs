@@ -9,7 +9,7 @@ use std::{
 
 pub(crate) const ARGS: &[Arg] = &[
     Arg::new("--keep-empty", "Keep empty commits", false),
-    Arg::new("--preserve-merges", "Presere merges", false),
+    Arg::new("--preserve-merges", "Preserve merges", false),
     Arg::new(
         "--committer-date-is-author-date",
         "Lie about committer date",
