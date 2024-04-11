@@ -200,6 +200,13 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
     })
 }
 
+pub(crate) fn create_prompt(
+    prompt: &'static str,
+    callback: fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
+) -> Action {
+    create_prompt_with_default(prompt, callback, |_| None)
+}
+
 pub(crate) fn create_prompt_with_default(
     prompt: &'static str,
     callback: fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
