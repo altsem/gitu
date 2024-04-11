@@ -1,4 +1,4 @@
-use super::{create_rev_prompt, Action, OpTrait};
+use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
@@ -11,7 +11,11 @@ pub(crate) const ARGS: &[Arg] = &[];
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_rev_prompt("Checkout", checkout))
+        Some(create_prompt_with_default(
+            "Checkout",
+            checkout,
+            selected_rev,
+        ))
     }
 }
 

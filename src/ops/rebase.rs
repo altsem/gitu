@@ -1,4 +1,4 @@
-use super::{create_rev_prompt, Action, OpTrait};
+use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{
@@ -56,7 +56,11 @@ impl OpTrait for RebaseAbort {
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_rev_prompt("Rebase onto", rebase_elsewhere))
+        Some(create_prompt_with_default(
+            "Rebase onto",
+            rebase_elsewhere,
+            selected_rev,
+        ))
     }
 }
 

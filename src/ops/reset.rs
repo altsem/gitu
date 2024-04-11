@@ -1,4 +1,4 @@
-use super::{create_rev_prompt, OpTrait};
+use super::{create_prompt_with_default, selected_rev, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action, Res};
 use derive_more::Display;
 use std::{ffi::OsString, process::Command};
@@ -10,7 +10,11 @@ pub(crate) const ARGS: &[Arg] = &[];
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_rev_prompt("Soft reset to", reset_soft))
+        Some(create_prompt_with_default(
+            "Soft reset to",
+            reset_soft,
+            selected_rev,
+        ))
     }
 }
 
@@ -27,7 +31,11 @@ fn reset_soft(state: &mut State, term: &mut Term, args: &[OsString], input: &str
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_rev_prompt("Mixed reset to", reset_mixed))
+        Some(create_prompt_with_default(
+            "Mixed reset to",
+            reset_mixed,
+            selected_rev,
+        ))
     }
 }
 
@@ -44,7 +52,11 @@ fn reset_mixed(state: &mut State, term: &mut Term, args: &[OsString], input: &st
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_rev_prompt("Hard reset to", reset_hard))
+        Some(create_prompt_with_default(
+            "Hard reset to",
+            reset_hard,
+            selected_rev,
+        ))
     }
 }
 

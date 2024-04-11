@@ -1,4 +1,4 @@
-use super::{create_rev_prompt, Action, OpTrait};
+use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, screen, state::State, term::Term, Res};
 use derive_more::Display;
 use git2::Oid;
@@ -23,7 +23,11 @@ impl OpTrait for LogCurrent {
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_rev_prompt("Log rev", log_other))
+        Some(create_prompt_with_default(
+            "Log rev",
+            log_other,
+            selected_rev,
+        ))
     }
 }
 

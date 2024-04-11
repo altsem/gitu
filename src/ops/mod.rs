@@ -200,12 +200,13 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
     })
 }
 
-pub(crate) fn create_rev_prompt(
+pub(crate) fn create_prompt_with_default(
     prompt: &'static str,
     callback: fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
+    default_fn: fn(&State) -> Option<String>,
 ) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| {
-        let prompt_text = if let Some(default) = default_rev(state) {
+        let prompt_text = if let Some(default) = default_fn(state) {
             format!("{} (default {}):", prompt, default).into()
         } else {
             format!("{}:", prompt).into()
@@ -220,14 +221,14 @@ pub(crate) fn create_rev_prompt(
                     let input = state.prompt.state.value().to_string();
                     state.prompt.reset(term)?;
 
-                    let default_rev = default_rev(state);
-                    let rev = match (input.as_str(), &default_rev) {
+                    let default_value = default_fn(state);
+                    let value = match (input.as_str(), &default_value) {
                         ("", None) => "",
-                        ("", Some(default)) => default,
+                        ("", Some(selected)) => selected,
                         (value, _) => value,
                     };
 
-                    callback(state, term, &args, rev)?;
+                    callback(state, term, &args, value)?;
                 }
                 Ok(())
             }),
@@ -236,7 +237,7 @@ pub(crate) fn create_rev_prompt(
     })
 }
 
-fn default_rev(state: &State) -> Option<String> {
+pub(crate) fn selected_rev(state: &State) -> Option<String> {
     match &state.screen().get_selected_item().target_data {
         Some(TargetData::Branch(branch)) => Some(branch.to_owned()),
         Some(TargetData::Commit(commit)) => Some(commit.to_owned()),
