@@ -14,7 +14,7 @@ pub(crate) const ARGS: &[Arg] = &[
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Name of the stash", stash_push))
+        Some(create_prompt("Stash message", stash_push))
     }
 }
 
@@ -35,7 +35,7 @@ fn stash_push(state: &mut State, term: &mut Term, args: &[OsString], input: &str
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Name of the stash", stash_push_index))
+        Some(create_prompt("Stash message", stash_push_index))
     }
 }
 
@@ -66,7 +66,7 @@ impl OpTrait for StashWorktree {
                 return Err("Cannot stash: working tree is empty".into());
             }
 
-            let mut create_prompt = create_prompt("Name of the stash", stash_worktree);
+            let mut create_prompt = create_prompt("Stash message", stash_worktree);
             Rc::get_mut(&mut create_prompt).unwrap()(state, term)?;
             Ok(())
         }))
@@ -142,7 +142,7 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Name of the stash", stash_push_keep_index))
+        Some(create_prompt("Stash message", stash_push_keep_index))
     }
 }
 
@@ -169,7 +169,7 @@ pub(crate) struct StashPop;
 impl OpTrait for StashPop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt_with_default(
-            "Stash pop",
+            "Pop stash",
             stash_pop,
             selected_stash,
         ))
@@ -190,7 +190,7 @@ pub(crate) struct StashApply;
 impl OpTrait for StashApply {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt_with_default(
-            "Stash apply",
+            "Apply stash",
             stash_apply,
             selected_stash,
         ))
@@ -211,7 +211,7 @@ pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt_with_default(
-            "Stash drop",
+            "Drop stash",
             stash_drop,
             selected_stash,
         ))
