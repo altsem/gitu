@@ -56,6 +56,16 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                     ..Default::default()
                 }]
                 .into_iter()
+            } else if let Some(revert) = git::revert_status(&repo)? {
+                vec![Item {
+                    id: "revert_status".into(),
+                    display: Line::styled(
+                        format!("Reverting {}", &revert.head),
+                        &style.section_header,
+                    ),
+                    ..Default::default()
+                }]
+                .into_iter()
             } else {
                 branch_status_items(&config, &repo)?.into_iter()
             }
