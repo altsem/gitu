@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-? Stash apply (default 0): ›                                                    |
+? Apply stash (default 0): ›                                                    |
 styles_hash: 3e6073d833eb8d18
