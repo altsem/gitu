@@ -20,9 +20,7 @@ impl OpTrait for CopyHash {
 
 fn copy_hash(r: String) -> Option<Action> {
     Some(Rc::new(move |state, _term| {
-        state
-            .clipboard
-            .set_text(r.clone())?;
+        state.clipboard.set_text(r.clone())?;
         state.display_info("Commit hash copied to clipboard".to_owned());
         Ok(())
     }))
