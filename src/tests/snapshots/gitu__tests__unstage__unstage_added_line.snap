@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/unstage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -7,19 +7,19 @@ expression: ctx.redact_buffer()
  Unstaged changes (1)                                                           |
  modified   firstfile                                                           |
  @@ -1 +1,2 @@                                                                  |
- +weehooo                                                                       |
+▌+weehooo                                                                       |
   blrergh                                                                       |
                                                                                 |
-▌Staged changes (1)                                                             |
-▌modified   firstfile                                                           |
-▌@@ -1,2 +1 @@                                                                  |
-▌-testing                                                                       |
-▌-testtest                                                                      |
-▌+blrergh                                                                       |
+ Staged changes (1)                                                             |
+ modified   firstfile                                                           |
+ @@ -1,2 +1 @@                                                                  |
+ -testing                                                                       |
+ -testtest                                                                      |
+ +blrergh                                                                       |
                                                                                 |
  Recent commits                                                                 |
  _______ main add firstfile                                                     |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --reverse --recount                                        |
-styles_hash: fc37b34b929c904c
+styles_hash: ba371b4abc104dab

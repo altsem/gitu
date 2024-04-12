@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -8,9 +8,9 @@ expression: ctx.redact_buffer()
  modified   firstfile                                                           |
  @@ -1,3 +1,2 @@                                                                |
  -testing                                                                       |
- -testtest                                                                      |
+▌-testtest                                                                      |
   weehooo                                                                       |
-▌+blrergh                                                                       |
+ +blrergh                                                                       |
                                                                                 |
  Staged changes (1)                                                             |
  modified   firstfile                                                           |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --recount                                                  |
-styles_hash: d7cb47a328ccffa7
+styles_hash: 1f0aa858cd1590f8

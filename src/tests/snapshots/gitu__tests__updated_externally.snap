@@ -5,12 +5,12 @@ expression: ctx.redact_buffer()
  No branch                                                                      |
                                                                                 |
  Untracked files                                                                |
- a                                                                              |
+▌a                                                                              |
                                                                                 |
-▌Staged changes (1)                                                             |
-▌added   b                                                                      |
-▌@@ -0,0 +1 @@                                                                  |
-▌+test                                                                          |
+ Staged changes (1)                                                             |
+ added   b                                                                      |
+ @@ -0,0 +1 @@                                                                  |
+ +test                                                                          |
                                                                                 |
  Recent commits                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: ec9cd36a3749a69d
+styles_hash: f3ec0f2c6db39b7a

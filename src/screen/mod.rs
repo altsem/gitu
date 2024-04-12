@@ -139,12 +139,15 @@ impl Screen {
     }
 
     pub(crate) fn select_previous(&mut self, nav_mode: NavMode) {
-        self.cursor = (0..self.cursor)
+        self.cursor = self.find_previous(nav_mode);
+        self.scroll_fit_start();
+    }
+
+    fn find_previous(&mut self, nav_mode: NavMode) -> usize {
+        (0..self.cursor)
             .rev()
             .find(|&line_i| self.nav_filter(line_i, nav_mode))
-            .unwrap_or(self.cursor);
-
-        self.scroll_fit_start();
+            .unwrap_or(self.cursor)
     }
 
     pub(crate) fn scroll_half_page_up(&mut self) {
@@ -186,6 +189,11 @@ impl Screen {
         self.update_line_index();
 
         self.clamp_cursor();
+        if self.is_cursor_off_screen() {
+            self.move_cursor_to_screen_center();
+        }
+
+        self.clamp_cursor();
         self.move_from_unselectable(nav_mode);
         Ok(())
     }
@@ -224,6 +232,15 @@ impl Screen {
             .collect();
     }
 
+    fn is_cursor_off_screen(&self) -> bool {
+        !self.line_views(self.size).any(|line| line.highlighted)
+    }
+
+    fn move_cursor_to_screen_center(&mut self) {
+        let half_screen = self.size.height as usize / 2;
+        self.cursor = self.scroll + half_screen;
+    }
+
     fn clamp_cursor(&mut self) {
         self.cursor = self
             .cursor
@@ -231,11 +248,11 @@ impl Screen {
     }
 
     fn move_from_unselectable(&mut self, nav_mode: NavMode) {
-        if self.get_selected_item().unselectable {
-            self.select_next(nav_mode);
-        }
-        if self.get_selected_item().unselectable {
+        if !self.nav_filter(self.cursor, nav_mode) {
             self.select_previous(nav_mode);
+        }
+        if !self.nav_filter(self.cursor, nav_mode) {
+            self.select_next(nav_mode);
         }
     }
 
