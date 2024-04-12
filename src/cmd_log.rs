@@ -95,7 +95,7 @@ pub(crate) fn format_log_entry<'a>(
                 format!("! {}", err),
                 Style::new().red().bold(),
             )]
-        },
+        }
         CmdLogEntry::Info(msg) => {
             vec![Line::styled(
                 format!("> {}", msg),

@@ -14,6 +14,7 @@ use std::{
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
+pub(crate) mod copy_hash;
 pub(crate) mod discard;
 pub(crate) mod editor;
 pub(crate) mod fetch;
@@ -27,7 +28,6 @@ pub(crate) mod show_refs;
 pub(crate) mod stage;
 pub(crate) mod stash;
 pub(crate) mod unstage;
-pub(crate) mod copy_hash;
 
 pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
