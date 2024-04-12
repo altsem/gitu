@@ -3,7 +3,7 @@ use crate::items::TargetData;
 use derive_more::Display;
 use std::rc::Rc;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
+#[derive(Display)]
 #[display(fmt = "Copy hash")]
 pub(crate) struct CopyHash;
 impl OpTrait for CopyHash {
