@@ -156,6 +156,7 @@ impl OpTrait for HalfPageUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
             state.screen_mut().scroll_half_page_up();
+            state.screen_mut().update()?;
             Ok(())
         }))
     }
@@ -168,6 +169,7 @@ impl OpTrait for HalfPageDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
             state.screen_mut().scroll_half_page_down();
+            state.screen_mut().update()?;
             Ok(())
         }))
     }

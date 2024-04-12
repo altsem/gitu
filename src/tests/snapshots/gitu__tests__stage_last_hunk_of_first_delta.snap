@@ -6,13 +6,13 @@ expression: ctx.redact_buffer()
  Your branch is ahead of 'origin/main' by 2 commit.                             |
                                                                                 |
  Unstaged changes (1)                                                           |
- modified   file-two…                                                           |
+▌modified   file-two…                                                           |
                                                                                 |
-▌Staged changes (1)                                                             |
-▌modified   file-one                                                            |
-▌@@ -1,2 +1 @@                                                                  |
-▌-asdf                                                                          |
-▌ blahonga                                                                      |
+ Staged changes (1)                                                             |
+ modified   file-one                                                            |
+ @@ -1,2 +1 @@                                                                  |
+ -asdf                                                                          |
+  blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
  _______ main add file-two                                                      |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached                                                            |
-styles_hash: d68295efec82de5f
+styles_hash: fd0968802909dc14
