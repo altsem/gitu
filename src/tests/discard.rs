@@ -4,21 +4,21 @@ use super::*;
 pub(crate) fn discard_branch_confirm_prompt() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "branch", "asd"]);
-    snapshot!(ctx, "yjK");
+    snapshot!(ctx, "YjK");
 }
 
 #[test]
 pub(crate) fn discard_branch_yes() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "branch", "asd"]);
-    snapshot!(ctx, "yjKy");
+    snapshot!(ctx, "YjKy");
 }
 
 #[test]
 pub(crate) fn discard_branch_no() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "branch", "asd"]);
-    snapshot!(ctx, "yjKn");
+    snapshot!(ctx, "YjKn");
 }
 
 #[test]
@@ -77,7 +77,7 @@ pub(crate) fn discard_staged_file() {
 //     let mut ctx = TestContext::setup_clone();
 //     let mut state = ctx.init_state();
 //     state
-//         .update(&mut ctx.term, &keys("yjKy"))
+//         .update(&mut ctx.term, &keys("YjKy"))
 //         .unwrap();
 //     insta::assert_snapshot!(ctx.redact_buffer());
 // }

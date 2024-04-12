@@ -168,7 +168,7 @@ fn show_refs() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "tag", "same-name"]);
     run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
-    snapshot!(ctx, "y");
+    snapshot!(ctx, "Y");
 }
 
 mod checkout {
@@ -178,21 +178,21 @@ mod checkout {
     pub(crate) fn checkout_menu() {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
-        snapshot!(ctx, "yjb");
+        snapshot!(ctx, "Yjb");
     }
 
     #[test]
     pub(crate) fn switch_branch_selected() {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "other-branch"]);
-        snapshot!(ctx, "yjjbb<enter>");
+        snapshot!(ctx, "Yjjbb<enter>");
     }
 
     #[test]
     pub(crate) fn switch_branch_input() {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "hi"]);
-        snapshot!(ctx, "yjjbbhi<enter>");
+        snapshot!(ctx, "Yjjbbhi<enter>");
     }
 
     #[test]
