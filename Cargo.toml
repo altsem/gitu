@@ -22,7 +22,7 @@ clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
 directories = "5.0.1"
-figment = { version = "0.10.15", features = ["toml"] }
+figment = { version = "0.10.16", features = ["toml"] }
 git-version = "0.3.9"
 git2 = { version = "0.18.3", default-features = false }
 itertools = "0.12.0"
