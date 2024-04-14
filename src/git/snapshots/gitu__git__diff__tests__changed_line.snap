@@ -1,0 +1,8 @@
+---
+source: src/git/diff.rs
+expression: "hunks[0].format_patch()"
+---
+header
+@@ -1 +1 @@
+-old line
++new line
