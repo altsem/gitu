@@ -41,7 +41,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
             .chain(create_references_section_items(
                 &repo,
                 Reference::is_remote,
-                &style.branch,
+                &style.remote,
             )?)
             .chain(iter::once(Item {
                 id: "tags".into(),
@@ -53,7 +53,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
             .chain(create_references_section_items(
                 &repo,
                 Reference::is_tag,
-                &style.branch,
+                &style.tag,
             )?)
             .collect())
         }),
