@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0] - 2024-04-14
+
+### 🚀 Features
+
+- Copy commit hash with "y", move Show Refs to "Y"
+- Cursor is kept in view when scrolling
+- Togglable stash flags: --all & --include-untracked
+
+### 🐛 Bug Fixes
+
+- Typo in descriptions on menu
+
+### 🎨 Styling
+
+- Update stash promps to be more like in Magit
+
 ## [0.15.0] - 2024-04-10
 
 ### 🚀 Features

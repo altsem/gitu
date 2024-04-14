@@ -1,21 +1,16 @@
-## [0.15.0] - 2024-04-10
+## [0.16.0] - 2024-04-14
 
 ### 🚀 Features
 
-- Config option: general.always_show_help.enabled
-- Add all args to rebase menu
-- Add --prune and --tags flags to Fetch menu
-- Add all on/off arg flags to Commit menu
-- Add --rebase pull arg
-- Add --force /--no-verify /--dry-run push args
+- Copy commit hash with "y", move Show Refs to "Y"
+- Cursor is kept in view when scrolling
+- Togglable stash flags: --all & --include-untracked
 
 ### 🐛 Bug Fixes
 
-- Main screen is more smart about scrolling when menu is open
-- Redraw screen even if command failed
-- Only stderr would show in log popup
+- Typo in descriptions on menu
 
 ### 🎨 Styling
 
-- Display args more like Magit
+- Update stash promps to be more like in Magit
 
