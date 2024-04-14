@@ -259,3 +259,37 @@ fn read_blob(repo: &Repository, file: &git2::DiffFile<'_>) -> Res<String> {
 fn path(file: &git2::DiffFile) -> PathBuf {
     file.path().unwrap().to_path_buf()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Delta;
+    use crate::config;
+
+    #[test]
+    fn changed_line() {
+        let hunks = diff_content("old line\n", "new line\n");
+        insta::assert_snapshot!(hunks[0].format_patch());
+    }
+
+    #[test]
+    fn multiple_changed_lines() {
+        let hunks = diff_content("one\ntwo\nthree\n", "three\ntwo\none\n");
+        insta::assert_snapshot!(hunks[0].format_patch());
+    }
+
+    fn diff_content(old_content: &str, new_content: &str) -> Vec<std::rc::Rc<super::Hunk>> {
+        super::diff_content(
+            &config::init_test_config().unwrap(),
+            &Delta {
+                file_header: "header\n".into(),
+                new_file: "new_file".into(),
+                old_file: "old_file".into(),
+                hunks: vec![],
+                status: git2::Delta::Modified,
+            },
+            old_content.to_string(),
+            new_content.to_string(),
+        )
+        .unwrap()
+    }
+}
