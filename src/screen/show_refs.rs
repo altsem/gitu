@@ -6,7 +6,7 @@ use crate::{
     items::{Item, TargetData},
     Res,
 };
-use git2::{BranchType, Reference, Repository};
+use git2::{Reference, Repository};
 use ratatui::{
     prelude::Rect,
     text::{Line, Span},
@@ -26,7 +26,11 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                 depth: 0,
                 ..Default::default()
             })
-            .chain(branches(&repo, Some(BranchType::Local), &style.branch)?)
+            .chain(create_references_section_items(
+                &repo,
+                Reference::is_branch,
+                &style.branch,
+            )?)
             .chain(iter::once(Item {
                 id: "remote_branches".into(),
                 display: Line::styled("Remote".to_string(), &style.section_header),
@@ -34,7 +38,11 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                 depth: 0,
                 ..Default::default()
             }))
-            .chain(branches(&repo, Some(BranchType::Remote), &style.branch)?)
+            .chain(create_references_section_items(
+                &repo,
+                Reference::is_remote,
+                &style.branch,
+            )?)
             .chain(iter::once(Item {
                 id: "tags".into(),
                 display: Line::styled("Tags".to_string(), &style.section_header),
@@ -42,54 +50,46 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                 depth: 0,
                 ..Default::default()
             }))
-            .chain(
-                repo.references()?
-                    .filter_map(Result::ok)
-                    .filter(Reference::is_tag)
-                    .map(|tag| {
-                        let name = Span::styled(tag.name().unwrap().to_string(), &style.branch);
-
-                        Item {
-                            id: name.clone().content,
-                            display: Line::from(vec![prefix(repo.head().ok(), &tag), name.clone()]),
-                            depth: 1,
-                            target_data: Some(TargetData::Branch(name.content.into())),
-                            ..Default::default()
-                        }
-                    }),
-            )
+            .chain(create_references_section_items(
+                &repo,
+                Reference::is_tag,
+                &style.branch,
+            )?)
             .collect())
         }),
     )
 }
 
-fn branches<'a>(
+fn create_references_section_items<'a, F>(
     repo: &'a Repository,
-    filter: Option<BranchType>,
+    filter: F,
     style: &'a StyleConfigEntry,
-) -> Res<impl Iterator<Item = Item> + 'a> {
+) -> Res<impl Iterator<Item = Item> + 'a>
+where
+    F: FnMut(&Reference<'a>) -> bool + 'a,
+{
     Ok(repo
-        .branches(filter)?
+        .references()?
         .filter_map(Result::ok)
-        .map(move |(branch, _branch_type)| {
-            let name = Span::styled(branch.name().unwrap().unwrap().to_string(), style);
+        .filter(filter)
+        .map(move |reference| {
+            let name = Span::styled(reference.shorthand().unwrap().to_string(), style);
+            let head = repo.head().ok();
+
+            let prefix = Span::raw(
+                if reference.target() == head.as_ref().and_then(Reference::target) {
+                    "* "
+                } else {
+                    "  "
+                },
+            );
 
             Item {
                 id: name.clone().content,
-                display: Line::from(vec![prefix(repo.head().ok(), branch.get()), name.clone()]),
+                display: Line::from(vec![prefix, name.clone()]),
                 depth: 1,
                 target_data: Some(TargetData::Branch(name.content.into())),
                 ..Default::default()
             }
         }))
-}
-
-fn prefix(head: Option<Reference>, target: &Reference) -> Span<'static> {
-    Span::raw(
-        if target.target() == head.as_ref().and_then(Reference::target) {
-            "* "
-        } else {
-            "  "
-        },
-    )
 }
