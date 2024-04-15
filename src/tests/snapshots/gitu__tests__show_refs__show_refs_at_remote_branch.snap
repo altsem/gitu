@@ -3,8 +3,11 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 ▌Branches                                                                       |
-▌  main   origin/main                                                           |
-▌* same-name                                                                    |
+▌? main                                                                         |
+ Origin                                                                         |
+   origin/HEAD                                                                  |
+ ? origin/main                                                                  |
+ Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 3d8b9c9a52cc477d
+styles_hash: fa5ded2381d28b6c

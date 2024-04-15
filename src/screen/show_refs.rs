@@ -62,7 +62,7 @@ fn create_remotes_sections<'a>(
     header_style: &'a StyleConfigEntry,
     item_style: &'a StyleConfigEntry,
 ) -> Res<impl Iterator<Item = Item> + 'a> {
-    let all_remotes = create_references_section(&repo, Reference::is_remote, item_style)?;
+    let all_remotes = create_references_section(repo, Reference::is_remote, item_style)?;
     let mut remotes = HashMap::new();
     for remote in all_remotes {
         let name = match remote.id.split_once('/') {
@@ -115,22 +115,29 @@ where
         .filter(filter)
         .map(move |reference| {
             let name = Span::styled(reference.shorthand().unwrap().to_string(), style);
-            let head = repo.head().ok();
-
-            let prefix = Span::raw(
-                if reference.target() == head.as_ref().and_then(Reference::target) {
-                    "* "
-                } else {
-                    "  "
-                },
-            );
 
             Item {
                 id: name.clone().content,
-                display: Line::from(vec![prefix, name.clone()]),
+                display: Line::from(vec![create_prefix(repo, &reference), name.clone()]),
                 depth: 1,
                 target_data: Some(TargetData::Branch(name.content.into())),
                 ..Default::default()
             }
         }))
+}
+
+fn create_prefix(repo: &Repository, reference: &Reference) -> Span<'static> {
+    let head = repo.head().ok();
+
+    Span::raw(if repo.head_detached().unwrap_or(false) {
+        if reference.target() == head.as_ref().and_then(Reference::target) {
+            "? "
+        } else {
+            "  "
+        }
+    } else if reference.name() == head.as_ref().and_then(Reference::name) {
+        "* "
+    } else {
+        "  "
+    })
 }

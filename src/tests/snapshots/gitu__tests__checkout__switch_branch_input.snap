@@ -4,11 +4,11 @@ expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
  * hi                                                                           |
-▌  main   origin/main                                                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+▌  main                                                                         |
+ Origin                                                                         |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+ Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout hi                                                               |
 Switched to branch 'hi'                                                         |
-styles_hash: e2323031ce58c243
+styles_hash: 9d3dde3c705a6953
