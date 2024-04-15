@@ -1,4 +1,8 @@
-use std::{iter, rc::Rc};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    iter,
+    rc::Rc,
+};
 
 use super::Screen;
 use crate::{
@@ -26,21 +30,14 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                 depth: 0,
                 ..Default::default()
             })
-            .chain(create_references_section_items(
+            .chain(create_references_section(
                 &repo,
                 Reference::is_branch,
                 &style.branch,
             )?)
-            .chain(iter::once(Item {
-                id: "remote_branches".into(),
-                display: Line::styled("Remote".to_string(), &style.section_header),
-                section: true,
-                depth: 0,
-                ..Default::default()
-            }))
-            .chain(create_references_section_items(
+            .chain(create_remotes_sections(
                 &repo,
-                Reference::is_remote,
+                &style.section_header,
                 &style.remote,
             )?)
             .chain(iter::once(Item {
@@ -50,7 +47,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                 depth: 0,
                 ..Default::default()
             }))
-            .chain(create_references_section_items(
+            .chain(create_references_section(
                 &repo,
                 Reference::is_tag,
                 &style.tag,
@@ -60,7 +57,51 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
     )
 }
 
-fn create_references_section_items<'a, F>(
+fn create_remotes_sections<'a>(
+    repo: &'a Repository,
+    header_style: &'a StyleConfigEntry,
+    item_style: &'a StyleConfigEntry,
+) -> Res<impl Iterator<Item = Item> + 'a> {
+    let all_remotes = create_references_section(&repo, Reference::is_remote, item_style)?;
+    let mut remotes = HashMap::new();
+    for remote in all_remotes {
+        let name = match remote.id.split_once('/') {
+            None => remote.id.as_ref(),
+            Some((name, _)) => name,
+        };
+
+        match remotes.entry(name.to_string()) {
+            Entry::Vacant(entry) => {
+                entry.insert(vec![remote]);
+            }
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().push(remote);
+            }
+        }
+    }
+
+    Ok(remotes.into_iter().flat_map(move |(name, items)| {
+        let header = capitalize(&name);
+        iter::once(Item {
+            id: name.into(),
+            display: Line::styled(header, header_style),
+            section: true,
+            depth: 0,
+            ..Default::default()
+        })
+        .chain(items)
+    }))
+}
+
+fn capitalize(word: &str) -> String {
+    let mut chars = word.chars();
+    match chars.next() {
+        Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
+        None => String::new(),
+    }
+}
+
+fn create_references_section<'a, F>(
     repo: &'a Repository,
     filter: F,
     style: &'a StyleConfigEntry,
