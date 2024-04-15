@@ -163,12 +163,28 @@ fn pull() {
     snapshot!(ctx, "Fp");
 }
 
-#[test]
-fn show_refs() {
-    let ctx = TestContext::setup_clone();
-    run(ctx.dir.path(), &["git", "tag", "same-name"]);
-    run(ctx.dir.path(), &["git", "checkout", "-b", "same-name"]);
-    snapshot!(ctx, "Y");
+mod show_refs {
+    use super::*;
+
+    #[test]
+    fn show_refs_at_local_branch() {
+        let ctx = TestContext::setup_clone();
+        run(ctx.dir.path(), &["git", "tag", "main"]);
+        snapshot!(ctx, "Y");
+    }
+
+    #[test]
+    fn show_refs_at_remote_branch() {
+        let ctx = TestContext::setup_clone();
+        snapshot!(ctx, "Yjjjjbb<enter>Y");
+    }
+
+    #[test]
+    fn show_refs_at_tag() {
+        let ctx = TestContext::setup_clone();
+        run(ctx.dir.path(), &["git", "tag", "v1.0"]);
+        snapshot!(ctx, "Yjjjjjjbb<enter>Y");
+    }
 }
 
 mod checkout {

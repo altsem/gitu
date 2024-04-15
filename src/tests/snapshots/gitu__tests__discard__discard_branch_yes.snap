@@ -1,13 +1,13 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/discard.rs
 expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
-▌* main   origin/main                                                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+▌* main                                                                         |
+ Origin                                                                         |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+ Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d asd                                                             |
 Deleted branch asd (was _______).                                               |
-styles_hash: d2912f553072190
+styles_hash: a3b488482210d33

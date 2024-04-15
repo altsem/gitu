@@ -1,14 +1,14 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/discard.rs
 expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
 ▌  asd                                                                          |
- * main   origin/main                                                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ * main                                                                         |
+ Origin                                                                         |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+ Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Aborted                                                                       |
-styles_hash: 6a577d1ec783569c
+styles_hash: bd806c841b2675d1

@@ -3,12 +3,12 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
-▌* main   origin/main                                                           |
+▌* main                                                                         |
    other-branch                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ Origin                                                                         |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+ Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ Branch                                                                          
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
 q/<esc> Quit/Close                                                              |
-styles_hash: fea19a6a70bb7bc9
+styles_hash: ad468657cc5f658c

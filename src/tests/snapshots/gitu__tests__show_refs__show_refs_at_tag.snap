@@ -2,13 +2,13 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- Branches                                                                       |
-   main                                                                         |
-▌* other-branch                                                                 |
+▌Branches                                                                       |
+▌? main                                                                         |
  Origin                                                                         |
    origin/HEAD                                                                  |
-   origin/main                                                                  |
+ ? origin/main                                                                  |
  Tags                                                                           |
+ ? v1.0                                                                         |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-$ git checkout other-branch                                                     |
-Switched to branch 'other-branch'                                               |
-styles_hash: f61c81e69e7111e7
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 9ddaab8a0cc618c3
