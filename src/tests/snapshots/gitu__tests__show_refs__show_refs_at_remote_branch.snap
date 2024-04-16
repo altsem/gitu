@@ -4,10 +4,10 @@ expression: ctx.redact_buffer()
 ---
 ▌Branches                                                                       |
 ▌? main                                                                         |
- Origin                                                                         |
+                                                                                |
+ Remote origin                                                                  |
    origin/HEAD                                                                  |
  ? origin/main                                                                  |
- Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: fa5ded2381d28b6c
+styles_hash: 76eeb3af62854e8

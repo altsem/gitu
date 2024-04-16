@@ -5,10 +5,10 @@ expression: ctx.redact_buffer()
  Branches                                                                       |
 ▌* main                                                                         |
    other-branch                                                                 |
- Origin                                                                         |
+                                                                                |
+ Remote origin                                                                  |
    origin/HEAD                                                                  |
    origin/main                                                                  |
- Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ Branch                                                                          
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
 q/<esc> Quit/Close                                                              |
-styles_hash: ad468657cc5f658c
+styles_hash: 63a4a1bf20b5b4d1

@@ -4,10 +4,10 @@ expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
 ▌* main                                                                         |
- Origin                                                                         |
+                                                                                |
+ Remote origin                                                                  |
    origin/HEAD                                                                  |
    origin/main                                                                  |
- Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d asd                                                             |
 Deleted branch asd (was _______).                                               |
-styles_hash: a3b488482210d33
+styles_hash: 32a139704e30d56a

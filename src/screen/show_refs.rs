@@ -7,7 +7,7 @@ use std::{
 use super::Screen;
 use crate::{
     config::{Config, StyleConfigEntry},
-    items::{Item, TargetData},
+    items::{self, Item, TargetData},
     Res,
 };
 use git2::{Reference, Repository};
@@ -40,16 +40,9 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Re
                 &style.section_header,
                 &style.remote,
             )?)
-            .chain(iter::once(Item {
-                id: "tags".into(),
-                display: Line::styled("Tags".to_string(), &style.section_header),
-                section: true,
-                depth: 0,
-                ..Default::default()
-            }))
-            .chain(create_references_section(
+            .chain(create_tags_section(
                 &repo,
-                Reference::is_tag,
+                &style.section_header,
                 &style.tag,
             )?)
             .collect())
@@ -81,24 +74,44 @@ fn create_remotes_sections<'a>(
     }
 
     Ok(remotes.into_iter().flat_map(move |(name, items)| {
-        let header = capitalize(&name);
-        iter::once(Item {
-            id: name.into(),
-            display: Line::styled(header, header_style),
-            section: true,
-            depth: 0,
-            ..Default::default()
-        })
+        let header = format!("Remote {name}");
+        vec![
+            items::blank_line(),
+            Item {
+                id: name.into(),
+                display: Line::styled(header, header_style),
+                section: true,
+                depth: 0,
+                ..Default::default()
+            },
+        ]
+        .into_iter()
         .chain(items)
     }))
 }
 
-fn capitalize(word: &str) -> String {
-    let mut chars = word.chars();
-    match chars.next() {
-        Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
-        None => String::new(),
+fn create_tags_section<'a>(
+    repo: &'a Repository,
+    header_style: &'a StyleConfigEntry,
+    item_style: &'a StyleConfigEntry,
+) -> Res<impl Iterator<Item = Item> + 'a> {
+    let mut tags = create_references_section(repo, Reference::is_tag, item_style)?;
+    Ok(match tags.next() {
+        Some(item) => vec![
+            items::blank_line(),
+            Item {
+                id: "tags".into(),
+                display: Line::styled("Tags".to_string(), header_style),
+                section: true,
+                depth: 0,
+                ..Default::default()
+            },
+            item,
+        ],
+        None => vec![],
     }
+    .into_iter()
+    .chain(tags))
 }
 
 fn create_references_section<'a, F>(
