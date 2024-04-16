@@ -58,12 +58,9 @@ fn create_remotes_sections<'a>(
     let all_remotes = create_references_section(repo, Reference::is_remote, item_style)?;
     let mut remotes = BTreeMap::new();
     for remote in all_remotes {
-        let name = match remote.id.split_once('/') {
-            None => remote.id.as_ref(),
-            Some((name, _)) => name,
-        };
+        let name = String::from_utf8_lossy(&repo.branch_remote_name(&remote.id)?).to_string();
 
-        match remotes.entry(name.to_string()) {
+        match remotes.entry(name) {
             Entry::Vacant(entry) => {
                 entry.insert(vec![remote]);
             }
@@ -127,13 +124,16 @@ where
         .filter_map(Result::ok)
         .filter(filter)
         .map(move |reference| {
-            let name = Span::styled(reference.shorthand().unwrap().to_string(), style);
+            let shorthand = reference.shorthand().unwrap().to_owned();
 
             Item {
-                id: name.clone().content,
-                display: Line::from(vec![create_prefix(repo, &reference), name.clone()]),
+                id: reference.name().unwrap().to_owned().into(),
+                display: Line::from(vec![
+                    create_prefix(repo, &reference),
+                    Span::styled(shorthand.clone(), style),
+                ]),
                 depth: 1,
-                target_data: Some(TargetData::Branch(name.content.into())),
+                target_data: Some(TargetData::Branch(shorthand)),
                 ..Default::default()
             }
         }))
