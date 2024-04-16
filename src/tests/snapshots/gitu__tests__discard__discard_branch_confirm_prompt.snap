@@ -5,10 +5,10 @@ expression: ctx.redact_buffer()
  Branches                                                                       |
 ▌  asd                                                                          |
  * main                                                                         |
- Origin                                                                         |
+                                                                                |
+ Remote origin                                                                  |
    origin/HEAD                                                                  |
    origin/main                                                                  |
- Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Really discard? (y or n) ›                                                    |
-styles_hash: 8c8f33b132dd9c56
+styles_hash: e802436b24fbcb24

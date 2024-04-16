@@ -5,10 +5,10 @@ expression: ctx.redact_buffer()
  Branches                                                                       |
    main                                                                         |
 ▌* other-branch                                                                 |
- Origin                                                                         |
+                                                                                |
+ Remote origin                                                                  |
    origin/HEAD                                                                  |
    origin/main                                                                  |
- Tags                                                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout other-branch                                                     |
 Switched to branch 'other-branch'                                               |
-styles_hash: f61c81e69e7111e7
+styles_hash: 5006bae7555ab9c9
