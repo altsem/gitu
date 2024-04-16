@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{btree_map::Entry, BTreeMap},
     iter,
     rc::Rc,
 };
@@ -56,7 +56,7 @@ fn create_remotes_sections<'a>(
     item_style: &'a StyleConfigEntry,
 ) -> Res<impl Iterator<Item = Item> + 'a> {
     let all_remotes = create_references_section(repo, Reference::is_remote, item_style)?;
-    let mut remotes = HashMap::new();
+    let mut remotes = BTreeMap::new();
     for remote in all_remotes {
         let name = match remote.id.split_once('/') {
             None => remote.id.as_ref(),
