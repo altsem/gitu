@@ -1,16 +1,13 @@
-## [0.16.0] - 2024-04-14
+## [0.17.0] - 2024-04-17
 
 ### 🚀 Features
 
-- Copy commit hash with "y", move Show Refs to "Y"
-- Cursor is kept in view when scrolling
-- Togglable stash flags: --all & --include-untracked
+- Log whether config file is being loaded or not on startup (--log flag)
+- Add blank lines between refs sections, don't show empty sections
+- Segregate remotes into separate sections
+- Make 3 sections in show refs screen: branches, remotes, tags
 
 ### 🐛 Bug Fixes
 
-- Typo in descriptions on menu
-
-### 🎨 Styling
-
-- Update stash promps to be more like in Magit
+- When head detached show "?" instead of "*" on target match; update tests
 

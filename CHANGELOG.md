@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.0] - 2024-04-17
+
+### 🚀 Features
+
+- Log whether config file is being loaded or not on startup (--log flag)
+- Add blank lines between refs sections, don't show empty sections
+- Segregate remotes into separate sections
+- Make 3 sections in show refs screen: branches, remotes, tags
+
+### 🐛 Bug Fixes
+
+- When head detached show "?" instead of "*" on target match; update tests
+
 ## [0.16.0] - 2024-04-14
 
 ### 🚀 Features
