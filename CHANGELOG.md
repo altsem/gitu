@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.1] - 2024-04-17
+
+### 🐛 Bug Fixes
+
+- Moving page up/down resulted in view being refreshed
+
 ## [0.17.0] - 2024-04-17
 
 ### 🚀 Features
