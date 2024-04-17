@@ -86,9 +86,16 @@ impl From<&StyleConfigEntry> for Style {
 
 pub(crate) fn init_config() -> Res<Config> {
     let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", "gitu") {
+        let path = app_dirs.config_dir().join("config.toml");
+        if path.exists() {
+            log::info!("Loading config file at {:?}", path);
+        } else {
+            log::info!("No config file at {:?}", path);
+        }
+
         Figment::new()
             .merge(Toml::string(DEFAULT_CONFIG))
-            .merge(Toml::file(app_dirs.config_dir().join("config.toml")))
+            .merge(Toml::file(path))
             .extract()?
     } else {
         Config::default()
