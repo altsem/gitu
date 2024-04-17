@@ -153,6 +153,9 @@ impl Screen {
     pub(crate) fn scroll_half_page_up(&mut self) {
         let half_screen = self.size.height as usize / 2;
         self.scroll = self.scroll.saturating_sub(half_screen);
+
+        let nav_mode = self.selected_item_nav_mode();
+        self.update_cursor(nav_mode);
     }
 
     pub(crate) fn scroll_half_page_down(&mut self) {
@@ -166,6 +169,9 @@ impl Screen {
                 .last()
                 .unwrap_or(0),
         );
+
+        let nav_mode = self.selected_item_nav_mode();
+        self.update_cursor(nav_mode);
     }
 
     pub(crate) fn toggle_section(&mut self) {
@@ -184,10 +190,13 @@ impl Screen {
 
     pub(crate) fn update(&mut self) -> Res<()> {
         let nav_mode = self.selected_item_nav_mode();
-
         self.items = (self.refresh_items)()?;
         self.update_line_index();
+        self.update_cursor(nav_mode);
+        Ok(())
+    }
 
+    fn update_cursor(&mut self, nav_mode: NavMode) {
         self.clamp_cursor();
         if self.is_cursor_off_screen() {
             self.move_cursor_to_screen_center();
@@ -195,7 +204,6 @@ impl Screen {
 
         self.clamp_cursor();
         self.move_from_unselectable(nav_mode);
-        Ok(())
     }
 
     fn selected_item_nav_mode(&mut self) -> NavMode {
