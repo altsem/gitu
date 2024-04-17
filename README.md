@@ -31,8 +31,12 @@ A help-menu can be shown by pressing the `h` key, or by configuring `general.alw
 ### Configuration
 The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
 
-Configuration is also loaded from `~/.config/gitu/config.toml`,
-refer to the [default configuration](src/default_config.toml).
+Configuration is also loaded from:
+- Linux:   `~/.config/gitu/config.toml`
+- Windows: `%USERPROFILE%\AppData\Roaming\gitu\config.toml`
+- macOS:   `~/Library/Application Support/gitu/config.toml` ([soon `~/.config/gitu/config.toml` instead](https://github.com/altsem/gitu/issues/136))
+
+, refer to the [default configuration](src/default_config.toml).
 ### Installing Gitu
 Follow the install instructions: [Installing Gitu](docs/installing.md)\
 Or install from your package manager:
