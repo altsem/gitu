@@ -11,6 +11,7 @@ mod ops;
 mod prompt;
 mod screen;
 pub mod state;
+mod syntax_highlight;
 pub mod term;
 #[cfg(test)]
 mod tests;
