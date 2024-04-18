@@ -4,7 +4,7 @@ use ratatui::{
     style::Style,
     text::{Line, Span, Text},
 };
-use similar::{Algorithm, DiffTag, DiffableStr, TextDiff};
+use similar::{Algorithm, DiffOp, DiffTag, DiffableStr, TextDiff};
 use std::{
     fs,
     iter::{self},
@@ -263,10 +263,10 @@ mod syntax_highlight {
     }
 }
 
-fn split_at_newlines(
-    content: &str,
-    (range, style): (Range<usize>, Style),
-) -> impl Iterator<Item = (Range<usize>, Style)> + '_ {
+fn split_at_newlines<'a, D: Copy + 'a>(
+    content: &'a str,
+    (range, style): (Range<usize>, D),
+) -> impl Iterator<Item = (Range<usize>, D)> + '_ {
     let range_indices = iter::once(range.start)
         .chain(
             content[range.clone()]
@@ -330,40 +330,25 @@ fn diff_content(
                 };
 
                 let old_lines_range = total_range(&old_line_indices[old_line.clone()]);
-                let new_lines_range = total_range(&new_line_indices[new_line.clone()]);
-
                 let old_words = old_content[old_lines_range.clone()].tokenize_unicode_words();
-                let new_words = new_content[new_lines_range.clone()].tokenize_unicode_words();
-
                 let old_word_indices = byte_ranges(&old_words);
+
+                let new_lines_range = total_range(&new_line_indices[new_line.clone()]);
+                let new_words = new_content[new_lines_range.clone()].tokenize_unicode_words();
                 let new_word_indices = byte_ranges(&new_words);
 
                 let word_diff = TextDiff::configure()
                     .algorithm(Algorithm::Myers)
                     .diff_slices(&old_words, &new_words);
 
-                let word_diff_style_ranges = word_diff
-                    .ops()
-                    .iter()
-                    .map(|word_op| {
-                        let (word_tag, word_token_old, word_token_new) = word_op.as_tag_tuple();
-                        let word_old = total_range(&old_word_indices[word_token_old]);
-                        let word_new = total_range(&new_word_indices[word_token_new]);
-
-                        (
-                            word_tag,
-                            (old_lines_range.start + word_old.start)
-                                ..(old_lines_range.start + word_old.end),
-                            (new_lines_range.start + word_new.start)
-                                ..(new_lines_range.start + word_new.end),
-                        )
+                let mut old_diff_highlights = iter_token_tag_ranges(&word_diff)
+                    .map(|(word_tag, old_word_token_range, _)| (old_word_token_range, word_tag))
+                    .filter_map(|(word_token_range, word_tag)| {
+                        let words_range = total_range(&old_word_indices[word_token_range]);
+                        map_from_token_to_byte_range(&words_range, &old_lines_range, word_tag)
                     })
-                    .collect::<Vec<_>>();
-
-                let mut old_diff_highlights = word_diff_style_ranges
-                    .iter()
-                    .filter(|(_, word_old, _)| !word_old.is_empty())
-                    .map(|(word_tag, word_old, _)| {
+                    .flat_map(|style_range| split_at_newlines(old_content, style_range))
+                    .map(|(word_range, word_tag)| {
                         let diff_style = match word_tag {
                             DiffTag::Equal => Style::from(&style.diff_highlight.unchanged_old),
                             DiffTag::Delete => Style::from(&style.diff_highlight.changed_old),
@@ -371,25 +356,8 @@ fn diff_content(
                             DiffTag::Replace => Style::from(&style.diff_highlight.changed_old),
                         };
 
-                        (word_old.clone(), diff_style)
+                        (word_range.clone(), diff_style)
                     })
-                    .flat_map(|style_range| split_at_newlines(old_content, style_range))
-                    .peekable();
-
-                let mut new_diff_highlights = word_diff_style_ranges
-                    .iter()
-                    .filter(|(_, _, word_new)| !word_new.is_empty())
-                    .map(|(word_tag, _, word_new)| {
-                        let diff_style = match word_tag {
-                            DiffTag::Equal => Style::from(&style.diff_highlight.unchanged_new),
-                            DiffTag::Delete => unreachable!(),
-                            DiffTag::Insert => Style::from(&style.diff_highlight.changed_new),
-                            DiffTag::Replace => Style::from(&style.diff_highlight.changed_new),
-                        };
-
-                        (word_new.clone(), diff_style)
-                    })
-                    .flat_map(|style_range| split_at_newlines(new_content, style_range))
                     .peekable();
 
                 create_lines(
@@ -403,6 +371,25 @@ fn diff_content(
 
                 // Don't print both old/new if equal
                 if line_tag != DiffTag::Equal {
+                    let mut new_diff_highlights = iter_token_tag_ranges(&word_diff)
+                        .map(|(word_tag, _, new_word_token_range)| (new_word_token_range, word_tag))
+                        .filter_map(|(word_token_range, word_tag)| {
+                            let words_range = total_range(&new_word_indices[word_token_range]);
+                            map_from_token_to_byte_range(&words_range, &new_lines_range, word_tag)
+                        })
+                        .flat_map(|style_range| split_at_newlines(new_content, style_range))
+                        .map(|(word_range, word_tag)| {
+                            let diff_style = match word_tag {
+                                DiffTag::Equal => Style::from(&style.diff_highlight.unchanged_new),
+                                DiffTag::Delete => unreachable!(),
+                                DiffTag::Insert => Style::from(&style.diff_highlight.changed_new),
+                                DiffTag::Replace => Style::from(&style.diff_highlight.changed_new),
+                            };
+
+                            (word_range.clone(), diff_style)
+                        })
+                        .peekable();
+
                     let new_prefix = Span::styled("+", &style.diff_highlight.tag_new);
 
                     create_lines(
@@ -438,6 +425,23 @@ fn diff_content(
             })
         })
         .collect::<Vec<_>>())
+}
+
+fn map_from_token_to_byte_range(
+    word_range: &Range<usize>,
+    old_lines_range: &Range<usize>,
+    word_tag: DiffTag,
+) -> Option<(Range<usize>, DiffTag)> {
+    (!word_range.is_empty()).then_some((
+        (old_lines_range.start + word_range.start)..(old_lines_range.start + word_range.end),
+        word_tag,
+    ))
+}
+
+fn iter_token_tag_ranges<'a>(
+    word_diff: &'a TextDiff<'_, '_, '_, str>,
+) -> impl Iterator<Item = (DiffTag, Range<usize>, Range<usize>)> + 'a {
+    word_diff.ops().iter().map(DiffOp::as_tag_tuple)
 }
 
 fn byte_ranges(tokens: &[&str]) -> Vec<Range<usize>> {
