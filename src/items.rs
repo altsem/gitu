@@ -169,7 +169,7 @@ pub(crate) fn log(
         .filter_map(
             |reference| match (reference.peel_to_commit(), reference.shorthand()) {
                 (Ok(target), Some(name)) => {
-                    if name.ends_with("/HEAD") {
+                    if name.ends_with("/HEAD") || name.starts_with("prefetch/remotes/") {
                         return None;
                     }
 
