@@ -6,16 +6,22 @@ use ratatui::{
 };
 use similar::{Algorithm, DiffOp, DiffTag, DiffableStr, TextDiff};
 use std::{
+    collections::HashMap,
     fs,
     iter::{self},
     ops::Range,
     path::PathBuf,
     rc::Rc,
     str,
+    sync::{Mutex, OnceLock},
 };
-use tree_sitter_highlight::Highlighter;
+use tree_sitter::Language;
 
-use crate::{config::Config, syntax_highlight, Res};
+use crate::{
+    config::Config,
+    syntax_highlight::{self, SyntaxHighlighter},
+    Res,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Diff {
@@ -162,6 +168,11 @@ fn diff_files(
     diff_content(config, delta, &old_content, &new_content)
 }
 
+fn syntax_highlighters() -> &'static Mutex<HashMap<Language, SyntaxHighlighter>> {
+    static ARRAY: OnceLock<Mutex<HashMap<Language, SyntaxHighlighter>>> = OnceLock::new();
+    ARRAY.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 fn diff_content(
     config: &Config,
     delta: &Delta,
@@ -179,24 +190,18 @@ fn diff_content(
         .algorithm(Algorithm::Patience)
         .diff_slices(&old_lines, &new_lines);
 
-    let syntax_highlight_config = syntax_highlight::create_config();
-    let old_highlighter = &mut Highlighter::new();
-    let new_highlighter = &mut Highlighter::new();
-    let old_syntax_highlights = &mut syntax_highlight::iter_highlights(
-        config,
-        old_highlighter,
-        &syntax_highlight_config,
-        old_content,
-    )
-    .peekable();
+    let mut syntax_highlighters_lock = syntax_highlighters().lock().unwrap();
+    let highlighter = syntax_highlighters_lock
+        .entry(tree_sitter_rust::language())
+        .or_insert_with(SyntaxHighlighter::new);
 
-    let new_syntax_highlights = &mut syntax_highlight::iter_highlights(
-        config,
-        new_highlighter,
-        &syntax_highlight_config,
-        new_content,
-    )
-    .peekable();
+    let mut old_syntax_highlights = highlighter
+        .iter_highlights(config, old_content)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .peekable();
+
+    let mut new_syntax_highlights = highlighter.iter_highlights(config, new_content).peekable();
 
     Ok(text_diff
         .unified_diff()
@@ -247,7 +252,7 @@ fn diff_content(
 
                 create_lines(
                     &old_line_indices[old_line.clone()],
-                    old_syntax_highlights,
+                    &mut old_syntax_highlights,
                     &mut old_diff_highlights,
                     old_prefix,
                     old_content,
@@ -281,7 +286,7 @@ fn diff_content(
 
                     create_lines(
                         &new_line_indices[new_line.clone()],
-                        new_syntax_highlights,
+                        &mut new_syntax_highlights,
                         &mut new_diff_highlights,
                         new_prefix,
                         new_content,
