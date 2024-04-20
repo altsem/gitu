@@ -70,7 +70,6 @@ jobs:
       TARGET_DIR: ./target/${{ matrix.target }}
     strategy:
       matrix:
-        build: [linux, linux-arm, macos, windows]
         include:
         - build: linux
           os: ubuntu-latest
