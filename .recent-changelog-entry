@@ -1,10 +1,6 @@
-## [0.18.0] - 2024-04-20
-
-### 🚀 Features
-
-- Syntax highlighting with tree-sitter and revamp of diff style config
+## [0.18.3] - 2024-04-20
 
 ### 🐛 Bug Fixes
 
-- *(log)* Ignore `prefetch/remotes/` refs
+- Release to windows
 
