@@ -75,6 +75,8 @@ pub(crate) fn split_at_newlines<'a, D: Copy + 'a>(
         .map(move |(a, b)| (a..b, style))
 }
 
+/// The defaults for these seem to exist in the `package.json` of each repo:
+/// `curl https://raw.githubusercontent.com/tree-sitter/tree-sitter-html/master/package.json | jq -r '."tree-sitter"'`
 fn determine_lang(path: &Path) -> Option<Language> {
     let extension = path.extension().and_then(|s| s.to_str())?;
 
