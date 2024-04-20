@@ -33,8 +33,8 @@ The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this or
 
 Configuration is also loaded from:
 - Linux:   `~/.config/gitu/config.toml`
+- macOS:   `~/.config/gitu/config.toml`
 - Windows: `%USERPROFILE%\AppData\Roaming\gitu\config.toml`
-- macOS:   `~/Library/Application Support/gitu/config.toml` ([soon `~/.config/gitu/config.toml` instead](https://github.com/altsem/gitu/issues/136))
 
 , refer to the [default configuration](src/default_config.toml).
 ### Installing Gitu

@@ -1,6 +1,7 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::{menu::Menu, ops::Op, Res};
+use etcetera::{choose_base_strategy, BaseStrategy};
 use figment::{
     providers::{Format, Toml},
     Figment,
@@ -146,23 +147,27 @@ impl From<&StyleConfigEntry> for Style {
 }
 
 pub(crate) fn init_config() -> Res<Config> {
-    let config = if let Some(app_dirs) = directories::ProjectDirs::from("", "", "gitu") {
-        let path = app_dirs.config_dir().join("config.toml");
-        if path.exists() {
-            log::info!("Loading config file at {:?}", path);
-        } else {
-            log::info!("No config file at {:?}", path);
-        }
+    let config_path = config_path();
 
-        Figment::new()
-            .merge(Toml::string(DEFAULT_CONFIG))
-            .merge(Toml::file(path))
-            .extract()?
+    if config_path.exists() {
+        log::info!("Loading config file at {:?}", config_path);
     } else {
-        Config::default()
-    };
+        log::info!("No config file at {:?}", config_path);
+    }
+
+    let config = Figment::new()
+        .merge(Toml::string(DEFAULT_CONFIG))
+        .merge(Toml::file(config_path))
+        .extract()?;
 
     Ok(config)
+}
+
+pub fn config_path() -> PathBuf {
+    choose_base_strategy()
+        .expect("Unable to find the config directory!")
+        .config_dir()
+        .join("gitu/config.toml")
 }
 
 #[cfg(test)]
