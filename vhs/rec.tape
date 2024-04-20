@@ -4,7 +4,7 @@ Set Height 800
 Set Padding 5
 
 Hide
-Type "git checkout 3259529"
+Type "git checkout f613098b14ed99fab61bd0b78a4a41e192d90ea2"
 Enter
 Type "git checkout -b demo-branch"
 Enter
