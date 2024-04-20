@@ -3,12 +3,12 @@ use std::fs;
 #[macro_use]
 mod helpers;
 mod discard;
+mod editor;
 mod log;
 mod push;
 mod quit;
 mod rebase;
 mod reset;
-mod scroll;
 mod stage;
 mod stash;
 mod unstage;

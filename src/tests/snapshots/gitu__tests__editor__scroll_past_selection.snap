@@ -1,5 +1,5 @@
 ---
-source: src/tests/scroll.rs
+source: src/tests/editor.rs
 expression: ctx.redact_buffer()
 ---
  +line 20 (file-1)                                                              |
