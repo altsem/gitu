@@ -23,6 +23,7 @@ pub(crate) mod pull;
 pub(crate) mod push;
 pub(crate) mod rebase;
 pub(crate) mod reset;
+pub(crate) mod revert;
 pub(crate) mod show;
 pub(crate) mod show_refs;
 pub(crate) mod stage;
@@ -72,6 +73,9 @@ pub(crate) enum Op {
     ResetSoft,
     ResetMixed,
     ResetHard,
+    RevertAbort,
+    RevertContinue,
+    RevertCommit,
 
     Stage,
     Unstage,
@@ -139,6 +143,9 @@ impl Op {
             Op::ResetSoft => Box::new(reset::ResetSoft),
             Op::ResetMixed => Box::new(reset::ResetMixed),
             Op::ResetHard => Box::new(reset::ResetHard),
+            Op::RevertAbort => Box::new(revert::RevertAbort),
+            Op::RevertContinue => Box::new(revert::RevertContinue),
+            Op::RevertCommit => Box::new(revert::RevertCommit),
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
@@ -160,6 +167,7 @@ impl Display for Menu {
             Menu::Push => "Push",
             Menu::Rebase => "Rebase",
             Menu::Reset => "Reset",
+            Menu::Revert => "Revert",
             Menu::Stash => "Stash",
         })
     }

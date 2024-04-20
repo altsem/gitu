@@ -31,6 +31,8 @@ pub(crate) enum Menu {
     Rebase,
     #[serde(rename = "reset_menu")]
     Reset,
+    #[serde(rename = "revert_menu")]
+    Revert,
     #[serde(rename = "stash_menu")]
     Stash,
 }
@@ -55,6 +57,7 @@ impl PendingMenu {
                 Menu::Push => ops::push::ARGS,
                 Menu::Rebase => ops::rebase::ARGS,
                 Menu::Reset => ops::reset::ARGS,
+                Menu::Revert => ops::revert::ARGS,
                 Menu::Stash => ops::stash::ARGS,
             }
             .iter()
