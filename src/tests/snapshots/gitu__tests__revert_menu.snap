@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌_______ main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Revert                  Arguments                                               |
+a Revert abort          -e Edit commit message (--edit)                         |
+c Revert continue       -s Add Signed-off-by lines (--signoff)                  |
+V Revert commit                                                                 |
+q/<esc> Quit/Close                                                              |
+styles_hash: 4670321c3192e40c

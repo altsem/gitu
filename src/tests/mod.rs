@@ -130,6 +130,35 @@ fn revert_conflict() {
 }
 
 #[test]
+fn revert_abort() {
+    let ctx = TestContext::setup_clone();
+    commit(ctx.dir.path(), "new-file", "hey");
+    commit(ctx.dir.path(), "new-file", "hi");
+
+    run(ctx.dir.path(), &["git", "revert", "HEAD~1"]);
+
+    snapshot!(ctx, "Va");
+}
+
+#[test]
+fn revert_menu() {
+    let ctx = TestContext::setup_clone();
+    snapshot!(ctx, "llV");
+}
+
+#[test]
+fn revert_commit_prompt() {
+    let ctx = TestContext::setup_clone();
+    snapshot!(ctx, "llV-eV");
+}
+
+#[test]
+fn revert_commit() {
+    let ctx = TestContext::setup_clone();
+    snapshot!(ctx, "llV-eV<enter>");
+}
+
+#[test]
 fn moved_file() {
     let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");
