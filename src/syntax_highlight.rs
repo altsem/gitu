@@ -99,7 +99,7 @@ fn determine_lang(path: &Path) -> Option<Language> {
         }
         "php" => Some(tree_sitter_php::language()),
         "java" => Some(tree_sitter_java::language()),
-        "scala" | "sbt" => Some(tree_sitter_java::language()),
+        "scala" | "sbt" => Some(tree_sitter_scala::language()),
         "ml" => Some(tree_sitter_ocaml::language_ocaml()),
         "mli" => Some(tree_sitter_ocaml::language_ocaml_interface()),
         "html" => Some(tree_sitter_html::language()),
