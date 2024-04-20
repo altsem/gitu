@@ -25,7 +25,7 @@ chrono = "0.4.37"
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
-directories = "5.0.1"
+etcetera = "0.8.0"
 figment = { version = "0.10.16", features = ["toml"] }
 git-version = "0.3.9"
 git2 = { version = "0.18.3", default-features = false }
