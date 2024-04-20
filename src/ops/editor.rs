@@ -150,6 +150,34 @@ impl OpTrait for MoveUpLine {
 }
 
 #[derive(Display)]
+#[display(fmt = "Next section")]
+pub(crate) struct MoveNextSection;
+impl OpTrait for MoveNextSection {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            let depth = state.screen().get_selected_item().depth;
+            state.screen_mut().select_next(NavMode::Siblings { depth });
+            Ok(())
+        }))
+    }
+}
+
+#[derive(Display)]
+#[display(fmt = "Prev section")]
+pub(crate) struct MovePrevSection;
+impl OpTrait for MovePrevSection {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            let depth = state.screen().get_selected_item().depth;
+            state
+                .screen_mut()
+                .select_previous(NavMode::Siblings { depth });
+            Ok(())
+        }))
+    }
+}
+
+#[derive(Display)]
 #[display(fmt = "Half page up")]
 pub(crate) struct HalfPageUp;
 impl OpTrait for HalfPageUp {

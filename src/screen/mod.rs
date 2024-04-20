@@ -15,6 +15,7 @@ const BOTTOM_CONTEXT_LINES: usize = 2;
 #[derive(Copy, Clone, Debug)]
 pub(crate) enum NavMode {
     Normal,
+    Siblings { depth: usize },
     IncludeHunkLines,
 }
 
@@ -133,6 +134,9 @@ impl Screen {
                     target_data.is_some_and(|d| matches!(d, TargetData::HunkLine(_, _)));
 
                 !item.unselectable && !is_hunk_line
+            }
+            NavMode::Siblings { depth } => {
+                !item.unselectable && item.section && item.depth <= depth
             }
             NavMode::IncludeHunkLines => !item.unselectable,
         }
