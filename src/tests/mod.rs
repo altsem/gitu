@@ -272,3 +272,20 @@ fn inside_submodule() {
     let _state = ctx.init_state_at_path(ctx.dir.child("test-submodule"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn syntax_highlighted() {
+    let ctx = TestContext::setup_init();
+    commit(
+        ctx.dir.path(),
+        "syntax-highlighted.rs",
+        "fn main() {\n    println!(\"Hey\");\n}\n",
+    );
+    fs::write(
+        ctx.dir.child("syntax-highlighted.rs"),
+        "fn main() {\n    println!(\"Bye\");\n}\n",
+    )
+    .unwrap();
+
+    snapshot!(ctx, "jj<tab>");
+}
