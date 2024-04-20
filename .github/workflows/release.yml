@@ -108,7 +108,7 @@ jobs:
         echo "CARGO=cross" >> $GITHUB_ENV
 
     - name: Build release binary
-      run: cross build --verbose --release ${{ env.TARGET_FLAGS }}
+      run: cross build --verbose --release --locked ${{ env.TARGET_FLAGS }}
 
     - name: Build archive
       shell: bash
