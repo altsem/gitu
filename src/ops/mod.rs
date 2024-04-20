@@ -88,6 +88,8 @@ pub(crate) enum Op {
     MoveDown,
     MoveUpLine,
     MoveDownLine,
+    MovePrevSection,
+    MoveNextSection,
     HalfPageUp,
     HalfPageDown,
 
@@ -112,6 +114,8 @@ impl Op {
             Op::MoveUp => Box::new(editor::MoveUp),
             Op::MoveDownLine => Box::new(editor::MoveDownLine),
             Op::MoveUpLine => Box::new(editor::MoveUpLine),
+            Op::MoveNextSection => Box::new(editor::MoveNextSection),
+            Op::MovePrevSection => Box::new(editor::MovePrevSection),
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
 
