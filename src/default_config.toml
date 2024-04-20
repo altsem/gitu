@@ -31,6 +31,7 @@ diff_highlight.unchanged_new = { mods = "DIM" }
 diff_highlight.changed_old = { fg = "red" }
 diff_highlight.changed_new = { fg = "green"}
 
+syntax_highlight.enabled = true
 syntax_highlight.attribute = { fg = "yellow" }
 syntax_highlight.comment = { fg = "gray" }
 syntax_highlight.constant_builtin = {}

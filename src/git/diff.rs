@@ -181,15 +181,21 @@ fn diff_content(
         .algorithm(Algorithm::Patience)
         .diff_slices(&old_lines, &new_lines);
 
-    let mut old_syntax_highlights =
+    let mut old_syntax_highlights = if config.style.syntax_highlight.enabled {
         syntax_highlight::highlight(config, &delta.old_file, old_content)
-            .into_iter()
-            .peekable();
+    } else {
+        vec![]
+    }
+    .into_iter()
+    .peekable();
 
-    let mut new_syntax_highlights =
+    let mut new_syntax_highlights = if config.style.syntax_highlight.enabled {
         syntax_highlight::highlight(config, &delta.new_file, new_content)
-            .into_iter()
-            .peekable();
+    } else {
+        vec![]
+    }
+    .into_iter()
+    .peekable();
 
     Ok(text_diff
         .unified_diff()

@@ -75,6 +75,8 @@ pub struct DiffHighlightConfig {
 #[derive(Default, Debug, Deserialize)]
 pub struct SyntaxHighlightConfig {
     #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
     pub attribute: StyleConfigEntry,
     #[serde(default)]
     pub comment: StyleConfigEntry,
