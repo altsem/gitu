@@ -94,7 +94,21 @@ jobs:
     - name: Build release binary
       run: cargo build --verbose --release --locked ${{ env.TARGET_FLAGS }}
 
-    - name: Build archive
+    - name: Build archive (Windows)
+      if: matrix.build == 'windows'
+      shell: bash
+      run: |
+        staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
+        mkdir -p "$staging/complete"
+
+        cp {README.md,LICENSE} "$staging/"
+        cp "target/${{ matrix.target }}/release/gitu" "$staging/"
+
+        7z a -r "$staging.zip" "$staging"
+        echo "ASSET=$staging.zip" >> $GITHUB_ENV
+
+    - name: Build archive (non-Windows)
+      if: matrix.build != 'windows'
       shell: bash
       run: |
         staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
