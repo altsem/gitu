@@ -70,7 +70,7 @@ jobs:
       TARGET_DIR: ./target/${{ matrix.target }}
     strategy:
       matrix:
-        build: [linux, linux-arm, macos]
+        build: [linux, linux-arm, macos, windows]
         include:
         - build: linux
           os: ubuntu-latest
@@ -84,6 +84,10 @@ jobs:
           os: macos-latest
           rust: stable
           target: x86_64-apple-darwin
+        - build: windows
+          os: windows-latest
+          rust: stable
+          target: x86_64-pc-windows-msvc
 
     steps:
     - name: Checkout repository
