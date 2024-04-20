@@ -41,3 +41,19 @@ fn scroll_past_selection() {
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn move_prev_sibling() {
+    let (mut ctx, mut state) = setup_scroll();
+    state
+        .update(&mut ctx.term, &keys("<alt+k><alt+k>"))
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn move_next_sibling() {
+    let (mut ctx, mut state) = setup_scroll();
+    state.update(&mut ctx.term, &keys("<alt+j>")).unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
