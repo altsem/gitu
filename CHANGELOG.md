@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.4] - 2024-04-20
+
+### 🐛 Bug Fixes
+
+- *(ci)* Release dir would not be created
+
 ## [0.18.3] - 2024-04-20
 
 ### 🐛 Bug Fixes

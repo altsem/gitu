@@ -1,6 +1,6 @@
-## [0.18.3] - 2024-04-20
+## [0.18.4] - 2024-04-20
 
 ### 🐛 Bug Fixes
 
-- Release to windows
+- *(ci)* Release dir would not be created
 
