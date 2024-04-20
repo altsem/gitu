@@ -1,6 +1,10 @@
-## [0.17.1] - 2024-04-17
+## [0.18.0] - 2024-04-20
+
+### 🚀 Features
+
+- Syntax highlighting with tree-sitter and revamp of diff style config
 
 ### 🐛 Bug Fixes
 
-- Moving page up/down resulted in view being refreshed
+- *(log)* Ignore `prefetch/remotes/` refs
 

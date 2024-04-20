@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.0] - 2024-04-20
+
+### 🚀 Features
+
+- Syntax highlighting with tree-sitter and revamp of diff style config
+
+### 🐛 Bug Fixes
+
+- *(log)* Ignore `prefetch/remotes/` refs
+
 ## [0.17.1] - 2024-04-17
 
 ### 🐛 Bug Fixes
