@@ -99,8 +99,6 @@ jobs:
       shell: bash
       run: |
         staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
-        mkdir -p "$staging/complete"
-
         cp {README.md,LICENSE} "$staging/"
         cp "target/${{ matrix.target }}/release/gitu" "$staging/"
 
@@ -112,7 +110,6 @@ jobs:
       shell: bash
       run: |
         staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
-        mkdir -p "$staging/complete"
 
         cp {README.md,LICENSE} "$staging/"
         cp "target/${{ matrix.target }}/release/gitu" "$staging/"
