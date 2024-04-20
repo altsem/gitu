@@ -16,9 +16,6 @@ criterion = "0.5.1"
 insta = "1.38.0"
 unicode-width = "0.1.11"
 
-[profile.release]
-strip = true
-
 [dependencies]
 arboard = { version = "3.3.2", default-features = false, features = ["windows-sys"] }
 chrono = "0.4.37"
