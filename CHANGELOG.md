@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.1] - 2024-04-21
+
+### 🐛 Bug Fixes
+
+- Crash when trying to highlight `.tsx` files
+
 ## [0.19.0] - 2024-04-21
 
 ### 🚀 Features
