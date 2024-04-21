@@ -7,19 +7,19 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-Help                              Submenu                                       |
-Y Show refs                       b Branch                                      |
-<tab> Toggle section              c Commit                                      |
-k/<up> Up                         f Fetch                                       |
-j/<down> Down                     h Help                                        |
-<ctrl+k>/<ctrl+up> Up line        l Log                                         |
-<ctrl+j>/<ctrl+down> Down line    F Pull                                        |
-<alt+k>/<alt+up> Prev section     P Push                                        |
-<alt+j>/<alt+down> Next section   r Rebase                                      |
-<ctrl+u> Half page up             X Reset                                       |
-<ctrl+d> Half page down           V Revert                                      |
-g Refresh                         z Stash                                       |
+Help                                Submenu                                     |
+Y Show refs                         b Branch                                    |
+<tab> Toggle section                c Commit                                    |
+k/<up> Up                           f Fetch                                     |
+j/<down> Down                       h Help                                      |
+<ctrl+k>/<ctrl+up> Up line          l Log                                       |
+<ctrl+j>/<ctrl+down> Down line      F Pull                                      |
+<alt+k>/<alt+up> Prev section       P Push                                      |
+<alt+j>/<alt+down> Next section     r Rebase                                    |
+<alt+h>/<alt+left> Parent section   X Reset                                     |
+<ctrl+u> Half page up               V Revert                                    |
+<ctrl+d> Half page down             z Stash                                     |
+g Refresh                                                                       |
 q/<esc> Quit/Close                                                              |
-styles_hash: 86d28ec74971a2b3
+styles_hash: 5a8c4080986bbe0d

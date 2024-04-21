@@ -57,3 +57,12 @@ fn move_next_sibling() {
     state.update(&mut ctx.term, &keys("<alt+j>")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn move_next_then_parent_section() {
+    let (mut ctx, mut state) = setup_scroll();
+    state
+        .update(&mut ctx.term, &keys("<alt+j><alt+h>"))
+        .unwrap();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
