@@ -147,7 +147,9 @@ fn create_highlight_config(lang: &Language) -> HighlightConfiguration {
             (tree_sitter_c_sharp::HIGHLIGHT_QUERY, "", "")
         } else if lang == &tree_sitter_python::language() {
             (tree_sitter_python::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_typescript::language_typescript() {
+        } else if lang == &tree_sitter_typescript::language_typescript()
+            || lang == &tree_sitter_typescript::language_tsx()
+        {
             (
                 tree_sitter_typescript::HIGHLIGHT_QUERY,
                 "",
