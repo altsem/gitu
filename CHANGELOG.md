@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.0] - 2024-04-21
+
+### 🚀 Features
+
+- Move to parent section with alt+h
+- Move to next/prev sections with alt+j and alt+k
+- On MacOS: load `~/.config/gitu/config.toml` instead of `~/Library/Application Support/gitu/config.toml`
+- Add Revert commit/abort/continue
+- Show revert status
+
+### 🐛 Bug Fixes
+
+- Scala syntax highlighter would not load
+
 ## [0.18.4] - 2024-04-20
 
 ### 🐛 Bug Fixes
