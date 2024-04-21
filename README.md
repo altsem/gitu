@@ -19,6 +19,7 @@ Here's a list of so-far supported features:
 - **Pulling / Pushing** _(You may want to configure a [push.default](https://git-scm.com/docs/git-config/#Documentation/git-config.txt-pushdefault))_
 - **Rebasing** _(elsewhere, abort, continue, autosquash, interactive)_
 - **Resetting** _(soft, mixed, hard)_
+- **Reverting** _(commit)_
 - **Stashing** _(save, pop, apply, drop)_
 
 ### Keybinds
