@@ -57,6 +57,7 @@ jobs:
         os:
           - windows-latest
           - macos-latest
+      fail-fast: false
 
     runs-on: ${{ matrix.os }}
 
