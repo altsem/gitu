@@ -36,7 +36,6 @@ impl Bindings {
     ) -> impl Iterator<Item = &'a Binding> + 'a {
         self.vec
             .iter()
-            // TODO Support multiple keys in a sequence
             .filter(move |binding| &binding.menu == pending)
             .filter(|binding| binding.keys.starts_with(events))
     }
