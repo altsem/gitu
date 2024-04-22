@@ -34,13 +34,12 @@ jobs:
         cargo install --locked cargo-machete || true
         cargo install --locked git-cliff || true
 
-    - name: CI
+    - name: make test
       env: 
         CARGO_INCREMENTAL: 0
         RUSTFLAGS: '-Cinstrument-coverage'
         LLVM_PROFILE_FILE: 'cargo-test-%p-%m.profraw'
-
-      run: ./ci.sh
+      run: make test
 
     - name: Coverage
       run: grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/tests.lcov

@@ -2,14 +2,10 @@
 
 Here's a place to share and document some tooling in use by Gitu, as well as tooling you may want to use.
 
-### CI 
+### Build
 
-The CI is mostly running a script which you may also run locally to get a faster feedback loop.
-Install the tools required and run it if you wish. It's located at [ci.sh](ci.sh).
-I typically use it along with [entr](https://github.com/eradman/entr) to watch for changes:
-```bash
-rg -l . | entr -c ./ci.sh
-```
+There's CI that runs on every pull-request. This runs `make test`, which contains a few
+extra commands over `cargo test` that you might find useful running locally.
 
 ### Testing
 
