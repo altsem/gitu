@@ -2,6 +2,8 @@ use std::fs;
 
 #[macro_use]
 mod helpers;
+
+mod apply;
 mod discard;
 mod editor;
 mod log;

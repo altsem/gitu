@@ -1,0 +1,25 @@
+---
+source: src/tests/apply.rs
+expression: ctx.redact_buffer()
+---
+ commit b90fb319f35137259d898bedd7a0e01ac013c208                                |
+ Author: Author Name <author@email.com>                                         |
+ Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+                                                                                |
+     modify file.txt                                                            |
+                                                                                |
+     Commit body goes here                                                      |
+                                                                                |
+ modified   file.txt                                                            |
+ @@ -1,2 +1,2 @@                                                                |
+▌-bad text                                                                      |
+ -more bad text                                                                 |
+ +good text                                                                     |
+ +more good text                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --recount                                                           |
+styles_hash: b9817e6d642d48f2

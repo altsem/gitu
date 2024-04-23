@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   file.txt                                                            |
+ @@ -1 +1 @@                                                                    |
+ -bad text                                                                      |
+ \ No newline at end of file                                                    |
+ +good text                                                                     |
+ \ No newline at end of file                                                    |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main add file.txt                                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: d992382006d87074
