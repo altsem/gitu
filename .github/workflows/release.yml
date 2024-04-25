@@ -79,7 +79,7 @@ jobs:
           rust: stable
           target: x86_64-unknown-linux-gnu
         - build: macos
-          os: macos-latest
+          os: macos-13
           rust: stable
           target: x86_64-apple-darwin
         - build: windows
