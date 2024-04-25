@@ -1,6 +1,6 @@
-## [0.19.1] - 2024-04-21
+## [0.19.2] - 2024-04-25
 
 ### 🐛 Bug Fixes
 
-- Crash when trying to highlight `.tsx` files
+- Hint/preserve missing newlines in diffs/patches
 

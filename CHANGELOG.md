@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.2] - 2024-04-25
+
+### 🐛 Bug Fixes
+
+- Hint/preserve missing newlines in diffs/patches
+
 ## [0.19.1] - 2024-04-21
 
 ### 🐛 Bug Fixes
