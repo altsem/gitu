@@ -49,8 +49,8 @@ fn stage_added_line() {
 #[test]
 fn stage_changes_crlf() {
     let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "testfile", "testing\r\ntesttest");
-    fs::write(ctx.dir.child("testfile"), "test\r\ntesttest").expect("error writing to file");
+    commit(ctx.dir.path(), "testfile", "testing\r\ntesttest\r\n");
+    fs::write(ctx.dir.child("testfile"), "test\r\ntesttest\r\n").expect("error writing to file");
 
     snapshot!(ctx, "jj<tab>");
 }

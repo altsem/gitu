@@ -1,0 +1,10 @@
+---
+source: src/git/diff.rs
+expression: "hunks[0].format_patch()"
+---
+header
+@@ -1 +1 @@
+-old line
+\ No newline at end of file
++new line
+\ No newline at end of file

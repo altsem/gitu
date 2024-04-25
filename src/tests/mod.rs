@@ -52,8 +52,8 @@ fn new_file() {
 #[test]
 fn unstaged_changes() {
     let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest");
-    fs::write(ctx.dir.child("testfile"), "test\ntesttest").expect("error writing to file");
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.child("testfile"), "test\ntesttest\n").expect("error writing to file");
     snapshot!(ctx, "jj<tab>");
 }
 
@@ -261,12 +261,12 @@ mod checkout {
 #[test]
 fn updated_externally() {
     let mut ctx = TestContext::setup_init();
-    fs::write(ctx.dir.child("b"), "test").unwrap();
+    fs::write(ctx.dir.child("b"), "test\n").unwrap();
 
     let mut state = ctx.init_state();
     state.update(&mut ctx.term, &keys("jjsj")).unwrap();
 
-    fs::write(ctx.dir.child("a"), "test").unwrap();
+    fs::write(ctx.dir.child("a"), "test\n").unwrap();
 
     state.update(&mut ctx.term, &keys("g")).unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());

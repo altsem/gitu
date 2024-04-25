@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use super::*;
 
 fn setup_scroll() -> (TestContext, crate::state::State) {
@@ -9,8 +7,8 @@ fn setup_scroll() -> (TestContext, crate::state::State) {
         fs::write(
             ctx.dir.child(file),
             (1..=20)
-                .map(|i| format!("line {} ({})", i, file))
-                .join("\n"),
+                .map(|i| format!("line {} ({})\n", i, file))
+                .collect::<String>(),
         )
         .unwrap();
     }

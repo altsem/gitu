@@ -394,6 +394,10 @@ fn create_lines(
             .collect::<Vec<_>>();
 
         lines.push(Line::from(spans));
+
+        if !content[line.clone()].ends_with('\n') {
+            lines.push(Line::from("\\ No newline at end of file"))
+        }
     }
 }
 
@@ -493,6 +497,12 @@ mod tests {
     #[test]
     fn changed_line() {
         let hunks = diff_content("old line\n", "new line\n");
+        insta::assert_snapshot!(hunks[0].format_patch());
+    }
+
+    #[test]
+    fn changed_line_no_newline() {
+        let hunks = diff_content("old line", "new line");
         insta::assert_snapshot!(hunks[0].format_patch());
     }
 
