@@ -14,30 +14,30 @@ pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
 insta = "1.38.0"
-unicode-width = "0.1.11"
+unicode-width = "0.1.12"
 
 [profile.release]
 strip = true
 
 [dependencies]
 arboard = { version = "3.3.2", default-features = false, features = ["windows-sys"] }
-chrono = "0.4.37"
+chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
 etcetera = "0.8.0"
-figment = { version = "0.10.16", features = ["toml"] }
+figment = { version = "0.10.18", features = ["toml"] }
 git-version = "0.3.9"
 git2 = { version = "0.18.3", default-features = false }
 itertools = "0.12.0"
 log = "0.4.21"
 nom = "7.1.3"
-ratatui = { version = "0.26.1", features = ["serde"] }
-serde = { version = "1.0.152", features = ["derive"] }
+ratatui = { version = "0.26.2", features = ["serde"] }
+serde = { version = "1.0.199", features = ["derive"] }
 similar = { version = "2.5.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
 toml = "0.8.12"
-tui-prompts = "0.3.10"
+tui-prompts = "0.3.11"
 tree-sitter = "0.20.0"
 tree-sitter-highlight = "0.20.1"
 tree-sitter-rust = "0.20.4"
