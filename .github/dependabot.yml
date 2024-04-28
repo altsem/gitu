@@ -6,15 +6,15 @@ updates:
       interval: "weekly"
       day: "saturday"
     groups:
+      tree-sitter:
+        applies-to: version-updates
+        patterns:
+          - "tree-sitter*"
       minor/patch:
         applies-to: version-updates
         update-types:
         - "minor"
         - "patch"
-      tree-sitter:
-        applies-to: version-updates
-        patterns:
-          - "tree-sitter*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
