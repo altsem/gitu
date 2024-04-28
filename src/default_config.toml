@@ -87,6 +87,7 @@ root.half_page_down = ["<ctrl+d>"]
 root.show_refs = ["Y"]
 
 root.apply = ["a"]
+root.reverse = ["v"]
 root.show = ["<enter>"]
 root.discard = ["K"]
 root.stage = ["s"]

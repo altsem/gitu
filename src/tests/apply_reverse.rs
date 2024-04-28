@@ -32,3 +32,11 @@ fn apply_line() {
 
     snapshot!(ctx, "loother<enter><enter><ctrl+j>a");
 }
+
+#[test]
+fn reverse_line() {
+    let ctx = TestContext::setup_init();
+    commit(ctx.dir.path(), "file.txt", "bad text\nmore bad text\n");
+
+    snapshot!(ctx, "ll<enter><ctrl+j>v");
+}

@@ -31,3 +31,31 @@ fn apply_cmd() -> Command {
     cmd.args(["apply", "--recount"]);
     cmd
 }
+
+#[derive(Display)]
+#[display(fmt = "Reverse")]
+pub(crate) struct Reverse;
+impl OpTrait for Reverse {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        let action = match target.cloned() {
+            Some(TargetData::Hunk(h)) => cmd(h.format_patch().into_bytes(), apply_cmd),
+            Some(TargetData::HunkLine(h, i)) => cmd(
+                h.format_line_patch(i..(i + 1), PatchMode::Reverse)
+                    .into_bytes(),
+                reverse_cmd,
+            ),
+            _ => return None,
+        };
+
+        Some(action)
+    }
+    fn is_target_op(&self) -> bool {
+        true
+    }
+}
+
+fn reverse_cmd() -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["apply", "--recount", "--reverse"]);
+    cmd
+}

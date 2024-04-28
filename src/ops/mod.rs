@@ -12,7 +12,7 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) mod apply;
+pub(crate) mod apply_reverse;
 pub(crate) mod checkout;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
@@ -79,6 +79,7 @@ pub(crate) enum Op {
     RevertCommit,
 
     Apply,
+    Reverse,
     Stage,
     Unstage,
     Show,
@@ -154,7 +155,8 @@ impl Op {
             Op::RevertAbort => Box::new(revert::RevertAbort),
             Op::RevertContinue => Box::new(revert::RevertContinue),
             Op::RevertCommit => Box::new(revert::RevertCommit),
-            Op::Apply => Box::new(apply::Apply),
+            Op::Apply => Box::new(apply_reverse::Apply),
+            Op::Reverse => Box::new(apply_reverse::Reverse),
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
