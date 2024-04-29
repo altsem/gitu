@@ -16,18 +16,26 @@ use std::borrow::Cow;
 use tui_prompts::State as _;
 use tui_prompts::TextPrompt;
 
+pub(crate) struct SizedWidget<W> {
+    height: u16,
+    widget: W,
+}
+
+impl<W: Widget> Widget for SizedWidget<W> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        self.widget.render(area, buf);
+    }
+}
+
+impl<W: StatefulWidget> StatefulWidget for SizedWidget<W> {
+    type State = W::State;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        self.widget.render(area, buf, state);
+    }
+}
+
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let (log_len, maybe_log): (u16, Option<Paragraph>) = if !state.current_cmd_log.is_empty() {
-        let text: Text = state.current_cmd_log.format_log(&state.config);
-
-        (
-            1 + text.lines.len() as u16,
-            Some(Paragraph::new(text).block(popup_block())),
-        )
-    } else {
-        (0, None)
-    };
-
     let State {
         screens,
         prompt:
@@ -39,33 +47,38 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         ..
     } = state;
 
-    let (menu_len, maybe_menu) = if let Some(ref menu) = pending_menu {
-        let (lines, table) = format_keybinds_menu(
+    let maybe_log = if !state.current_cmd_log.is_empty() {
+        let text: Text = state.current_cmd_log.format_log(&state.config);
+
+        Some(SizedWidget {
+            widget: Paragraph::new(text.clone()).block(popup_block()),
+            height: 1 + text.lines.len() as u16,
+        })
+    } else {
+        None
+    };
+
+    let maybe_menu = pending_menu.as_ref().map(|menu| {
+        format_keybinds_menu(
             &state.config,
             &state.bindings,
             menu,
             screens.last().unwrap().get_selected_item(),
-        );
+        )
+    });
 
-        (1 + lines as u16, Some(table.block(popup_block())))
-    } else {
-        (0, None)
-    };
-
-    let (prompt_len, maybe_prompt) = if let Some(prompt_data) = maybe_prompt_data {
-        let prompt = TextPrompt::new(prompt_data.prompt_text.clone());
-        (2, Some(prompt.with_block(popup_block())))
-    } else {
-        (0, None)
-    };
+    let maybe_prompt = maybe_prompt_data.as_ref().map(|prompt_data| SizedWidget {
+        height: 2,
+        widget: TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block()),
+    });
 
     let layout = Layout::new(
         Direction::Vertical,
         [
             Constraint::Min(1),
-            Constraint::Length(prompt_len),
-            Constraint::Length(menu_len),
-            Constraint::Length(log_len),
+            widget_height(&maybe_prompt),
+            widget_height(&maybe_menu),
+            widget_height(&maybe_log),
         ],
     )
     .split(frame.size());
@@ -78,13 +91,8 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         frame.set_cursor(cx, cy);
     }
 
-    if let Some(menu) = maybe_menu {
-        frame.render_widget(menu, layout[2]);
-    }
-
-    if let Some(log) = maybe_log {
-        frame.render_widget(log, layout[3]);
-    }
+    maybe_render(maybe_menu, frame, layout[2]);
+    maybe_render(maybe_log, frame, layout[3]);
 
     screens.last_mut().unwrap().size = layout[0];
 }
@@ -94,7 +102,7 @@ fn format_keybinds_menu<'b>(
     bindings: &'b Bindings,
     pending: &'b PendingMenu,
     item: &'b Item,
-) -> (usize, Table<'b>) {
+) -> SizedWidget<Table<'b>> {
     let style = &config.style;
 
     let arg_binds = bindings.arg_list(pending).collect::<Vec<_>>();
@@ -224,7 +232,12 @@ fn format_keybinds_menu<'b>(
         })
         .collect::<Vec<_>>();
 
-    (rows.len(), Table::new(rows, widths).column_spacing(3))
+    let (lines, table) = (rows.len(), Table::new(rows, widths).column_spacing(3));
+
+    SizedWidget {
+        height: 1 + lines as u16,
+        widget: table.block(popup_block()),
+    }
 }
 
 fn col_width(column: &[Line<'_>]) -> Constraint {
@@ -236,4 +249,19 @@ fn popup_block() -> Block<'static> {
         .borders(Borders::TOP)
         .border_style(Style::new().dim())
         .border_type(ratatui::widgets::BorderType::Plain)
+}
+
+fn widget_height<W>(maybe_prompt: &Option<SizedWidget<W>>) -> Constraint {
+    Constraint::Length(
+        maybe_prompt
+            .as_ref()
+            .map(|widget| widget.height)
+            .unwrap_or(0),
+    )
+}
+
+fn maybe_render<W: Widget>(maybe_menu: Option<SizedWidget<W>>, frame: &mut Frame, area: Rect) {
+    if let Some(menu) = maybe_menu {
+        frame.render_widget(menu, area);
+    }
 }
