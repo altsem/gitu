@@ -1,10 +1,14 @@
-use super::{Action, OpTrait};
+use super::{push_prompt, Action, OpTrait};
 use crate::{
     items::TargetData,
-    menu::{arg::Arg, PendingMenu},
+    menu::{
+        arg::{self, Arg, ArgValue},
+        PendingMenu,
+    },
     screen::NavMode,
     state::{root_menu, State},
     term::Term,
+    Res,
 };
 use derive_more::Display;
 use std::rc::Rc;
@@ -77,14 +81,59 @@ impl OpTrait for Refresh {
 pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        let arg = self.0.clone();
+        let arg_name = self.0.clone();
         Some(Rc::new(move |state, _term| {
-            if let Some(menu) = &mut state.pending_menu {
-                menu.args.entry(arg.clone().into()).and_modify(Arg::toggle);
+            let mut need_prompt = None;
+
+            let maybe_entry = if let Some(menu) = &mut state.pending_menu {
+                Some(menu.args.entry(arg_name.clone().into()))
+            } else {
+                None
+            };
+
+            if let Some(entry) = maybe_entry {
+                entry.and_modify(|arg| {
+                    if arg.is_active() {
+                        arg.unset();
+                    } else {
+                        match arg.value {
+                            ArgValue::Bool(v) => arg.value = ArgValue::Bool(!v),
+                            _ => need_prompt = Some(arg.display),
+                        }
+                    }
+                });
             }
+
+            if let Some(display) = need_prompt {
+                push_prompt(
+                    state,
+                    display,
+                    parse_and_set_arg,
+                    |_| None,
+                    arg_name.clone(),
+                );
+            }
+
             Ok(())
         }))
     }
+}
+
+fn parse_and_set_arg(
+    state: &mut State,
+    _term: &mut Term,
+    _args: &[std::ffi::OsString],
+    value: &str,
+    arg: &String,
+) -> Res<()> {
+    let key: &str = arg;
+    if let Some(menu) = &mut state.pending_menu {
+        if let Some(entry) = menu.args.get_mut(key) {
+            return entry.set(value);
+        }
+    }
+
+    Ok(())
 }
 
 #[derive(Display)]
