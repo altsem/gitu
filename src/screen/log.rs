@@ -8,11 +8,12 @@ pub(crate) fn create(
     config: Rc<Config>,
     repo: Rc<Repository>,
     size: Rect,
+    limit: usize,
     rev: Option<Oid>,
 ) -> Res<Screen> {
     Screen::new(
         Rc::clone(&config),
         size,
-        Box::new(move || log(&config, &repo, usize::MAX, rev)),
+        Box::new(move || log(&config, &repo, limit, rev)),
     )
 }
