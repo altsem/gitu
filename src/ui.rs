@@ -1,4 +1,3 @@
-use crate::prompt::Prompt;
 use crate::state::State;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
@@ -29,17 +28,6 @@ impl<W: StatefulWidget> StatefulWidget for SizedWidget<W> {
 }
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let State {
-        screens,
-        prompt:
-            Prompt {
-                data: maybe_prompt_data,
-                state: prompt_state,
-            },
-        pending_menu,
-        ..
-    } = state;
-
     let maybe_log = if !state.current_cmd_log.is_empty() {
         let text: Text = state.current_cmd_log.format_log(&state.config);
 
@@ -51,16 +39,16 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         None
     };
 
-    let maybe_menu = pending_menu.as_ref().map(|menu| {
+    let maybe_menu = state.pending_menu.as_ref().map(|menu| {
         menu::MenuWidget::new(
             &state.config,
             &state.bindings,
             menu,
-            screens.last().unwrap().get_selected_item(),
+            state.screens.last().unwrap().get_selected_item(),
         )
     });
 
-    let maybe_prompt = maybe_prompt_data.as_ref().map(|prompt_data| SizedWidget {
+    let maybe_prompt = state.prompt.data.as_ref().map(|prompt_data| SizedWidget {
         height: 2,
         widget: TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block()),
     });
@@ -76,10 +64,10 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     )
     .split(frame.size());
 
-    frame.render_widget(screens.last().unwrap(), layout[0]);
+    frame.render_widget(state.screens.last().unwrap(), layout[0]);
 
     if let Some(prompt) = maybe_prompt {
-        frame.render_stateful_widget(prompt, layout[1], prompt_state);
+        frame.render_stateful_widget(prompt, layout[1], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
     }
@@ -87,7 +75,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     maybe_render(maybe_menu, frame, layout[2]);
     maybe_render(maybe_log, frame, layout[3]);
 
-    screens.last_mut().unwrap().size = layout[0];
+    state.screens.last_mut().unwrap().size = layout[0];
 }
 
 fn popup_block() -> Block<'static> {
