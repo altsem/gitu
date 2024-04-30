@@ -103,6 +103,7 @@ fn determine_lang(path: &Path) -> Option<Language> {
         "ml" => Some(tree_sitter_ocaml::language_ocaml()),
         "mli" => Some(tree_sitter_ocaml::language_ocaml_interface()),
         "html" => Some(tree_sitter_html::language()),
+        "ex" | "exs" => Some(tree_sitter_elixir::language()),
         _ => None,
     }
 }
@@ -183,6 +184,8 @@ fn create_highlight_config(lang: &Language) -> HighlightConfiguration {
                 tree_sitter_html::INJECTIONS_QUERY,
                 "",
             )
+        } else if lang == &tree_sitter_elixir::language() {
+            (tree_sitter_elixir::HIGHLIGHTS_QUERY, "", "")
         } else {
             panic!("Undefined language");
         };
