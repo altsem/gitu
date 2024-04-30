@@ -4,7 +4,10 @@ use derive_more::Display;
 use git2::Oid;
 use std::{ffi::OsString, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) const ARGS: &[Arg] = &[
+    Arg::new_int_opt("-n", "Limit number of commits", Some(256)),
+    // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
+];
 
 #[derive(Display)]
 #[display(fmt = "Log current")]
@@ -44,8 +47,23 @@ fn log_other(state: &mut State, _term: &mut Term, _args: &[OsString], result: &s
 fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
     state.screens.drain(1..);
     let size = state.screens.last().unwrap().size;
+    let limit = state
+        .pending_menu
+        .as_ref()
+        .map(|m| m.args.get("-n"))
+        .flatten()
+        .map(Arg::get_i32)
+        .flatten()
+        .unwrap_or(i32::MAX);
+
     state.screens.push(
-        screen::log::create(Rc::clone(&state.config), Rc::clone(&state.repo), size, rev)
-            .expect("Couldn't create screen"),
+        screen::log::create(
+            Rc::clone(&state.config),
+            Rc::clone(&state.repo),
+            size,
+            limit as usize,
+            rev,
+        )
+        .expect("Couldn't create screen"),
     );
 }

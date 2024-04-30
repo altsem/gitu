@@ -223,35 +223,55 @@ pub(crate) fn create_prompt_with_default(
     default_fn: fn(&State) -> Option<String>,
 ) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| {
-        let prompt_text = if let Some(default) = default_fn(state) {
-            format!("{} (default {}):", prompt, default).into()
-        } else {
-            format!("{}:", prompt).into()
-        };
-
-        let args = state.pending_menu.as_ref().unwrap().args();
-
-        state.prompt.set(PromptData {
-            prompt_text,
-            update_fn: Rc::new(move |state, term| {
-                if state.prompt.state.status().is_done() {
-                    let input = state.prompt.state.value().to_string();
-                    state.prompt.reset(term)?;
-
-                    let default_value = default_fn(state);
-                    let value = match (input.as_str(), &default_value) {
-                        ("", None) => "",
-                        ("", Some(selected)) => selected,
-                        (value, _) => value,
-                    };
-
-                    callback(state, term, &args, value)?;
-                }
-                Ok(())
-            }),
-        });
+        push_prompt(state, prompt, invoke_default, default_fn, callback);
         Ok(())
     })
+}
+
+fn invoke_default(
+    state: &mut State,
+    term: &mut Term,
+    args: &[OsString],
+    value: &str,
+    context: &fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
+) -> Res<()> {
+    context(state, term, args, value)
+}
+
+pub(crate) fn push_prompt<T: 'static>(
+    state: &mut State,
+    prompt: &'static str,
+    callback: fn(&mut State, &mut Term, &[OsString], &str, &T) -> Res<()>,
+    default_fn: fn(&State) -> Option<String>,
+    context: T,
+) {
+    let prompt_text = if let Some(default) = default_fn(state) {
+        format!("{} (default {}):", prompt, default).into()
+    } else {
+        format!("{}:", prompt).into()
+    };
+
+    let args = state.pending_menu.as_ref().unwrap().args();
+
+    state.prompt.set(PromptData {
+        prompt_text,
+        update_fn: Rc::new(move |state, term| {
+            if state.prompt.state.status().is_done() {
+                let input = state.prompt.state.value().to_string();
+                state.prompt.reset(term)?;
+
+                let default_value = default_fn(state);
+                let value = match (input.as_str(), &default_value) {
+                    ("", None) => "",
+                    ("", Some(selected)) => selected,
+                    (value, _) => value,
+                };
+
+                callback(state, term, &args, value, &context)?;
+            }
+            Ok(())
+        }),
+    });
 }
 
 pub(crate) fn selected_rev(state: &State) -> Option<String> {

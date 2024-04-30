@@ -5,7 +5,10 @@ use crate::{
     bindings::Bindings,
     config::Config,
     items::Item,
-    menu::{arg::Arg, PendingMenu},
+    menu::{
+        arg::{Arg, ArgValue},
+        PendingMenu,
+    },
     ops::Op,
 };
 use itertools::{EitherOrBoth, Itertools};
@@ -113,20 +116,20 @@ impl<'a> MenuWidget<'a> {
                 unreachable!();
             };
 
-            let on = pending
-                .args
-                .get(name.as_str())
-                .map(Arg::is_acive)
-                .unwrap_or(false);
+            let arg = pending.args.get(name.as_str()).unwrap();
 
             right_column.push(Line::from(vec![
                 Span::styled(&bind.raw, &style.hotkey),
                 Span::raw(" "),
-                Span::raw(pending.args.get(&Cow::from(name)).unwrap().display),
+                Span::raw(arg.display),
                 Span::raw(" ("),
                 Span::styled(
-                    format!("{}", bind.op.clone().implementation()),
-                    if on {
+                    format!(
+                        "{}{}",
+                        bind.op.clone().implementation(),
+                        arg.get_value_suffix()
+                    ),
+                    if arg.is_active() {
                         Style::from(&style.active_arg)
                     } else {
                         Style::new()
