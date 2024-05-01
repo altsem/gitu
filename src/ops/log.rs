@@ -51,8 +51,8 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
         .pending_menu
         .as_ref()
         .and_then(|m| m.args.get("-n"))
-        .and_then(Arg::get_i32)
-        .unwrap_or(i32::MAX);
+        .and_then(Arg::get_u32)
+        .unwrap_or(u32::MAX);
 
     state.screens.push(
         screen::log::create(
