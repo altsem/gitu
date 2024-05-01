@@ -6,14 +6,14 @@ use crate::Res;
 pub(crate) enum ArgValue {
     Bool(bool),
     String(String),
-    NumberOpt(Option<i32>),
+    NumberOpt(Option<u32>),
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct Arg {
     pub arg: &'static str,
     pub display: &'static str,
-    pub(crate) value: ArgValue,
+    pub value: ArgValue,
 }
 
 impl Arg {
@@ -36,7 +36,7 @@ impl Arg {
     pub const fn new_int_opt(
         arg: &'static str,
         display: &'static str,
-        default: Option<i32>,
+        default: Option<u32>,
     ) -> Self {
         Arg {
             arg,
@@ -72,8 +72,8 @@ impl Arg {
                 Ok(())
             }
             ArgValue::NumberOpt(_) => {
-                let value = value.parse::<i32>()?;
-                if value <= 0 {
+                let value = value.parse::<u32>()?;
+                if value == 0 {
                     Err(String::from("Value must be a positive integer").into())
                 } else {
                     self.value = ArgValue::NumberOpt(Some(value));
@@ -83,18 +83,22 @@ impl Arg {
         }
     }
 
-    pub fn get_i32(&self) -> Option<i32> {
+    pub fn get_u32(&self) -> Option<u32> {
         match &self.value {
             ArgValue::NumberOpt(state) => *state,
             _ => None,
         }
     }
 
-    pub fn get_value_suffix(&self) -> String {
+    fn get_value_suffix(&self) -> String {
         match &self.value {
             ArgValue::String(state) if !state.is_empty() => format!("={}", state),
             ArgValue::NumberOpt(Some(state)) => format!("={}", state),
             _ => String::new(),
         }
+    }
+
+    pub fn get_cli_token(&self) -> String {
+        format!("{}{}", self.arg, self.get_value_suffix())
     }
 }

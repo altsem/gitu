@@ -70,13 +70,7 @@ impl PendingMenu {
         self.args
             .iter()
             .filter(|&(_k, arg)| arg.is_active())
-            .map(|(k, v)| match v.value {
-                arg::ArgValue::Bool(true) => k.to_string().into(),
-                arg::ArgValue::String(ref s) if !s.is_empty() => {
-                    OsString::from(format!("{}={}", k, s))
-                }
-                _ => unreachable!(),
-            })
+            .map(|(_, v)| v.get_cli_token().into())
             .collect()
     }
 }
