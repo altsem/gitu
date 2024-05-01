@@ -1,4 +1,4 @@
-use super::{push_prompt, Action, OpTrait};
+use super::{set_prompt, Action, OpTrait};
 use crate::{
     items::TargetData,
     menu::{
@@ -105,7 +105,7 @@ impl OpTrait for ToggleArg {
             }
 
             if let Some(display) = need_prompt {
-                push_prompt(
+                set_prompt(
                     state,
                     display,
                     parse_and_set_arg,
