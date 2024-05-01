@@ -50,10 +50,8 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
     let limit = state
         .pending_menu
         .as_ref()
-        .map(|m| m.args.get("-n"))
-        .flatten()
-        .map(Arg::get_i32)
-        .flatten()
+        .and_then(|m| m.args.get("-n"))
+        .and_then(Arg::get_i32)
         .unwrap_or(i32::MAX);
 
     state.screens.push(
