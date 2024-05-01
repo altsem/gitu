@@ -223,7 +223,7 @@ pub(crate) fn create_prompt_with_default(
     default_fn: fn(&State) -> Option<String>,
 ) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| {
-        push_prompt(state, prompt, invoke_default, default_fn, callback);
+        set_prompt(state, prompt, invoke_default, default_fn, callback);
         Ok(())
     })
 }
@@ -238,7 +238,7 @@ fn invoke_default(
     context(state, term, args, value)
 }
 
-pub(crate) fn push_prompt<T: 'static>(
+pub(crate) fn set_prompt<T: 'static>(
     state: &mut State,
     prompt: &'static str,
     callback: fn(&mut State, &mut Term, &[OsString], &str, &T) -> Res<()>,
