@@ -1,7 +1,7 @@
-use super::{Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term};
+use super::{create_prompt, Action, OpTrait};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
-use std::{process::Command, rc::Rc};
+use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) const ARGS: &[Arg] = &[Arg::new("--rebase", "Rebase local commits", false)];
 
@@ -19,4 +19,23 @@ impl OpTrait for Pull {
             Ok(())
         }))
     }
+}
+
+#[derive(Display)]
+#[display(fmt = "Pull from elsewhere")]
+pub(crate) struct PullElsewhere;
+impl OpTrait for PullElsewhere {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_prompt("Select remote", pull_elsewhere))
+    }
+}
+
+fn pull_elsewhere(state: &mut State, term: &mut Term, args: &[OsString], remote: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["pull"]);
+    cmd.arg(remote);
+    cmd.args(args);
+
+    state.run_cmd_async(term, &[], cmd)?;
+    Ok(())
 }
