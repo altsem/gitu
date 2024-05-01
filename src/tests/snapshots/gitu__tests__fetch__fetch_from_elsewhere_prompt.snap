@@ -1,0 +1,25 @@
+---
+source: src/tests/fetch.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+? Select remote: ›                                                              |
+styles_hash: a2a72e20bfcc2997

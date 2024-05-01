@@ -1,0 +1,25 @@
+---
+source: src/tests/fetch.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git fetch origin                                                              |
+styles_hash: b6d8677bf94d7533
