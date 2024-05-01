@@ -36,8 +36,8 @@ impl OpTrait for FetchElsewhere {
 fn push_elsewhere(state: &mut State, term: &mut Term, args: &[OsString], remote: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["fetch"]);
-    cmd.arg(remote);
     cmd.args(args);
+    cmd.arg(remote);
 
     state.run_cmd_async(term, &[], cmd)?;
     Ok(())
