@@ -13,12 +13,12 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
     style::Style,
-    text::{Line, Span},
+    text::{Line, Span, Text},
     widgets::{Row, Table, Widget},
 };
 
 pub(crate) struct MenuWidget<'a> {
-    table: Table<'a>,
+    pending_binds_rows: Vec<Row<'a>>,
 }
 
 impl<'a> MenuWidget<'a> {
@@ -32,47 +32,48 @@ impl<'a> MenuWidget<'a> {
 
         let arg_binds = bindings.arg_list(pending).collect::<Vec<_>>();
 
-        let non_target_binds = bindings
+        let pending_binds_title = Line::styled(format!("{}", pending.menu), &style.command);
+        let pending_binds_rows = bindings
             .list(&pending.menu)
             .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
-            .collect::<Vec<_>>();
-
-        let mut pending_binds_column = vec![];
-        pending_binds_column.push(Line::styled(format!("{}", pending.menu), &style.command));
-        for (op, binds) in non_target_binds
-            .iter()
             .group_by(|bind| &bind.op)
             .into_iter()
             .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
-        {
-            pending_binds_column.push(Line::from(vec![
-                Span::styled(
-                    binds.into_iter().map(|bind| &bind.raw).join("/"),
-                    &style.hotkey,
-                ),
-                Span::styled(format!(" {}", op.clone().implementation()), Style::new()),
-            ]));
-        }
+            .map(|(op, binds)| {
+                Row::new(vec![
+                    Text::styled(
+                        binds.into_iter().map(|bind| &bind.raw).join("/"),
+                        &style.hotkey,
+                    )
+                    .right_aligned(),
+                    Text::styled(format!("{}", op.clone().implementation()), Style::new()),
+                ])
+            })
+            .collect::<Vec<_>>();
 
-        let menus = non_target_binds
-            .iter()
+        let menus = bindings
+            .list(&pending.menu)
+            .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
             .filter(|bind| matches!(bind.op, Op::OpenMenu(_)))
             .collect::<Vec<_>>();
 
-        let mut menu_binds_column = vec![];
-        if !menus.is_empty() {
-            menu_binds_column.push(Line::styled("Submenu", &style.command));
+        let menu_binds_column = if !menus.is_empty() {
+            Some(Line::styled("Submenu", &style.command))
+        } else {
+            None
         }
-        for bind in menus {
+        .into_iter()
+        .chain(menus.into_iter().map(|bind| {
             let Op::OpenMenu(menu) = bind.op else {
                 unreachable!();
             };
 
-            menu_binds_column.push(Line::from(vec![
+            Line::from(vec![
                 Span::styled(&bind.raw, &style.hotkey),
                 Span::styled(format!(" {}", menu), Style::new()),
-            ]));
-        }
+            ])
+        }))
+        .collect::<Vec<_>>();
 
         let mut right_column = vec![];
         if let Some(target_data) = &item.target_data {
@@ -136,40 +137,11 @@ impl<'a> MenuWidget<'a> {
             ]));
         }
 
-        let widths = [
-            col_width(&pending_binds_column),
-            col_width(&menu_binds_column),
-            Constraint::Fill(1),
-        ];
-
-        let rows = pending_binds_column
-            .into_iter()
-            .zip_longest(menu_binds_column)
-            .zip_longest(right_column)
-            .map(|lines| {
-                let (ab, c) = lines.or(
-                    EitherOrBoth::Both(Line::raw(""), Line::raw("")),
-                    Line::raw(""),
-                );
-                let (a, b) = ab.or(Line::raw(""), Line::raw(""));
-
-                Row::new([a, b, c])
-            })
-            .collect::<Vec<_>>();
-
-        let (lines, table) = (rows.len(), Table::new(rows, widths).column_spacing(3));
-
         SizedWidget {
-            height: 1 + lines as u16,
-            widget: MenuWidget {
-                table: table.block(super::popup_block()),
-            },
+            height: 1 + pending_binds_rows.len() as u16,
+            widget: Self { pending_binds_rows },
         }
     }
-}
-
-fn col_width(column: &[Line<'_>]) -> Constraint {
-    Constraint::Length(column.iter().map(|line| line.width()).max().unwrap_or(0) as u16)
 }
 
 impl<'a> Widget for MenuWidget<'a> {
@@ -177,6 +149,13 @@ impl<'a> Widget for MenuWidget<'a> {
     where
         Self: Sized,
     {
-        Widget::render(self.table, area, buf)
+        let widths = [
+            Constraint::Length(10),
+            Constraint::Length(10),
+            Constraint::Fill(1),
+        ];
+
+        let table = Table::new(self.pending_binds_rows, widths);
+        Widget::render(table, area, buf)
     }
 }
