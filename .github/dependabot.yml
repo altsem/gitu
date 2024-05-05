@@ -6,12 +6,10 @@ updates:
       interval: "weekly"
       day: "saturday"
     groups:
-      tree-sitter:
-        applies-to: version-updates
-        patterns:
-          - "tree-sitter*"
       minor/patch:
         applies-to: version-updates
+        exclude-patterns:
+          - "tree-sitter*
         update-types:
         - "minor"
         - "patch"
