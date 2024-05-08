@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.1] - 2024-05-08
+
+### 🐛 Bug Fixes
+
+- Bad diffs when git's `autocrlf` was enabled
+
 ## [0.20.0] - 2024-05-08
 
 ### 🚀 Features

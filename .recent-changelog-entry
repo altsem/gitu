@@ -1,7 +1,6 @@
-## [0.20.0] - 2024-05-08
+## [0.20.1] - 2024-05-08
 
-### 🚀 Features
+### 🐛 Bug Fixes
 
-- Add "elsewhere" option to fetch, pull and push menu
-- Syntax highlighting for Elixir
+- Bad diffs when git's `autocrlf` was enabled
 
