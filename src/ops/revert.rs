@@ -7,9 +7,9 @@ use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 
 pub(crate) const ARGS: &[Arg] = &[
     // -m Replay merge relative to parent (--mainline=)
-    Arg::new("--edit", "Edit commit message", true),
+    Arg::new_flag("--edit", "Edit commit message", true),
     // =s Strategy (--strategy=)
-    Arg::new("--signoff", "Add Signed-off-by lines", false),
+    Arg::new_flag("--signoff", "Add Signed-off-by lines", false),
 ];
 
 #[derive(Display)]

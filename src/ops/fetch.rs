@@ -4,8 +4,8 @@ use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) const ARGS: &[Arg] = &[
-    Arg::new("--prune", "Prune deleted branches", false),
-    Arg::new("--tags", "Fetch all tags", false),
+    Arg::new_flag("--prune", "Prune deleted branches", false),
+    Arg::new_flag("--tags", "Fetch all tags", false),
 ];
 
 #[derive(Display)]
