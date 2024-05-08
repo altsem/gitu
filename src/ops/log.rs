@@ -1,11 +1,19 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, screen, state::State, term::Term, Res};
+use crate::{
+    items::TargetData,
+    menu::arg::{any_string, positive_number, Arg},
+    screen,
+    state::State,
+    term::Term,
+    Res,
+};
 use derive_more::Display;
 use git2::Oid;
 use std::{ffi::OsString, rc::Rc};
 
 pub(crate) const ARGS: &[Arg] = &[
-    Arg::new_int_opt("-n", "Limit number of commits", Some(256)),
+    Arg::new_u32("-n", "Limit number of commits", Some(256), positive_number),
+    Arg::new_string("--grep", "Search messages", None, any_string),
     // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
 ];
 
@@ -54,6 +62,12 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
         .and_then(Arg::get_u32)
         .unwrap_or(u32::MAX);
 
+    let msg_regex = state
+        .pending_menu
+        .as_ref()
+        .and_then(|m| m.args.get("--grep"))
+        .and_then(Arg::value_as_string);
+
     state.screens.push(
         screen::log::create(
             Rc::clone(&state.config),
@@ -61,6 +75,7 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
             size,
             limit as usize,
             rev,
+            msg_regex,
         )
         .expect("Couldn't create screen"),
     );

@@ -157,6 +157,7 @@ pub(crate) fn log(
     repo: &Repository,
     limit: usize,
     rev: Option<Oid>,
+    msg_regex: Option<String>,
 ) -> Res<Vec<Item>> {
     let style = &config.style;
     let mut revwalk = repo.revwalk()?;
@@ -192,8 +193,10 @@ pub(crate) fn log(
         )
         .collect::<Vec<(Commit, Span)>>();
 
+    let re = msg_regex.map(|re| regex::Regex::new(&re)).transpose()?;
+
     Ok(revwalk
-        .map(|oid_result| -> Res<Item> {
+        .map(|oid_result| -> Res<Option<Item>> {
             let oid = oid_result?;
             let commit = repo.find_commit(oid)?;
             let short_id = commit.as_object().short_id()?.as_str().unwrap().to_string();
@@ -211,21 +214,27 @@ pub(crate) fn log(
             )
             .collect::<Vec<_>>();
 
-            Ok(Item {
+            if let Some(re) = &re {
+                if !re.is_match(commit.message().unwrap_or("")) {
+                    return Ok(None);
+                }
+            }
+
+            Ok(Some(Item {
                 id: oid.to_string().into(),
                 display: Line::from(spans),
                 depth: 1,
                 target_data: Some(TargetData::Commit(oid.to_string())),
                 ..Default::default()
-            })
+            }))
         })
-        .map(|result| match result {
+        .filter_map(|result| match result {
             Ok(item) => item,
-            Err(err) => Item {
+            Err(err) => Some(Item {
                 id: err.to_string().into(),
                 display: err.to_string().into(),
                 ..Default::default()
-            },
+            }),
         })
         .take(limit)
         .collect())
