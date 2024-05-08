@@ -154,12 +154,13 @@ fn diff_files(
     config: &Config,
     delta: &Delta,
 ) -> Res<Vec<Rc<Hunk>>> {
-    let old_content = read_blob(repo, &diffdelta.old_file())?;
+    let old_content = read_blob(repo, &diffdelta.old_file())?.replace("\r\n", "\n");
     let new_content = if workdir {
         read_workdir(repo, &diffdelta.new_file())?
     } else {
         read_blob(repo, &diffdelta.new_file())?
-    };
+    }
+    .replace("\r\n", "\n");
 
     diff_content(config, delta, &old_content, &new_content)
 }

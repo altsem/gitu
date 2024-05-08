@@ -332,3 +332,21 @@ fn syntax_highlighted() {
 
     snapshot!(ctx, "jj<tab>");
 }
+
+#[test]
+fn crlf_diff() {
+    let mut ctx = TestContext::setup_init();
+    let mut state = ctx.init_state();
+    state
+        .repo
+        .config()
+        .unwrap()
+        .set_bool("core.autocrlf", true)
+        .unwrap();
+
+    commit(ctx.dir.path(), "crlf.txt", "unchanged\r\nunchanged\r\n");
+    fs::write(ctx.dir.child("crlf.txt"), "unchanged\r\nchanged\r\n").unwrap();
+    state.update(&mut ctx.term, &keys("g")).unwrap();
+
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
