@@ -1,16 +1,5 @@
-use std::borrow::Cow;
-
 use super::SizedWidget;
-use crate::{
-    bindings::Bindings,
-    config::Config,
-    items::Item,
-    menu::{
-        arg::{Arg, ArgValue},
-        PendingMenu,
-    },
-    ops::Op,
-};
+use crate::{bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op};
 use itertools::{EitherOrBoth, Itertools};
 use ratatui::{
     buffer::Buffer,

@@ -8,17 +8,17 @@ use std::{
 };
 
 pub(crate) const ARGS: &[Arg] = &[
-    Arg::new("--keep-empty", "Keep empty commits", false),
-    Arg::new("--preserve-merges", "Preserve merges", false),
-    Arg::new(
+    Arg::new_flag("--keep-empty", "Keep empty commits", false),
+    Arg::new_flag("--preserve-merges", "Preserve merges", false),
+    Arg::new_flag(
         "--committer-date-is-author-date",
         "Lie about committer date",
         false,
     ),
-    Arg::new("--autosquash", "Autosquash", false),
-    Arg::new("--autostash", "Autostash", true),
-    Arg::new("--interactive", "Interactive", false),
-    Arg::new("--no-verify", "Disable hooks", false),
+    Arg::new_flag("--autosquash", "Autosquash", false),
+    Arg::new_flag("--autostash", "Autostash", true),
+    Arg::new_flag("--interactive", "Interactive", false),
+    Arg::new_flag("--no-verify", "Disable hooks", false),
 ];
 
 #[derive(Display)]

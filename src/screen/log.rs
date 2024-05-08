@@ -10,10 +10,11 @@ pub(crate) fn create(
     size: Rect,
     limit: usize,
     rev: Option<Oid>,
+    msg_regex: Option<String>,
 ) -> Res<Screen> {
     Screen::new(
         Rc::clone(&config),
         size,
-        Box::new(move || log(&config, &repo, limit, rev)),
+        Box::new(move || log(&config, &repo, limit, rev, msg_regex.clone())),
     )
 }

@@ -589,6 +589,7 @@ dependencies = [
  "nom",
  "pretty_assertions",
  "ratatui",
+ "regex",
  "serde",
  "similar",
  "simple-logging",

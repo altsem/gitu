@@ -1,10 +1,7 @@
 use super::{set_prompt, Action, OpTrait};
 use crate::{
     items::TargetData,
-    menu::{
-        arg::{self, Arg, ArgValue},
-        PendingMenu,
-    },
+    menu::PendingMenu,
     screen::NavMode,
     state::{root_menu, State},
     term::Term,
@@ -84,6 +81,7 @@ impl OpTrait for ToggleArg {
         let arg_name = self.0.clone();
         Some(Rc::new(move |state, _term| {
             let mut need_prompt = None;
+            let mut default = None;
 
             let maybe_entry = if let Some(menu) = &mut state.pending_menu {
                 Some(menu.args.entry(arg_name.clone().into()))
@@ -96,9 +94,9 @@ impl OpTrait for ToggleArg {
                     if arg.is_active() {
                         arg.unset();
                     } else {
-                        match arg.value {
-                            ArgValue::Bool(v) => arg.value = ArgValue::Bool(!v),
-                            _ => need_prompt = Some(arg.display),
+                        if arg.expects_value() {
+                            default = arg.default_as_string();
+                            need_prompt = Some(arg.display);
                         }
                     }
                 });
@@ -109,7 +107,7 @@ impl OpTrait for ToggleArg {
                     state,
                     display,
                     parse_and_set_arg,
-                    |_| None,
+                    Box::new(move |_| default.clone()),
                     arg_name.clone(),
                 );
             }
