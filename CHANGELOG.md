@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0] - 2024-05-08
+
+### 🚀 Features
+
+- Add "elsewhere" option to fetch, pull and push menu
+- Syntax highlighting for Elixir
+
 ## [0.19.2] - 2024-04-25
 
 ### 🐛 Bug Fixes

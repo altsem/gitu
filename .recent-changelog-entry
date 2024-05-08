@@ -1,6 +1,7 @@
-## [0.19.2] - 2024-04-25
+## [0.20.0] - 2024-05-08
 
-### 🐛 Bug Fixes
+### 🚀 Features
 
-- Hint/preserve missing newlines in diffs/patches
+- Add "elsewhere" option to fetch, pull and push menu
+- Syntax highlighting for Elixir
 
