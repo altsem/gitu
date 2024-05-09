@@ -8,6 +8,36 @@ fn setup() -> TestContext {
 }
 
 #[test]
+fn log_n_prompt_show() {
+    snapshot!(setup(), "l-n-n");
+}
+
+#[test]
+fn log_n_prompt_valid() {
+    snapshot!(setup(), "l-n-n10<enter>");
+}
+
+#[test]
+fn log_n_prompt_invalid() {
+    snapshot!(setup(), "l-n-nfff<enter>");
+}
+
+#[test]
+fn log_grep_prompt_show() {
+    snapshot!(setup(), "l-F");
+}
+
+#[test]
+fn log_grep_prompt_valid() {
+    snapshot!(setup(), "l-F");
+}
+
+#[test]
+fn log_grep_prompt_invalid() {
+    snapshot!(setup(), "l-Fui<enter>");
+}
+
+#[test]
 fn log_other_prompt() {
     snapshot!(setup(), "lljlo");
 }
