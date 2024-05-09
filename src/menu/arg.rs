@@ -1,58 +1,36 @@
 use crate::Res;
-
-#[derive(Debug, Clone)]
-enum ArgValue {
-    Bool(ArgBool),
-    String(ArgT<String>),
-    U32(ArgT<u32>),
-}
+use dyn_clone::DynClone;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Arg {
     pub arg: &'static str,
     pub display: &'static str,
-    value: ArgValue,
+    value: Box<dyn ArgValue>,
 }
 
 impl Arg {
-    pub const fn new_flag(arg: &'static str, display: &'static str, default: bool) -> Self {
+    pub fn new_flag(arg: &'static str, display: &'static str, default: bool) -> Self {
         Arg {
             arg,
             display,
-            value: ArgValue::Bool(ArgBool { value: default }),
+            value: Box::new(ArgBool { value: default }),
         }
     }
 
-    pub const fn new_u32(
+    pub fn new_arg<T>(
         arg: &'static str,
         display: &'static str,
-        default: Option<u32>,
-        parser: fn(&str) -> Res<u32>,
-    ) -> Self {
+        default: Option<T>,
+        parser: fn(&str) -> Res<T>,
+    ) -> Self
+    where
+        T: Clone + std::fmt::Debug + std::fmt::Display + 'static,
+    {
         Arg {
             arg,
             display,
-            value: ArgValue::U32(ArgT::<u32> {
-                value: default,
-                default,
-                parser,
-            }),
-        }
-    }
-
-    pub const fn new_string(
-        arg: &'static str,
-        display: &'static str,
-        default: Option<String>,
-        parser: fn(&str) -> Res<String>,
-    ) -> Self {
-        Arg {
-            arg,
-            display,
-            value: ArgValue::String(ArgT::<String> {
-                // we can't duplicate the default value here because the function is const
-                // the default value will be set in a call to reset_default
-                value: None,
+            value: Box::new(ArgT::<T> {
+                value: default.clone(),
                 default,
                 parser,
             }),
@@ -60,67 +38,36 @@ impl Arg {
     }
 
     pub fn is_active(&self) -> bool {
-        match &self.value {
-            ArgValue::Bool(x) => x.is_set(),
-            ArgValue::String(x) => x.is_set(),
-            ArgValue::U32(x) => x.is_set(),
-        }
+        self.value.is_set()
     }
 
     pub fn unset(&mut self) -> () {
-        match &mut self.value {
-            ArgValue::Bool(x) => x.unset(),
-            ArgValue::String(x) => x.unset(),
-            ArgValue::U32(x) => x.unset(),
-        }
-    }
-
-    pub fn set(&mut self, value: &str) -> Res<()> {
-        match &mut self.value {
-            ArgValue::Bool(x) => x.set(value),
-            ArgValue::String(x) => x.set(value),
-            ArgValue::U32(x) => x.set(value),
-        }
+        self.value.unset()
     }
 
     pub fn expects_value(&self) -> bool {
-        match &self.value {
-            ArgValue::Bool(x) => x.expects_value(),
-            ArgValue::String(x) => x.expects_value(),
-            ArgValue::U32(x) => x.expects_value(),
-        }
-    }
-
-    pub fn reset_default(&mut self) -> () {
-        match &mut self.value {
-            ArgValue::Bool(x) => x.reset_default(),
-            ArgValue::String(x) => x.reset_default(),
-            ArgValue::U32(x) => x.reset_default(),
-        }
+        self.value.expects_value()
     }
 
     pub fn default_as_string(&self) -> Option<String> {
-        match &self.value {
-            ArgValue::Bool(x) => x.default_as_string(),
-            ArgValue::String(x) => x.default_as_string(),
-            ArgValue::U32(x) => x.default_as_string(),
-        }
+        self.value.default_as_string()
     }
 
-    pub fn get_u32(&self) -> Option<u32> {
-        match &self.value {
-            ArgValue::Bool(_) => None,
-            ArgValue::String(_) => None,
-            ArgValue::U32(x) => x.value.clone(),
-        }
+    pub fn set(&mut self, value: &str) -> Res<()> {
+        self.value.set(value)
     }
 
     pub fn value_as_string(&self) -> Option<String> {
-        match &self.value {
-            ArgValue::Bool(x) => x.value_as_string(),
-            ArgValue::String(x) => x.value_as_string(),
-            ArgValue::U32(x) => x.value_as_string(),
-        }
+        self.value.value_as_string()
+    }
+
+    pub fn value_as<T>(&self) -> Option<&T>
+    where
+        T: Clone + std::fmt::Debug + std::fmt::Display + 'static,
+    {
+        self.value
+            .value_as_any()
+            .and_then(|x| x.downcast_ref::<T>())
     }
 
     pub fn get_cli_token(&self) -> String {
@@ -134,16 +81,16 @@ impl Arg {
 trait ArgValueBase {
     fn is_set(&self) -> bool;
     fn unset(&mut self) -> ();
-    fn reset_default(&mut self) -> ();
     fn expects_value(&self) -> bool;
     fn default_as_string(&self) -> Option<String>;
     fn set(&mut self, value: &str) -> Res<()>;
     fn value_as_string(&self) -> Option<String>;
+    fn value_as_any(&self) -> Option<Box<&dyn std::any::Any>>;
 }
 
-// trait ArgValue: ArgValueBase + core::fmt::Debug + DynClone {}
+trait ArgValue: ArgValueBase + core::fmt::Debug + DynClone {}
 
-// dyn_clone::clone_trait_object!(ArgValue);
+dyn_clone::clone_trait_object!(ArgValue);
 
 #[derive(Debug, Clone)]
 struct ArgBool {
@@ -158,8 +105,6 @@ impl ArgValueBase for ArgBool {
     fn unset(&mut self) -> () {
         self.value = false;
     }
-
-    fn reset_default(&mut self) -> () {}
 
     fn expects_value(&self) -> bool {
         false
@@ -177,9 +122,13 @@ impl ArgValueBase for ArgBool {
     fn value_as_string(&self) -> Option<String> {
         None
     }
+
+    fn value_as_any(&self) -> Option<Box<&dyn std::any::Any>> {
+        Some(Box::new(&self.value))
+    }
 }
 
-// impl ArgValue for ArgBool {}
+impl ArgValue for ArgBool {}
 
 #[derive(Debug, Clone)]
 struct ArgT<T> {
@@ -190,7 +139,7 @@ struct ArgT<T> {
 
 impl<T> ArgValueBase for ArgT<T>
 where
-    T: Clone + std::fmt::Display,
+    T: Clone + std::fmt::Display + 'static,
 {
     fn is_set(&self) -> bool {
         self.value.is_some()
@@ -202,10 +151,6 @@ where
 
     fn expects_value(&self) -> bool {
         true
-    }
-
-    fn reset_default(&mut self) -> () {
-        self.value = self.default.clone();
     }
 
     fn default_as_string(&self) -> Option<String> {
@@ -220,9 +165,13 @@ where
     fn value_as_string(&self) -> Option<String> {
         self.value.clone().map(|x| x.to_string())
     }
+
+    fn value_as_any(&self) -> Option<Box<&dyn std::any::Any>> {
+        Some(Box::new(&self.value))
+    }
 }
 
-// impl<T> ArgValue for ArgT<T> where T: Clone + std::fmt::Debug + std::fmt::Display {}
+impl<T> ArgValue for ArgT<T> where T: Clone + std::fmt::Debug + std::fmt::Display + 'static {}
 
 pub fn positive_number(s: &str) -> Res<u32> {
     let n = s.parse::<u32>().ok().unwrap_or(0);

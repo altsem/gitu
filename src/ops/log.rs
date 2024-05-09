@@ -13,8 +13,8 @@ use std::{ffi::OsString, rc::Rc};
 
 pub(crate) fn get_args() -> Vec<Arg> {
     vec![
-        Arg::new_u32("-n", "Limit number of commits", Some(256), positive_number),
-        Arg::new_string("--grep", "Search messages", None, any_string),
+        Arg::new_arg("-n", "Limit number of commits", Some(256), positive_number),
+        Arg::new_arg("--grep", "Search messages", None, any_string),
         // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
     ]
 }
@@ -61,7 +61,7 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
         .pending_menu
         .as_ref()
         .and_then(|m| m.args.get("-n"))
-        .and_then(Arg::get_u32)
+        .and_then(|arg| arg.value_as::<u32>().copied())
         .unwrap_or(u32::MAX);
 
     let msg_regex = state
