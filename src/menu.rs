@@ -61,10 +61,7 @@ impl PendingMenu {
                 Menu::Stash => ops::stash::get_args(),
             }
             .iter_mut()
-            .map(|arg| {
-                arg.reset_default();
-                (Cow::from(arg.arg), arg.to_owned())
-            })
+            .map(|arg| (Cow::from(arg.arg), arg.to_owned()))
             .collect(),
         }
     }
