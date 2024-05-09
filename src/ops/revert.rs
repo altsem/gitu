@@ -5,12 +5,14 @@ use derive_more::*;
 
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 
-pub(crate) const ARGS: &[Arg] = &[
-    // -m Replay merge relative to parent (--mainline=)
-    Arg::new_flag("--edit", "Edit commit message", true),
-    // =s Strategy (--strategy=)
-    Arg::new_flag("--signoff", "Add Signed-off-by lines", false),
-];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![
+        // -m Replay merge relative to parent (--mainline=)
+        Arg::new_flag("--edit", "Edit commit message", true),
+        // =s Strategy (--strategy=)
+        Arg::new_flag("--signoff", "Add Signed-off-by lines", false),
+    ]
+}
 
 #[derive(Display)]
 #[display(fmt = "Revert abort")]

@@ -3,12 +3,14 @@ use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[
-    Arg::new_flag("--force-with-lease", "Force with lease", false),
-    Arg::new_flag("--force", "Force", false),
-    Arg::new_flag("--no-verify", "Disable hooks", false),
-    Arg::new_flag("--dry-run", "Dry run", false),
-];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![
+        Arg::new_flag("--force-with-lease", "Force with lease", false),
+        Arg::new_flag("--force", "Force", false),
+        Arg::new_flag("--no-verify", "Disable hooks", false),
+        Arg::new_flag("--dry-run", "Dry run", false),
+    ]
+}
 
 #[derive(Display)]
 #[display(fmt = "Push")]

@@ -47,24 +47,23 @@ impl PendingMenu {
         Self {
             menu,
             args: match menu {
-                Menu::Root => &[],
-                Menu::Branch => ops::checkout::ARGS,
-                Menu::Commit => ops::commit::ARGS,
-                Menu::Fetch => ops::fetch::ARGS,
-                Menu::Help => &[],
-                Menu::Log => ops::log::ARGS,
-                Menu::Pull => ops::pull::ARGS,
-                Menu::Push => ops::push::ARGS,
-                Menu::Rebase => ops::rebase::ARGS,
-                Menu::Reset => ops::reset::ARGS,
-                Menu::Revert => ops::revert::ARGS,
-                Menu::Stash => ops::stash::ARGS,
+                Menu::Root => vec![],
+                Menu::Branch => ops::checkout::get_args(),
+                Menu::Commit => ops::commit::get_args(),
+                Menu::Fetch => ops::fetch::get_args(),
+                Menu::Help => vec![],
+                Menu::Log => ops::log::get_args(),
+                Menu::Pull => ops::pull::get_args(),
+                Menu::Push => ops::push::get_args(),
+                Menu::Rebase => ops::rebase::get_args(),
+                Menu::Reset => ops::reset::get_args(),
+                Menu::Revert => ops::revert::get_args(),
+                Menu::Stash => ops::stash::get_args(),
             }
-            .iter()
+            .iter_mut()
             .map(|arg| {
-                let mut arg = arg.clone();
                 arg.reset_default();
-                (Cow::from(arg.arg), arg)
+                (Cow::from(arg.arg), arg.to_owned())
             })
             .collect(),
         }
