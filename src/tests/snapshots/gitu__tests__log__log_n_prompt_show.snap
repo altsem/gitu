@@ -1,0 +1,25 @@
+---
+source: src/tests/log.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 2 commit.                             |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main add this-should-not-be-visible                                    |
+ _______ add this-should-be-at-the-top                                          |
+ _______ origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+? Limit number of commits (default 256): ›                                      |
+────────────────────────────────────────────────────────────────────────────────|
+Log                     Arguments                                               |
+l Log current           -F Search messages (--grep)                             |
+o Log other             -n Limit number of commits (-n)                         |
+q/<esc> Quit/Close                                                              |
+styles_hash: 53b6b1f36c36ef42

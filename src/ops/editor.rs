@@ -97,6 +97,8 @@ impl OpTrait for ToggleArg {
                         if arg.expects_value() {
                             default = arg.default_as_string();
                             need_prompt = Some(arg.display);
+                        } else {
+                            arg.set("").expect("Should succeed");
                         }
                     }
                 });
