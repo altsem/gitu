@@ -3,7 +3,9 @@ use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[Arg::new_flag("--rebase", "Rebase local commits", false)];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![Arg::new_flag("--rebase", "Rebase local commits", false)]
+}
 
 #[derive(Display)]
 #[display(fmt = "Pull")]

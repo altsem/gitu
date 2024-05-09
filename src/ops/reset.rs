@@ -3,7 +3,9 @@ use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action,
 use derive_more::Display;
 use std::{ffi::OsString, process::Command};
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![]
+}
 
 #[derive(Display)]
 #[display(fmt = "Reset soft")]

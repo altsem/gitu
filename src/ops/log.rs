@@ -11,11 +11,13 @@ use derive_more::Display;
 use git2::Oid;
 use std::{ffi::OsString, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[
-    Arg::new_u32("-n", "Limit number of commits", Some(256), positive_number),
-    Arg::new_string("--grep", "Search messages", None, any_string),
-    // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
-];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![
+        Arg::new_u32("-n", "Limit number of commits", Some(256), positive_number),
+        Arg::new_string("--grep", "Search messages", None, any_string),
+        // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
+    ]
+}
 
 #[derive(Display)]
 #[display(fmt = "Log current")]
