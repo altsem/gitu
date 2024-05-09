@@ -7,20 +7,22 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) const ARGS: &[Arg] = &[
-    Arg::new_flag("--all", "Stage all modified and deleted files", false),
-    Arg::new_flag("--allow-empty", "Allow empty commit", false),
-    Arg::new_flag("--verbose", "Show diff of changes to be committed", false),
-    Arg::new_flag("--no-verify", "Disable hooks", false),
-    Arg::new_flag(
-        "--reset-author",
-        "Claim authorship and reset author date",
-        false,
-    ),
-    // TODO -A Override the author (--author=)
-    Arg::new_flag("--signoff", "Add Signed-off-by line", false),
-    // TODO -C Reuse commit message (--reuse-message=)
-];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![
+        Arg::new_flag("--all", "Stage all modified and deleted files", false),
+        Arg::new_flag("--allow-empty", "Allow empty commit", false),
+        Arg::new_flag("--verbose", "Show diff of changes to be committed", false),
+        Arg::new_flag("--no-verify", "Disable hooks", false),
+        Arg::new_flag(
+            "--reset-author",
+            "Claim authorship and reset author date",
+            false,
+        ),
+        // TODO -A Override the author (--author=)
+        Arg::new_flag("--signoff", "Add Signed-off-by line", false),
+        // TODO -C Reuse commit message (--reuse-message=)
+    ]
+}
 
 #[derive(Display)]
 #[display(fmt = "Commit")]

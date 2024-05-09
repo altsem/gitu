@@ -4,10 +4,12 @@ use derive_more::Display;
 use git2::{Repository, Status, StatusOptions};
 use std::{ffi::OsString, process::Command, rc::Rc};
 
-pub(crate) const ARGS: &[Arg] = &[
-    Arg::new_flag("--include-untracked", "Also save untracked files", true),
-    Arg::new_flag("--all", "Also save untracked and ignored files", false),
-];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![
+        Arg::new_flag("--include-untracked", "Also save untracked files", true),
+        Arg::new_flag("--all", "Also save untracked and ignored files", false),
+    ]
+}
 
 #[derive(Display)]
 #[display(fmt = "Stash")]

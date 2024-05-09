@@ -4,7 +4,9 @@ use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 use tui_prompts::State as _;
 
-pub(crate) const ARGS: &[Arg] = &[];
+pub(crate) fn get_args() -> Vec<Arg> {
+    vec![]
+}
 
 #[derive(Display)]
 #[display(fmt = "Checkout branch/revision")]
