@@ -1,5 +1,6 @@
 use crate::Res;
 use dyn_clone::DynClone;
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Arg {
@@ -61,13 +62,13 @@ impl Arg {
         self.value.value_as_string()
     }
 
-    pub fn value_as<T>(&self) -> Option<&T>
+    pub fn value_as<T>(&self) -> Option<T>
     where
         T: Clone + std::fmt::Debug + std::fmt::Display + 'static,
     {
         self.value
             .value_as_any()
-            .and_then(|x| x.downcast_ref::<T>())
+            .and_then(|x| x.downcast_ref::<T>().cloned())
     }
 
     pub fn get_cli_token(&self) -> String {
@@ -85,7 +86,7 @@ trait ArgValueBase {
     fn default_as_string(&self) -> Option<String>;
     fn set(&mut self, value: &str) -> Res<()>;
     fn value_as_string(&self) -> Option<String>;
-    fn value_as_any(&self) -> Option<Box<&dyn std::any::Any>>;
+    fn value_as_any(&self) -> Option<Box<dyn std::any::Any>>;
 }
 
 trait ArgValue: ArgValueBase + core::fmt::Debug + DynClone {}
@@ -123,8 +124,8 @@ impl ArgValueBase for ArgBool {
         None
     }
 
-    fn value_as_any(&self) -> Option<Box<&dyn std::any::Any>> {
-        Some(Box::new(&self.value))
+    fn value_as_any(&self) -> Option<Box<dyn std::any::Any>> {
+        Some(Box::new(self.value))
     }
 }
 
@@ -166,8 +167,10 @@ where
         self.value.clone().map(|x| x.to_string())
     }
 
-    fn value_as_any(&self) -> Option<Box<&dyn std::any::Any>> {
-        Some(Box::new(&self.value))
+    fn value_as_any(&self) -> Option<Box<dyn std::any::Any>> {
+        self.value
+            .as_ref()
+            .map(|x| Box::new(x.clone()) as Box<dyn std::any::Any>)
     }
 }
 
@@ -182,6 +185,6 @@ pub fn positive_number(s: &str) -> Res<u32> {
     Err("Value must be a number greater than 0".into())
 }
 
-pub fn any_string(s: &str) -> Res<String> {
-    Ok(s.to_string())
+pub fn any_regex(s: &str) -> Res<Regex> {
+    Ok(Regex::try_from(s)?)
 }

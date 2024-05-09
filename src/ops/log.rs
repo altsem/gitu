@@ -1,7 +1,7 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{
     items::TargetData,
-    menu::arg::{any_string, positive_number, Arg},
+    menu::arg::{any_regex, positive_number, Arg},
     screen,
     state::State,
     term::Term,
@@ -9,12 +9,13 @@ use crate::{
 };
 use derive_more::Display;
 use git2::Oid;
+use regex::Regex;
 use std::{ffi::OsString, rc::Rc};
 
 pub(crate) fn get_args() -> Vec<Arg> {
     vec![
         Arg::new_arg("-n", "Limit number of commits", Some(256), positive_number),
-        Arg::new_arg("--grep", "Search messages", None, any_string),
+        Arg::new_arg("--grep", "Search messages", None, any_regex),
         // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
     ]
 }
@@ -61,14 +62,15 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
         .pending_menu
         .as_ref()
         .and_then(|m| m.args.get("-n"))
-        .and_then(|arg| arg.value_as::<u32>().copied())
+        .and_then(|arg| arg.value_as::<u32>())
         .unwrap_or(u32::MAX);
 
-    let msg_regex = state
+    let msg_regex_menu = state
         .pending_menu
         .as_ref()
-        .and_then(|m| m.args.get("--grep"))
-        .and_then(Arg::value_as_string);
+        .and_then(|m| m.args.get("--grep"));
+
+    let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>());
 
     state.screens.push(
         screen::log::create(
