@@ -9,6 +9,7 @@ use git2::Repository;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
+use regex::Regex;
 use std::borrow::Cow;
 use std::iter;
 use std::path::PathBuf;
@@ -157,7 +158,7 @@ pub(crate) fn log(
     repo: &Repository,
     limit: usize,
     rev: Option<Oid>,
-    msg_regex: Option<String>,
+    msg_regex: &Option<Regex>,
 ) -> Res<Vec<Item>> {
     let style = &config.style;
     let mut revwalk = repo.revwalk()?;
@@ -193,8 +194,6 @@ pub(crate) fn log(
         )
         .collect::<Vec<(Commit, Span)>>();
 
-    let re = msg_regex.map(|re| regex::Regex::new(&re)).transpose()?;
-
     Ok(revwalk
         .map(|oid_result| -> Res<Option<Item>> {
             let oid = oid_result?;
@@ -214,7 +213,7 @@ pub(crate) fn log(
             )
             .collect::<Vec<_>>();
 
-            if let Some(re) = &re {
+            if let Some(re) = &msg_regex {
                 if !re.is_match(commit.message().unwrap_or("")) {
                     return Ok(None);
                 }
