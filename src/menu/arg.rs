@@ -41,7 +41,7 @@ impl Arg {
         self.value.is_set()
     }
 
-    pub fn unset(&mut self) -> () {
+    pub fn unset(&mut self) {
         self.value.unset()
     }
 
@@ -78,7 +78,7 @@ impl Arg {
 
 trait ArgValue: std::fmt::Debug {
     fn is_set(&self) -> bool;
-    fn unset(&mut self) -> ();
+    fn unset(&mut self);
     fn expects_value(&self) -> bool;
     fn default_as_string(&self) -> Option<String>;
     fn set(&mut self, value: &str) -> Res<()>;
@@ -96,7 +96,7 @@ impl ArgValue for ArgBool {
         self.value
     }
 
-    fn unset(&mut self) -> () {
+    fn unset(&mut self) {
         self.value = false;
     }
 
@@ -137,7 +137,7 @@ where
         self.value.is_some()
     }
 
-    fn unset(&mut self) -> () {
+    fn unset(&mut self) {
         self.value = None;
     }
 
@@ -150,7 +150,7 @@ where
     }
 
     fn set(&mut self, value: &str) -> Res<()> {
-        self.value = Some((self.parser)(&value)?);
+        self.value = Some((self.parser)(value)?);
         Ok(())
     }
 
