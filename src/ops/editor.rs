@@ -93,13 +93,11 @@ impl OpTrait for ToggleArg {
                 entry.and_modify(|arg| {
                     if arg.is_active() {
                         arg.unset();
+                    } else if arg.expects_value() {
+                        default = arg.default_as_string();
+                        need_prompt = Some(arg.display);
                     } else {
-                        if arg.expects_value() {
-                            default = arg.default_as_string();
-                            need_prompt = Some(arg.display);
-                        } else {
-                            arg.set("").expect("Should succeed");
-                        }
+                        arg.set("").expect("Should succeed");
                     }
                 });
             }
