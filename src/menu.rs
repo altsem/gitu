@@ -60,8 +60,8 @@ impl PendingMenu {
                 Menu::Revert => ops::revert::get_args(),
                 Menu::Stash => ops::stash::get_args(),
             }
-            .iter_mut()
-            .map(|arg| (Cow::from(arg.arg), arg.to_owned()))
+            .into_iter()
+            .map(|arg| (Cow::from(arg.arg), arg))
             .collect(),
         }
     }
