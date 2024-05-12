@@ -158,7 +158,7 @@ pub(crate) fn log(
     repo: &Repository,
     limit: usize,
     rev: Option<Oid>,
-    msg_regex: &Option<Regex>,
+    msg_regex: Option<Regex>,
 ) -> Res<Vec<Item>> {
     let style = &config.style;
     let mut revwalk = repo.revwalk()?;

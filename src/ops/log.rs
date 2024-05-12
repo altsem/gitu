@@ -14,7 +14,12 @@ use std::{ffi::OsString, rc::Rc};
 
 pub(crate) fn get_args() -> Vec<Arg> {
     vec![
-        Arg::new_arg("-n", "Limit number of commits", Some(256), positive_number),
+        Arg::new_arg(
+            "-n",
+            "Limit number of commits",
+            Some(|| 256),
+            positive_number,
+        ),
         Arg::new_arg("--grep", "Search messages", None, any_regex),
         // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
     ]
@@ -58,19 +63,19 @@ fn log_other(state: &mut State, _term: &mut Term, _args: &[OsString], result: &s
 fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
     state.screens.drain(1..);
     let size = state.screens.last().unwrap().size;
-    let limit = state
+    let limit = *state
         .pending_menu
         .as_ref()
         .and_then(|m| m.args.get("-n"))
         .and_then(|arg| arg.value_as::<u32>())
-        .unwrap_or(u32::MAX);
+        .unwrap_or(&u32::MAX);
 
     let msg_regex_menu = state
         .pending_menu
         .as_ref()
         .and_then(|m| m.args.get("--grep"));
 
-    let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>());
+    let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>().cloned());
 
     state.screens.push(
         screen::log::create(

@@ -1,8 +1,7 @@
 use crate::Res;
-use dyn_clone::DynClone;
 use regex::Regex;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct Arg {
     pub arg: &'static str,
     pub display: &'static str,
@@ -21,17 +20,17 @@ impl Arg {
     pub fn new_arg<T>(
         arg: &'static str,
         display: &'static str,
-        default: Option<T>,
+        default: Option<fn() -> T>,
         parser: fn(&str) -> Res<T>,
     ) -> Self
     where
-        T: Clone + std::fmt::Debug + std::fmt::Display + 'static,
+        T: std::fmt::Debug + std::fmt::Display + 'static,
     {
         Arg {
             arg,
             display,
             value: Box::new(ArgT::<T> {
-                value: default.clone(),
+                value: default.map(|fun| fun()),
                 default,
                 parser,
             }),
@@ -62,13 +61,11 @@ impl Arg {
         self.value.value_as_string()
     }
 
-    pub fn value_as<T>(&self) -> Option<T>
+    pub fn value_as<T>(&self) -> Option<&T>
     where
-        T: Clone + std::fmt::Debug + std::fmt::Display + 'static,
+        T: std::fmt::Debug + std::fmt::Display + 'static,
     {
-        self.value
-            .value_as_any()
-            .and_then(|x| x.downcast_ref::<T>().cloned())
+        self.value.value_as_any().and_then(|x| x.downcast_ref())
     }
 
     pub fn get_cli_token(&self) -> String {
@@ -79,26 +76,22 @@ impl Arg {
     }
 }
 
-trait ArgValueBase {
+trait ArgValue: std::fmt::Debug {
     fn is_set(&self) -> bool;
     fn unset(&mut self) -> ();
     fn expects_value(&self) -> bool;
     fn default_as_string(&self) -> Option<String>;
     fn set(&mut self, value: &str) -> Res<()>;
     fn value_as_string(&self) -> Option<String>;
-    fn value_as_any(&self) -> Option<Box<dyn std::any::Any>>;
+    fn value_as_any(&self) -> Option<&dyn std::any::Any>;
 }
 
-trait ArgValue: ArgValueBase + core::fmt::Debug + DynClone {}
-
-dyn_clone::clone_trait_object!(ArgValue);
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct ArgBool {
     value: bool,
 }
 
-impl ArgValueBase for ArgBool {
+impl ArgValue for ArgBool {
     fn is_set(&self) -> bool {
         self.value
     }
@@ -124,23 +117,21 @@ impl ArgValueBase for ArgBool {
         None
     }
 
-    fn value_as_any(&self) -> Option<Box<dyn std::any::Any>> {
-        Some(Box::new(self.value))
+    fn value_as_any(&self) -> Option<&dyn std::any::Any> {
+        Some(&self.value)
     }
 }
 
-impl ArgValue for ArgBool {}
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct ArgT<T> {
     value: Option<T>,
-    default: Option<T>,
+    default: Option<fn() -> T>,
     parser: fn(&str) -> Res<T>,
 }
 
-impl<T> ArgValueBase for ArgT<T>
+impl<T: std::fmt::Debug> ArgValue for ArgT<T>
 where
-    T: Clone + std::fmt::Display + 'static,
+    T: std::fmt::Display + 'static,
 {
     fn is_set(&self) -> bool {
         self.value.is_some()
@@ -155,7 +146,7 @@ where
     }
 
     fn default_as_string(&self) -> Option<String> {
-        self.default.clone().map(|x| x.to_string())
+        self.default.map(|x| x().to_string())
     }
 
     fn set(&mut self, value: &str) -> Res<()> {
@@ -164,17 +155,13 @@ where
     }
 
     fn value_as_string(&self) -> Option<String> {
-        self.value.clone().map(|x| x.to_string())
+        self.value.as_ref().map(|x| x.to_string())
     }
 
-    fn value_as_any(&self) -> Option<Box<dyn std::any::Any>> {
-        self.value
-            .as_ref()
-            .map(|x| Box::new(x.clone()) as Box<dyn std::any::Any>)
+    fn value_as_any(&self) -> Option<&dyn std::any::Any> {
+        Some(&self.value)
     }
 }
-
-impl<T> ArgValue for ArgT<T> where T: Clone + std::fmt::Debug + std::fmt::Display + 'static {}
 
 pub fn positive_number(s: &str) -> Res<u32> {
     let n = s.parse::<u32>().ok().unwrap_or(0);
