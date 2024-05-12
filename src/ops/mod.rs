@@ -244,11 +244,13 @@ fn invoke_default(
     context(state, term, args, value)
 }
 
+type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
+
 pub(crate) fn set_prompt<T: 'static>(
     state: &mut State,
     prompt: &'static str,
     callback: fn(&mut State, &mut Term, &[OsString], &str, &T) -> Res<()>,
-    default_fn: Box<dyn Fn(&State) -> Option<String>>,
+    default_fn: DefaultFn,
     context: T,
 ) {
     let prompt_text = if let Some(default) = default_fn(state) {
