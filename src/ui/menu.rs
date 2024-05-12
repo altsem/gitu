@@ -113,7 +113,7 @@ impl<'a> MenuWidget<'a> {
                 Span::raw(arg.display),
                 Span::raw(" ("),
                 Span::styled(
-                    format!("{}", arg.get_cli_token()),
+                    arg.get_cli_token().to_string(),
                     if arg.is_active() {
                         Style::from(&style.active_arg)
                     } else {
