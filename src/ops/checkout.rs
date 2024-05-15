@@ -4,7 +4,7 @@ use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 use tui_prompts::State as _;
 
-pub(crate) fn get_args() -> Vec<Arg> {
+pub(crate) fn init_args() -> Vec<Arg> {
     vec![]
 }
 

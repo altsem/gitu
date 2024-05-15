@@ -3,7 +3,7 @@ use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
-pub(crate) fn get_args() -> Vec<Arg> {
+pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         Arg::new_flag("--force-with-lease", "Force with lease", false),
         Arg::new_flag("--force", "Force", false),
