@@ -2,6 +2,7 @@ use std::fs;
 
 #[macro_use]
 mod helpers;
+mod arg;
 mod discard;
 mod editor;
 mod fetch;

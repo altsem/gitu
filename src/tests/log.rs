@@ -23,6 +23,11 @@ fn log_n_prompt_invalid() {
 }
 
 #[test]
+fn log_n_limits_commit() {
+    snapshot!(setup(), "l-n-n1<enter>l");
+}
+
+#[test]
 fn log_grep_prompt_show() {
     snapshot!(setup(), "l-F");
 }
@@ -35,6 +40,11 @@ fn log_grep_prompt_valid() {
 #[test]
 fn log_grep_prompt_invalid() {
     snapshot!(setup(), "l-Fui<enter>");
+}
+
+#[test]
+fn log_grep_filter() {
+    snapshot!(setup(), "l-Fat-the-top<enter>l");
 }
 
 #[test]
