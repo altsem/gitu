@@ -48,17 +48,17 @@ impl PendingMenu {
             menu,
             args: match menu {
                 Menu::Root => vec![],
-                Menu::Branch => ops::checkout::get_args(),
-                Menu::Commit => ops::commit::get_args(),
-                Menu::Fetch => ops::fetch::get_args(),
+                Menu::Branch => ops::checkout::init_args(),
+                Menu::Commit => ops::commit::init_args(),
+                Menu::Fetch => ops::fetch::init_args(),
                 Menu::Help => vec![],
-                Menu::Log => ops::log::get_args(),
-                Menu::Pull => ops::pull::get_args(),
-                Menu::Push => ops::push::get_args(),
-                Menu::Rebase => ops::rebase::get_args(),
-                Menu::Reset => ops::reset::get_args(),
-                Menu::Revert => ops::revert::get_args(),
-                Menu::Stash => ops::stash::get_args(),
+                Menu::Log => ops::log::init_args(),
+                Menu::Pull => ops::pull::init_args(),
+                Menu::Push => ops::push::init_args(),
+                Menu::Rebase => ops::rebase::init_args(),
+                Menu::Reset => ops::reset::init_args(),
+                Menu::Revert => ops::revert::init_args(),
+                Menu::Stash => ops::stash::init_args(),
             }
             .into_iter()
             .map(|arg| (Cow::from(arg.arg), arg))
