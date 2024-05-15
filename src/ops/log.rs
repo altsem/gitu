@@ -12,7 +12,7 @@ use git2::Oid;
 use regex::Regex;
 use std::{ffi::OsString, rc::Rc};
 
-pub(crate) fn get_args() -> Vec<Arg> {
+pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         Arg::new_arg(
             "-n",

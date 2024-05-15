@@ -7,7 +7,7 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) fn get_args() -> Vec<Arg> {
+pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         Arg::new_flag("--keep-empty", "Keep empty commits", false),
         Arg::new_flag("--preserve-merges", "Preserve merges", false),

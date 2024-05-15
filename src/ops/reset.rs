@@ -3,7 +3,7 @@ use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action,
 use derive_more::Display;
 use std::{ffi::OsString, process::Command};
 
-pub(crate) fn get_args() -> Vec<Arg> {
+pub(crate) fn init_args() -> Vec<Arg> {
     vec![]
 }
 

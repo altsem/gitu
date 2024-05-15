@@ -7,7 +7,7 @@ use std::{
     rc::Rc,
 };
 
-pub(crate) fn get_args() -> Vec<Arg> {
+pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         Arg::new_flag("--all", "Stage all modified and deleted files", false),
         Arg::new_flag("--allow-empty", "Allow empty commit", false),
