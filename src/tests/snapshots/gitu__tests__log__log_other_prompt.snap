@@ -2,10 +2,10 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
- _______ main add this-should-not-be-visible                                    |
-▌_______ add this-should-be-at-the-top                                          |
+ _______ main add first commit                                                  |
+▌_______ add second commit                                                      |
+ _______ add third commit                                                       |
  _______ origin/main add initial-file                                           |
-                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Log rev (default ________________________________________): ›                 |
-styles_hash: 6c7f54757c817537
+styles_hash: b9fd13286ebd29fe
