@@ -2,49 +2,55 @@ use super::*;
 
 fn setup() -> TestContext {
     let ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "this-should-be-at-the-top", "");
-    commit(ctx.dir.path(), "this-should-not-be-visible", "");
+    commit(ctx.dir.path(), "third commit", "");
+    commit(ctx.dir.path(), "second commit", "");
+    commit(ctx.dir.path(), "first commit", "");
     ctx
 }
 
 #[test]
-fn log_n_prompt_show() {
+fn limit_prompt() {
     snapshot!(setup(), "l-n-n");
 }
 
 #[test]
-fn log_n_prompt_valid() {
+fn limit_set_10() {
     snapshot!(setup(), "l-n-n10<enter>");
 }
 
 #[test]
-fn log_n_prompt_invalid() {
+fn limit_invalid() {
     snapshot!(setup(), "l-n-nfff<enter>");
 }
 
 #[test]
-fn log_n_limits_commit() {
-    snapshot!(setup(), "l-n-n1<enter>l");
+fn limit_2_commits() {
+    snapshot!(setup(), "l-n-n2<enter>l");
 }
 
 #[test]
-fn log_grep_prompt_show() {
+fn limit_2_commits_other() {
+    snapshot!(setup(), "l-n-n2<enter>l");
+}
+
+#[test]
+fn grep_prompt() {
     snapshot!(setup(), "l-F");
 }
 
 #[test]
-fn log_grep_prompt_valid() {
-    snapshot!(setup(), "l-F");
+fn grep_set_example() {
+    snapshot!(setup(), "l-Fexample<enter>");
 }
 
 #[test]
-fn log_grep_prompt_invalid() {
-    snapshot!(setup(), "l-Fui<enter>");
+fn grep_second() {
+    snapshot!(setup(), "l-Fsecond<enter>l");
 }
 
 #[test]
-fn log_grep_filter() {
-    snapshot!(setup(), "l-Fat-the-top<enter>l");
+fn grep_second_other() {
+    snapshot!(setup(), "l-Fsecond<enter>omain<enter>");
 }
 
 #[test]
