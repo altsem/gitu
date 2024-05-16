@@ -17,9 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-! Failed due to: InvalidSpec                                                    |
-styles_hash: c8e03e7d76d808a7
+Log                     Arguments                                               |
+l Log current           -F Search messages (--grep)                             |
+o Log other             -n Limit number of commits (-n=10)                      |
+q/<esc> Quit/Close                                                              |
+styles_hash: 45acb12558b99a70

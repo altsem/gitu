@@ -2,14 +2,8 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 3 commit.                             |
-                                                                                |
- Recent commits                                                                 |
- _______ main add first commit                                                  |
+▌_______ main add first commit                                                  |
  _______ add second commit                                                      |
- _______ add third commit                                                       |
- _______ origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-! Failed due to: InvalidSpec                                                    |
-styles_hash: c8e03e7d76d808a7
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: a908290abddd40c9

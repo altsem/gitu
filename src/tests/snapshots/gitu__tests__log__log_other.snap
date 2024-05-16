@@ -2,7 +2,8 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-▌_______ add this-should-be-at-the-top                                          |
+▌_______ add second commit                                                      |
+ _______ add third commit                                                       |
  _______ origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
@@ -21,5 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-styles_hash: f31bd6c51e6ca60e
+styles_hash: 99c011aa1629f1d
