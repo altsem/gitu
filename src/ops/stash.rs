@@ -106,7 +106,7 @@ fn stash_worktree(state: &mut State, term: &mut Term, args: &[OsString], input: 
     cmd.args(["stash", "push"]);
     cmd.args(args);
     if !input.is_empty() {
-        cmd.args(["--message", &input]);
+        cmd.args(["--message", input]);
     }
     state.run_cmd(term, &[], cmd)?;
 
