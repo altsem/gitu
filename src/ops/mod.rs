@@ -5,12 +5,7 @@ use crate::{
     cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State,
     term::Term, Res,
 };
-use std::{
-    ffi::{OsStr, OsString},
-    fmt::Display,
-    process::Command,
-    rc::Rc,
-};
+use std::{ffi::OsString, fmt::Display, rc::Rc};
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
@@ -183,14 +178,6 @@ impl Display for Menu {
             Menu::Stash => "Stash",
         })
     }
-}
-
-pub(crate) fn cmd(input: Vec<u8>, command: fn() -> Command) -> Action {
-    Rc::new(move |state, term| state.run_cmd(term, &input, command()))
-}
-
-pub(crate) fn cmd_arg(command: fn(&OsStr) -> Command, arg: OsString) -> Action {
-    Rc::new(move |state, term| state.run_cmd(term, &[], command(&arg)))
 }
 
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {

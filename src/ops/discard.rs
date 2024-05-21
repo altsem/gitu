@@ -1,7 +1,7 @@
-use super::{cmd, cmd_arg, Action, OpTrait};
-use crate::items::TargetData;
+use super::{Action, OpTrait};
+use crate::{git::diff::Hunk, items::TargetData};
 use derive_more::Display;
-use std::{ffi::OsStr, process::Command};
+use std::{path::PathBuf, process::Command, rc::Rc};
 
 #[derive(Display)]
 #[display(fmt = "Discard")]
@@ -9,15 +9,13 @@ pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target.cloned() {
-            Some(TargetData::Branch(r)) => cmd_arg(discard_branch, r.into()),
-            Some(TargetData::File(f)) => cmd_arg(clean_file_cmd, f.into()),
+            Some(TargetData::Branch(branch)) => discard_branch(branch),
+            Some(TargetData::File(file)) => clean_file(file),
             Some(TargetData::Delta(d)) => match d.status {
-                git2::Delta::Added => cmd_arg(remove_file_cmd, d.new_file.into()),
-                _ => cmd_arg(checkout_file_cmd, d.old_file.into()),
+                git2::Delta::Added => remove_file(d.new_file),
+                _ => checkout_file(d.old_file),
             },
-            Some(TargetData::Hunk(h)) => {
-                cmd(h.format_patch().into_bytes(), discard_unstaged_patch_cmd)
-            }
+            Some(TargetData::Hunk(h)) => discard_unstaged_patch(h),
             _ => return None,
         };
 
@@ -29,36 +27,51 @@ impl OpTrait for Discard {
     }
 }
 
-fn discard_unstaged_patch_cmd() -> Command {
-    let mut cmd = Command::new("git");
-    cmd.args(["apply", "--reverse"]);
-    cmd
+fn discard_branch(branch: String) -> Action {
+    Rc::new(move |state, term| {
+        let mut cmd = Command::new("git");
+        cmd.args(["branch", "-d"]);
+        cmd.arg(&branch);
+
+        state.run_cmd(term, &[], cmd)
+    })
 }
 
-fn clean_file_cmd(file: &OsStr) -> Command {
-    let mut cmd = Command::new("git");
-    cmd.args(["clean", "--force"]);
-    cmd.arg(file);
-    cmd
+fn clean_file(file: PathBuf) -> Action {
+    Rc::new(move |state, term| {
+        let mut cmd = Command::new("git");
+        cmd.args(["clean", "--force"]);
+        cmd.arg(&file);
+
+        state.run_cmd(term, &[], cmd)
+    })
 }
 
-fn remove_file_cmd(file: &OsStr) -> Command {
-    let mut cmd = Command::new("git");
-    cmd.args(["rm", "--force"]);
-    cmd.arg(file);
-    cmd
+fn remove_file(file: PathBuf) -> Action {
+    Rc::new(move |state, term| {
+        let mut cmd = Command::new("git");
+        cmd.args(["rm", "--force"]);
+        cmd.arg(&file);
+
+        state.run_cmd(term, &[], cmd)
+    })
 }
 
-fn checkout_file_cmd(file: &OsStr) -> Command {
-    let mut cmd = Command::new("git");
-    cmd.args(["checkout", "HEAD", "--"]);
-    cmd.arg(file);
-    cmd
+fn checkout_file(file: PathBuf) -> Action {
+    Rc::new(move |state, term| {
+        let mut cmd = Command::new("git");
+        cmd.args(["checkout", "HEAD", "--"]);
+        cmd.arg(&file);
+
+        state.run_cmd(term, &[], cmd)
+    })
 }
 
-fn discard_branch(branch: &OsStr) -> Command {
-    let mut cmd = Command::new("git");
-    cmd.args(["branch", "-d"]);
-    cmd.arg(branch);
-    cmd
+fn discard_unstaged_patch(h: Rc<Hunk>) -> Action {
+    Rc::new(move |state, term| {
+        let mut cmd = Command::new("git");
+        cmd.args(["apply", "--reverse"]);
+
+        state.run_cmd(term, &h.format_patch().into_bytes(), cmd)
+    })
 }
