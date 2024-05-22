@@ -1,4 +1,4 @@
-use std::{ffi::OsString, process::Command, rc::Rc};
+use std::{process::Command, rc::Rc};
 
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::*;
@@ -22,6 +22,8 @@ impl OpTrait for RevertAbort {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--abort"]);
+
+            state.close_menu();
             state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -36,6 +38,8 @@ impl OpTrait for RevertContinue {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--continue"]);
+
+            state.close_menu();
             state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -55,10 +59,12 @@ impl OpTrait for RevertCommit {
     }
 }
 
-fn revert_commit(state: &mut State, term: &mut Term, args: &[OsString], input: &str) -> Res<()> {
+fn revert_commit(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["revert"]);
-    cmd.args(args);
+    cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
+
+    state.close_menu();
     state.run_cmd_interactive(term, cmd)
 }

@@ -10,7 +10,7 @@ use crate::{
 use derive_more::Display;
 use git2::Oid;
 use regex::Regex;
-use std::{ffi::OsString, rc::Rc};
+use std::rc::Rc;
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![
@@ -50,11 +50,17 @@ impl OpTrait for LogOther {
     }
 }
 
-fn log_other(state: &mut State, _term: &mut Term, _args: &[OsString], result: &str) -> Res<()> {
-    let oid = match state.repo.revparse_single(result) {
+fn log_other(state: &mut State, _term: &mut Term, result: &str) -> Res<()> {
+    let oid_result = match state.repo.revparse_single(result) {
         Ok(rev) => Ok(rev.id()),
         Err(err) => Err(format!("Failed due to: {:?}", err.code())),
-    }?;
+    };
+
+    if oid_result.is_err() {
+        state.close_menu();
+    }
+
+    let oid = oid_result?;
 
     goto_log_screen(state, Some(oid));
     Ok(())
@@ -76,6 +82,8 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
         .and_then(|m| m.args.get("--grep"));
 
     let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>().cloned());
+
+    state.close_menu();
 
     state.screens.push(
         screen::log::create(

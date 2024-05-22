@@ -34,6 +34,7 @@ impl OpTrait for Commit {
             cmd.args(["commit"]);
             cmd.args(state.pending_menu.as_ref().unwrap().args());
 
+            state.close_menu();
             state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -50,6 +51,7 @@ impl OpTrait for CommitAmend {
             cmd.args(["commit", "--amend"]);
             cmd.args(state.pending_menu.as_ref().unwrap().args());
 
+            state.close_menu();
             state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -67,6 +69,8 @@ impl OpTrait for CommitFixup {
 
                 Some(Rc::new(move |state: &mut State, term: &mut Term| {
                     let args = state.pending_menu.as_ref().unwrap().args();
+
+                    state.close_menu();
                     state.run_cmd_interactive(term, commit_fixup_cmd(&args, &rev))
                 }))
             }

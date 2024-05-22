@@ -33,6 +33,7 @@ fn discard_branch(branch: String) -> Action {
         cmd.args(["branch", "-d"]);
         cmd.arg(&branch);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -43,6 +44,7 @@ fn clean_file(file: PathBuf) -> Action {
         cmd.args(["clean", "--force"]);
         cmd.arg(&file);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -53,6 +55,7 @@ fn remove_file(file: PathBuf) -> Action {
         cmd.args(["rm", "--force"]);
         cmd.arg(&file);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -63,6 +66,7 @@ fn checkout_file(file: PathBuf) -> Action {
         cmd.args(["checkout", "HEAD", "--"]);
         cmd.arg(&file);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -72,6 +76,7 @@ fn discard_unstaged_patch(h: Rc<Hunk>) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse"]);
 
+        state.close_menu();
         state.run_cmd(term, &h.format_patch().into_bytes(), cmd)
     })
 }

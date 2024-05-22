@@ -39,14 +39,18 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         None
     };
 
-    let maybe_menu = state.pending_menu.as_ref().map(|menu| {
-        menu::MenuWidget::new(
-            &state.config,
-            &state.bindings,
-            menu,
-            state.screens.last().unwrap().get_selected_item(),
-        )
-    });
+    let maybe_menu = if state.prompt.data.is_some() {
+        None
+    } else {
+        state.pending_menu.as_ref().map(|menu| {
+            menu::MenuWidget::new(
+                &state.config,
+                &state.bindings,
+                menu,
+                state.screens.last().unwrap().get_selected_item(),
+            )
+        })
+    };
 
     let maybe_prompt = state.prompt.data.as_ref().map(|prompt_data| SizedWidget {
         height: 2,

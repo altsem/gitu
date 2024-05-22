@@ -42,7 +42,7 @@ impl OpTrait for Quit {
                     }
                 }
             } else {
-                state.pending_menu = root_menu(&state.config).map(PendingMenu::init);
+                state.close_menu();
                 return Ok(());
             }
 
@@ -69,7 +69,10 @@ impl OpTrait for OpenMenu {
 pub(crate) struct Refresh;
 impl OpTrait for Refresh {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state, _term| state.screen_mut().update()))
+        Some(Rc::new(|state, _term| {
+            state.close_menu();
+            state.screen_mut().update()
+        }))
     }
 }
 
@@ -117,13 +120,7 @@ impl OpTrait for ToggleArg {
     }
 }
 
-fn parse_and_set_arg(
-    state: &mut State,
-    _term: &mut Term,
-    _args: &[std::ffi::OsString],
-    value: &str,
-    arg: &String,
-) -> Res<()> {
+fn parse_and_set_arg(state: &mut State, _term: &mut Term, value: &str, arg: &String) -> Res<()> {
     let key: &str = arg;
     if let Some(menu) = &mut state.pending_menu {
         if let Some(entry) = menu.args.get_mut(key) {
@@ -140,6 +137,7 @@ pub(crate) struct ToggleSection;
 impl OpTrait for ToggleSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state.screen_mut().toggle_section();
             Ok(())
         }))
@@ -152,6 +150,7 @@ pub(crate) struct MoveUp;
 impl OpTrait for MoveUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state.screen_mut().select_previous(NavMode::Normal);
             Ok(())
         }))
@@ -164,6 +163,7 @@ pub(crate) struct MoveDown;
 impl OpTrait for MoveDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state.screen_mut().select_next(NavMode::Normal);
             Ok(())
         }))
@@ -176,6 +176,7 @@ pub(crate) struct MoveDownLine;
 impl OpTrait for MoveDownLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state.screen_mut().select_next(NavMode::IncludeHunkLines);
             Ok(())
         }))
@@ -188,6 +189,7 @@ pub(crate) struct MoveUpLine;
 impl OpTrait for MoveUpLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state
                 .screen_mut()
                 .select_previous(NavMode::IncludeHunkLines);
@@ -202,6 +204,7 @@ pub(crate) struct MoveNextSection;
 impl OpTrait for MoveNextSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             let depth = state.screen().get_selected_item().depth;
             state.screen_mut().select_next(NavMode::Siblings { depth });
             Ok(())
@@ -215,6 +218,7 @@ pub(crate) struct MovePrevSection;
 impl OpTrait for MovePrevSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             let depth = state.screen().get_selected_item().depth;
             state
                 .screen_mut()
@@ -230,6 +234,7 @@ pub(crate) struct MoveParentSection;
 impl OpTrait for MoveParentSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             let depth = state.screen().get_selected_item().depth.saturating_sub(1);
             state
                 .screen_mut()
@@ -245,6 +250,7 @@ pub(crate) struct HalfPageUp;
 impl OpTrait for HalfPageUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state.screen_mut().scroll_half_page_up();
             Ok(())
         }))
@@ -257,6 +263,7 @@ pub(crate) struct HalfPageDown;
 impl OpTrait for HalfPageDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state, _term| {
+            state.close_menu();
             state.screen_mut().scroll_half_page_down();
             Ok(())
         }))

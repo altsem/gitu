@@ -36,6 +36,7 @@ fn stage_unstaged() -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["add", "-u", "."]);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -46,6 +47,7 @@ fn stage_untracked(untracked: Vec<std::path::PathBuf>) -> Action {
         cmd.arg("add");
         cmd.args(untracked.clone());
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -56,6 +58,7 @@ fn stage_file(file: OsString) -> Action {
         cmd.args(["add"]);
         cmd.arg(&file);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -65,6 +68,7 @@ fn stage_patch(h: Rc<Hunk>) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached"]);
 
+        state.close_menu();
         state.run_cmd(term, &h.format_patch().into_bytes(), cmd)
     })
 }
@@ -77,6 +81,8 @@ fn stage_line(h: Rc<Hunk>, i: usize) -> Action {
         let input = h
             .format_line_patch(i..(i + 1), PatchMode::Normal)
             .into_bytes();
+
+        state.close_menu();
         state.run_cmd(term, &input, cmd)
     })
 }
