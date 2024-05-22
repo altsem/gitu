@@ -212,14 +212,14 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
 
 pub(crate) fn create_prompt(
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
+    callback: fn(&mut State, &mut Term, &str) -> Res<()>,
 ) -> Action {
     create_prompt_with_default(prompt, callback, |_| None)
 }
 
 pub(crate) fn create_prompt_with_default(
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
+    callback: fn(&mut State, &mut Term, &str) -> Res<()>,
     default_fn: fn(&State) -> Option<String>,
 ) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| {
@@ -237,11 +237,10 @@ pub(crate) fn create_prompt_with_default(
 fn invoke_default(
     state: &mut State,
     term: &mut Term,
-    args: &[OsString],
     value: &str,
-    context: &fn(&mut State, &mut Term, &[OsString], &str) -> Res<()>,
+    context: &fn(&mut State, &mut Term, &str) -> Res<()>,
 ) -> Res<()> {
-    context(state, term, args, value)
+    context(state, term, value)
 }
 
 type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
@@ -249,7 +248,7 @@ type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
 pub(crate) fn set_prompt<T: 'static>(
     state: &mut State,
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &[OsString], &str, &T) -> Res<()>,
+    callback: fn(&mut State, &mut Term, &str, &T) -> Res<()>,
     default_fn: DefaultFn,
     context: T,
 ) {
@@ -258,8 +257,6 @@ pub(crate) fn set_prompt<T: 'static>(
     } else {
         format!("{}:", prompt).into()
     };
-
-    let args = state.pending_menu.as_ref().unwrap().args();
 
     state.prompt.set(PromptData {
         prompt_text,
@@ -275,7 +272,7 @@ pub(crate) fn set_prompt<T: 'static>(
                     (value, _) => value,
                 };
 
-                callback(state, term, &args, value, &context)?;
+                callback(state, term, value, &context)?;
             }
             Ok(())
         }),
