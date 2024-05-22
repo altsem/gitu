@@ -24,6 +24,7 @@ impl OpTrait for Show {
 
 fn goto_show_screen(r: String) -> Option<Action> {
     Some(Rc::new(move |state, term| {
+        state.close_menu();
         state.screens.push(
             screen::show::create(
                 Rc::clone(&state.config),
@@ -56,6 +57,7 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
 
         let cmd = parse_editor_command(&editor, &file, maybe_line);
 
+        state.close_menu();
         state
             .run_cmd_interactive(term, cmd)
             .map_err(|err| format!("Couldn't open editor {} due to: {}", editor, err))?;

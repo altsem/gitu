@@ -189,8 +189,6 @@ impl State {
         let target = self.screen().get_selected_item().target_data.as_ref();
         if let Some(mut action) = op.clone().implementation().get_action(target) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
-
-            self.close_menu(op);
             self.handle_result(result);
         }
 
@@ -209,12 +207,8 @@ impl State {
         }
     }
 
-    fn close_menu(&mut self, op: Op) {
-        match op {
-            Op::OpenMenu(_) => (),
-            Op::ToggleArg(_) => (),
-            _ => self.pending_menu = root_menu(&self.config).map(PendingMenu::init),
-        }
+    pub fn close_menu(&mut self) {
+        self.pending_menu = root_menu(&self.config).map(PendingMenu::init)
     }
 
     pub fn screen_mut(&mut self) -> &mut Screen {

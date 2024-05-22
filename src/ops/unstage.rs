@@ -31,6 +31,7 @@ fn unstage_staged() -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["reset", "HEAD", "--"]);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -41,6 +42,7 @@ fn unstage_file(file: OsString) -> Action {
         cmd.args(["restore", "--staged"]);
         cmd.arg(&file);
 
+        state.close_menu();
         state.run_cmd(term, &[], cmd)
     })
 }
@@ -50,6 +52,7 @@ fn unstage_patch(input: Vec<u8>) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse"]);
 
+        state.close_menu();
         state.run_cmd(term, &input, cmd)
     })
 }
@@ -59,6 +62,7 @@ fn unstage_line(input: Vec<u8>) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse", "--recount"]);
 
+        state.close_menu();
         state.run_cmd(term, &input, cmd)
     })
 }

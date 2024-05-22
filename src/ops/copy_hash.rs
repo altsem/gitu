@@ -20,6 +20,7 @@ impl OpTrait for CopyHash {
 
 fn copy_hash(r: String) -> Option<Action> {
     Some(Rc::new(move |state, _term| {
+        state.close_menu();
         match &mut state.clipboard {
             Some(cb) => {
                 cb.set_text(r.clone())?;
