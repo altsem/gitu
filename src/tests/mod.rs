@@ -2,6 +2,8 @@ use std::fs;
 
 #[macro_use]
 mod helpers;
+
+mod apply_reverse;
 mod discard;
 mod editor;
 mod fetch;
