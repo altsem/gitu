@@ -41,7 +41,7 @@ impl<'a> MenuWidget<'a> {
         pending_binds_column.push(Line::styled(format!("{}", pending.menu), &style.command));
         for (op, binds) in non_target_binds
             .iter()
-            .group_by(|bind| &bind.op)
+            .chunk_by(|bind| &bind.op)
             .into_iter()
             .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
         {
