@@ -13,6 +13,10 @@ updates:
         update-types:
         - "minor"
         - "patch"
+      tree-sitter:
+        applies-to: version-updates
+        patterns:
+          - "tree-sitter*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
