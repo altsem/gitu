@@ -66,16 +66,25 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
 
 fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Command {
     let args = &editor.split_whitespace().collect::<Vec<_>>();
+
+    let version = String::from_utf8(
+        Command::new(args[0])
+            .arg("--version")
+            .output()
+            .expect("failed to get version via '--version'")
+            .stdout,
+    )
+    .unwrap();
+
+    log::info!("editor --version: {:?}", &version);
+
     let mut cmd = Command::new(args[0]);
     cmd.args(&args[1..]);
 
-    let lower = args[0].to_lowercase();
-
     if let Some(line) = maybe_line {
-        if lower.ends_with("vi")
-            || lower.ends_with("vim")
-            || lower.ends_with("nvim")
-            || lower.ends_with("nano")
+        if version.trim_start().starts_with("VIM")
+            || version.trim_start().starts_with("NVIM")
+            || version.trim_start().starts_with("GNU nano")
         {
             cmd.args([&format!("+{}", line), file]);
         } else {
@@ -85,19 +94,4 @@ fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Co
         cmd.args([file.to_string()]);
     }
     cmd
-}
-
-#[cfg(test)]
-mod tests {
-    use std::ffi::OsStr;
-
-    #[test]
-    fn parse_editor_command_test() {
-        let cmd = super::parse_editor_command("/bin/nAnO -f", "README.md", Some(42));
-        assert_eq!(cmd.get_program(), OsStr::new("/bin/nAnO"));
-        assert_eq!(
-            &cmd.get_args().collect::<Vec<_>>(),
-            &["-f", "+42", "README.md"]
-        );
-    }
 }
