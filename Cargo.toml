@@ -14,7 +14,7 @@ pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
 insta = "1.39.0"
-unicode-width = "0.1.12"
+unicode-width = "0.1.13"
 
 [profile.release]
 strip = true
@@ -22,7 +22,7 @@ strip = true
 [dependencies]
 arboard = { version = "3.4.0", default-features = false, features = ["windows-sys"] }
 chrono = "0.4.38"
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.5.6", features = ["derive"] }
 crossterm = "0.27.0"
 derive_more = "0.99.17"
 etcetera = "0.8.0"
@@ -36,7 +36,7 @@ ratatui = { version = "0.26.3", features = ["serde"] }
 serde = { version = "1.0.203", features = ["derive"] }
 similar = { version = "2.5.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
-toml = "0.8.13"
+toml = "0.8.14"
 tui-prompts = "0.3.12"
 tree-sitter = "=0.20.10"
 tree-sitter-highlight = "=0.20.1"
