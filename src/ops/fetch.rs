@@ -32,7 +32,7 @@ impl OpTrait for FetchAll {
 pub(crate) struct FetchElsewhere;
 impl OpTrait for FetchElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Select remote", push_elsewhere))
+        Some(create_prompt("Select remote", push_elsewhere, true))
     }
 }
 

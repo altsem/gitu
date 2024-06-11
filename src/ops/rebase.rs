@@ -64,6 +64,7 @@ impl OpTrait for RebaseElsewhere {
             "Rebase onto",
             rebase_elsewhere,
             selected_rev,
+            true,
         ))
     }
 }

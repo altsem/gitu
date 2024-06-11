@@ -39,6 +39,7 @@ pub(crate) enum Menu {
 
 pub(crate) struct PendingMenu {
     pub menu: Menu,
+    pub is_hidden: bool,
     pub(crate) args: BTreeMap<Cow<'static, str>, arg::Arg>,
 }
 
@@ -46,6 +47,7 @@ impl PendingMenu {
     pub fn init(menu: Menu) -> Self {
         Self {
             menu,
+            is_hidden: false,
             args: match menu {
                 Menu::Root => vec![],
                 Menu::Branch => ops::checkout::init_args(),
