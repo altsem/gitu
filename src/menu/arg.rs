@@ -159,8 +159,7 @@ where
     }
 
     fn value_as_any(&self) -> Option<&dyn std::any::Any> {
-        self.value
-            .as_ref().map(|x| x as &dyn std::any::Any)
+        self.value.as_ref().map(|x| x as &dyn std::any::Any)
     }
 }
 
