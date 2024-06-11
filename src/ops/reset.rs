@@ -16,6 +16,7 @@ impl OpTrait for ResetSoft {
             "Soft reset to",
             reset_soft,
             selected_rev,
+            true,
         ))
     }
 }
@@ -39,6 +40,7 @@ impl OpTrait for ResetMixed {
             "Mixed reset to",
             reset_mixed,
             selected_rev,
+            true,
         ))
     }
 }
@@ -62,6 +64,7 @@ impl OpTrait for ResetHard {
             "Hard reset to",
             reset_hard,
             selected_rev,
+            true,
         ))
     }
 }

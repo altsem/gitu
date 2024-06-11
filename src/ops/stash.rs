@@ -16,7 +16,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Stash message", stash_push))
+        Some(create_prompt("Stash message", stash_push, true))
     }
 }
 
@@ -38,7 +38,7 @@ fn stash_push(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Stash message", stash_push_index))
+        Some(create_prompt("Stash message", stash_push_index, true))
     }
 }
 
@@ -66,7 +66,7 @@ impl OpTrait for StashWorktree {
                 return Err("Cannot stash: working tree is empty".into());
             }
 
-            let mut create_prompt = create_prompt("Stash message", stash_worktree);
+            let mut create_prompt = create_prompt("Stash message", stash_worktree, true);
             Rc::get_mut(&mut create_prompt).unwrap()(state, term)?;
             Ok(())
         }))
@@ -145,7 +145,7 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Stash message", stash_push_keep_index))
+        Some(create_prompt("Stash message", stash_push_keep_index, true))
     }
 }
 
@@ -171,6 +171,7 @@ impl OpTrait for StashPop {
             "Pop stash",
             stash_pop,
             selected_stash,
+            true,
         ))
     }
 }
@@ -194,6 +195,7 @@ impl OpTrait for StashApply {
             "Apply stash",
             stash_apply,
             selected_stash,
+            true,
         ))
     }
 }
@@ -217,6 +219,7 @@ impl OpTrait for StashDrop {
             "Drop stash",
             stash_drop,
             selected_stash,
+            true,
         ))
     }
 }

@@ -112,6 +112,7 @@ impl OpTrait for ToggleArg {
                     parse_and_set_arg,
                     Box::new(move |_| default.clone()),
                     arg_name.clone(),
+                    false,
                 );
             }
 

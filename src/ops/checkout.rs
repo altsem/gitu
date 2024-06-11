@@ -17,6 +17,7 @@ impl OpTrait for Checkout {
             "Checkout",
             checkout,
             selected_rev,
+            true,
         ))
     }
 }
