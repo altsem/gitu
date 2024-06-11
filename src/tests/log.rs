@@ -49,6 +49,11 @@ fn grep_second() {
 }
 
 #[test]
+fn grep_no_match() {
+    snapshot!(setup(), "l-Fdoesntexist<enter>l");
+}
+
+#[test]
 fn grep_second_other() {
     snapshot!(setup(), "l-Fsecond<enter>omain<enter>");
 }
