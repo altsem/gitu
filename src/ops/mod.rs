@@ -5,7 +5,7 @@ use crate::{
     cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State,
     term::Term, Res,
 };
-use std::{ffi::OsString, fmt::Display, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod checkout;
 pub(crate) mod commit;
