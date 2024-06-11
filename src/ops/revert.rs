@@ -55,6 +55,7 @@ impl OpTrait for RevertCommit {
             "Revert commit",
             revert_commit,
             selected_rev,
+            true,
         ))
     }
 }

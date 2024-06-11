@@ -29,7 +29,7 @@ impl OpTrait for Pull {
 pub(crate) struct PullElsewhere;
 impl OpTrait for PullElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Select remote", pull_elsewhere))
+        Some(create_prompt("Select remote", pull_elsewhere, true))
     }
 }
 

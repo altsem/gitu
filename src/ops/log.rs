@@ -46,6 +46,7 @@ impl OpTrait for LogOther {
             "Log rev",
             log_other,
             selected_rev,
+            true,
         ))
     }
 }

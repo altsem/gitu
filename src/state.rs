@@ -334,6 +334,18 @@ impl State {
 
         Ok(())
     }
+
+    pub fn hide_menu(&mut self) {
+        if let Some(ref mut menu) = self.pending_menu {
+            menu.is_hidden = true;
+        }
+    }
+
+    pub fn unhide_menu(&mut self) {
+        if let Some(ref mut menu) = self.pending_menu {
+            menu.is_hidden = false;
+        }
+    }
 }
 
 pub(crate) fn root_menu(config: &Config) -> Option<Menu> {
