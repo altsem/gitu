@@ -194,7 +194,7 @@ pub(crate) fn log(
         )
         .collect::<Vec<(Commit, Span)>>();
 
-    Ok(revwalk
+    let items: Vec<Item> = revwalk
         .map(|oid_result| -> Res<Option<Item>> {
             let oid = oid_result?;
             let commit = repo.find_commit(oid)?;
@@ -236,7 +236,16 @@ pub(crate) fn log(
             }),
         })
         .take(limit)
-        .collect())
+        .collect();
+
+    if items.is_empty() {
+        Ok(vec![Item {
+            display: Line::raw("No commits found"),
+            ..Default::default()
+        }])
+    } else {
+        Ok(items)
+    }
 }
 
 pub(crate) fn blank_line() -> Item {
