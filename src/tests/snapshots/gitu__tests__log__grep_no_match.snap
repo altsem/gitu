@@ -1,0 +1,25 @@
+---
+source: src/tests/log.rs
+expression: ctx.redact_buffer()
+---
+▌No commits found                                                               |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 90ecdf643519e051
