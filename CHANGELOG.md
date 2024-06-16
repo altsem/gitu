@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.0] - 2024-06-16
+
+### 🚀 Features
+
+- -n argument to limit log
+- -F to grep for commits in log menu
+- Support value arguments
+
+### 🐛 Bug Fixes
+
+- Pin exact tree-sitter version to prevent common build breaks
+
 ## [0.20.1] - 2024-05-08
 
 ### 🐛 Bug Fixes
