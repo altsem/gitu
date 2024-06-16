@@ -9,10 +9,14 @@ updates:
       minor/patch:
         applies-to: version-updates
         exclude-patterns:
-          - "tree-sitter*
+          - "tree-sitter*"
         update-types:
         - "minor"
         - "patch"
+      tree-sitter:
+        applies-to: version-updates
+        patterns:
+          - "tree-sitter*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
