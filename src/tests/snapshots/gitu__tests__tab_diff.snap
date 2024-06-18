@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   tab.txt                                                             |
+ @@ -1 +1 @@                                                                    |
+ -this has no tab prefixed                                                      |
+ +    this has a tab prefixed                                                   |
+                                                                                |
+ Recent commits                                                                 |
+ _______ main add tab.txt                                                       |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 4c33c9d79050f1a0

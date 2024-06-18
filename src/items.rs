@@ -100,7 +100,7 @@ fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
         .iter()
         .enumerate()
         .map(|(i, line)| Item {
-            display: line.clone(),
+            display: replace_tabs_with_spaces(line.clone()),
             unselectable: line
                 .spans
                 .first()
@@ -110,6 +110,17 @@ fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
             ..Default::default()
         })
         .collect()
+}
+
+fn replace_tabs_with_spaces(line: Line<'_>) -> Line<'_> {
+    let spans = line
+        .spans
+        .iter()
+        .cloned()
+        .map(|span| Span::styled(span.content.replace('\t', "    "), span.style))
+        .collect::<Vec<_>>();
+
+    Line { spans, ..line }
 }
 
 pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {
