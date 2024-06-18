@@ -351,3 +351,15 @@ fn crlf_diff() {
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn tab_diff() {
+    let mut ctx = TestContext::setup_init();
+    let mut state = ctx.init_state();
+
+    commit(ctx.dir.path(), "tab.txt", "this has no tab prefixed\n");
+    fs::write(ctx.dir.child("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
+    state.update(&mut ctx.term, &keys("g")).unwrap();
+
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
