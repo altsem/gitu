@@ -270,3 +270,28 @@ impl OpTrait for HalfPageDown {
         }))
     }
 }
+
+#[derive(Display)]
+#[display(fmt = "Scroll down")]
+pub(crate) struct ScrollDown;
+impl OpTrait for ScrollDown {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            state.close_menu();
+            state.screen_mut().scroll_down();
+            Ok(())
+        }))
+    }
+}
+#[derive(Display)]
+#[display(fmt = "Scroll up")]
+pub(crate) struct ScrollUp;
+impl OpTrait for ScrollUp {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|state, _term| {
+            state.close_menu();
+            state.screen_mut().scroll_up();
+            Ok(())
+        }))
+    }
+}

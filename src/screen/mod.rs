@@ -88,6 +88,35 @@ impl Screen {
         self.scroll_fit_start();
     }
 
+    pub(crate) fn scroll_down(&mut self) {
+        self.scroll = (self.scroll + 1).min(
+            self.line_index
+                .iter()
+                .copied()
+                .enumerate()
+                .map(|(line, _)| (line + 1).saturating_sub(1))
+                .last()
+                .unwrap_or(0),
+        );
+
+        let nav_mode = self.selected_item_nav_mode();
+        self.move_cursor_to_screen();
+
+        if !self.nav_filter(self.cursor, nav_mode) {
+            self.select_next(nav_mode);
+        }
+    }
+
+    pub(crate) fn scroll_up(&mut self) {
+        self.scroll = self.scroll.saturating_sub(1);
+        let nav_mode = self.selected_item_nav_mode();
+        self.move_cursor_to_screen();
+
+        if !self.nav_filter(self.cursor, nav_mode) {
+            self.select_previous(nav_mode);
+        }
+    }
+
     fn scroll_fit_start(&mut self) {
         if self.items.is_empty() {
             return;
@@ -246,6 +275,14 @@ impl Screen {
 
     fn is_cursor_off_screen(&self) -> bool {
         !self.line_views(self.size).any(|line| line.highlighted)
+    }
+
+    fn move_cursor_to_screen(&mut self) {
+        if self.cursor < self.scroll {
+            self.cursor = self.scroll;
+        } else if self.cursor > self.scroll + self.size.height as usize {
+            self.cursor = self.scroll + self.size.height as usize;
+        }
     }
 
     fn move_cursor_to_screen_center(&mut self) {
