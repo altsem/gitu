@@ -1,12 +1,7 @@
-## [0.21.0] - 2024-06-16
-
-### 🚀 Features
-
-- -n argument to limit log
-- -F to grep for commits in log menu
-- Support value arguments
+## [0.21.1] - 2024-06-19
 
 ### 🐛 Bug Fixes
 
-- Pin exact tree-sitter version to prevent common build breaks
+- Tabs would not be rendered, render them as 4 spaces for now
+- *(flake)* Add AppKit to build inputs
 

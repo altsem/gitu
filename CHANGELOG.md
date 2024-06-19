@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.1] - 2024-06-19
+
+### 🐛 Bug Fixes
+
+- Tabs would not be rendered, render them as 4 spaces for now
+- *(flake)* Add AppKit to build inputs
+
 ## [0.21.0] - 2024-06-16
 
 ### 🚀 Features
