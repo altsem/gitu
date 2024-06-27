@@ -42,9 +42,9 @@ pub struct StyleConfig {
     #[serde(default)]
     pub syntax_highlight: SyntaxHighlightConfig,
 
-    pub cursor: StyleConfigEntry,
+    pub cursor: SymbolStyleConfigEntry,
     pub selection_line: StyleConfigEntry,
-    pub selection_bar: StyleConfigEntry,
+    pub selection_bar: SymbolStyleConfigEntry,
     pub selection_area: StyleConfigEntry,
 
     pub hash: StyleConfigEntry,
@@ -134,8 +134,32 @@ pub struct StyleConfigEntry {
     mods: Option<Modifier>,
 }
 
+#[derive(Default, Debug, Deserialize)]
+pub struct SymbolStyleConfigEntry {
+    #[serde(default)]
+    pub symbol: char,
+    #[serde(default)]
+    fg: Option<Color>,
+    #[serde(default)]
+    bg: Option<Color>,
+    #[serde(default)]
+    mods: Option<Modifier>,
+}
+
 impl From<&StyleConfigEntry> for Style {
     fn from(val: &StyleConfigEntry) -> Self {
+        Style {
+            fg: val.fg,
+            bg: val.bg,
+            underline_color: None,
+            add_modifier: val.mods.unwrap_or(Modifier::empty()),
+            sub_modifier: Modifier::empty(),
+        }
+    }
+}
+
+impl From<&SymbolStyleConfigEntry> for Style {
+    fn from(val: &SymbolStyleConfigEntry) -> Self {
         Style {
             fg: val.fg,
             bg: val.bg,
