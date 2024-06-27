@@ -1,7 +1,6 @@
-## [0.21.1] - 2024-06-19
+## [0.22.0] - 2024-06-27
 
-### 🐛 Bug Fixes
+### 🚀 Features
 
-- Tabs would not be rendered, render them as 4 spaces for now
-- *(flake)* Add AppKit to build inputs
+- Make cursor and selection symbol configurable
 

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.0] - 2024-06-27
+
+### 🚀 Features
+
+- Make cursor and selection symbol configurable
+
 ## [0.21.1] - 2024-06-19
 
 ### 🐛 Bug Fixes
