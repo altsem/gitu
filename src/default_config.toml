@@ -55,8 +55,8 @@ syntax_highlight.type_builtin = { fg = "yellow" }
 syntax_highlight.variable_builtin = {}
 syntax_highlight.variable_parameter = {}
 
-cursor = { fg = "blue" }
-selection_bar = { fg = "blue", mods = "DIM" }
+cursor = { symbol = "▌", fg = "blue" }
+selection_bar = { symbol = "▌", fg = "blue", mods = "DIM" }
 selection_line = { mods = "BOLD" }
 # You may want to set `selection_area.bg` to a nice background color.
 # Looks horrible with regular terminal colors, so is therefore not set.

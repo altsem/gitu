@@ -331,7 +331,7 @@ impl Widget for &Screen {
                     buf.set_style(line_area, &style.selection_line);
                 } else {
                     buf.get_mut(0, line_index as u16)
-                        .set_char('▌')
+                        .set_char(style.selection_bar.symbol)
                         .set_style(&style.selection_bar);
                 }
             }
@@ -347,7 +347,7 @@ impl Widget for &Screen {
 
             if self.line_index[self.cursor] == line.item_index {
                 buf.get_mut(0, line_index as u16)
-                    .set_char('▌')
+                    .set_char(style.cursor.symbol)
                     .set_style(&style.cursor);
             }
         }
