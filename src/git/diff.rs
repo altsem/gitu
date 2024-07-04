@@ -114,10 +114,9 @@ pub(crate) fn convert_diff(
 ) -> Res<Diff> {
     let mut deltas = vec![];
 
-    diff.print(
-        git2::DiffFormat::PatchHeader,
-        |diffdelta, _maybe_hunk, line| {
-            let line_content = str::from_utf8(line.content()).unwrap();
+    // TODO Only need to "git2::DiffFormat::PatchHeader" here. But git2 seemed to have broken it in the new 0.19.0. https://github.com/rust-lang/git2-rs/issues/1064
+    diff.print(git2::DiffFormat::Patch, |diffdelta, _maybe_hunk, line| {
+        if let Ok(line_content) = str::from_utf8(line.content()) {
             let is_new_header = line_content.starts_with("diff")
                 && line.origin_value() == git2::DiffLineType::FileHeader;
 
@@ -139,10 +138,10 @@ pub(crate) fn convert_diff(
                 let delta = deltas.last_mut().unwrap();
                 delta.file_header.push_str(line_content);
             }
+        }
 
-            true
-        },
-    )?;
+        true
+    })?;
 
     Ok(Diff { deltas })
 }
