@@ -1,6 +1,6 @@
-## [0.22.0] - 2024-06-27
+## [0.22.1] - 2024-07-04
 
-### 🚀 Features
+### 🐛 Bug Fixes
 
-- Make cursor and selection symbol configurable
+- Upgrade libgit2 to 1.8.1 to support new `index.skipHash` git config
 

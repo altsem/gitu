@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.1] - 2024-07-04
+
+### 🐛 Bug Fixes
+
+- Upgrade libgit2 to 1.8.1 to support new `index.skipHash` git config
+
 ## [0.22.0] - 2024-06-27
 
 ### 🚀 Features
