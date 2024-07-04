@@ -77,7 +77,7 @@ impl OpTrait for Refresh {
 }
 
 #[derive(Display)]
-#[display(fmt = _.0)]
+#[display(fmt = .0)]
 pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
