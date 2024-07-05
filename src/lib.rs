@@ -76,7 +76,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     );
 
     log::debug!("Opening repo");
-    let repo = Repository::open_from_env()?;
+    let repo = open_repo_from_env()?;
     repo.set_workdir(&dir, false)?;
 
     log::debug!("Initializing config");
@@ -110,6 +110,16 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     }
 
     Ok(())
+}
+
+fn open_repo_from_env() -> Res<Repository> {
+    match Repository::open_from_env() {
+        Ok(repo) => Ok(repo),
+        Err(err) if err.code() == git2::ErrorCode::NotFound => {
+            Err("No .git found in the current directory".into())
+        }
+        Err(err) => Err(Box::new(err)),
+    }
 }
 
 fn handle_initial_send_keys(
