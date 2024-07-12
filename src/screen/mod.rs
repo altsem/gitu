@@ -36,6 +36,14 @@ impl Screen {
         size: Size,
         refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     ) -> Res<Self> {
+        let collapsed = config
+            .general
+            .collapsed_sections
+            .clone()
+            .into_iter()
+            .map(Cow::Owned)
+            .collect();
+
         let mut screen = Self {
             cursor: 0,
             scroll: 0,
@@ -44,7 +52,7 @@ impl Screen {
             refresh_items,
             items: vec![],
             line_index: vec![],
-            collapsed: HashSet::new(),
+            collapsed,
         };
 
         screen.update()?;
