@@ -102,25 +102,25 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             .chain(unmerged)
             .chain(create_status_section_items(
                 Rc::clone(&config),
-                "Unstaged changes",
+                "unstaged_changes",
                 Some(TargetData::AllUnstaged),
                 &git::diff_unstaged(&config, repo.as_ref())?,
             ))
             .chain(create_status_section_items(
                 Rc::clone(&config),
-                "Staged changes",
+                "staged_changes",
                 Some(TargetData::AllStaged),
                 &git::diff_staged(&config, repo.as_ref())?,
             ))
             .chain(create_stash_list_section_items(
                 Rc::clone(&config),
                 repo.as_ref(),
-                "Stashes",
+                "stashes",
             ))
             .chain(create_log_section_items(
                 Rc::clone(&config),
                 repo.as_ref(),
-                "Recent commits",
+                "recent_commits",
             ))
             .collect();
 
@@ -219,7 +219,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
 
 fn create_status_section_items<'a>(
     config: Rc<Config>,
-    header: &str,
+    snake_case_header: &str,
     header_data: Option<TargetData>,
     diff: &'a Diff,
 ) -> impl Iterator<Item = Item> + 'a {
@@ -235,9 +235,12 @@ fn create_status_section_items<'a>(
                 ..Default::default()
             },
             Item {
-                id: header.to_string().into(),
+                id: snake_case_header.to_string().into(),
                 display: Line::from(vec![
-                    Span::styled(header.to_string(), &style.section_header),
+                    Span::styled(
+                        capitalize(&snake_case_header.replace("_", " ")),
+                        &style.section_header,
+                    ),
                     format!(" ({})", diff.deltas.len()).into(),
                 ]),
                 section: true,
@@ -251,10 +254,16 @@ fn create_status_section_items<'a>(
     .chain(items::create_diff_items(config, diff, &1, true))
 }
 
+fn capitalize(str: &str) -> String {
+    let first: String = str.chars().take(1).flat_map(char::to_uppercase).collect();
+    let rest: String = str.chars().skip(1).collect();
+    format!("{first}{rest}")
+}
+
 fn create_stash_list_section_items<'a>(
     config: Rc<Config>,
     repo: &Repository,
-    header: &str,
+    snake_case_header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
     let stashes = items::stash_list(&config, repo, 10).unwrap();
     if stashes.is_empty() {
@@ -264,8 +273,11 @@ fn create_stash_list_section_items<'a>(
         vec![
             items::blank_line(),
             Item {
-                id: header.to_string().into(),
-                display: Line::styled(header.to_string(), &style.section_header),
+                id: snake_case_header.to_string().into(),
+                display: Line::styled(
+                    capitalize(&snake_case_header.replace("_", " ")),
+                    &style.section_header,
+                ),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -279,7 +291,7 @@ fn create_stash_list_section_items<'a>(
 fn create_log_section_items<'a>(
     config: Rc<Config>,
     repo: &Repository,
-    header: &str,
+    snake_case_header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
     let style = &config.style;
     [
@@ -290,8 +302,11 @@ fn create_log_section_items<'a>(
             ..Default::default()
         },
         Item {
-            id: header.to_string().into(),
-            display: Line::styled(header.to_string(), &style.section_header),
+            id: snake_case_header.to_string().into(),
+            display: Line::styled(
+                capitalize(&snake_case_header.replace("_", " ")),
+                &style.section_header,
+            ),
             section: true,
             depth: 0,
             ..Default::default()

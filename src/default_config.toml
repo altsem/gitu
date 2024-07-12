@@ -5,6 +5,9 @@
 [general]
 always_show_help.enabled = false
 confirm_quit.enabled = false
+# Sets initially collapsed sections in the editor. e.g.:
+# collapsed_sections = ["untracked", "recent_commits", "branch_status"]
+collapsed_sections = []
 
 [style]
 # fg / bg can be either of:
