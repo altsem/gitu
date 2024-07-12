@@ -5,6 +5,9 @@
 [general]
 always_show_help.enabled = false
 confirm_quit.enabled = false
+# To collapse untracked files by default. e.g.:
+#   collapsed_sections = ["untracked", "Recent commits", "branch_status"]
+collapsed_sections = []
 
 [style]
 # fg / bg can be either of:
@@ -29,7 +32,7 @@ diff_highlight.tag_new = { fg = "green", mods = "BOLD" }
 diff_highlight.unchanged_old = { mods = "DIM" }
 diff_highlight.unchanged_new = { mods = "DIM" }
 diff_highlight.changed_old = { fg = "red" }
-diff_highlight.changed_new = { fg = "green"}
+diff_highlight.changed_new = { fg = "green" }
 
 syntax_highlight.enabled = true
 syntax_highlight.attribute = { fg = "yellow" }

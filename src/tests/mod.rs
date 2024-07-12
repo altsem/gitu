@@ -69,6 +69,20 @@ fn binary_file() {
 }
 
 #[test]
+fn collapsed_sections_config() {
+    let mut ctx = TestContext::setup_clone();
+    ctx.config().general.collapsed_sections = vec![
+        "untracked".into(),
+        "Recent commits".into(),
+        "branch_status".into(),
+        // TODO rebase / revert/ merge conlict?
+    ];
+    fs::write(ctx.dir.child("untracked_file.txt"), "").unwrap();
+
+    snapshot!(ctx, "");
+}
+
+#[test]
 fn log() {
     let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");

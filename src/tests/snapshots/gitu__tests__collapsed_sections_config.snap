@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main…                                                                |
+                                                                                |
+ Untracked files…                                                               |
+                                                                                |
+ Recent commits…                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: cbfd7594a526d60d
