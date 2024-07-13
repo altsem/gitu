@@ -29,7 +29,7 @@ diff_highlight.tag_new = { fg = "green", mods = "BOLD" }
 diff_highlight.unchanged_old = { mods = "DIM" }
 diff_highlight.unchanged_new = { mods = "DIM" }
 diff_highlight.changed_old = { fg = "red" }
-diff_highlight.changed_new = { fg = "green"}
+diff_highlight.changed_new = { fg = "green" }
 
 syntax_highlight.enabled = true
 syntax_highlight.attribute = { fg = "yellow" }
@@ -109,6 +109,7 @@ commit_menu.--signoff = ["-s"]
 commit_menu.commit = ["c"]
 commit_menu.commit_amend = ["a"]
 commit_menu.commit_fixup = ["f"]
+commit_menu.commit_instant_fixup = ["F"]
 commit_menu.quit = ["q", "<esc>"]
 
 root.fetch_menu = ["f"]

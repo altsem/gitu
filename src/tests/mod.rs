@@ -3,6 +3,7 @@ use std::fs;
 #[macro_use]
 mod helpers;
 mod arg;
+mod commit;
 mod discard;
 mod editor;
 mod fetch;
