@@ -89,3 +89,43 @@ fn commit_fixup_cmd(args: &[OsString], rev: &OsStr) -> Command {
     cmd.args(args);
     cmd
 }
+
+#[derive(Display)]
+#[display(fmt = "Commit instant fixup")]
+pub(crate) struct CommitInstantFixup;
+impl OpTrait for CommitInstantFixup {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        match target {
+            Some(TargetData::Commit(r)) => {
+                let rev = OsString::from(r);
+
+                Some(Rc::new(move |state: &mut State, term: &mut Term| {
+                    let args = state.pending_menu.as_ref().unwrap().args();
+
+                    state.close_menu();
+
+                    state.run_cmd_interactive(term, commit_fixup_cmd(&args, &rev))?;
+                    state.run_cmd_interactive(term, rebase_autosquash_cmd(&rev))
+                }))
+            }
+            _ => None,
+        }
+    }
+    fn is_target_op(&self) -> bool {
+        true
+    }
+}
+
+fn rebase_autosquash_cmd(rev: &OsStr) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["rebase", "--autosquash"]);
+    cmd.arg(&parent(rev));
+
+    cmd
+}
+
+fn parent(reference: &OsStr) -> OsString {
+    let mut parent = reference.to_os_string();
+    parent.push("^");
+    parent
+}

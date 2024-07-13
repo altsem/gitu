@@ -65,6 +65,7 @@ pub(crate) enum Op {
     StashPop,
     StashDrop,
     CommitFixup,
+    CommitInstantFixup,
     LogOther,
     RebaseAutosquash,
     RebaseInteractive,
@@ -143,6 +144,7 @@ impl Op {
             Op::StashDrop => Box::new(stash::StashDrop),
 
             Op::CommitFixup => Box::new(commit::CommitFixup),
+            Op::CommitInstantFixup => Box::new(commit::CommitInstantFixup),
             Op::Discard => Box::new(discard::Discard),
             Op::LogOther => Box::new(log::LogOther),
             Op::RebaseAutosquash => Box::new(rebase::RebaseAutosquash),
