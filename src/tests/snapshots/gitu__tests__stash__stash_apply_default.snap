@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stash.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
@@ -13,7 +13,7 @@ expression: ctx.redact_buffer()
  stash@1 On main: file-one                                                      |
                                                                                 |
  Recent commits                                                                 |
- _______ main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |

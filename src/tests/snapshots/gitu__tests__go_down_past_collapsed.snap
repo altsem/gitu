@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
 ▌modified   file-two…                                                           |
                                                                                 |
  Recent commits                                                                 |
- _______ main add file-two                                                      |
- _______ add file-one                                                           |
+ ba7ba58 main add file-two                                                      |
+ 428f4a7 add file-one                                                           |
                                                                                 |
                                                                                 |
                                                                                 |

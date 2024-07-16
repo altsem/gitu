@@ -2,9 +2,9 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌_______ main a-tag add secondfile                                              |
- _______ annotated add firstfile                                                |
- _______ origin/main add initial-file                                           |
+▌0c2c6c3 main a-tag add secondfile                                              |
+ 223428c annotated add firstfile                                                |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |

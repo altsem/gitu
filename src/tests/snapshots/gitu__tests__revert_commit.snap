@@ -2,8 +2,8 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌_______ main Revert "add initial-file"                                         |
- _______ origin/main add initial-file                                           |
+▌6324471 main Revert "add initial-file"                                         |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git revert ________________________________________                           |
+$ git revert b66a0bf82020d6a386e94d0fceedec1f817d20c7                           |
 styles_hash: b8c40dcdc41cf963

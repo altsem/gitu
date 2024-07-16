@@ -93,24 +93,6 @@ impl TestContext {
         };
         let mut debug_output = format!("{:?}", TestBuffer(test_backend.buffer()));
 
-        [&self.dir, &self.remote_dir]
-            .iter()
-            .flat_map(|dir| Repository::open(dir.path()).ok())
-            .for_each(|repo| {
-                let mut revwalk = repo.revwalk().unwrap();
-                revwalk.push_head().ok();
-                revwalk
-                    .flat_map(|maybe_oid| maybe_oid.and_then(|oid| repo.find_commit(oid)))
-                    .for_each(|commit| {
-                        let id = commit.as_object().id().to_string();
-                        let short = commit.as_object().short_id().unwrap();
-                        let short_id = short.as_str().unwrap();
-
-                        debug_output = debug_output.replace(&id, &"_".repeat(id.len()));
-                        debug_output = debug_output.replace(short_id, &"_".repeat(short_id.len()));
-                    });
-            });
-
         redact_temp_dir(&self.dir, &mut debug_output);
         redact_temp_dir(&self.remote_dir, &mut debug_output);
 

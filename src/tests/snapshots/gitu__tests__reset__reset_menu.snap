@@ -1,9 +1,9 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/reset.rs
 expression: ctx.redact_buffer()
 ---
- _______ main add unwanted-file                                                 |
-▌_______ origin/main add initial-file                                           |
+ ba1a85d main add unwanted-file                                                 |
+▌b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |

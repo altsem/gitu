@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
 ▌modified   secondfile…                                                         |
                                                                                 |
  Recent commits                                                                 |
- _______ main add secondfile                                                    |
- _______ add firstfile                                                          |
+ a735817 main add secondfile                                                    |
+ 95a979d add firstfile                                                          |
                                                                                 |
                                                                                 |
                                                                                 |

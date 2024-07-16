@@ -14,9 +14,9 @@ expression: ctx.redact_buffer()
  conflicted   new-file…                                                         |
                                                                                 |
  Recent commits                                                                 |
- _______ main modify new-file                                                   |
- _______ add new-file                                                           |
- _______ origin/main add initial-file                                           |
+ ed5ed59 main modify new-file                                                   |
+ 46c81ca add new-file                                                           |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
