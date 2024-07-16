@@ -2,7 +2,7 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌Reverting _______                                                              |
+▌Reverting 57409cb                                                              |
                                                                                 |
  Unmerged                                                                       |
  new-file                                                                       |
@@ -14,9 +14,9 @@ expression: ctx.redact_buffer()
  conflicted   new-file…                                                         |
                                                                                 |
  Recent commits                                                                 |
- _______ main modify new-file                                                   |
- _______ add new-file                                                           |
- _______ origin/main add initial-file                                           |
+ 7294ba4 main modify new-file                                                   |
+ 57409cb add new-file                                                           |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |

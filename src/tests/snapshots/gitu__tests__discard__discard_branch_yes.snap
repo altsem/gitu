@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d asd                                                             |
-Deleted branch asd (was _______).                                               |
+Deleted branch asd (was b66a0bf).                                               |
 styles_hash: 32a139704e30d56a

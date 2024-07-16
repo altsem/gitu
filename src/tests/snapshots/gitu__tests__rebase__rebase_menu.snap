@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch other-branch                                                         |
                                                                                 |
  Recent commits                                                                 |
- _______ other-branch origin/main add initial-file                              |
+ b66a0bf other-branch origin/main add initial-file                              |
                                                                                 |
                                                                                 |
                                                                                 |

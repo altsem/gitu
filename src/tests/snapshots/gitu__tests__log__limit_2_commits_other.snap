@@ -2,8 +2,8 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-▌_______ main add first commit                                                  |
- _______ add second commit                                                      |
+▌8bb5532 main add first commit                                                  |
+ 6c08cf7 add second commit                                                      |
                                                                                 |
                                                                                 |
                                                                                 |

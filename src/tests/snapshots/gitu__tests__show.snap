@@ -2,7 +2,7 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- commit ________________________________________                                |
+ commit cd0a1c1f653ae15d2b920922e04046a2453d2afb                                |
  Author: Author Name <author@email.com>                                         |
  Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
                                                                                 |

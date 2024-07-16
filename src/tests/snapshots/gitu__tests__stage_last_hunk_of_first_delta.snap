@@ -15,9 +15,9 @@ expression: ctx.redact_buffer()
   blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
- _______ main add file-two                                                      |
- _______ add file-one                                                           |
- _______ origin/main add initial-file                                           |
+ e45938a main add file-two                                                      |
+ b3cf8e8 add file-one                                                           |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|

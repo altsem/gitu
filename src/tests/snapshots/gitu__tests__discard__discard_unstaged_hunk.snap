@@ -1,13 +1,13 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/discard.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
  Your branch is ahead of 'origin/main' by 1 commit.                             |
                                                                                 |
  Recent commits                                                                 |
- _______ main add file-one                                                      |
-▌_______ origin/main add initial-file                                           |
+ 4f3ed19 main add file-one                                                      |
+▌b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |

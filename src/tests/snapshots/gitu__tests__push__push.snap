@@ -1,13 +1,13 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- _______ main origin/main add new-file                                          |
- _______ add initial-file                                                       |
+ e7eb2bd main origin/main add new-file                                          |
+ b66a0bf add initial-file                                                       |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git push                                                                      |
 To                                                                              |
-   _______.._______  main -> main                                               |
+   b66a0bf..e7eb2bd  main -> main                                               |
 styles_hash: 4b89bed7f095a906

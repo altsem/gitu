@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- _______ main origin/main add remote-file                                       |
- _______ add initial-file                                                       |
+ d07f2d3 main origin/main add remote-file                                       |
+ b66a0bf add initial-file                                                       |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -16,8 +16,8 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git pull                                                                      |
 From                                                                            |
-   _______.._______  main       -> origin/main                                  |
-Updating _______.._______                                                       |
+   b66a0bf..d07f2d3  main       -> origin/main                                  |
+Updating b66a0bf..d07f2d3                                                       |
 Fast-forward                                                                    |
  remote-file | 1 +                                                              |
  1 file changed, 1 insertion(+)                                                 |

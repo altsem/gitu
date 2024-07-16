@@ -10,8 +10,8 @@ expression: ctx.redact_buffer()
  deleted   new-file…                                                            |
                                                                                 |
  Recent commits                                                                 |
- _______ main add new-file                                                      |
- _______ origin/main add initial-file                                           |
+ 46c81ca main add new-file                                                      |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
