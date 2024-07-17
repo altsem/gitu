@@ -5,18 +5,14 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    ignore:
+      dependency-name: "tree-sitter*"
     groups:
       minor/patch:
         applies-to: version-updates
-        exclude-patterns:
-          - "tree-sitter*"
         update-types:
         - "minor"
         - "patch"
-      tree-sitter:
-        applies-to: version-updates
-        patterns:
-          - "tree-sitter*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
