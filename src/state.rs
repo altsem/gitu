@@ -139,6 +139,7 @@ impl State {
 
     fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
         if self.prompt.state.status() == Status::Aborted {
+            self.unhide_menu();
             self.prompt.reset(term)?;
         } else if let Some(mut prompt_data) = self.prompt.data.take() {
             let result = (Rc::get_mut(&mut prompt_data.update_fn).unwrap())(self, term);

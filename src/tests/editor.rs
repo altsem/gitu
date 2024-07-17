@@ -64,3 +64,13 @@ fn move_next_then_parent_section() {
         .unwrap();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn exit_from_prompt_shows_menu() {
+    snapshot!(TestContext::setup_init(), "bb<esc>");
+}
+
+#[test]
+fn re_enter_prompt_from_menu() {
+    snapshot!(TestContext::setup_init(), "bb<esc>b");
+}
