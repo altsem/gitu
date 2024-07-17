@@ -24,7 +24,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Continue")]
+#[display(fmt = "Rebase continue")]
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -40,7 +40,7 @@ impl OpTrait for RebaseContinue {
 }
 
 #[derive(Display)]
-#[display(fmt = "Abort")]
+#[display(fmt = "Rebase abort")]
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -56,7 +56,7 @@ impl OpTrait for RebaseAbort {
 }
 
 #[derive(Display)]
-#[display(fmt = "elsewhere")]
+#[display(fmt = "Rebase elsewhere")]
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -81,7 +81,7 @@ fn rebase_elsewhere(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Interactively")]
+#[display(fmt = "Rebase interactive")]
 pub(crate) struct RebaseInteractive;
 impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -119,7 +119,7 @@ fn parent(reference: &OsStr) -> OsString {
 }
 
 #[derive(Display)]
-#[display(fmt = "Autosquash")]
+#[display(fmt = "Rebase autosquash")]
 pub(crate) struct RebaseAutosquash;
 impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
