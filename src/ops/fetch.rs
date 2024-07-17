@@ -11,7 +11,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Fetch all")]
+#[display(fmt = "all remotes")]
 pub(crate) struct FetchAll;
 impl OpTrait for FetchAll {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -28,7 +28,7 @@ impl OpTrait for FetchAll {
 }
 
 #[derive(Display)]
-#[display(fmt = "Fetch from elsewhere")]
+#[display(fmt = "elsewhere")]
 pub(crate) struct FetchElsewhere;
 impl OpTrait for FetchElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

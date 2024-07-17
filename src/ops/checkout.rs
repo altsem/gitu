@@ -9,7 +9,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Checkout branch/revision")]
+#[display(fmt = "branch/revision")]
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -34,7 +34,7 @@ fn checkout(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Checkout new branch")]
+#[display(fmt = "new branch")]
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
