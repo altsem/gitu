@@ -8,7 +8,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Pull")]
+#[display(fmt = "from default")]
 pub(crate) struct Pull;
 impl OpTrait for Pull {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -25,7 +25,7 @@ impl OpTrait for Pull {
 }
 
 #[derive(Display)]
-#[display(fmt = "Pull from elsewhere")]
+#[display(fmt = "from elsewhere")]
 pub(crate) struct PullElsewhere;
 impl OpTrait for PullElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

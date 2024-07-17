@@ -26,7 +26,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Log current")]
+#[display(fmt = "current")]
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -38,7 +38,7 @@ impl OpTrait for LogCurrent {
 }
 
 #[derive(Display)]
-#[display(fmt = "Log other")]
+#[display(fmt = "other")]
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

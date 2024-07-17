@@ -8,7 +8,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Reset soft")]
+#[display(fmt = "soft")]
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -32,7 +32,7 @@ fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Reset mixed")]
+#[display(fmt = "mixed")]
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -56,7 +56,7 @@ fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Reset hard")]
+#[display(fmt = "hard")]
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
