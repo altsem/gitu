@@ -42,7 +42,7 @@ impl OpTrait for Commit {
 }
 
 #[derive(Display)]
-#[display(fmt = "Commit amend")]
+#[display(fmt = "amend")]
 pub(crate) struct CommitAmend;
 impl OpTrait for CommitAmend {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -59,7 +59,7 @@ impl OpTrait for CommitAmend {
 }
 
 #[derive(Display)]
-#[display(fmt = "Commit fixup")]
+#[display(fmt = "fixup")]
 pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -91,7 +91,7 @@ fn commit_fixup_cmd(args: &[OsString], rev: &OsStr) -> Command {
 }
 
 #[derive(Display)]
-#[display(fmt = "Commit instant fixup")]
+#[display(fmt = "instant fixup")]
 pub(crate) struct CommitInstantFixup;
 impl OpTrait for CommitInstantFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {

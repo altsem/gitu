@@ -15,7 +15,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Revert abort")]
+#[display(fmt = "Abort")]
 pub(crate) struct RevertAbort;
 impl OpTrait for RevertAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -31,7 +31,7 @@ impl OpTrait for RevertAbort {
 }
 
 #[derive(Display)]
-#[display(fmt = "Revert continue")]
+#[display(fmt = "Continue")]
 pub(crate) struct RevertContinue;
 impl OpTrait for RevertContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -47,7 +47,7 @@ impl OpTrait for RevertContinue {
 }
 
 #[derive(Display)]
-#[display(fmt = "Revert commit")]
+#[display(fmt = "Revert commit(s)")]
 pub(crate) struct RevertCommit;
 impl OpTrait for RevertCommit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

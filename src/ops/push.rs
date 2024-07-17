@@ -13,7 +13,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Push")]
+#[display(fmt = "to default")]
 pub(crate) struct Push;
 impl OpTrait for Push {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -30,7 +30,7 @@ impl OpTrait for Push {
 }
 
 #[derive(Display)]
-#[display(fmt = "Push elsewhere")]
+#[display(fmt = "to elsewhere")]
 pub(crate) struct PushElsewhere;
 impl OpTrait for PushElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 Help                                Submenu                                     |
-Y Show refs                         b Branch                                    |
+Y Show Refs                         b Branch                                    |
 <tab> Toggle section                c Commit                                    |
 k/<up> Up                           f Fetch                                     |
 j/<down> Down                       h Help                                      |

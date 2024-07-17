@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 Log                     Arguments                                               |
-l Log current           -F Search messages (--grep=example)                     |
-o Log other             -n Limit number of commits (-n=256)                     |
+l current               -F Search messages (--grep=example)                     |
+o other                 -n Limit number of commits (-n=256)                     |
 q/<esc> Quit/Close                                                              |
 styles_hash: 565ada6ff29be3da

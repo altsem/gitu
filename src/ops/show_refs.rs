@@ -4,7 +4,7 @@ use derive_more::Display;
 use std::rc::Rc;
 
 #[derive(Display)]
-#[display(fmt = "Show refs")]
+#[display(fmt = "Show Refs")]
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

@@ -12,7 +12,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Stash")]
+#[display(fmt = "both")]
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -34,7 +34,7 @@ fn stash_push(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Stash index")]
+#[display(fmt = "index")]
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -56,7 +56,7 @@ fn stash_push_index(state: &mut State, term: &mut Term, input: &str) -> Res<()> 
 }
 
 #[derive(Display)]
-#[display(fmt = "Stash working tree")]
+#[display(fmt = "worktree")]
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -141,7 +141,7 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Stash keeping index")]
+#[display(fmt = "keeping index")]
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -163,7 +163,7 @@ fn stash_push_keep_index(state: &mut State, term: &mut Term, input: &str) -> Res
 }
 
 #[derive(Display)]
-#[display(fmt = "Pop stash")]
+#[display(fmt = "pop")]
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -187,7 +187,7 @@ fn stash_pop(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Apply stash")]
+#[display(fmt = "apply")]
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -211,7 +211,7 @@ fn stash_apply(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 }
 
 #[derive(Display)]
-#[display(fmt = "Drop stash")]
+#[display(fmt = "drop")]
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {

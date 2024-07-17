@@ -15,9 +15,9 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 Rebase                  Arguments                                               |
-a Rebase abort          -a Autosquash (--autosquash)                            |
-c Rebase continue       -A Autostash (--autostash)                              |
-e Rebase elsewhere      -d Lie about committer date (--committer-date-is-author-|
+a abort                 -a Autosquash (--autosquash)                            |
+c continue              -A Autostash (--autostash)                              |
+e onto elsewhere        -d Lie about committer date (--committer-date-is-author-|
 q/<esc> Quit/Close      -i Interactive (--interactive)                          |
                         -k Keep empty commits (--keep-empty)                    |
                         -h Disable hooks (--no-verify)                          |
