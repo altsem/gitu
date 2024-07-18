@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.0] - 2024-07-18
+
+### 🚀 Features
+
+- *(commit)* Instant fixup
+
+### 🐛 Bug Fixes
+
+- Invisible menu after closing an input prompt
+
+### 🎨 Styling
+
+- Wording in menus made more consistent to Magit
+
 ## [0.22.1] - 2024-07-04
 
 ### 🐛 Bug Fixes
