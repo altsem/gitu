@@ -10,6 +10,7 @@ name = "show"
 harness = false
 
 [dev-dependencies]
+ctor = "0.2.7"
 pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
@@ -20,7 +21,9 @@ unicode-width = "0.1.12"
 strip = true
 
 [dependencies]
-arboard = { version = "3.4.0", default-features = false, features = ["windows-sys"] }
+arboard = { version = "3.4.0", default-features = false, features = [
+  "windows-sys",
+] }
 chrono = "0.4.38"
 clap = { version = "4.5.9", features = ["derive"] }
 crossterm = "0.27.0"
