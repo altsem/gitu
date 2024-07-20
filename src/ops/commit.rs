@@ -104,8 +104,8 @@ impl OpTrait for CommitInstantFixup {
 
                     state.close_menu();
 
-                    state.run_cmd_interactive(term, commit_fixup_cmd(&args, &rev))?;
-                    state.run_cmd_interactive(term, rebase_autosquash_cmd(&rev))
+                    state.run_cmd(term, &[], commit_fixup_cmd(&args, &rev))?;
+                    state.run_cmd(term, &[], rebase_autosquash_cmd(&rev))
                 }))
             }
             _ => None,
