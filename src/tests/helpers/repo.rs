@@ -5,6 +5,12 @@ use temp_dir::TempDir;
 pub struct RepoTestContext {
     pub dir: TempDir,
     pub remote_dir: TempDir,
+    pub local_repo: git2::Repository,
+    pub remote_repo: git2::Repository,
+}
+
+fn open_repo(dir: &TempDir) -> git2::Repository {
+    git2::Repository::open(dir.path().to_path_buf()).unwrap()
 }
 
 impl RepoTestContext {
@@ -14,8 +20,16 @@ impl RepoTestContext {
 
         set_env_vars();
         run(dir.path(), &["git", "init", "--initial-branch=main"]);
+        run(remote_dir.path(), &["git", "init", "--initial-branch=main"]);
+        set_config(dir.path());
+        set_config(remote_dir.path());
 
-        Self { dir, remote_dir }
+        Self {
+            local_repo: open_repo(&dir),
+            remote_repo: open_repo(&remote_dir),
+            dir,
+            remote_dir,
+        }
     }
 
     pub fn setup_clone() -> Self {
@@ -28,14 +42,21 @@ impl RepoTestContext {
             remote_dir.path(),
             &["git", "init", "--bare", "--initial-branch=main"],
         );
+        set_config(remote_dir.path());
 
         clone_and_commit(&remote_dir, "initial-file", "hello");
         run(
             dir.path(),
             &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
         );
+        set_config(dir.path());
 
-        Self { dir, remote_dir }
+        Self {
+            local_repo: open_repo(&dir),
+            remote_repo: open_repo(&remote_dir),
+            dir,
+            remote_dir,
+        }
     }
 }
 
@@ -64,6 +85,11 @@ pub fn run(dir: &Path, cmd: &[&str]) -> String {
     .unwrap()
 }
 
+fn set_config(path: &Path) {
+    run(path, &["git", "config", "user.email", "ci@example.com"]);
+    run(path, &["git", "config", "user.name", "CI"]);
+}
+
 pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &str) {
     let other_dir = TempDir::new().unwrap();
 
@@ -71,6 +97,8 @@ pub fn clone_and_commit(remote_dir: &TempDir, file_name: &str, file_content: &st
         other_dir.path(),
         &["git", "clone", remote_dir.path().to_str().unwrap(), "."],
     );
+
+    set_config(other_dir.path());
 
     commit(other_dir.path(), file_name, file_content);
     run(other_dir.path(), &["git", "push"]);

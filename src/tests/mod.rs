@@ -16,6 +16,7 @@ mod reset;
 mod stage;
 mod stash;
 mod unstage;
+mod remote;
 
 use helpers::{clone_and_commit, commit, keys, run, TestContext};
 
