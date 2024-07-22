@@ -2,7 +2,9 @@ name: release
 on:
   push:
     tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+    branches:
+      - ci-release
 
 jobs:
   cargo-publish:
@@ -70,58 +72,51 @@ jobs:
       TARGET_DIR: ./target/${{ matrix.target }}
     strategy:
       matrix:
-        build: [linux, linux-arm, macos]
+        build: [linux, macos, windows]
         include:
         - build: linux
           os: ubuntu-latest
           rust: stable
           target: x86_64-unknown-linux-gnu
-        - build: linux-arm
-          os: ubuntu-latest
-          rust: stable
-          target: arm-unknown-linux-gnueabihf
         - build: macos
-          os: macos-latest
+          os: macos-13
           rust: stable
           target: x86_64-apple-darwin
+        - build: macos-arm64
+          os: macos-latest
+          rust: stable
+          target: aarch64-apple-darwin
+        - build: windows
+          os: windows-latest
+          rust: stable
+          target: x86_64-pc-windows-msvc
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-        target: ${{ matrix.target }}
-
-    - name: Use Cross
-      shell: bash
-      run: |
-        cargo install cross
-        echo "CARGO=cross" >> $GITHUB_ENV
-
     - name: Build release binary
-      run: cross build --verbose --release ${{ env.TARGET_FLAGS }}
+      run: cargo build --verbose --release --locked ${{ env.TARGET_FLAGS }}
 
-    - name: Strip release binary (linux and macos)
-      if: matrix.build == 'linux' || matrix.build == 'macos'
-      run: strip "target/${{ matrix.target }}/release/gitu"
-
-    - name: Strip release binary (arm)
-      if: matrix.build == 'linux-arm'
-      run: |
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:arm-unknown-linux-gnueabihf \
-          arm-linux-gnueabihf-strip \
-          /target/arm-unknown-linux-gnueabihf/release/gitu
-
-    - name: Build archive
+    - name: Build archive (Windows)
+      if: matrix.build == 'windows'
       shell: bash
       run: |
         staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
-        mkdir -p "$staging/complete"
+        mkdir -p "$staging"
+
+        cp {README.md,LICENSE} "$staging/"
+        cp "target/${{ matrix.target }}/release/gitu" "$staging/"
+
+        7z a -r "$staging.zip" "$staging"
+        echo "ASSET=$staging.zip" >> $GITHUB_ENV
+
+    - name: Build archive (non-Windows)
+      if: matrix.build != 'windows'
+      shell: bash
+      run: |
+        staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
+        mkdir -p "$staging"
 
         cp {README.md,LICENSE} "$staging/"
         cp "target/${{ matrix.target }}/release/gitu" "$staging/"

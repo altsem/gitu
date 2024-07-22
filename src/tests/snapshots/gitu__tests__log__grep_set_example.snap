@@ -1,0 +1,25 @@
+---
+source: src/tests/log.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 3 commit.                             |
+                                                                                |
+ Recent commits                                                                 |
+ 8bb5532 main add first commit                                                  |
+ 6c08cf7 add second commit                                                      |
+ 79e63f1 add third commit                                                       |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Log                     Arguments                                               |
+l current               -F Search messages (--grep=example)                     |
+o other                 -n Limit number of commits (-n=256)                     |
+q/<esc> Quit/Close                                                              |
+styles_hash: 565ada6ff29be3da

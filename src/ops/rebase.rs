@@ -1,5 +1,5 @@
-use super::{subscreen_arg, Action, OpTrait};
-use crate::{items::TargetData, state::State, term::Term};
+use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
@@ -7,8 +7,24 @@ use std::{
     rc::Rc,
 };
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Rebase continue")]
+pub(crate) fn init_args() -> Vec<Arg> {
+    vec![
+        Arg::new_flag("--keep-empty", "Keep empty commits", false),
+        Arg::new_flag("--preserve-merges", "Preserve merges", false),
+        Arg::new_flag(
+            "--committer-date-is-author-date",
+            "Lie about committer date",
+            false,
+        ),
+        Arg::new_flag("--autosquash", "Autosquash", false),
+        Arg::new_flag("--autostash", "Autostash", true),
+        Arg::new_flag("--interactive", "Interactive", false),
+        Arg::new_flag("--no-verify", "Disable hooks", false),
+    ]
+}
+
+#[derive(Display)]
+#[display(fmt = "continue")]
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -16,14 +32,15 @@ impl OpTrait for RebaseContinue {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--continue"]);
 
-            state.issue_subscreen_command(term, cmd)?;
+            state.close_menu();
+            state.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Rebase abort")]
+#[derive(Display)]
+#[display(fmt = "abort")]
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -31,20 +48,51 @@ impl OpTrait for RebaseAbort {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--abort"]);
 
-            state.run_external_cmd(term, &[], cmd)?;
+            state.close_menu();
+            state.run_cmd(term, &[], cmd)?;
             Ok(())
         }))
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Rebase interactive")]
+#[derive(Display)]
+#[display(fmt = "onto elsewhere")]
+pub(crate) struct RebaseElsewhere;
+impl OpTrait for RebaseElsewhere {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_prompt_with_default(
+            "Rebase onto",
+            rebase_elsewhere,
+            selected_rev,
+            true,
+        ))
+    }
+}
+
+fn rebase_elsewhere(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.arg("rebase");
+    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.arg(rev);
+
+    state.close_menu();
+    state.run_cmd_interactive(term, cmd)?;
+    Ok(())
+}
+
+#[derive(Display)]
+#[display(fmt = "interactively")]
 pub(crate) struct RebaseInteractive;
 impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                subscreen_arg(rebase_interactive_cmd, r.into())
+                let rev = OsString::from(r);
+                Rc::new(move |state: &mut State, term: &mut Term| {
+                    let args = state.pending_menu.as_ref().unwrap().args();
+                    state.close_menu();
+                    state.run_cmd_interactive(term, rebase_interactive_cmd(&args, &rev))
+                })
             }
             _ => return None,
         };
@@ -56,15 +104,11 @@ impl OpTrait for RebaseInteractive {
     }
 }
 
-fn rebase_interactive_cmd(reference: &OsStr) -> Command {
+fn rebase_interactive_cmd(args: &[OsString], rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args([
-        OsStr::new("rebase"),
-        OsStr::new("-i"),
-        OsStr::new("--autostash"),
-        &parent(reference),
-    ]);
-
+    cmd.args(["rebase", "-i"]);
+    cmd.args(args);
+    cmd.arg(&parent(rev));
     cmd
 }
 
@@ -74,14 +118,19 @@ fn parent(reference: &OsStr) -> OsString {
     parent
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Rebase autosquash")]
+#[derive(Display)]
+#[display(fmt = "autosquash")]
 pub(crate) struct RebaseAutosquash;
 impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                subscreen_arg(rebase_autosquash_cmd, r.into())
+                let rev = OsString::from(r);
+                Rc::new(move |state: &mut State, term: &mut Term| {
+                    let args = state.pending_menu.as_ref().unwrap().args();
+                    state.close_menu();
+                    state.run_cmd_interactive(term, rebase_autosquash_cmd(&args, &rev))
+                })
             }
             _ => return None,
         };
@@ -93,15 +142,10 @@ impl OpTrait for RebaseAutosquash {
     }
 }
 
-fn rebase_autosquash_cmd(reference: &OsStr) -> Command {
+fn rebase_autosquash_cmd(args: &[OsString], rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args([
-        OsStr::new("rebase"),
-        OsStr::new("-i"),
-        OsStr::new("--autosquash"),
-        OsStr::new("--keep-empty"),
-        OsStr::new("--autostash"),
-        &reference,
-    ]);
+    cmd.args(["rebase", "-i", "--autosquash", "--keep-empty"]);
+    cmd.args(args);
+    cmd.arg(rev);
     cmd
 }

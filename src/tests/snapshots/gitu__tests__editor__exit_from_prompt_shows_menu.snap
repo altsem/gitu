@@ -1,0 +1,25 @@
+---
+source: src/tests/editor.rs
+expression: ctx.redact_buffer()
+---
+▌No branch                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Branch                                                                          |
+b Checkout branch/revision                                                      |
+c Checkout new branch                                                           |
+q/<esc> Quit/Close                                                              |
+styles_hash: 19462c048f4219c5

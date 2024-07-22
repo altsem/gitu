@@ -1,35 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 10 },
-    content: [
-        " Branches                                                                       ",
-        "   main   origin/main                                                           ",
-        "🢒* other-branch                                                                 ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "$ git checkout other-branch                                                     ",
-        "Switched to branch 'other-branch'                                               ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 3, y: 1, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 7, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 10, y: 1, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 21, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 3, y: 2, fg: Green, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 15, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 8, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 27, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+ Branches                                                                       |
+   main                                                                         |
+▌* other-branch                                                                 |
+                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git checkout other-branch                                                     |
+Switched to branch 'other-branch'                                               |
+styles_hash: 5006bae7555ab9c9

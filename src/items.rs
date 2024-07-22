@@ -4,10 +4,12 @@ use crate::git::diff::Diff;
 use crate::git::diff::Hunk;
 use crate::Res;
 use git2::Commit;
+use git2::Oid;
 use git2::Repository;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
+use regex::Regex;
 use std::borrow::Cow;
 use std::iter;
 use std::path::PathBuf;
@@ -98,13 +100,27 @@ fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
         .iter()
         .enumerate()
         .map(|(i, line)| Item {
-            display: line.clone(),
-            unselectable: line.spans.first().unwrap().content.starts_with(' '),
+            display: replace_tabs_with_spaces(line.clone()),
+            unselectable: line
+                .spans
+                .first()
+                .is_some_and(|s| s.content.starts_with(' ')),
             depth,
             target_data: Some(TargetData::HunkLine(Rc::clone(&hunk), i)),
             ..Default::default()
         })
         .collect()
+}
+
+fn replace_tabs_with_spaces(line: Line<'_>) -> Line<'_> {
+    let spans = line
+        .spans
+        .iter()
+        .cloned()
+        .map(|span| Span::styled(span.content.replace('\t', "    "), span.style))
+        .collect::<Vec<_>>();
+
+    Line { spans, ..line }
 }
 
 pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {
@@ -152,13 +168,13 @@ pub(crate) fn log(
     config: &Config,
     repo: &Repository,
     limit: usize,
-    reference: Option<String>,
+    rev: Option<Oid>,
+    msg_regex: Option<Regex>,
 ) -> Res<Vec<Item>> {
     let style = &config.style;
     let mut revwalk = repo.revwalk()?;
-    if let Some(r) = reference {
-        let oid = repo.revparse_single(&r)?.id();
-        revwalk.push(oid)?;
+    if let Some(r) = rev {
+        revwalk.push(r)?;
     } else if revwalk.push_head().is_err() {
         return Ok(vec![]);
     }
@@ -169,7 +185,7 @@ pub(crate) fn log(
         .filter_map(
             |reference| match (reference.peel_to_commit(), reference.shorthand()) {
                 (Ok(target), Some(name)) => {
-                    if name.ends_with("/HEAD") {
+                    if name.ends_with("/HEAD") || name.starts_with("prefetch/remotes/") {
                         return None;
                     }
 
@@ -189,8 +205,8 @@ pub(crate) fn log(
         )
         .collect::<Vec<(Commit, Span)>>();
 
-    Ok(revwalk
-        .map(|oid_result| -> Res<Item> {
+    let items: Vec<Item> = revwalk
+        .map(|oid_result| -> Res<Option<Item>> {
             let oid = oid_result?;
             let commit = repo.find_commit(oid)?;
             let short_id = commit.as_object().short_id()?.as_str().unwrap().to_string();
@@ -208,24 +224,39 @@ pub(crate) fn log(
             )
             .collect::<Vec<_>>();
 
-            Ok(Item {
+            if let Some(re) = &msg_regex {
+                if !re.is_match(commit.message().unwrap_or("")) {
+                    return Ok(None);
+                }
+            }
+
+            Ok(Some(Item {
                 id: oid.to_string().into(),
                 display: Line::from(spans),
                 depth: 1,
                 target_data: Some(TargetData::Commit(oid.to_string())),
                 ..Default::default()
-            })
+            }))
         })
-        .map(|result| match result {
+        .filter_map(|result| match result {
             Ok(item) => item,
-            Err(err) => Item {
+            Err(err) => Some(Item {
                 id: err.to_string().into(),
                 display: err.to_string().into(),
                 ..Default::default()
-            },
+            }),
         })
         .take(limit)
-        .collect())
+        .collect();
+
+    if items.is_empty() {
+        Ok(vec![Item {
+            display: Line::raw("No commits found"),
+            ..Default::default()
+        }])
+    } else {
+        Ok(items)
+    }
 }
 
 pub(crate) fn blank_line() -> Item {

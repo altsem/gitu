@@ -1,55 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/stash.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        "🢒On branch main                                                                 ",
-        "▌Your branch is up to date with 'origin/main'.                                  ",
-        "                                                                                ",
-        " Stashes                                                                        ",
-        " stash@0 On main: file-two                                                      ",
-        " stash@1 On main: file-one                                                      ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        " _______ main origin/main add initial-file                                      ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "? Stash index (default 0): ›                                                    ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 4, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 5, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 7, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 8, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 8, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 14, y: 8, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 25, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 19, fg: Cyan, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 2, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 26, y: 19, fg: Cyan, bg: Reset, underline: Reset, modifier: DIM,
-        x: 29, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Stashes                                                                        |
+ stash@0 On main: file-two                                                      |
+ stash@1 On main: file-one                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+? Apply stash (default 0): ›                                                    |
+styles_hash: 3e6073d833eb8d18

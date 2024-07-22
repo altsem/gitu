@@ -1,0 +1,25 @@
+---
+source: src/tests/push.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 1 commit.                             |
+                                                                                |
+ Recent commits                                                                 |
+ e7eb2bd main add new-file                                                      |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Push                    Arguments                                               |
+p to default            -n Dry run (--dry-run)                                  |
+e to elsewhere          -F Force (--force)                                      |
+q/<esc> Quit/Close      -f Force with lease (--force-with-lease)                |
+                        -h Disable hooks (--no-verify)                          |
+styles_hash: 5f1105080c8b8328

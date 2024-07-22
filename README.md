@@ -2,93 +2,48 @@
 [![CI](https://github.com/altsem/gitu/actions/workflows/ci.yml/badge.svg)](https://github.com/altsem/gitu/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/altsem/gitu/graph/badge.svg?token=5YWPU7GWFW)](https://codecov.io/gh/altsem/gitu)
 
-A terminal user interface for Git. Inspired by Magit, and launched straight from the terminal.
+A terminal user interface for Git. Inspired by Magit.
 
-<img src="vhs/rec.gif"/>
+<img style="width: 720px" src="vhs/rec.gif"/>
 
 ### Features
-Gitu aims to implement many of the core features of Magit over time. 
-It should be familiar to any previous Magit users.
-
-A rough list of so-far supported features:
-- File/Hunk/Line-level stage/unstage
-- Show (view commits / open EDITOR at line)
-- Show branches
-- Branch:
-  - checkout, checkout new
-- Commit:
-  - commit, amend, fixup
-- Fetch:
-  - all
-- Log:
-  - current
-- Pull / Push:
-  - remote
-- Rebase:
-  - abort, continue, autosquash, interactive
-- Reset:
-  - Soft, Mixed, Hard
-- Stash:
-  - save, pop, apply, drop
+Gitu aims to implement many of the core features of Magit over time.
+It should be familiar to any previous Magit users.\
+Here's a list of so-far supported features:
+- **Staging/Unstaging** _(file, hunk, line)_ 
+- **Showing** _(view commits / open EDITOR at line)_
+- **Branching** _(checkout, checkout new)_
+- **Commiting** _(commit, amend, fixup)_
+- **Fetching**
+- **Logging** _(current, other)_
+- **Pulling / Pushing** _(You may want to configure a [push.default](https://git-scm.com/docs/git-config/#Documentation/git-config.txt-pushdefault))_
+- **Rebasing** _(elsewhere, abort, continue, autosquash, interactive)_
+- **Resetting** _(soft, mixed, hard)_
+- **Reverting** _(commit)_
+- **Stashing** _(save, pop, apply, drop)_
 
 ### Keybinds
-A help-menu can be shown by pressing the `h` key.
+Keybinds try mimic Magit, while staying Vim-like.
+A help-menu can be shown by pressing the `h` key, or by configuring `general.always_show_help.enabled = true`
 
-<img src="vhs/help.png"/>
 
-### Install
-#### Using Cargo
-Run the command (recommended):
-```
-cargo install gitu --locked
-```
-
-...or to install from git, run:
-```
-cargo install --git https://github.com/altsem/gitu.git --locked
-```
-
-#### Arch Linux
-You can install the `gitu` package from the [official extra repository](https://archlinux.org/packages/extra/x86_64/gitu/):
-
-```
-pacman -S gitu
-```
-
-#### Using Release binaries
-gitu is available on Github Releases and should be installed from there.
-
-The latest release is available
-[here](https://github.com/altsem/gitu/releases).
-
-Download the archive that is appropriate for your platform and extract the
-binary into your `$PATH`. A common valid path location is `/usr/local/bin`.
-
-#### Using Nix flakes
-To build from `master` on flaked Nix platforms add this repo to your inputs:
-
-```
-inputs = {
-  nixpkgs.url = "nixpkgs/nixos-unstable";
-  gitu.url = "github:altsem/gitu";
-  gitu.inputs.nixpkgs.follows = "nixpkgs";
-};
-```
-
-Then wherever you install your packages (i.e., `home-manager`):
-
-```
-{ inputs, pkgs, lib, system, ... }: 
-{
-home.packages = with pkgs;
-  [
-    inputs.gitu.packages.${system}.default
-  ];
-}
-```
+<img style="width: 720px" src="vhs/help.png"/>
 
 ### Configuration
 The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
 
-Configuration is also loaded from `~/.config/gitu/config.toml`,
-you could copy the [default configuration](src/default_config.toml).
+Configuration is also loaded from:
+- Linux:   `~/.config/gitu/config.toml`
+- macOS:   `~/.config/gitu/config.toml`
+- Windows: `%USERPROFILE%\AppData\Roaming\gitu\config.toml`
+
+, refer to the [default configuration](src/default_config.toml).
+### Installing Gitu
+Follow the install instructions: [Installing Gitu](docs/installing.md)\
+Or install from your package manager:
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/gitu.svg)](https://repology.org/project/gitu/versions)
+
+### Contributing
+PRs are welcome!
+This may help to get you started: [Development & Tooling](docs/dev-tooling.md)

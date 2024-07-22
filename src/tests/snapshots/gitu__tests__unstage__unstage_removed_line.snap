@@ -1,58 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/unstage.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        " On branch main                                                                 ",
-        "                                                                                ",
-        " Unstaged changes (1)                                                           ",
-        " modified   firstfile                                                           ",
-        " @@ -1,3 +1,2 @@                                                                ",
-        "🢒-testing                                                                       ",
-        "  weehooo                                                                       ",
-        "  blrergh                                                                       ",
-        "                                                                                ",
-        " Staged changes (1)                                                             ",
-        " modified   firstfile                                                           ",
-        " @@ -1,2 +1,3 @@                                                                ",
-        "  testing                                                                       ",
-        " -testtest                                                                      ",
-        " +weehooo                                                                       ",
-        " +blrergh                                                                       ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "$ git apply --cached --reverse --recount                                        ",
-        "                                                                                ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 17, y: 2, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 4, fg: Blue, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 5, fg: Red, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 9, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 9, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 15, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 10, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 11, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 11, fg: Blue, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 13, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 10, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 14, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 15, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 15, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 18, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 40, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+ On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   firstfile                                                           |
+ @@ -1,3 +1,2 @@                                                                |
+▌-testing                                                                       |
+  weehooo                                                                       |
+  blrergh                                                                       |
+                                                                                |
+ Staged changes (1)                                                             |
+ modified   firstfile                                                           |
+ @@ -1,2 +1,3 @@                                                                |
+  testing                                                                       |
+ -testtest                                                                      |
+ +weehooo                                                                       |
+ +blrergh                                                                       |
+                                                                                |
+ Recent commits                                                                 |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --cached --reverse --recount                                        |
+styles_hash: 165bb077049621bc

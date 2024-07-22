@@ -5,6 +5,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    ignore:
+      dependency-name: "tree-sitter*"
     groups:
       minor/patch:
         applies-to: version-updates

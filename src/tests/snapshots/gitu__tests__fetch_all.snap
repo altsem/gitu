@@ -1,34 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 10 },
-    content: [
-        "🢒On branch main                                                                 ",
-        "▌Your branch is behind 'origin/main' by 1 commit.                               ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        " _______ main add initial-file                                                  ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "$ git fetch --all                                                               ",
-        "From                                                                            ",
-        "   _______.._______  main       -> origin/main                                  ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 4, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 4, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 7, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 17, y: 7, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+▌On branch main                                                                 |
+▌Your branch is behind 'origin/main' by 1 commit.                               |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main add initial-file                                                  |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git fetch --all --jobs 10                                                     |
+From                                                                            |
+   b66a0bf..d07f2d3  main       -> origin/main                                  |
+styles_hash: 362e47f9c483be51

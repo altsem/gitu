@@ -1,0 +1,25 @@
+---
+source: src/tests/editor.rs
+expression: ctx.redact_buffer()
+---
+▌+line 6 (file-1)                                                               |
+▌+line 7 (file-1)                                                               |
+▌+line 8 (file-1)                                                               |
+▌+line 9 (file-1)                                                               |
+▌+line 10 (file-1)                                                              |
+▌+line 11 (file-1)                                                              |
+▌+line 12 (file-1)                                                              |
+▌+line 13 (file-1)                                                              |
+▌+line 14 (file-1)                                                              |
+▌+line 15 (file-1)                                                              |
+▌+line 16 (file-1)                                                              |
+▌+line 17 (file-1)                                                              |
+▌+line 18 (file-1)                                                              |
+▌+line 19 (file-1)                                                              |
+▌+line 20 (file-1)                                                              |
+ modified   file-2                                                              |
+ @@ -0,0 +1,20 @@                                                               |
+ +line 1 (file-2)                                                               |
+ +line 2 (file-2)                                                               |
+ +line 3 (file-2)                                                               |
+styles_hash: bda77818fac72785

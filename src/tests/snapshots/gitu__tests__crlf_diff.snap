@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   crlf.txt                                                            |
+ @@ -1,2 +1,2 @@                                                                |
+  unchanged                                                                     |
+ -unchanged                                                                     |
+ +changed                                                                       |
+                                                                                |
+ Recent commits                                                                 |
+ ebb4990 main add crlf.txt                                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: b27fc2c882df73ef

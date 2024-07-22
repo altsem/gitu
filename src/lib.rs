@@ -1,44 +1,67 @@
+mod bindings;
 pub mod cli;
+mod cmd_log;
 pub mod config;
 mod git;
 mod git2_opts;
 mod items;
-mod keybinds;
+mod key_parser;
+mod menu;
 mod ops;
 mod prompt;
 mod screen;
 pub mod state;
+mod syntax_highlight;
 pub mod term;
 #[cfg(test)]
 mod tests;
 mod ui;
 
-use crossterm::event::{self};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use git2::Repository;
 use items::Item;
-use itertools::Itertools;
-use ops::{Action, Op, SubmenuOp};
-use state::State;
-use std::{borrow::Cow, error::Error, iter, path::PathBuf, process::Command, rc::Rc};
+use ops::Action;
+use std::{error::Error, path::PathBuf, process::Command, rc::Rc, time::Duration};
 use term::Term;
 
-const APP_NAME: &str = "gitu";
+//                                An overview of Gitu's ui and terminology:
+//
+//                Screen (src/screen/*)
+//                  │
+//                  ▼
+//                 ┌──────────────────────────────────────────────────────────────────┐
+//        Item───┬─► On branch master                                                 │
+//        Item   └─► Your branch is up to date with 'origin/master'.                  │
+//        ...      │                                                                  │
+//                 │ Untracked files                                                  │
+//                 │ src/tests/rebase.rs                                              │
+//                 │                                                                  │
+//                 │ Unstaged changes (4)                                             │
+//                 │▌modified   src/keybinds.rs…                                      │
+//                 │ modified   src/ops/mod.rs…                                       │
+//                 │ modified   src/ops/rebase.rs…                                    │
+//                 │ modified   src/tests/mod.rs…                                     │
+//                 │                                                                  │
+//                 │ Stashes                                                          │
+//                 │ stash@0 On master: scroll                                        │
+//                 │ stash@1 WIP on fix/run-cmd-error-on-bad-exit: 098d14a feat: prom…│
+//                 │                                                                  │
+//                 │ Recent commits                                                   │
+// Ops (src/ops/*) ├──────────────────────────────────────────────────────────────────┤
+//       │         │Help                        Submenu      modified   src/keybinds.r│
+//       └─────┬───►g Refresh                   h Help       ret Show                 │
+//             └───►tab Toggle section          b Branch     K Discard                │
+//                 │k p ↑ Move up               c Commit     s Stage                  │
+//                 │j n ↓ Move down             f Fetch      u Unstage                │
+// Submenu ───────►│C-k C-p C-↑ Move up line    l Log                                 │
+//                 │C-j C-n C-↓ Move down line  F Pull                                │
+//                 │C-u Half page up            P Push                                │
+//                 │C-d Half page down          r Rebase                              │
+//                 │y Show refs                 X Reset                               │
+//                 │                            z Stash                               │
+//                 └──────────────────────────────────────────────────────────────────┘
 
 pub type Res<T> = Result<T, Box<dyn Error>>;
-
-pub(crate) struct CmdMetaBuffer {
-    pub(crate) args: Cow<'static, str>,
-    pub(crate) out: Option<String>,
-}
-
-pub(crate) struct ErrorBuffer(String);
-
-fn command_args(cmd: &Command) -> Cow<'static, str> {
-    iter::once(cmd.get_program().to_string_lossy())
-        .chain(cmd.get_args().map(|arg| arg.to_string_lossy()))
-        .join(" ")
-        .into()
-}
 
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     log::debug!("Finding git dir");
@@ -53,47 +76,72 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     );
 
     log::debug!("Opening repo");
-    let repo = Repository::open_from_env()?;
+    let repo = open_repo_from_env()?;
     repo.set_workdir(&dir, false)?;
 
     log::debug!("Initializing config");
     let config = config::init_config()?;
 
     log::debug!("Creating initial state");
-    let mut state = state::State::create(repo, term.size()?, args, config)?;
+    let mut state = state::State::create(Rc::new(repo), term.size()?, args, Rc::new(config), true)?;
 
-    log::debug!("Drawing initial frame");
-    term.draw(|frame| ui::ui(frame, &mut state))?;
+    log::debug!("Initial update");
+    state.update(term, &[Event::FocusGained])?;
 
     if args.print {
         return Ok(());
     }
 
+    if let Some(keys_string) = &args.keys {
+        let ("", keys) = key_parser::parse_keys(keys_string).expect("Couldn't parse keys") else {
+            panic!("Couldn't parse keys");
+        };
+        handle_initial_send_keys(&keys, &mut state, term)?;
+    }
+
     while !state.quit {
-        log::debug!("Awaiting event");
-        let event = event::read()?;
+        let events = if event::poll(Duration::from_millis(100))? {
+            vec![event::read()?]
+        } else {
+            vec![]
+        };
 
-        log::debug!("Updating");
-        state.update(term, &[event])?;
+        state.update(term, &events)?;
     }
 
     Ok(())
 }
 
-pub(crate) fn handle_op(state: &mut State, op: Op, term: &mut Term) -> Res<()> {
-    let target = state.screen().get_selected_item().target_data.as_ref();
-    if let Some(mut action) = op.implementation().get_action(target) {
-        Rc::get_mut(&mut action).unwrap()(state, term)?;
+fn open_repo_from_env() -> Res<Repository> {
+    match Repository::open_from_env() {
+        Ok(repo) => Ok(repo),
+        Err(err) if err.code() == git2::ErrorCode::NotFound => {
+            Err("No .git found in the current directory".into())
+        }
+        Err(err) => Err(Box::new(err)),
+    }
+}
 
-        close_submenu(state, op);
+fn handle_initial_send_keys(
+    keys: &[(KeyModifiers, KeyCode)],
+    state: &mut state::State,
+    term: &mut ratatui::prelude::Terminal<term::TermBackend>,
+) -> Result<(), Box<dyn Error>> {
+    let initial_events = keys
+        .iter()
+        .map(|(mods, key)| {
+            Event::Key(KeyEvent {
+                code: *key,
+                modifiers: *mods,
+                kind: event::KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if !initial_events.is_empty() {
+        state.update(term, &initial_events)?;
     }
 
     Ok(())
-}
-
-fn close_submenu(state: &mut State, op: Op) {
-    match op {
-        Op::Submenu(_) => (),
-        _ => state.pending_submenu_op = SubmenuOp::None,
-    }
 }

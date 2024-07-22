@@ -1,0 +1,25 @@
+---
+source: src/tests/push.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ e7eb2bd main origin/main add new-file                                          |
+ b66a0bf add initial-file                                                       |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git push --force-with-lease                                                   |
+To                                                                              |
+   b66a0bf..e7eb2bd  main -> main                                               |
+styles_hash: 87eedce2925134fb

@@ -1,0 +1,25 @@
+---
+source: src/tests/stage.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+▌modified   testfile                                                            |
+▌@@ -1,2 +1,2 @@                                                                |
+▌-testing                                                                       |
+▌+test                                                                          |
+▌ testtest                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ c0bec93 main add testfile                                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: df517b5688801d29

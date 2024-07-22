@@ -1,0 +1,25 @@
+---
+source: src/tests/reset.rs
+expression: ctx.redact_buffer()
+---
+ ba1a85d main add unwanted-file                                                 |
+▌b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+? Soft reset to (default b66a0bf82020d6a386e94d0fceedec1f817d20c7): › q         |
+styles_hash: 174798f428e40bd6

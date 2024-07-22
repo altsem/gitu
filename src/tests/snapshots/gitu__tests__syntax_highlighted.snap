@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+▌modified   syntax-highlighted.rs                                               |
+▌@@ -1,3 +1,3 @@                                                                |
+▌ fn main() {                                                                   |
+▌-    println!("Hey");                                                          |
+▌+    println!("Bye");                                                          |
+▌ }                                                                             |
+                                                                                |
+ Recent commits                                                                 |
+ de7e4d3 main add syntax-highlighted.rs                                         |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 9b614570dda17662

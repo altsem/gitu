@@ -1,79 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        "🢒No branch                                                                      ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "Help                         Submenu                                            ",
-        "g Refresh                    h Help                                             ",
-        "tab Toggle section           b Branch                                           ",
-        "k p ↑ Move up                c Commit                                           ",
-        "j n ↓ Move down              f Fetch                                            ",
-        "C-k C-p C-↑ Move up line     l Log                                              ",
-        "C-j C-n C-↓ Move down line   F Pull                                             ",
-        "C-u Half page up             P Push                                             ",
-        "C-d Half page down           r Rebase                                           ",
-        "y Show refs                  X Reset                                            ",
-        "                             z Stash                                            ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 2, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 9, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 28, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 9, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 41, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 10, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 10, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 11, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 3, y: 11, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 11, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 11, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 12, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 5, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 12, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 13, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 5, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 13, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 14, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 11, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 14, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 15, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 11, y: 15, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 15, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 15, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 16, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 3, y: 16, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 16, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 16, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 17, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 3, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 17, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 18, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 18, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 29, y: 19, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 30, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+▌No branch                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Help                                Submenu                                     |
+Y Show Refs                         b Branch                                    |
+<tab> Toggle section                c Commit                                    |
+k/<up> Up                           f Fetch                                     |
+j/<down> Down                       h Help                                      |
+<ctrl+k>/<ctrl+up> Up line          l Log                                       |
+<ctrl+j>/<ctrl+down> Down line      F Pull                                      |
+<alt+k>/<alt+up> Prev section       P Push                                      |
+<alt+j>/<alt+down> Next section     r Rebase                                    |
+<alt+h>/<alt+left> Parent section   X Reset                                     |
+<ctrl+u> Half page up               V Revert                                    |
+<ctrl+d> Half page down             z Stash                                     |
+g Refresh                                                                       |
+q/<esc> Quit/Close                                                              |
+styles_hash: 5a8c4080986bbe0d

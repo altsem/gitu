@@ -15,13 +15,14 @@ const BOTTOM_CONTEXT_LINES: usize = 2;
 #[derive(Copy, Clone, Debug)]
 pub(crate) enum NavMode {
     Normal,
+    Siblings { depth: usize },
     IncludeHunkLines,
 }
 
 pub(crate) struct Screen {
-    pub(crate) cursor: usize,
-    pub(crate) scroll: usize,
     pub(crate) size: Rect,
+    cursor: usize,
+    scroll: usize,
     config: Rc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
@@ -134,22 +135,31 @@ impl Screen {
 
                 !item.unselectable && !is_hunk_line
             }
+            NavMode::Siblings { depth } => {
+                !item.unselectable && item.section && item.depth <= depth
+            }
             NavMode::IncludeHunkLines => !item.unselectable,
         }
     }
 
     pub(crate) fn select_previous(&mut self, nav_mode: NavMode) {
-        self.cursor = (0..self.cursor)
+        self.cursor = self.find_previous(nav_mode);
+        self.scroll_fit_start();
+    }
+
+    fn find_previous(&mut self, nav_mode: NavMode) -> usize {
+        (0..self.cursor)
             .rev()
             .find(|&line_i| self.nav_filter(line_i, nav_mode))
-            .unwrap_or(self.cursor);
-
-        self.scroll_fit_start();
+            .unwrap_or(self.cursor)
     }
 
     pub(crate) fn scroll_half_page_up(&mut self) {
         let half_screen = self.size.height as usize / 2;
         self.scroll = self.scroll.saturating_sub(half_screen);
+
+        let nav_mode = self.selected_item_nav_mode();
+        self.update_cursor(nav_mode);
     }
 
     pub(crate) fn scroll_half_page_down(&mut self) {
@@ -163,6 +173,9 @@ impl Screen {
                 .last()
                 .unwrap_or(0),
         );
+
+        let nav_mode = self.selected_item_nav_mode();
+        self.update_cursor(nav_mode);
     }
 
     pub(crate) fn toggle_section(&mut self) {
@@ -181,13 +194,20 @@ impl Screen {
 
     pub(crate) fn update(&mut self) -> Res<()> {
         let nav_mode = self.selected_item_nav_mode();
-
         self.items = (self.refresh_items)()?;
         self.update_line_index();
+        self.update_cursor(nav_mode);
+        Ok(())
+    }
+
+    fn update_cursor(&mut self, nav_mode: NavMode) {
+        self.clamp_cursor();
+        if self.is_cursor_off_screen() {
+            self.move_cursor_to_screen_center();
+        }
 
         self.clamp_cursor();
         self.move_from_unselectable(nav_mode);
-        Ok(())
     }
 
     fn selected_item_nav_mode(&mut self) -> NavMode {
@@ -224,6 +244,15 @@ impl Screen {
             .collect();
     }
 
+    fn is_cursor_off_screen(&self) -> bool {
+        !self.line_views(self.size).any(|line| line.highlighted)
+    }
+
+    fn move_cursor_to_screen_center(&mut self) {
+        let half_screen = self.size.height as usize / 2;
+        self.cursor = self.scroll + half_screen;
+    }
+
     fn clamp_cursor(&mut self) {
         self.cursor = self
             .cursor
@@ -231,11 +260,11 @@ impl Screen {
     }
 
     fn move_from_unselectable(&mut self, nav_mode: NavMode) {
-        if self.get_selected_item().unselectable {
-            self.select_next(nav_mode);
-        }
-        if self.get_selected_item().unselectable {
+        if !self.nav_filter(self.cursor, nav_mode) {
             self.select_previous(nav_mode);
+        }
+        if !self.nav_filter(self.cursor, nav_mode) {
+            self.select_next(nav_mode);
         }
     }
 
@@ -246,63 +275,80 @@ impl Screen {
     pub(crate) fn get_selected_item(&self) -> &Item {
         &self.items[self.line_index[self.cursor]]
     }
+
+    fn line_views(&self, area: Rect) -> impl Iterator<Item = LineView> {
+        let scan_start = self.scroll.min(self.cursor);
+        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
+        let scan_highlight_range = scan_start..(scan_end);
+        let context_lines = self.scroll - scan_start;
+
+        self.line_index[scan_highlight_range]
+            .iter()
+            .scan(None, |highlight_depth, item_i| {
+                let item = &self.items[*item_i];
+                if self.line_index[self.cursor] == *item_i {
+                    *highlight_depth = Some(item.depth);
+                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
+                    *highlight_depth = None;
+                };
+
+                Some(LineView {
+                    item_index: *item_i,
+                    item,
+                    display: &item.display,
+                    highlighted: highlight_depth.is_some(),
+                })
+            })
+            .skip(context_lines)
+    }
+}
+
+struct LineView<'a> {
+    item_index: usize,
+    item: &'a Item,
+    display: &'a Line<'a>,
+    highlighted: bool,
 }
 
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let style = &self.config.style;
 
-        let scan_start = self.scroll.min(self.cursor);
-        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
-        let scan_highlight_range = scan_start..(scan_end);
-        let context_lines = self.scroll - scan_start;
-
-        for (line_i, (item_i, item, line, highlight_depth)) in self.line_index[scan_highlight_range]
-            .iter()
-            .copied()
-            .scan(None, |highlight_depth, item_i| {
-                let item = &self.items[item_i];
-                if self.line_index[self.cursor] == item_i {
-                    *highlight_depth = Some(item.depth);
-                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                    *highlight_depth = None;
-                };
-
-                Some((item_i, item, &item.display, *highlight_depth))
-            })
-            .skip(context_lines)
-            .enumerate()
-        {
+        for (line_index, line) in self.line_views(area).enumerate() {
             let line_area = Rect {
                 x: 0,
-                y: line_i as u16,
+                y: line_index as u16,
                 width: buf.area.width,
                 height: 1,
             };
 
             let indented_line_area = Rect { x: 1, ..line_area };
 
-            if highlight_depth.is_some() {
-                if self.line_index[self.cursor] == item_i {
+            if line.highlighted {
+                buf.set_style(line_area, &style.selection_area);
+
+                if self.line_index[self.cursor] == line.item_index {
                     buf.set_style(line_area, &style.selection_line);
                 } else {
-                    buf.get_mut(0, line_i as u16)
-                        .set_char('▌')
+                    buf.get_mut(0, line_index as u16)
+                        .set_char(style.selection_bar.symbol)
                         .set_style(&style.selection_bar);
-
-                    buf.set_style(line_area, &style.selection_area);
                 }
             }
 
-            line.render(indented_line_area, buf);
-            let overflow = line.width() > line_area.width as usize;
+            line.display.render(indented_line_area, buf);
+            let overflow = line.display.width() > line_area.width as usize;
 
-            if self.is_collapsed(item) && line.width() > 0 || overflow {
-                let line_end = (indented_line_area.x + line.width() as u16).min(area.width - 1);
-                buf.get_mut(line_end, line_i as u16).set_char('…');
+            if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
+                let line_end =
+                    (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
+                buf.get_mut(line_end, line_index as u16).set_char('…');
             }
-            if self.line_index[self.cursor] == item_i {
-                buf.get_mut(0, line_i as u16).set_char('🢒');
+
+            if self.line_index[self.cursor] == line.item_index {
+                buf.get_mut(0, line_index as u16)
+                    .set_char(style.cursor.symbol)
+                    .set_style(&style.cursor);
             }
         }
     }

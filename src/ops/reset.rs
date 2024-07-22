@@ -1,60 +1,80 @@
-use super::{cmd_arg, OpTrait};
-use crate::{git, items::TargetData, Action};
+use super::{create_prompt_with_default, selected_rev, OpTrait};
+use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action, Res};
 use derive_more::Display;
+use std::process::Command;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Reset soft")]
+pub(crate) fn init_args() -> Vec<Arg> {
+    vec![]
+}
+
+#[derive(Display)]
+#[display(fmt = "soft")]
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                cmd_arg(git::reset_soft_cmd, r.into())
-            }
-            _ => return None,
-        };
-
-        Some(action)
-    }
-    fn is_target_op(&self) -> bool {
-        true
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_prompt_with_default(
+            "Soft reset to",
+            reset_soft,
+            selected_rev,
+            true,
+        ))
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Reset mixed")]
+fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["reset", "--soft"]);
+    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.arg(input);
+
+    state.close_menu();
+    state.run_cmd(term, &[], cmd)
+}
+
+#[derive(Display)]
+#[display(fmt = "mixed")]
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                cmd_arg(git::reset_mixed_cmd, r.into())
-            }
-            _ => return None,
-        };
-
-        Some(action)
-    }
-    fn is_target_op(&self) -> bool {
-        true
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_prompt_with_default(
+            "Mixed reset to",
+            reset_mixed,
+            selected_rev,
+            true,
+        ))
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Display)]
-#[display(fmt = "Reset hard")]
+fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["reset", "--mixed"]);
+    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.arg(input);
+
+    state.close_menu();
+    state.run_cmd(term, &[], cmd)
+}
+
+#[derive(Display)]
+#[display(fmt = "hard")]
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                cmd_arg(git::reset_hard_cmd, r.into())
-            }
-            _ => return None,
-        };
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_prompt_with_default(
+            "Hard reset to",
+            reset_hard,
+            selected_rev,
+            true,
+        ))
+    }
+}
 
-        Some(action)
-    }
-    fn is_target_op(&self) -> bool {
-        true
-    }
+fn reset_hard(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["reset", "--hard"]);
+    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.arg(input);
+
+    state.close_menu();
+    state.run_cmd(term, &[], cmd)
 }

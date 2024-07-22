@@ -1,65 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        " On branch main                                                                 ",
-        " Your branch is ahead of 'origin/main' by 2 commit.                             ",
-        "                                                                                ",
-        " Unstaged changes (1)                                                           ",
-        " modified   file-two…                                                           ",
-        "                                                                                ",
-        "🢒Staged changes (1)                                                             ",
-        "▌modified   file-one                                                            ",
-        "▌@@ -1,2 +1 @@                                                                  ",
-        "▌-asdf                                                                          ",
-        "▌ blahonga                                                                      ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        " _______ main add file-two                                                      ",
-        " _______ add file-one                                                           ",
-        " _______ origin/main add initial-file                                           ",
-        "                                                                                ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "$ git apply --cached                                                            ",
-        "                                                                                ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 17, y: 3, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 4, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 6, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 15, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 7, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 7, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 8, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 8, fg: Blue, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 9, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 9, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 6, y: 9, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 10, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 12, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 13, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 13, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 14, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 15, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 15, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 15, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 20, y: 15, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 18, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 20, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 2 commit.                             |
+                                                                                |
+ Unstaged changes (1)                                                           |
+▌modified   file-two…                                                           |
+                                                                                |
+ Staged changes (1)                                                             |
+ modified   file-one                                                            |
+ @@ -1,2 +1 @@                                                                  |
+ -asdf                                                                          |
+  blahonga                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ e45938a main add file-two                                                      |
+ b3cf8e8 add file-one                                                           |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --cached                                                            |
+styles_hash: b33392f028231225

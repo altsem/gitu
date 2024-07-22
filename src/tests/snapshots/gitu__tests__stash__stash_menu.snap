@@ -1,68 +1,25 @@
 ---
-source: tests/mod.rs
+source: src/tests/stash.rs
 expression: ctx.redact_buffer()
 ---
-Buffer {
-    area: Rect { x: 0, y: 0, width: 80, height: 20 },
-    content: [
-        "🢒On branch main                                                                 ",
-        "▌Your branch is up to date with 'origin/main'.                                  ",
-        "                                                                                ",
-        " Untracked files                                                                ",
-        " file-two                                                                       ",
-        "                                                                                ",
-        " Staged changes (1)                                                             ",
-        " added   file-one…                                                              ",
-        "                                                                                ",
-        " Recent commits                                                                 ",
-        " _______ main origin/main add initial-file                                      ",
-        "────────────────────────────────────────────────────────────────────────────────",
-        "Stash                                                                           ",
-        "z Stash (include untracked)                                                     ",
-        "i Stash index                                                                   ",
-        "w Stash working tree                                                            ",
-        "x Stash keeping index                                                           ",
-        "p Pop stash                                                                     ",
-        "a Apply stash                                                                   ",
-        "k Drop stash                                                                    ",
-    ],
-    styles: [
-        x: 0, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 1, y: 0, fg: Yellow, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 0, y: 1, fg: Blue, bg: Reset, underline: Reset, modifier: DIM,
-        x: 1, y: 1, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 3, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 4, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 4, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 6, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 15, y: 6, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 7, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 8, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 9, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 10, fg: Yellow, bg: Reset, underline: Reset, modifier: NONE,
-        x: 8, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 9, y: 10, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
-        x: 13, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 14, y: 10, fg: Red, bg: Reset, underline: Reset, modifier: NONE,
-        x: 25, y: 10, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 11, fg: Reset, bg: Reset, underline: Reset, modifier: DIM,
-        x: 0, y: 12, fg: Blue, bg: Reset, underline: Reset, modifier: BOLD,
-        x: 28, y: 12, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 13, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 13, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 14, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 14, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 15, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 15, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 16, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 16, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 17, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 18, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 0, y: 19, fg: Magenta, bg: Reset, underline: Reset, modifier: NONE,
-        x: 1, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-    ]
-}
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Untracked files                                                                |
+ file-two                                                                       |
+                                                                                |
+ Staged changes (1)                                                             |
+ added   file-one…                                                              |
+                                                                                |
+ Recent commits                                                                 |
+────────────────────────────────────────────────────────────────────────────────|
+Stash                   Arguments                                               |
+z both                  -a Also save untracked and ignored files (--all)        |
+a apply                 -u Also save untracked files (--include-untracked)      |
+i index                                                                         |
+w worktree                                                                      |
+x keeping index                                                                 |
+p pop                                                                           |
+k drop                                                                          |
+q/<esc> Quit/Close                                                              |
+styles_hash: 6353e9d00db1a7d3
