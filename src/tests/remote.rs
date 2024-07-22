@@ -1,6 +1,7 @@
 use crate::git::remote::set_upstream;
 use crate::tests::helpers::RepoTestContext;
 
+// TODO: test that the remote is actually updated; test the different branches of `set_upstream`
 #[test]
 fn set_upstream_basic() {
     let ctx = RepoTestContext::setup_clone();

@@ -1,3 +1,5 @@
+// TODO: implement `set_push_remote`, test it, then allow using these functions
+// from the branch configuration menu
 use git2::Repository;
 
 use crate::Res;
