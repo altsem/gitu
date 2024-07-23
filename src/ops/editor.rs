@@ -5,7 +5,6 @@ use crate::{
     screen::NavMode,
     state::{root_menu, State},
     term::Term,
-    Res,
 };
 use std::rc::Rc;
 
@@ -108,13 +107,24 @@ impl OpTrait for ToggleArg {
                 });
             }
 
+            let arg_name = arg_name.clone();
+            let parse_and_set_arg =
+                Box::new(move |state: &mut State, _term: &mut Term, value: &str| {
+                    if let Some(menu) = &mut state.pending_menu {
+                        if let Some(entry) = menu.args.get_mut(arg_name.as_str()) {
+                            return entry.set(value);
+                        }
+                    }
+
+                    Ok(())
+                });
+
             if let Some(display) = need_prompt {
                 set_prompt(
                     state,
                     display,
                     parse_and_set_arg,
                     Box::new(move |_| default.clone()),
-                    arg_name.clone(),
                     false,
                 );
             }
@@ -126,17 +136,6 @@ impl OpTrait for ToggleArg {
     fn display(&self, _state: &State) -> String {
         self.0.clone()
     }
-}
-
-fn parse_and_set_arg(state: &mut State, _term: &mut Term, value: &str, arg: &String) -> Res<()> {
-    let key: &str = arg;
-    if let Some(menu) = &mut state.pending_menu {
-        if let Some(entry) = menu.args.get_mut(key) {
-            return entry.set(value);
-        }
-    }
-
-    Ok(())
 }
 
 pub(crate) struct ToggleSection;

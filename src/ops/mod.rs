@@ -220,25 +220,24 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
 
 pub(crate) fn create_prompt(
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &str) -> Res<()>,
+    on_success: fn(&mut State, &mut Term, &str) -> Res<()>,
     hide_menu: bool,
 ) -> Action {
-    create_prompt_with_default(prompt, callback, |_| None, hide_menu)
+    create_prompt_with_default(prompt, on_success, |_| None, hide_menu)
 }
 
 pub(crate) fn create_prompt_with_default(
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &str) -> Res<()>,
-    default_fn: fn(&State) -> Option<String>,
+    on_success: fn(&mut State, &mut Term, &str) -> Res<()>,
+    create_default_value: fn(&State) -> Option<String>,
     hide_menu: bool,
 ) -> Action {
     Rc::new(move |state: &mut State, _term: &mut Term| {
         set_prompt(
             state,
             prompt,
-            |state, term, value, context| context(state, term, value),
-            Box::new(default_fn),
-            callback,
+            Box::new(on_success),
+            Box::new(create_default_value),
             hide_menu,
         );
         Ok(())
@@ -246,13 +245,13 @@ pub(crate) fn create_prompt_with_default(
 }
 
 type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
+type PromptAction = Box<dyn Fn(&mut State, &mut Term, &str) -> Res<()>>;
 
-pub(crate) fn set_prompt<T: 'static>(
+pub(crate) fn set_prompt(
     state: &mut State,
     prompt: &'static str,
-    callback: fn(&mut State, &mut Term, &str, &T) -> Res<()>,
+    on_success: PromptAction,
     default_fn: DefaultFn,
-    context: T,
     hide_menu: bool,
 ) {
     let prompt_text = if let Some(default) = default_fn(state) {
@@ -279,7 +278,7 @@ pub(crate) fn set_prompt<T: 'static>(
                     (value, _) => value,
                 };
 
-                callback(state, term, value, &context)?;
+                on_success(state, term, value)?;
 
                 if hide_menu {
                     state.unhide_menu();
