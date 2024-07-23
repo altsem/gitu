@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.1] - 2024-07-23
+
+### 🐛 Bug Fixes
+
+- *(instant fixup commit)* Would not work with some versions of Git
+- *(instant fixup commit)* Use --keep-empty and --autostash like Magit
+- *(instant fixup commit)* Errors wouldn't show
+
 ## [0.23.0] - 2024-07-18
 
 ### 🚀 Features
