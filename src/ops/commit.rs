@@ -118,8 +118,15 @@ impl OpTrait for CommitInstantFixup {
 
 fn rebase_autosquash_cmd(rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
-    cmd.args(["rebase", "--autostash", "--keep-empty", "--autosquash"]);
+    cmd.args([
+        "rebase",
+        "-i",
+        "--autostash",
+        "--keep-empty",
+        "--autosquash",
+    ]);
     cmd.arg(&parent(rev));
+    cmd.env("GIT_SEQUENCE_EDITOR", ":");
     cmd
 }
 
