@@ -18,7 +18,7 @@ $ git commit --fixup b6eadadbf0b746c00135b317fab80d9801c2d7bb                   
 [main c0f1150] fixup! modify instant_fixup.txt                                  |
  Author: Author Name <author@email.com>                                         |
  1 file changed, 1 insertion(+), 1 deletion(-)                                  |
-$ git rebase --autostash --keep-empty --autosquash b6eadadbf0b746c00135b317fab80|
+$ git rebase -i --autostash --keep-empty --autosquash b6eadadbf0b746c00135b317fa|
 Rebasing (2/3)Rebasing (3/3)Applied autostash.                                |
 [KSuccessfully rebased and updated refs/heads/main.                           |
 Created autostash: bc5bcfb                                                      |
