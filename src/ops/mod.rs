@@ -236,22 +236,13 @@ pub(crate) fn create_prompt_with_default(
         set_prompt(
             state,
             prompt,
-            invoke_default,
+            |state, term, value, context| context(state, term, value),
             Box::new(default_fn),
             callback,
             hide_menu,
         );
         Ok(())
     })
-}
-
-fn invoke_default(
-    state: &mut State,
-    term: &mut Term,
-    value: &str,
-    context: &fn(&mut State, &mut Term, &str) -> Res<()>,
-) -> Res<()> {
-    context(state, term, value)
 }
 
 type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
