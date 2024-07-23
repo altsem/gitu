@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
  77cc537 main empty commit                                                      |
  108474f modify instant_fixup.txt                                               |
+▌f05ea1d add instant_fixup.txt                                                  |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git commit --fixup b6eadadbf0b746c00135b317fab80d9801c2d7bb                   |
 [main c0f1150] fixup! modify instant_fixup.txt                                  |
  Author: Author Name <author@email.com>                                         |
  1 file changed, 1 insertion(+), 1 deletion(-)                                  |
-$ git rebase -i --autostash --keep-empty --autosquash b6eadadbf0b746c00135b317fa|
-Rebasing (2/3)Rebasing (3/3)Applied autostash.                                |
-[KSuccessfully rebased and updated refs/heads/main.                           |
+$ git rebase -i -q --autostash --keep-empty --autosquash b6eadadbf0b746c00135b31|
+Applied autostash.                                                              |
 Created autostash: bc5bcfb                                                      |
-styles_hash: 47d1ffca88cf40e0
+styles_hash: e862947c002fddb3

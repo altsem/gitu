@@ -121,6 +121,7 @@ fn rebase_autosquash_cmd(rev: &OsStr) -> Command {
     cmd.args([
         "rebase",
         "-i",
+        "-q",
         "--autostash",
         "--keep-empty",
         "--autosquash",
