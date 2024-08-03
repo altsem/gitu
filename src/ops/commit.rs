@@ -126,7 +126,7 @@ fn rebase_autosquash_cmd(rev: &OsStr) -> Command {
         "--keep-empty",
         "--autosquash",
     ]);
-    cmd.arg(&parent(rev));
+    cmd.arg(parent(rev));
     cmd.env("GIT_SEQUENCE_EDITOR", ":");
     cmd
 }
