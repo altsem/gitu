@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  file-two                                                                       |
                                                                                 |
  Staged changes (1)                                                             |
- added   file-one…                                                              |
+ added      file-one…                                                           |
                                                                                 |
  Recent commits                                                                 |
  b66a0bf main origin/main add initial-file                                      |

@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Staged changes (1)                                                             |
- added   file-one…                                                              |
+ added      file-one…                                                           |
                                                                                 |
  Stashes                                                                        |
  stash@0 On main: test                                                          |

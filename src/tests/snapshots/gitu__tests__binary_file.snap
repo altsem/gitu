@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
  No branch                                                                      |
                                                                                 |
  Staged changes (1)                                                             |
-▌added   binary-file                                                            |
+▌added      binary-file                                                         |
                                                                                 |
  Recent commits                                                                 |
                                                                                 |
