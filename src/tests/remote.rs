@@ -1,4 +1,5 @@
-use git2::{Buf, Error, Repository};
+use std::str::FromStr;
+use git2::{Buf, Error, ErrorClass, Repository};
 
 use crate::git::remote::set_upstream;
 use crate::tests::helpers::{commit, RepoTestContext};
@@ -42,19 +43,12 @@ fn remove_upstream() {
 
     set_upstream(&repo, None).unwrap();
 
-    let actual_merge = get_branch_merge(&repo);
+    let e = get_branch_merge(&repo).map(|v| String::from_str(v.as_str().unwrap())).unwrap_err();
+    assert!(e.class() == ErrorClass::Config, "Actual: {}", e);
 
-    match actual_merge {
-        Ok(_) => panic!("Branch should not have upstream"),
-        Err(e) => assert!(e.message().ends_with("does not have an upstream"), "Actual: {}", e)
-    }
+    let e = get_branch_remote(&repo).map(|v| String::from_str(v.as_str().unwrap())).unwrap_err();
 
-    let actual_remote = get_branch_remote(&repo);
-
-    match actual_remote {
-        Ok(_) => panic!("Branch should not have remote upstream"),
-        Err(e) => assert!(e.message().ends_with("does not have an upstream remote"), "Actual: {}", e)
-    }
+    assert!(e.class() == ErrorClass::Config, "Actual: {}", e);
 }
 
 #[test]
@@ -100,15 +94,6 @@ fn set_upstream_local() {
     let upstream_branch = branch_from_head(&repo, "upstream-branch");
     let upstream_ref = upstream_branch.into_reference();
 
-    // let upstream_name = upstream_ref.shorthand().unwrap();
-    // let upstream_ref = repo
-    //     .find_branch(
-    //         upstream_name,
-    //         git2::BranchType::Local,
-    //     )
-    //     .unwrap()
-    //     .into_reference();
-    // 
     set_upstream(&repo, Some(&upstream_ref)).unwrap();
 
     let actual_merge = get_branch_merge_str(&repo);

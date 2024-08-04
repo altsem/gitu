@@ -1,42 +1,25 @@
 // TODO: implement `set_push_remote`, test it, then allow using these functions
 // from the branch configuration menu
-use git2::Repository;
+use git2::{Branch, Reference, Repository};
 
 use crate::Res;
 
-pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&git2::Reference>) -> Res<()> {
+/// Set the remote and upstream of the head. Can't be a detached head, must be a
+/// branch.
+pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&Reference>) -> Res<()> {
     let head = repo.head()?;
-    let branch = head
-        .shorthand()
-        .ok_or("Head branch name was not valid UTF-8")?;
-    let merge_cfg = format!("branch.{branch}.merge");
-    let remote_cfg = format!("branch.{branch}.remote");
-    let mut config = repo.config()?;
 
-    if let Some(upstream) = upstream {
-        let upstream_ref = upstream
-            .name()
-            .ok_or("Upstream reference name was not valid UTF-8")?;
-        let upstream_name = upstream
-            .shorthand()
-            .ok_or("Upstream branch name was not valid UTF-8")?;
-        if upstream.is_remote() {
-            let remote = repo.branch_remote_name(upstream_ref)?;
-            let remote = remote.as_str().ok_or("Remote name was not valid UTF-8")?;
-            let upstream_name = upstream_name
-                .strip_prefix(&format!("{remote}/"))
-                .unwrap_or(upstream_name);
-
-            config.set_str(&merge_cfg, &format!("refs/heads/{upstream_name}"))?;
-            config.set_str(&remote_cfg, &remote)?;
-        } else if upstream.is_branch() {
-            config.set_str(&merge_cfg, &upstream_ref)?;
-            config.set_str(&remote_cfg, ".")?;
+    if head.is_branch() {
+        let mut head = Branch::wrap(head);
+        let upstream = upstream.map(|r| r.shorthand()).flatten();
+        match (head.set_upstream(upstream), upstream) {
+            (Ok(()), _) => Ok(()),
+            // `set_upstream` will error if there isn't an existing config for
+            // the branch when we try to remove the config
+            (Err(e), None) if e.class() == git2::ErrorClass::Config => Ok(()),
+            (Err(e), _) => Err(e.into())
         }
     } else {
-        config.set_str(&merge_cfg, "")?;
-        config.set_str(&remote_cfg, "")?;
+        Err("Head is not a branch".into())
     }
-
-    Ok(())
 }
