@@ -29,10 +29,10 @@ jobs:
     - name: Setup
       run: |
         rustup component add llvm-tools-preview
-        cargo install --locked cargo-deny || true
-        cargo install --locked grcov || true
-        cargo install --locked cargo-machete || true
-        cargo install --locked git-cliff || true
+        cargo install cargo-deny || true
+        cargo install grcov || true
+        cargo install cargo-machete || true
+        cargo install git-cliff || true
 
     - name: make test
       env: 
