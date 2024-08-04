@@ -108,7 +108,7 @@ fn rebase_interactive_cmd(args: &[OsString], rev: &OsStr) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(["rebase", "-i"]);
     cmd.args(args);
-    cmd.arg(&parent(rev));
+    cmd.arg(parent(rev));
     cmd
 }
 
