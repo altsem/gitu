@@ -1,6 +1,7 @@
 use crate::Res;
 use crossterm::terminal::disable_raw_mode;
 use crossterm::terminal::enable_raw_mode;
+use crossterm::terminal::is_raw_mode_enabled;
 use crossterm::terminal::EnterAlternateScreen;
 use crossterm::terminal::LeaveAlternateScreen;
 use crossterm::ExecutableCommand;
@@ -31,9 +32,18 @@ pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
 }
 
 pub fn raw_mode<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
-    enable_raw_mode()?;
+    let was_raw_mode_enabled = is_raw_mode_enabled()?;
+
+    if !was_raw_mode_enabled {
+        enable_raw_mode()?;
+    }
+
     let result = fun();
-    disable_raw_mode()?;
+
+    if !was_raw_mode_enabled {
+        disable_raw_mode()?;
+    }
+
     result
 }
 
