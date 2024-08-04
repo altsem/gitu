@@ -10,7 +10,7 @@ expression: ctx.redact_buffer()
                                                                                 |
      Commit body goes here                                                      |
                                                                                 |
- added   firstfile                                                              |
+ added      firstfile                                                           |
 ▌@@ -0,0 +1 @@                                                                  |
 ▌+This should be visible                                                        |
                                                                                 |

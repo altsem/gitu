@@ -42,8 +42,7 @@ pub(crate) fn discard_file_move() {
     commit(ctx.dir.path(), "new-file", "hello");
     run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
 
-    // TODO: Moved file is shown as 1 new and 1 deleted file.
-    snapshot!(ctx, "jjKyKy");
+    snapshot!(ctx, "jjKy");
 }
 
 #[test]

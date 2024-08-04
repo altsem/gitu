@@ -8,7 +8,7 @@ expression: ctx.redact_buffer()
 ▌a                                                                              |
                                                                                 |
  Staged changes (1)                                                             |
- added   b                                                                      |
+ added      b                                                                   |
  @@ -0,0 +1 @@                                                                  |
  +test                                                                          |
                                                                                 |

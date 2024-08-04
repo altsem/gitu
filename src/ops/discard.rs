@@ -13,6 +13,7 @@ impl OpTrait for Discard {
             Some(TargetData::File(file)) => clean_file(file),
             Some(TargetData::Delta(d)) => match d.status {
                 git2::Delta::Added => remove_file(d.new_file),
+                git2::Delta::Renamed => rename_file(d.new_file, d.old_file),
                 _ => checkout_file(d.old_file),
             },
             Some(TargetData::Hunk(h)) => discard_unstaged_patch(h),
@@ -43,6 +44,18 @@ fn clean_file(file: PathBuf) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["clean", "--force"]);
         cmd.arg(&file);
+
+        state.close_menu();
+        state.run_cmd(term, &[], cmd)
+    })
+}
+
+fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
+    Rc::new(move |state, term| {
+        let mut cmd = Command::new("git");
+        cmd.args(["mv", "--force"]);
+        cmd.arg(&src);
+        cmd.arg(&dest);
 
         state.close_menu();
         state.run_cmd(term, &[], cmd)
