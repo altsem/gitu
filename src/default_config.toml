@@ -5,6 +5,9 @@
 [general]
 always_show_help.enabled = false
 confirm_quit.enabled = false
+# To collapse untracked files by default. e.g.:
+#   collapsed_sections = ["untracked", "Recent commits", "branch_status"]
+collapsed_sections = []
 
 [style]
 # fg / bg can be either of:
