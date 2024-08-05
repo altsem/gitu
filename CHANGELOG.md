@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.0] - 2024-08-05
+
+### 🚀 Features
+
+- *(status)* Detect renamed files
+
 ## [0.23.1] - 2024-07-23
 
 ### 🐛 Bug Fixes

@@ -1,8 +1,6 @@
-## [0.23.1] - 2024-07-23
+## [0.24.0] - 2024-08-05
 
-### 🐛 Bug Fixes
+### 🚀 Features
 
-- *(instant fixup commit)* Would not work with some versions of Git
-- *(instant fixup commit)* Use --keep-empty and --autostash like Magit
-- *(instant fixup commit)* Errors wouldn't show
+- *(status)* Detect renamed files
 
