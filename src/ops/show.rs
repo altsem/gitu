@@ -42,7 +42,7 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Rc::new(move |state, term| {
-        const EDITOR_VARS: [&str; 3] = ["GIT_EDITOR", "VISUAL", "EDITOR"];
+        const EDITOR_VARS: [&str; 3] = ["VISUAL", "EDITOR", "GIT_EDITOR"];
         let configured_editor = EDITOR_VARS
             .into_iter()
             .find_map(|var| std::env::var(var).ok());
