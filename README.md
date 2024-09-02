@@ -30,7 +30,7 @@ A help-menu can be shown by pressing the `h` key, or by configuring `general.alw
 <img style="width: 720px" src="vhs/help.png"/>
 
 ### Configuration
-The environment variables `GIT_EDITOR`, `VISUAL` or `EDITOR` (checked in this order) dictate which editor Gitu will open.
+The environment variables `VISUAL`, `EDITOR` or `GIT_EDITOR` (checked in this order) dictate which editor Gitu will open. This means that e. g. commit messages will be opened in the `GIT_EDITOR` by Git, but if the user wishes to do edits to the actual files in a different editor, `VISUAL` or `EDITOR` can be set accordingly.
 
 Configuration is also loaded from:
 - Linux:   `~/.config/gitu/config.toml`
