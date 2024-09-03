@@ -27,7 +27,7 @@ arboard = { version = "3.4.0", default-features = false, features = [
 chrono = "0.4.38"
 clap = { version = "4.5.16", features = ["derive"] }
 crossterm = "0.27.0"
-derive_more = "0.99.18"
+derive_more = "1.0.0"
 etcetera = "0.8.0"
 figment = { version = "0.10.19", features = ["toml"] }
 git-version = "0.3.9"
