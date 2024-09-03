@@ -1,6 +1,6 @@
-## [0.24.0] - 2024-08-05
+## [0.25.0] - 2024-09-03
 
 ### 🚀 Features
 
-- *(status)* Detect renamed files
+- Change priority order of editor envvar lookup
 

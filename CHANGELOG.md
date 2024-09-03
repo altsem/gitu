@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.25.0] - 2024-09-03
+
+### 🚀 Features
+
+- Change priority order of editor envvar lookup
+
 ## [0.24.0] - 2024-08-05
 
 ### 🚀 Features
