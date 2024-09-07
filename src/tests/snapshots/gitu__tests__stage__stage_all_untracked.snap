@@ -1,12 +1,12 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/stage.rs
 expression: ctx.redact_buffer()
 ---
  No branch                                                                      |
                                                                                 |
 ▌Staged changes (2)                                                             |
-▌added   file-a                                                                 |
-▌added   file-b                                                                 |
+▌added      file-a                                                              |
+▌added      file-b                                                              |
                                                                                 |
  Recent commits                                                                 |
                                                                                 |

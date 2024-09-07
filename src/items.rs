@@ -54,9 +54,16 @@ pub(crate) fn create_diff_items<'a>(
             id: delta.file_header.to_string().into(),
             display: Line::styled(
                 format!(
-                    "{}   {}",
+                    "{:8}   {}",
                     format!("{:?}", delta.status).to_lowercase(),
-                    delta.new_file.to_string_lossy()
+                    match delta.status {
+                        git2::Delta::Renamed => format!(
+                            "{} -> {}",
+                            delta.old_file.to_string_lossy(),
+                            delta.new_file.to_string_lossy()
+                        ),
+                        _ => delta.new_file.to_string_lossy().to_string(),
+                    }
                 ),
                 &config.style.file_header,
             ),

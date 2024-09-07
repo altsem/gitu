@@ -1,6 +1,6 @@
 use super::SizedWidget;
 use crate::{bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op};
-use itertools::{EitherOrBoth, Itertools};
+use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
@@ -130,20 +130,16 @@ impl<'a> MenuWidget<'a> {
             Constraint::Fill(1),
         ];
 
-        let rows = pending_binds_column
-            .into_iter()
-            .zip_longest(menu_binds_column)
-            .zip_longest(right_column)
-            .map(|lines| {
-                let (ab, c) = lines.or(
-                    EitherOrBoth::Both(Line::raw(""), Line::raw("")),
-                    Line::raw(""),
-                );
-                let (a, b) = ab.or(Line::raw(""), Line::raw(""));
+        let columns = [pending_binds_column, menu_binds_column, right_column];
 
-                Row::new([a, b, c])
-            })
-            .collect::<Vec<_>>();
+        let max_rows = columns.iter().map(Vec::len).max().unwrap_or(0);
+        let rows = (0..(max_rows)).map(|i| {
+            Row::new(
+                columns
+                    .iter()
+                    .map(|col| col.get(i).cloned().unwrap_or(Line::raw(""))),
+            )
+        });
 
         let (lines, table) = (rows.len(), Table::new(rows, widths).column_spacing(3));
 

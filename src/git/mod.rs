@@ -1,4 +1,4 @@
-use git2::Repository;
+use git2::{DiffFindOptions, Repository};
 use itertools::Itertools;
 
 use self::{commit::Commit, diff::Diff, merge_status::MergeStatus, rebase_status::RebaseStatus};
@@ -122,10 +122,12 @@ pub(crate) fn diff_unstaged(config: &Config, repo: &Repository) -> Res<Diff> {
 pub(crate) fn diff_staged(config: &Config, repo: &Repository) -> Res<Diff> {
     let opts = &mut git2_opts::diff(repo)?;
 
-    let diff = match repo.head() {
+    let mut diff = match repo.head() {
         Ok(head) => repo.diff_tree_to_index(Some(&head.peel_to_tree()?), None, Some(opts))?,
         Err(_) => repo.diff_tree_to_index(None, None, Some(opts))?,
     };
+
+    diff.find_similar(Some(&mut DiffFindOptions::new().renames(true)))?;
 
     diff::convert_diff(config, repo, diff, false)
 }
