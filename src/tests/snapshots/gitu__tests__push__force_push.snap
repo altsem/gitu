@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push --force-with-lease                                                   |
+$ git push --force-with-lease origin main                                       |
 To                                                                              |
    b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 87eedce2925134fb
+styles_hash: c744927e19459bf2

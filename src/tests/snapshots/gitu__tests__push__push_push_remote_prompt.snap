@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-Push                    Arguments                                               |
-p to upstream           -n Dry run (--dry-run)                                  |
-r to pushRemote         -F Force (--force)                                      |
-e to elsewhere          -f Force with lease (--force-with-lease)                |
-q/<esc> Quit/Close      -h Disable hooks (--no-verify)                          |
-styles_hash: 6016353e89402e5
+? Set pushRemote then push: ›                                                   |
+styles_hash: 3978d3bb613672e

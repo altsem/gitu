@@ -1,15 +1,38 @@
-// TODO: implement `set_push_remote`, test it, then allow using these functions
-// from the branch configuration menu
 use git2::{Branch, Reference, Remote, Repository};
 
 use crate::Res;
 
-pub(crate) fn get_push_remote(repo: &Repository) -> Res<String> {
+pub(crate) fn get_upstream(r: Reference) -> Res<Option<Branch>> {
+    let r = if r.is_branch() {
+        Branch::wrap(r)
+    } else {
+        return Err("Head is not a branch".into());
+    };
+    match r.upstream() {
+        Ok(v) => Ok(Some(v)),
+        Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
+        Err(e) => Err(e.into())
+    }
+}
+
+/// If the branch has an upstream, returns the remote name and branch name in that order.
+pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, String)>> {
+   let Some(upstream) = get_upstream(repo.head()?)? else {
+       return Ok(None)
+   };
+    let branch_full = upstream.get().name().ok_or("Branch name not utf-8")?;
+    let remote = repo.branch_remote_name(branch_full)?;
+    let remote = remote.as_str().ok_or("Remote name not utf-8")?;
+    Ok(Some((remote.into(), repo.head()?.shorthand().ok_or("Branch name not utf-8")?.into())))
+}
+
+pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
     let push_remote_cfg = head_push_remote_cfg(repo)?;
     let config = repo.config()?;
     match config.get_string(&push_remote_cfg) {
-        Ok(v) => Ok(v),
-        Err(e) if e.class() == git2::ErrorClass::Config => Ok("".into()),
+        Ok(v) if v == "" => Ok(None),
+        Ok(v) => Ok(Some(v)),
+        Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
         Err(e) => Err(e.into())
     }
 }
@@ -17,8 +40,14 @@ pub(crate) fn get_push_remote(repo: &Repository) -> Res<String> {
 pub(crate) fn set_push_remote(repo: &Repository, remote: Option<&Remote>) -> Res<()> {
     let push_remote_cfg = head_push_remote_cfg(repo)?;
     let mut config = repo.config()?;
-    let remote = remote.map(|v| v.name()).flatten().unwrap_or("");
-    config.set_str(&push_remote_cfg, remote)?;
+    match remote {
+        None => {
+            config.remove(&push_remote_cfg)?;
+        }
+        Some(remote) => {
+            config.set_str(&push_remote_cfg, remote.name().ok_or_else(|| "Invalid remote")?)?;
+        }
+    }
     Ok(())
 }
 
@@ -37,7 +66,7 @@ pub(crate) fn head_push_remote_cfg(repo: &Repository) -> Res<String> {
 
 /// Set the remote and upstream of the head. Can't be a detached head, must be a
 /// branch.
-pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&Reference>) -> Res<()> {
+pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&str>) -> Res<()> {
     let head = repo.head()?;
     let mut head = if head.is_branch() {
         Branch::wrap(head)
@@ -45,7 +74,6 @@ pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&Reference>) -> R
         return Err("Head is not a branch".into());
     };
 
-    let upstream = upstream.map(|r| r.shorthand()).flatten();
     match (head.set_upstream(upstream), upstream) {
         (Ok(()), _) => Ok(()),
         // `set_upstream` will error if there isn't an existing config for
@@ -53,4 +81,9 @@ pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&Reference>) -> R
         (Err(e), None) if e.class() == git2::ErrorClass::Config => Ok(()),
         (Err(e), _) => Err(e.into())
     }
+}
+
+pub(crate) fn set_upstream_from_ref(repo: &Repository, upstream: Option<&Reference>) -> Res<()> {
+    let upstream = upstream.map(|r| r.shorthand()).flatten();
+    set_upstream(repo, upstream)
 }

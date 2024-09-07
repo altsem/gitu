@@ -139,6 +139,7 @@ push_menu.--no-verify = ["-h"]
 push_menu.--dry-run = ["-n"]
 push_menu.push = ["p"]
 push_menu.push_elsewhere = ["e"]
+push_menu.push_remote = ["r"]
 push_menu.quit = ["q", "<esc>"]
 
 root.rebase_menu = ["r"]

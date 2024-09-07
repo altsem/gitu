@@ -20,6 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push --repo=origin                                                        |
+$ git push origin                                                               |
 Everything up-to-date                                                           |
-styles_hash: 8df49eee15f4c4d3
+styles_hash: baa329f6340fcc8b

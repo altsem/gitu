@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use git2::{Buf, Error, ErrorClass, Repository};
 
-use crate::git::remote::{get_push_remote, set_push_remote, set_upstream};
+use crate::git::remote::{get_push_remote, get_upstream, get_upstream_components, set_push_remote, set_upstream, set_upstream_from_ref};
 use crate::tests::helpers::{commit, RepoTestContext};
 
 fn get_head_name(repo: &Repository) -> String {
@@ -53,6 +53,15 @@ fn remove_upstream() {
 }
 
 #[test]
+fn set_new_upstream() {
+    let ctx = RepoTestContext::setup_clone();
+
+    let repo = ctx.local_repo;
+    let remote_name = get_branch_remote_str(&repo);
+    set_upstream(&repo, Some(&format!("{remote_name}/main"))).unwrap();
+}
+
+#[test]
 fn set_upstream_basic() {
     let ctx = RepoTestContext::setup_clone();
 
@@ -76,7 +85,7 @@ fn set_upstream_basic() {
         .unwrap()
         .into_reference();
 
-    set_upstream(&repo, Some(&upstream_ref)).unwrap();
+    set_upstream_from_ref(&repo, Some(&upstream_ref)).unwrap();
 
     let actual_merge = get_branch_merge_str(&repo);
     let actual_remote = get_branch_remote_str(&repo);
@@ -95,7 +104,7 @@ fn set_upstream_local() {
     let upstream_branch = branch_from_head(&repo, "upstream-branch");
     let upstream_ref = upstream_branch.into_reference();
 
-    set_upstream(&repo, Some(&upstream_ref)).unwrap();
+    set_upstream_from_ref(&repo, Some(&upstream_ref)).unwrap();
 
     let actual_merge = get_branch_merge_str(&repo);
     let actual_remote = get_branch_remote_str(&repo);
@@ -111,15 +120,31 @@ fn set_push_remote_basic() {
     let repo = ctx.local_repo;
     
     let push_remote = get_push_remote(&repo).unwrap();
-    assert_eq!(push_remote, "");
+    assert_eq!(push_remote, None);
 
     let remote_name = get_branch_remote_str(&repo);
     let remote = repo.find_remote(&remote_name).unwrap();
     set_push_remote(&repo, Some(&remote)).unwrap();
     let push_remote = get_push_remote(&repo).unwrap();
-    assert_eq!(push_remote, remote_name);
+    assert_eq!(push_remote, Some(remote_name));
     
     set_push_remote(&repo, None).unwrap();
     let push_remote = get_push_remote(&repo).unwrap();
-    assert_eq!(push_remote, "");
+    assert_eq!(push_remote, None);
+}
+
+#[test]
+fn get_upstream_basic() {
+    let ctx = RepoTestContext::setup_clone();
+    let repo = ctx.local_repo;
+    let upstream = get_upstream(repo.head().unwrap()).unwrap().unwrap();
+    assert_eq!(upstream.name().unwrap().unwrap(), "origin/main");
+
+    let (remote, branch) = get_upstream_components(&repo).unwrap().unwrap();
+    assert_eq!(remote, "origin");
+    assert_eq!(branch, "main");
+    
+    set_upstream(&repo, None).unwrap();
+    let upstream = get_upstream(repo.head().unwrap()).unwrap();
+    assert!(matches!(upstream, None));
 }

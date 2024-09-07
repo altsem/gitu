@@ -3,11 +3,13 @@ source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 1 commit.                             |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main add new-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 127f7a4 main origin/main add new-file2                                         |
+ e7eb2bd add new-file                                                           |
+ b66a0bf add initial-file                                                       |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Push                    Arguments                                               |
-p to upstream           -n Dry run (--dry-run)                                  |
-r to pushRemote         -F Force (--force)                                      |
-e to elsewhere          -f Force with lease (--force-with-lease)                |
-q/<esc> Quit/Close      -h Disable hooks (--no-verify)                          |
-styles_hash: 6016353e89402e5
+$ git push origin                                                               |
+To                                                                              |
+   e7eb2bd..127f7a4  main -> main                                               |
+styles_hash: ab7c2114dad16c38
