@@ -10,7 +10,7 @@ pub struct RepoTestContext {
 }
 
 fn open_repo(dir: &TempDir) -> git2::Repository {
-    git2::Repository::open(dir.path().to_path_buf()).unwrap()
+    git2::Repository::open(dir.path()).unwrap()
 }
 
 impl RepoTestContext {

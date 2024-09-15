@@ -146,5 +146,5 @@ fn get_upstream_basic() {
     
     set_upstream(&repo, None).unwrap();
     let upstream = get_upstream(repo.head().unwrap()).unwrap();
-    assert!(matches!(upstream, None));
+    assert!(upstream.is_none());
 }

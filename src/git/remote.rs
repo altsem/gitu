@@ -30,7 +30,7 @@ pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
     let push_remote_cfg = head_push_remote_cfg(repo)?;
     let config = repo.config()?;
     match config.get_string(&push_remote_cfg) {
-        Ok(v) if v == "" => Ok(None),
+        Ok(v) if v.is_empty() => Ok(None),
         Ok(v) => Ok(Some(v)),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
         Err(e) => Err(e.into())
@@ -45,7 +45,7 @@ pub(crate) fn set_push_remote(repo: &Repository, remote: Option<&Remote>) -> Res
             config.remove(&push_remote_cfg)?;
         }
         Some(remote) => {
-            config.set_str(&push_remote_cfg, remote.name().ok_or_else(|| "Invalid remote")?)?;
+            config.set_str(&push_remote_cfg, remote.name().ok_or("Invalid remote")?)?;
         }
     }
     Ok(())
@@ -84,6 +84,6 @@ pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&str>) -> Res<()>
 }
 
 pub(crate) fn set_upstream_from_ref(repo: &Repository, upstream: Option<&Reference>) -> Res<()> {
-    let upstream = upstream.map(|r| r.shorthand()).flatten();
+    let upstream = upstream.and_then(|r| r.shorthand());
     set_upstream(repo, upstream)
 }
