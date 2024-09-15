@@ -7,11 +7,8 @@ use crate::{
     term::Term,
     Res,
 };
-use derive_more::Display;
 use std::rc::Rc;
 
-#[derive(Display)]
-#[display(fmt = "Quit/Close")]
 pub(crate) struct Quit;
 impl OpTrait for Quit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -49,10 +46,12 @@ impl OpTrait for Quit {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Quit/Close".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Submenu")]
 pub(crate) struct OpenMenu(pub crate::menu::Menu);
 impl OpTrait for OpenMenu {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -62,10 +61,12 @@ impl OpTrait for OpenMenu {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Submenu".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Refresh")]
 pub(crate) struct Refresh;
 impl OpTrait for Refresh {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -74,10 +75,12 @@ impl OpTrait for Refresh {
             state.screen_mut().update()
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Refresh".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = .0)]
 pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -119,6 +122,10 @@ impl OpTrait for ToggleArg {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        self.0.clone()
+    }
 }
 
 fn parse_and_set_arg(state: &mut State, _term: &mut Term, value: &str, arg: &String) -> Res<()> {
@@ -132,8 +139,6 @@ fn parse_and_set_arg(state: &mut State, _term: &mut Term, value: &str, arg: &Str
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "Toggle section")]
 pub(crate) struct ToggleSection;
 impl OpTrait for ToggleSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -143,10 +148,12 @@ impl OpTrait for ToggleSection {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Toggle section".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Up")]
 pub(crate) struct MoveUp;
 impl OpTrait for MoveUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -156,10 +163,12 @@ impl OpTrait for MoveUp {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Up".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Down")]
 pub(crate) struct MoveDown;
 impl OpTrait for MoveDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -169,10 +178,12 @@ impl OpTrait for MoveDown {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Down".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Down line")]
 pub(crate) struct MoveDownLine;
 impl OpTrait for MoveDownLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -182,10 +193,12 @@ impl OpTrait for MoveDownLine {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Down line".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Up line")]
 pub(crate) struct MoveUpLine;
 impl OpTrait for MoveUpLine {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -197,10 +210,12 @@ impl OpTrait for MoveUpLine {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Up line".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Next section")]
 pub(crate) struct MoveNextSection;
 impl OpTrait for MoveNextSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -211,10 +226,12 @@ impl OpTrait for MoveNextSection {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Next section".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Prev section")]
 pub(crate) struct MovePrevSection;
 impl OpTrait for MovePrevSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -227,10 +244,12 @@ impl OpTrait for MovePrevSection {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Prev section".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Parent section")]
 pub(crate) struct MoveParentSection;
 impl OpTrait for MoveParentSection {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -243,10 +262,12 @@ impl OpTrait for MoveParentSection {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Parent section".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Half page up")]
 pub(crate) struct HalfPageUp;
 impl OpTrait for HalfPageUp {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -256,10 +277,12 @@ impl OpTrait for HalfPageUp {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Half page up".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Half page down")]
 pub(crate) struct HalfPageDown;
 impl OpTrait for HalfPageDown {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -268,5 +291,9 @@ impl OpTrait for HalfPageDown {
             state.screen_mut().scroll_half_page_down();
             Ok(())
         }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Half page down".into()
     }
 }

@@ -1,10 +1,7 @@
 use super::OpTrait;
-use crate::{items::TargetData, screen, Action};
-use derive_more::Display;
+use crate::{items::TargetData, screen, state::State, Action};
 use std::{path::Path, process::Command, rc::Rc};
 
-#[derive(Default, Clone, Copy, Debug, Display)]
-#[display(fmt = "Show")]
 pub(crate) struct Show;
 impl OpTrait for Show {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -19,6 +16,10 @@ impl OpTrait for Show {
     }
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Show".into()
     }
 }
 

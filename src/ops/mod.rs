@@ -27,7 +27,7 @@ pub(crate) mod unstage;
 
 pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
-pub(crate) trait OpTrait: Display {
+pub(crate) trait OpTrait {
     /// Get the implementation (which may or may not exist) of the Op given some TargetData.
     /// This indirection allows Gitu to show a contextual menu of applicable actions.
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
@@ -37,6 +37,8 @@ pub(crate) trait OpTrait: Display {
     fn is_target_op(&self) -> bool {
         false
     }
+
+    fn display(&self, state: &State) -> String;
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]

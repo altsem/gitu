@@ -7,7 +7,6 @@ use crate::{
     term::Term,
     Res,
 };
-use derive_more::Display;
 use git2::Oid;
 use regex::Regex;
 use std::rc::Rc;
@@ -25,8 +24,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-#[derive(Display)]
-#[display(fmt = "current")]
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -35,10 +32,12 @@ impl OpTrait for LogCurrent {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "current".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "other")]
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -48,6 +47,10 @@ impl OpTrait for LogOther {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "other".into()
     }
 }
 

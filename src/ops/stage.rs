@@ -6,11 +6,8 @@ use crate::{
     term::Term,
     Action,
 };
-use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
-#[derive(Display)]
-#[display(fmt = "Stage")]
 pub(crate) struct Stage;
 impl OpTrait for Stage {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -26,8 +23,13 @@ impl OpTrait for Stage {
 
         Some(action)
     }
+
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Stage".into()
     }
 }
 

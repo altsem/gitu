@@ -1,14 +1,11 @@
 use super::{create_prompt, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
-use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![Arg::new_flag("--rebase", "Rebase local commits", false)]
 }
 
-#[derive(Display)]
-#[display(fmt = "from default")]
 pub(crate) struct Pull;
 impl OpTrait for Pull {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -22,14 +19,20 @@ impl OpTrait for Pull {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "from default".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "from elsewhere")]
 pub(crate) struct PullElsewhere;
 impl OpTrait for PullElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Select remote", pull_elsewhere, true))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "from elsewhere".into()
     }
 }
 

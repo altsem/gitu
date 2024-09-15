@@ -1,9 +1,6 @@
 use super::{create_prompt, Action, OpTrait};
-use crate::git::remote::{
-    get_push_remote, get_upstream_components, set_push_remote,
-};
+use crate::git::remote::{get_push_remote, get_upstream_components, set_push_remote};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
-use derive_more::Display;
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -16,8 +13,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-#[derive(Display)]
-#[display(fmt = "to pushRemote")]
 pub(crate) struct PushRemote;
 impl OpTrait for PushRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -32,6 +27,10 @@ impl OpTrait for PushRemote {
             },
         ))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "to pushRemote".into()
+    }
 }
 
 fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name: &str) -> Res<()> {
@@ -43,10 +42,7 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
     push_elsewhere(state, term, push_remote_name)
 }
 
-#[derive(Display)]
-#[display(fmt = "to upstream")]
 pub(crate) struct Push;
-
 impl OpTrait for Push {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
@@ -64,6 +60,10 @@ impl OpTrait for Push {
             }
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "to upstream".into()
+    }
 }
 
 fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
@@ -80,17 +80,19 @@ fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str
     let branch = if head.is_branch() {
         head.shorthand().ok_or("Branch is not valid UTF-8")?
     } else {
-        return Err("Head is not a branch".into())
+        return Err("Head is not a branch".into());
     };
     push_elsewhere_with_branch(state, term, upstream_name, Some(branch))
 }
 
-#[derive(Display)]
-#[display(fmt = "to elsewhere")]
 pub(crate) struct PushElsewhere;
 impl OpTrait for PushElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Select remote", push_elsewhere, true))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "to elsewhere".into()
     }
 }
 
