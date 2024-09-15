@@ -29,6 +29,14 @@ fn push_push_remote_prompt() {
 }
 
 #[test]
+fn push_menu_no_branch() {
+    let ctx = TestContext::setup_clone();
+    run(ctx.dir.path(), &["git", "checkout", ""]);
+    // TODO `llbb<enter>q` is a hack to checkout a commit directly (detach HEAD)
+    snapshot!(ctx, "llbb<enter>qP");
+}
+
+#[test]
 fn push_push_remote() {
     let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "");

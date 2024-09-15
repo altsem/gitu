@@ -1,0 +1,25 @@
+---
+source: src/tests/push.rs
+expression: ctx.redact_buffer()
+---
+▌On branch HEAD                                                                 |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Push                    Arguments                                               |
+p to upstream           -n Dry run (--dry-run)                                  |
+r to pushRemote         -F Force (--force)                                      |
+e to elsewhere          -f Force with lease (--force-with-lease)                |
+q/<esc> Quit/Close      -h Disable hooks (--no-verify)                          |
+styles_hash: 19f6835646618700
