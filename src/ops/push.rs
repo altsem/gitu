@@ -28,8 +28,14 @@ impl OpTrait for PushRemote {
         ))
     }
 
-    fn display(&self, _state: &State) -> String {
-        "to pushRemote".into()
+    fn display(&self, state: &State) -> String {
+        match get_push_remote(&state.repo) {
+            Ok(maybe_remote) => format!(
+                "to {}",
+                maybe_remote.unwrap_or("pushRemote, setting that".into())
+            ),
+            Err(e) => format!("error: {}", e),
+        }
     }
 }
 
