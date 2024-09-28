@@ -6,27 +6,41 @@ pub(crate) fn init_args() -> Vec<Arg> {
     vec![Arg::new_flag("--rebase", "Rebase local commits", false)]
 }
 
-pub(crate) struct Pull;
-impl OpTrait for Pull {
+pub(crate) struct PullFromPushRemote;
+impl OpTrait for PullFromPushRemote {
+    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+        todo!("Implement PullFromPushRemote");
+    }
+
+    fn display(&self, state: &State) -> String {
+        // TODO format pushRemote dynamically (like PushToPushRemote)
+        "from pushRemote".into()
+    }
+}
+
+pub(crate) struct PullFromUpstream;
+impl OpTrait for PullFromUpstream {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
-            let mut cmd = Command::new("git");
-            cmd.arg("pull");
-            cmd.args(state.pending_menu.as_ref().unwrap().args());
+            todo!("Implement PullFromUpstream");
+            // let mut cmd = Command::new("git");
+            // cmd.arg("pull");
+            // cmd.args(state.pending_menu.as_ref().unwrap().args());
 
-            state.close_menu();
-            state.run_cmd_async(term, &[], cmd)?;
-            Ok(())
+            // state.close_menu();
+            // state.run_cmd_async(term, &[], cmd)?;
+            // Ok(())
         }))
     }
 
     fn display(&self, _state: &State) -> String {
-        "from default".into()
+        // TODO format upstream dynamically (like PushToPushRemote)
+        "from upstream".into()
     }
 }
 
-pub(crate) struct PullElsewhere;
-impl OpTrait for PullElsewhere {
+pub(crate) struct PullFromElsewhere;
+impl OpTrait for PullFromElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Select remote", pull_elsewhere, true))
     }

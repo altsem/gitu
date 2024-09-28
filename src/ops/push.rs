@@ -13,8 +13,8 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-pub(crate) struct PushRemote;
-impl OpTrait for PushRemote {
+pub(crate) struct PushToPushRemote;
+impl OpTrait for PushToPushRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_push_remote(&state.repo)? {
@@ -48,8 +48,8 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
     push_elsewhere(state, term, push_remote_name)
 }
 
-pub(crate) struct Push;
-impl OpTrait for Push {
+pub(crate) struct PushToUpstream;
+impl OpTrait for PushToUpstream {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
             let repo = state.repo.clone();
@@ -68,6 +68,7 @@ impl OpTrait for Push {
     }
 
     fn display(&self, _state: &State) -> String {
+        // TODO format upstream dynamically (like PushToPushRemote)
         "to upstream".into()
     }
 }
@@ -91,8 +92,8 @@ fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str
     push_elsewhere_with_branch(state, term, upstream_name, Some(branch))
 }
 
-pub(crate) struct PushElsewhere;
-impl OpTrait for PushElsewhere {
+pub(crate) struct PushToElsewhere;
+impl OpTrait for PushToElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Select remote", push_elsewhere, true))
     }
