@@ -11,19 +11,25 @@ pub(crate) fn get_upstream(r: Reference) -> Res<Option<Branch>> {
     match r.upstream() {
         Ok(v) => Ok(Some(v)),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
-        Err(e) => Err(e.into())
+        Err(e) => Err(e.into()),
     }
 }
 
 /// If the branch has an upstream, returns the remote name and branch name in that order.
 pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, String)>> {
-   let Some(upstream) = get_upstream(repo.head()?)? else {
-       return Ok(None)
-   };
+    let Some(upstream) = get_upstream(repo.head()?)? else {
+        return Ok(None);
+    };
     let branch_full = upstream.get().name().ok_or("Branch name not utf-8")?;
     let remote = repo.branch_remote_name(branch_full)?;
     let remote = remote.as_str().ok_or("Remote name not utf-8")?;
-    Ok(Some((remote.into(), repo.head()?.shorthand().ok_or("Branch name not utf-8")?.into())))
+    Ok(Some((
+        remote.into(),
+        repo.head()?
+            .shorthand()
+            .ok_or("Branch name not utf-8")?
+            .into(),
+    )))
 }
 
 pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {
@@ -46,7 +52,7 @@ pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
         Ok(v) if v.is_empty() => Ok(None),
         Ok(v) => Ok(Some(v)),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
-        Err(e) => Err(e.into())
+        Err(e) => Err(e.into()),
     }
 }
 
@@ -67,8 +73,7 @@ pub(crate) fn set_push_remote(repo: &Repository, remote: Option<&Remote>) -> Res
 pub(crate) fn head_push_remote_cfg(repo: &Repository) -> Res<String> {
     let head = repo.head()?;
     let branch = if head.is_branch() {
-        head
-            .shorthand()
+        head.shorthand()
             .ok_or("Head branch name was not valid UTF-8")?
     } else {
         return Err("Head is not a branch".into());
@@ -92,7 +97,7 @@ pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&str>) -> Res<()>
         // `set_upstream` will error if there isn't an existing config for
         // the branch when we try to remove the config
         (Err(e), None) if e.class() == git2::ErrorClass::Config => Ok(()),
-        (Err(e), _) => Err(e.into())
+        (Err(e), _) => Err(e.into()),
     }
 }
 
