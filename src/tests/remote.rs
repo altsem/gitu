@@ -2,7 +2,10 @@ use std::str::FromStr;
 
 use git2::{Buf, Error, ErrorClass, Repository};
 
-use crate::git::remote::{get_push_remote, get_upstream, get_upstream_components, set_push_remote, set_upstream, set_upstream_from_ref};
+use crate::git::remote::{
+    get_push_remote, get_upstream, get_upstream_components, set_push_remote, set_upstream,
+    set_upstream_from_ref,
+};
 use crate::tests::helpers::{commit, RepoTestContext};
 
 fn get_head_name(repo: &Repository) -> String {
@@ -26,13 +29,12 @@ fn get_branch_remote_str(repo: &Repository) -> String {
 }
 
 fn branch_from_head(repo: &Repository, name: impl AsRef<str>) -> git2::Branch {
-    repo
-        .branch(
-            name.as_ref(),
-            &repo.head().unwrap().peel_to_commit().unwrap(),
-            true,
-        )
-        .unwrap()
+    repo.branch(
+        name.as_ref(),
+        &repo.head().unwrap().peel_to_commit().unwrap(),
+        true,
+    )
+    .unwrap()
 }
 
 #[test]
@@ -44,10 +46,14 @@ fn remove_upstream() {
 
     set_upstream(&repo, None).unwrap();
 
-    let e = get_branch_merge(&repo).map(|v| String::from_str(v.as_str().unwrap())).unwrap_err();
+    let e = get_branch_merge(&repo)
+        .map(|v| String::from_str(v.as_str().unwrap()))
+        .unwrap_err();
     assert_eq!(e.class(), ErrorClass::Config, "Actual: {}", e);
 
-    let e = get_branch_remote(&repo).map(|v| String::from_str(v.as_str().unwrap())).unwrap_err();
+    let e = get_branch_remote(&repo)
+        .map(|v| String::from_str(v.as_str().unwrap()))
+        .unwrap_err();
 
     assert_eq!(e.class(), ErrorClass::Config, "Actual: {}", e);
 }
@@ -118,7 +124,7 @@ fn set_push_remote_basic() {
     let ctx = RepoTestContext::setup_clone();
 
     let repo = ctx.local_repo;
-    
+
     let push_remote = get_push_remote(&repo).unwrap();
     assert_eq!(push_remote, None);
 
@@ -127,7 +133,7 @@ fn set_push_remote_basic() {
     set_push_remote(&repo, Some(&remote)).unwrap();
     let push_remote = get_push_remote(&repo).unwrap();
     assert_eq!(push_remote, Some(remote_name));
-    
+
     set_push_remote(&repo, None).unwrap();
     let push_remote = get_push_remote(&repo).unwrap();
     assert_eq!(push_remote, None);
