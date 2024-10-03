@@ -1,5 +1,7 @@
 use super::{create_prompt, Action, OpTrait};
-use crate::git::remote::{get_push_remote, get_upstream_components, set_push_remote};
+use crate::git::remote::{
+    get_push_remote, get_upstream, get_upstream_components, get_upstream_shortname, set_push_remote,
+};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use std::{process::Command, rc::Rc};
 
@@ -65,9 +67,12 @@ impl OpTrait for PushToUpstream {
         }))
     }
 
-    fn display(&self, _state: &State) -> String {
-        // TODO format upstream dynamically (like PushToPushRemote)
-        "to upstream".into()
+    fn display(&self, state: &State) -> String {
+        match get_upstream_shortname(&state.repo) {
+            Ok(Some(upstream)) => format!("to {}", upstream),
+            Ok(None) => "upstream, setting that".into(),
+            Err(e) => format!("error: {}", e),
+        }
     }
 }
 

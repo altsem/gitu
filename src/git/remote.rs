@@ -26,6 +26,19 @@ pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, 
     Ok(Some((remote.into(), repo.head()?.shorthand().ok_or("Branch name not utf-8")?.into())))
 }
 
+pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {
+    let Some(upstream) = get_upstream(repo.head()?)? else {
+        return Ok(None);
+    };
+    Ok(Some(
+        upstream
+            .get()
+            .shorthand()
+            .ok_or("Upstream ref not utf-8")?
+            .into(),
+    ))
+}
+
 pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
     let push_remote_cfg = head_push_remote_cfg(repo)?;
     let config = repo.config()?;
