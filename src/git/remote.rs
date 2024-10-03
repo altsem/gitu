@@ -25,6 +25,7 @@ pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, 
     let remote = remote.as_str().ok_or("Remote name not utf-8")?;
     Ok(Some((
         remote.into(),
+        // TODO I think the upstream branch name is not guaranteed to be the same
         repo.head()?
             .shorthand()
             .ok_or("Branch name not utf-8")?
