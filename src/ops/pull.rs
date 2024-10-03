@@ -1,5 +1,12 @@
 use super::{create_prompt, Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use crate::{
+    git::remote::{get_push_remote, get_upstream_shortname},
+    items::TargetData,
+    menu::arg::Arg,
+    state::State,
+    term::Term,
+    Res,
+};
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -13,8 +20,11 @@ impl OpTrait for PullFromPushRemote {
     }
 
     fn display(&self, state: &State) -> String {
-        // TODO format pushRemote dynamically (like PushToPushRemote)
-        "from pushRemote".into()
+        match get_push_remote(&state.repo) {
+            Ok(Some(remote)) => format!("from {}", remote),
+            Ok(None) => "pushRemote".into(),
+            Err(e) => format!("error: {}", e),
+        }
     }
 }
 
@@ -33,9 +43,12 @@ impl OpTrait for PullFromUpstream {
         }))
     }
 
-    fn display(&self, _state: &State) -> String {
-        // TODO format upstream dynamically (like PushToPushRemote)
-        "from upstream".into()
+    fn display(&self, state: &State) -> String {
+        match get_upstream_shortname(&state.repo) {
+            Ok(Some(upstream)) => format!("from {}", upstream),
+            Ok(None) => "upstream".into(),
+            Err(e) => format!("error: {}", e),
+        }
     }
 }
 
