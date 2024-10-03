@@ -2,9 +2,9 @@ use git2::{Branch, Reference, Remote, Repository};
 
 use crate::Res;
 
-pub(crate) fn get_upstream(r: Reference) -> Res<Option<Branch>> {
-    let r = if r.is_branch() {
-        Branch::wrap(r)
+pub(crate) fn get_upstream(repo: &Repository) -> Res<Option<Branch>> {
+    let r = if repo.head()?.is_branch() {
+        Branch::wrap(repo.head()?)
     } else {
         return Err("Head is not a branch".into());
     };
@@ -17,7 +17,7 @@ pub(crate) fn get_upstream(r: Reference) -> Res<Option<Branch>> {
 
 /// If the branch has an upstream, returns the remote name and branch name in that order.
 pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, String)>> {
-    let Some(upstream) = get_upstream(repo.head()?)? else {
+    let Some(upstream) = get_upstream(repo)? else {
         return Ok(None);
     };
     let branch_full = upstream.get().name().ok_or("Branch name not utf-8")?;
@@ -33,7 +33,7 @@ pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, 
 }
 
 pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {
-    let Some(upstream) = get_upstream(repo.head()?)? else {
+    let Some(upstream) = get_upstream(repo)? else {
         return Ok(None);
     };
     Ok(Some(

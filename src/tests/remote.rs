@@ -137,14 +137,14 @@ fn set_push_remote_basic() {
 fn get_upstream_basic() {
     let ctx = RepoTestContext::setup_clone();
     let repo = ctx.local_repo;
-    let upstream = get_upstream(repo.head().unwrap()).unwrap().unwrap();
+    let upstream = get_upstream(&repo).unwrap().unwrap();
     assert_eq!(upstream.name().unwrap().unwrap(), "origin/main");
 
     let (remote, branch) = get_upstream_components(&repo).unwrap().unwrap();
     assert_eq!(remote, "origin");
     assert_eq!(branch, "main");
-    
+
     set_upstream(&repo, None).unwrap();
-    let upstream = get_upstream(repo.head().unwrap()).unwrap();
+    let upstream = get_upstream(&repo).unwrap();
     assert!(upstream.is_none());
 }
