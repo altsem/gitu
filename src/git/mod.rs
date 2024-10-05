@@ -189,3 +189,12 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
         details,
     })
 }
+
+pub(crate) fn get_head(repo: &git2::Repository) -> Res<String> {
+    let head = repo.head()?;
+    if head.is_branch() {
+        Ok(head.name().ok_or("Branch is not valid UTF-8")?.into())
+    } else {
+        Err("Head is not a branch".into())
+    }
+}

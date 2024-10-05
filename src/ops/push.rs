@@ -26,10 +26,8 @@ impl OpTrait for PushToPushRemote {
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some(push_remote) => {
-                    let repo = &state.repo.clone();
-                    let head = repo.head()?;
-                    let local_ref = head.name().ok_or("Branch has invalid utf-8")?;
-                    let refspec = format!("{0}:{0}", local_ref);
+                    let head_ref = git::get_head(&state.repo)?;
+                    let refspec = format!("{0}:{0}", head_ref);
                     push(state, term, &push_remote, Some(&refspec))
                 }
             },
@@ -57,23 +55,20 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
 pub(crate) struct PushToUpstream;
 impl OpTrait for PushToUpstream {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
-            let repo = state.repo.clone();
-            let head = repo.head()?;
-            let local_ref = head.name().ok_or("Branch has invalid utf-8")?;
-            let upstream = get_upstream_components(&repo)?;
-            match upstream {
+        Some(Rc::new(
+            |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
                 None => {
                     let mut prompt =
                         create_prompt("Set upstream then push", set_upstream_and_push, true);
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some((remote, branch)) => {
-                    let refspec = format!("{}:refs/heads/{}", local_ref, branch);
+                    let head_ref = git::get_head(&state.repo)?;
+                    let refspec = format!("{}:refs/heads/{}", head_ref, branch);
                     push(state, term, &remote, Some(&refspec))
                 }
-            }
-        }))
+            },
+        ))
     }
 
     fn display(&self, state: &State) -> String {
@@ -94,14 +89,9 @@ fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str
         .get_mut("--set-upstream")
         .ok_or("Internal error")?
         .set("")?;
-    let repo = state.repo.clone();
-    let head = repo.head()?;
-    let branch = if head.is_branch() {
-        head.shorthand().ok_or("Branch is not valid UTF-8")?
-    } else {
-        return Err("Head is not a branch".into());
-    };
-    let refspec = format!("refs/heads/{0}:refs/heads/{0}", branch);
+
+    let head_ref = git::get_head(&state.repo)?;
+    let refspec = format!("{0}:{0}", head_ref);
     push(state, term, upstream_name, Some(&refspec))
 }
 
