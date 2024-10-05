@@ -1,4 +1,5 @@
 use super::{create_prompt, Action, OpTrait};
+use crate::git;
 use crate::git::remote::{
     get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
 };
@@ -48,8 +49,12 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
     let push_remote = repo
         .find_remote(push_remote_name)
         .map_err(|_| "Invalid pushRemote")?;
+
     set_push_remote(&repo, Some(&push_remote)).map_err(|_| "Could not set pushRemote config")?;
-    push_elsewhere(state, term, push_remote_name)
+
+    let head_ref = git::get_head(&state.repo)?;
+    let refspec = format!("{0}:{0}", head_ref);
+    push(state, term, push_remote_name, Some(&refspec))
 }
 
 pub(crate) struct PushToUpstream;
