@@ -18,8 +18,8 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 Push                               Arguments                                    |
-p to upstream                      -n Dry run (--dry-run)                       |
-r error: Head is not a branch      -F Force (--force)                           |
+p error: Head is not a branch      -n Dry run (--dry-run)                       |
+u error: Head is not a branch      -F Force (--force)                           |
 e to elsewhere                     -f Force with lease (--force-with-lease)     |
 q/<esc> Quit/Close                 -h Disable hooks (--no-verify)               |
 styles_hash: 18ab2c30f676c031

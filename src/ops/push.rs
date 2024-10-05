@@ -1,6 +1,6 @@
 use super::{create_prompt, Action, OpTrait};
 use crate::git::remote::{
-    get_push_remote, get_upstream, get_upstream_components, get_upstream_shortname, set_push_remote,
+    get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
 };
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use std::{process::Command, rc::Rc};
@@ -25,7 +25,13 @@ impl OpTrait for PushToPushRemote {
                         create_prompt("Set pushRemote then push", set_push_remote_and_push, true);
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
-                Some(push_remote) => push_elsewhere(state, term, &push_remote),
+                Some(push_remote) => {
+                    let repo = &state.repo.clone();
+                    let head = repo.head()?;
+                    let local_ref = head.name().ok_or("Branch has invalid utf-8")?;
+                    let refspec = format!("{0}:{0}", local_ref);
+                    push(state, term, &push_remote, Some(&refspec))
+                }
             },
         ))
     }
@@ -53,6 +59,8 @@ impl OpTrait for PushToUpstream {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(|state: &mut State, term: &mut Term| {
             let repo = state.repo.clone();
+            let head = repo.head()?;
+            let local_ref = head.name().ok_or("Branch has invalid utf-8")?;
             let upstream = get_upstream_components(&repo)?;
             match upstream {
                 None => {
@@ -61,7 +69,8 @@ impl OpTrait for PushToUpstream {
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some((remote, branch)) => {
-                    push_elsewhere_with_branch(state, term, &remote, Some(&branch))
+                    let refspec = format!("{}:refs/heads/{}", local_ref, branch);
+                    push(state, term, &remote, Some(&refspec))
                 }
             }
         }))
@@ -92,7 +101,8 @@ fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str
     } else {
         return Err("Head is not a branch".into());
     };
-    push_elsewhere_with_branch(state, term, upstream_name, Some(branch))
+    let refspec = format!("refs/heads/{0}:refs/heads/{0}", branch);
+    push(state, term, upstream_name, Some(&refspec))
 }
 
 pub(crate) struct PushToElsewhere;
@@ -107,21 +117,17 @@ impl OpTrait for PushToElsewhere {
 }
 
 fn push_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
-    push_elsewhere_with_branch(state, term, remote, None)
+    push(state, term, remote, None)
 }
 
-fn push_elsewhere_with_branch(
-    state: &mut State,
-    term: &mut Term,
-    remote: &str,
-    branch: Option<&str>,
-) -> Res<()> {
+fn push(state: &mut State, term: &mut Term, remote: &str, refspec: Option<&str>) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["push"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(remote);
-    if let Some(branch) = branch {
-        cmd.arg(branch);
+
+    if let Some(refspec) = refspec {
+        cmd.arg(refspec);
     }
 
     state.close_menu();

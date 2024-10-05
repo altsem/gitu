@@ -16,21 +16,43 @@ pub(crate) fn get_upstream(repo: &Repository) -> Res<Option<Branch>> {
 }
 
 /// If the branch has an upstream, returns the remote name and branch name in that order.
+/// Returns "." as remote if the current branch has no remote upstream.
+///
+/// Branch references would be used like this (in Magit)
+///
+/// // Remote branch
+/// git … push -v origin feature-branch\:refs/heads/feature-branch
+/// git … pull origin refs/heads/feature-branch
+/// git … rebase --autostash origin/feature-branch
+///
+/// // Local branch
+/// git … push -v . feature-branch\:refs/heads/main
+/// git … pull . refs/heads/main
+/// git … rebase --autostash main
 pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, String)>> {
     let Some(upstream) = get_upstream(repo)? else {
         return Ok(None);
     };
-    let branch_full = upstream.get().name().ok_or("Branch name not utf-8")?;
-    let remote = repo.branch_remote_name(branch_full)?;
-    let remote = remote.as_str().ok_or("Remote name not utf-8")?;
-    Ok(Some((
-        remote.into(),
-        // TODO I think the upstream branch name is not guaranteed to be the same
-        repo.head()?
-            .shorthand()
-            .ok_or("Branch name not utf-8")?
-            .into(),
-    )))
+
+    let branch = upstream
+        .get()
+        .shorthand()
+        .ok_or("Branch name not utf-8")?
+        .to_string();
+
+    if upstream.get().is_remote() {
+        let branch_full = upstream.get().name().ok_or("Branch name not utf-8")?;
+        let remote = repo
+            .branch_remote_name(branch_full)?
+            .as_str()
+            .ok_or("Remote name not utf-8")?
+            .to_string();
+
+        let remote_prefix = format!("{}/", remote);
+        Ok(Some((remote, branch.replace(&remote_prefix, ""))))
+    } else {
+        Ok(Some((".".into(), branch)))
+    }
 }
 
 pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {

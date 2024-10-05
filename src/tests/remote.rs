@@ -2,11 +2,8 @@ use std::str::FromStr;
 
 use git2::{Buf, Error, ErrorClass, Repository};
 
-use crate::git::remote::{
-    get_push_remote, get_upstream, get_upstream_components, set_push_remote, set_upstream,
-    set_upstream_from_ref,
-};
-use crate::tests::helpers::{commit, RepoTestContext};
+use crate::git::remote::*;
+use crate::tests::helpers::{commit, run, RepoTestContext};
 
 fn get_head_name(repo: &Repository) -> String {
     repo.head().unwrap().name().unwrap().into()
@@ -146,11 +143,29 @@ fn get_upstream_basic() {
     let upstream = get_upstream(&repo).unwrap().unwrap();
     assert_eq!(upstream.name().unwrap().unwrap(), "origin/main");
 
-    let (remote, branch) = get_upstream_components(&repo).unwrap().unwrap();
-    assert_eq!(remote, "origin");
-    assert_eq!(branch, "main");
-
     set_upstream(&repo, None).unwrap();
     let upstream = get_upstream(&repo).unwrap();
     assert!(upstream.is_none());
+}
+
+#[test]
+fn get_upstream_components_of_remote_branch() {
+    let ctx = RepoTestContext::setup_clone();
+    let repo = ctx.local_repo;
+
+    let (remote, branch) = get_upstream_components(&repo).unwrap().unwrap();
+    assert_eq!(remote, "origin");
+    assert_eq!(branch, "main");
+}
+
+#[test]
+fn get_upstream_components_of_feature_branch() {
+    let ctx = RepoTestContext::setup_clone();
+    let repo = ctx.local_repo;
+    run(ctx.dir.path(), &["git", "checkout", "-b", "feature-branch"]);
+    set_upstream(&repo, Some("main")).unwrap();
+
+    let (remote, branch) = get_upstream_components(&repo).unwrap().unwrap();
+    assert_eq!(remote, ".");
+    assert_eq!(branch, "main");
 }
