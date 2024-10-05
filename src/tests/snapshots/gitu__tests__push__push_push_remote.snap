@@ -1,25 +1,25 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- d07f2d3 main origin/main add remote-file                                       |
+ e7eb2bd main origin/main add new-file                                          |
  b66a0bf add initial-file                                                       |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git pull                                                                      |
-From                                                                            |
-   b66a0bf..d07f2d3  main       -> origin/main                                  |
-Updating b66a0bf..d07f2d3                                                       |
-Fast-forward                                                                    |
- remote-file | 1 +                                                              |
- 1 file changed, 1 insertion(+)                                                 |
- create mode 100644 remote-file                                                 |
-styles_hash: fe1a0f5d15268e04
+$ git push origin                                                               |
+To                                                                              |
+   b66a0bf..e7eb2bd  main -> main                                               |
+styles_hash: fe675c3895ba862f

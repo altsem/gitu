@@ -1,7 +1,6 @@
 use std::{process::Command, rc::Rc};
 
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
-use derive_more::*;
 
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 
@@ -14,8 +13,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-#[derive(Display)]
-#[display(fmt = "Abort")]
 pub(crate) struct RevertAbort;
 impl OpTrait for RevertAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -28,10 +25,12 @@ impl OpTrait for RevertAbort {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Abort".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Continue")]
 pub(crate) struct RevertContinue;
 impl OpTrait for RevertContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -44,10 +43,12 @@ impl OpTrait for RevertContinue {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Continue".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "Revert commit(s)")]
 pub(crate) struct RevertCommit;
 impl OpTrait for RevertCommit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -57,6 +58,10 @@ impl OpTrait for RevertCommit {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Revert commit(s)".into()
     }
 }
 

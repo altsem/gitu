@@ -1,25 +1,25 @@
 ---
-source: src/tests/push.rs
+source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
+ d07f2d3 main origin/main add remote-file                                       |
  b66a0bf add initial-file                                                       |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push --force-with-lease origin refs/heads/main:refs/heads/main            |
-To                                                                              |
-   b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 346b2eb0e6fdb3f3
+$ git pull origin refs/heads/main                                               |
+From                                                                            |
+ * branch            main       -> FETCH_HEAD                                   |
+   b66a0bf..d07f2d3  main       -> origin/main                                  |
+Updating b66a0bf..d07f2d3                                                       |
+Fast-forward                                                                    |
+ remote-file | 1 +                                                              |
+ 1 file changed, 1 insertion(+)                                                 |
+ create mode 100644 remote-file                                                 |
+styles_hash: 5cab1b81bd346c16

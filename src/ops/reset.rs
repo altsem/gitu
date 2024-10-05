@@ -1,14 +1,11 @@
 use super::{create_prompt_with_default, selected_rev, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action, Res};
-use derive_more::Display;
 use std::process::Command;
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![]
 }
 
-#[derive(Display)]
-#[display(fmt = "soft")]
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -18,6 +15,10 @@ impl OpTrait for ResetSoft {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "soft".into()
     }
 }
 
@@ -31,8 +32,6 @@ fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
     state.run_cmd(term, &[], cmd)
 }
 
-#[derive(Display)]
-#[display(fmt = "mixed")]
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -42,6 +41,10 @@ impl OpTrait for ResetMixed {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "mixed".into()
     }
 }
 
@@ -55,8 +58,6 @@ fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
     state.run_cmd(term, &[], cmd)
 }
 
-#[derive(Display)]
-#[display(fmt = "hard")]
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -66,6 +67,10 @@ impl OpTrait for ResetHard {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "hard".into()
     }
 }
 
