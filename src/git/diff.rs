@@ -296,7 +296,7 @@ fn diff_content(
                 .to_string()
                 .strip_prefix("@@ -")
                 .unwrap()
-                .split(|c| c == ' ' || c == ',')
+                .split([' ', ','])
                 .next()
                 .unwrap()
                 .parse()
@@ -385,7 +385,7 @@ fn create_lines(
                         Span::styled(
                             content[h_range]
                                 // TODO only need to do this for the last span
-                                .trim_end_matches(|s| s == '\r' || s == '\n')
+                                .trim_end_matches(['\r', '\n'])
                                 .to_string(),
                             h_style,
                         )
