@@ -30,7 +30,6 @@ use crate::ops::Op;
 use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
-use crate::term;
 use crate::term::Term;
 use crate::ui;
 
@@ -317,7 +316,7 @@ impl State {
         term.hide_cursor()?;
 
         // In case the command left the alternate screen (editors would)
-        term::enter_alternate_screen()?;
+        term.backend_mut().enter_alternate_screen()?;
 
         term.clear()?;
         self.screen_mut().update()?;

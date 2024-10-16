@@ -10,7 +10,6 @@ name = "show"
 harness = false
 
 [dev-dependencies]
-ctor = "0.2.7"
 pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"

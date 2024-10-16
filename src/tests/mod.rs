@@ -19,15 +19,6 @@ mod unstage;
 
 use helpers::{clone_and_commit, commit, keys, run, TestContext};
 
-use crate::term;
-
-#[cfg(test)]
-#[ctor::dtor]
-fn restore_terminal() {
-    term::cleanup_alternate_screen();
-    term::cleanup_raw_mode();
-}
-
 #[test]
 fn no_repo() {
     let mut ctx = TestContext::setup_init();
