@@ -28,7 +28,7 @@ impl OpTrait for PullFromPushRemote {
                 }
                 Some(push_remote) => {
                     let refspec = git::get_head(&state.repo)?;
-                    pull(state, term, &push_remote, Some(&refspec))
+                    pull(state, term, &[&push_remote, &refspec])
                 }
             },
         ))
@@ -53,7 +53,7 @@ fn set_push_remote_and_pull(state: &mut State, term: &mut Term, push_remote_name
         .map_err(|_| "Could not set pushRemote config")?;
 
     let refspec = git::get_head(&repo)?;
-    pull(state, term, push_remote_name, Some(&refspec))
+    pull(state, term, &[push_remote_name, &refspec])
 }
 
 pub(crate) struct PullFromUpstream;
@@ -63,12 +63,12 @@ impl OpTrait for PullFromUpstream {
             |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
                 None => {
                     let mut prompt =
-                        create_prompt("Set upstream then pull", set_upstream_and_pull, true);
+                        create_prompt("Set upstream then pull", pull_and_set_upstream, true);
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some((remote, branch)) => {
                     let refspec = format!("refs/heads/{}", branch);
-                    pull(state, term, &remote, Some(&refspec))
+                    pull(state, term, &[&remote, &refspec])
                 }
             },
         ))
@@ -83,18 +83,9 @@ impl OpTrait for PullFromUpstream {
     }
 }
 
-fn set_upstream_and_pull(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
-    state
-        .pending_menu
-        .as_mut()
-        .unwrap()
-        .args
-        .get_mut("--set-upstream")
-        .ok_or("Internal error")?
-        .set("")?;
-
+fn pull_and_set_upstream(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
     let refspec = git::get_head(&state.repo)?;
-    pull(state, term, upstream_name, Some(&refspec))
+    pull(state, term, &["--set-upstream", upstream_name, &refspec])
 }
 
 pub(crate) struct PullFromElsewhere;
@@ -109,18 +100,14 @@ impl OpTrait for PullFromElsewhere {
 }
 
 fn pull_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
-    pull(state, term, remote, None)
+    pull(state, term, &[remote])
 }
 
-fn pull(state: &mut State, term: &mut Term, remote: &str, refspec: Option<&str>) -> Res<()> {
+fn pull(state: &mut State, term: &mut Term, extra_args: &[&str]) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["pull"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
-    cmd.arg(remote);
-
-    if let Some(refspec) = refspec {
-        cmd.arg(refspec);
-    }
+    cmd.args(extra_args);
 
     state.close_menu();
     state.run_cmd_async(term, &[], cmd)?;

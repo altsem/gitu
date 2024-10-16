@@ -12,7 +12,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
         Arg::new_flag("--force", "Force", false),
         Arg::new_flag("--no-verify", "Disable hooks", false),
         Arg::new_flag("--dry-run", "Dry run", false),
-        Arg::new_flag("--set-upstream", "Set upstream", false),
     ]
 }
 
@@ -29,7 +28,7 @@ impl OpTrait for PushToPushRemote {
                 Some(push_remote) => {
                     let head_ref = git::get_head(&state.repo)?;
                     let refspec = format!("{0}:{0}", head_ref);
-                    push(state, term, &push_remote, Some(&refspec))
+                    push(state, term, &[&push_remote, &refspec])
                 }
             },
         ))
@@ -54,7 +53,7 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
 
     let head_ref = git::get_head(&state.repo)?;
     let refspec = format!("{0}:{0}", head_ref);
-    push(state, term, push_remote_name, Some(&refspec))
+    push(state, term, &[push_remote_name, &refspec])
 }
 
 pub(crate) struct PushToUpstream;
@@ -70,7 +69,7 @@ impl OpTrait for PushToUpstream {
                 Some((remote, branch)) => {
                     let head_ref = git::get_head(&state.repo)?;
                     let refspec = format!("{}:refs/heads/{}", head_ref, branch);
-                    push(state, term, &remote, Some(&refspec))
+                    push(state, term, &[&remote, &refspec])
                 }
             },
         ))
@@ -86,18 +85,9 @@ impl OpTrait for PushToUpstream {
 }
 
 fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
-    state
-        .pending_menu
-        .as_mut()
-        .unwrap()
-        .args
-        .get_mut("--set-upstream")
-        .ok_or("Internal error")?
-        .set("")?;
-
     let head_ref = git::get_head(&state.repo)?;
     let refspec = format!("{0}:{0}", head_ref);
-    push(state, term, upstream_name, Some(&refspec))
+    push(state, term, &["--set-upstream", upstream_name, &refspec])
 }
 
 pub(crate) struct PushToElsewhere;
@@ -112,18 +102,14 @@ impl OpTrait for PushToElsewhere {
 }
 
 fn push_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
-    push(state, term, remote, None)
+    push(state, term, &[remote])
 }
 
-fn push(state: &mut State, term: &mut Term, remote: &str, refspec: Option<&str>) -> Res<()> {
+fn push(state: &mut State, term: &mut Term, extra_args: &[&str]) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["push"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
-    cmd.arg(remote);
-
-    if let Some(refspec) = refspec {
-        cmd.arg(refspec);
-    }
+    cmd.args(extra_args);
 
     state.close_menu();
     state.run_cmd_async(term, &[], cmd)?;
