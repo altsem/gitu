@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push origin                                                               |
+$ git push origin refs/heads/main:refs/heads/main                               |
 To                                                                              |
    b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: fe675c3895ba862f
+styles_hash: 4281674f50fbf56f
