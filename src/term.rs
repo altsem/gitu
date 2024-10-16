@@ -19,10 +19,8 @@ use std::io::Stderr;
 
 pub type Term = Terminal<TermBackend>;
 
-pub fn enter_alternate_screen() -> Res<()> {
-    stderr().execute(EnterAlternateScreen)?;
-    Ok(())
-}
+// TODO It would be more logical if the following top-level functions also were in 'TermBackend'.
+//      However left here for now.
 
 pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
     stderr().execute(EnterAlternateScreen)?;
@@ -136,6 +134,15 @@ impl Backend for TermBackend {
         match self {
             TermBackend::Crossterm(t) => t.flush(),
             TermBackend::Test(t) => t.flush(),
+        }
+    }
+}
+
+impl TermBackend {
+    pub fn enter_alternate_screen(&mut self) -> io::Result<()> {
+        match self {
+            TermBackend::Crossterm(c) => c.execute(EnterAlternateScreen).map(|_| ()),
+            TermBackend::Test(_) => Ok(()),
         }
     }
 }

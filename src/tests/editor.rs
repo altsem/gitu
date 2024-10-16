@@ -6,9 +6,12 @@ fn setup_scroll() -> (TestContext, crate::state::State) {
         commit(ctx.dir.path(), file, "");
         fs::write(
             ctx.dir.child(file),
-            (1..=20)
-                .map(|i| format!("line {} ({})\n", i, file))
-                .collect::<String>(),
+            (1..=20).fold(String::new(), |mut acc, i| {
+                use std::fmt::Write as _;
+
+                writeln!(acc, "line {} ({})", i, file).unwrap();
+                acc
+            }),
         )
         .unwrap();
     }
