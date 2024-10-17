@@ -49,6 +49,7 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
         .find_remote(push_remote_name)
         .map_err(|_| "Invalid pushRemote")?;
 
+    // TODO Would be nice to have the command visible in the log. Resort to `git config`?
     set_push_remote(&repo, Some(&push_remote)).map_err(|_| "Could not set pushRemote config")?;
 
     let head_ref = git::get_head(&state.repo)?;
@@ -66,11 +67,7 @@ impl OpTrait for PushToUpstream {
                         create_prompt("Set upstream then push", set_upstream_and_push, true);
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
-                Some((remote, branch)) => {
-                    let head_ref = git::get_head(&state.repo)?;
-                    let refspec = format!("{}:refs/heads/{}", head_ref, branch);
-                    push(state, term, &[&remote, &refspec])
-                }
+                Some((remote, branch)) => push_head_to(state, term, &remote, &branch),
             },
         ))
     }
@@ -85,9 +82,15 @@ impl OpTrait for PushToUpstream {
 }
 
 fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
-    let head_ref = git::get_head(&state.repo)?;
-    let refspec = format!("{0}:{0}", head_ref);
-    push(state, term, &["--set-upstream", upstream_name, &refspec])
+    let mut cmd = Command::new("git");
+    cmd.args(["branch", "--set-upstream-to", upstream_name]);
+    state.run_cmd(term, &[], cmd)?;
+
+    let Some((remote, branch)) = get_upstream_components(&state.repo)? else {
+        return Ok(());
+    };
+
+    push_head_to(state, term, &remote, &branch)
 }
 
 pub(crate) struct PushToElsewhere;
@@ -103,6 +106,12 @@ impl OpTrait for PushToElsewhere {
 
 fn push_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
     push(state, term, &[remote])
+}
+
+fn push_head_to(state: &mut State, term: &mut Term, remote: &str, branch: &str) -> Res<()> {
+    let head_ref = git::get_head(&state.repo)?;
+    let refspec = format!("{}:refs/heads/{}", head_ref, branch);
+    push(state, term, &[remote, &refspec])
 }
 
 fn push(state: &mut State, term: &mut Term, extra_args: &[&str]) -> Res<()> {

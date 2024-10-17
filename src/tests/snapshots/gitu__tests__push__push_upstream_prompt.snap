@@ -3,12 +3,14 @@ source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- 127f7a4 main origin/main add new-file2                                         |
- e7eb2bd add new-file                                                           |
- b66a0bf add initial-file                                                       |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push origin refs/heads/main:refs/heads/main                               |
-To                                                                              |
-   e7eb2bd..127f7a4  main -> main                                               |
-styles_hash: f3a13be5658915e0
+? Set upstream then push: ›                                                     |
+styles_hash: 6165a658809718f7
