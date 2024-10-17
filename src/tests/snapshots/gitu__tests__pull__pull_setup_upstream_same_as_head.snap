@@ -2,13 +2,10 @@
 source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
+▌On branch new-branch                                                           |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
-                                                                                |
-                                                                                |
-                                                                                |
+ b66a0bf main new-branch origin/main add initial-file                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +19,7 @@ p pushRemote, setting that      -r Rebase local commits (--rebase)              
 u upstream, setting that                                                        |
 e from elsewhere                                                                |
 q/<esc> Quit/Close                                                              |
-styles_hash: 9294d1c15def01e9
+────────────────────────────────────────────────────────────────────────────────|
+$ git branch --set-upstream-to new-branch                                       |
+warning: not setting branch 'new-branch' as its own upstream                    |
+styles_hash: 6796d754f17d6809

@@ -63,7 +63,7 @@ impl OpTrait for PullFromUpstream {
             |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
                 None => {
                     let mut prompt =
-                        create_prompt("Set upstream then pull", pull_and_set_upstream, true);
+                        create_prompt("Set upstream then pull", set_upstream_and_pull, true);
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some((remote, branch)) => {
@@ -83,9 +83,17 @@ impl OpTrait for PullFromUpstream {
     }
 }
 
-fn pull_and_set_upstream(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
-    let refspec = git::get_head(&state.repo)?;
-    pull(state, term, &["--set-upstream", upstream_name, &refspec])
+fn set_upstream_and_pull(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["branch", "--set-upstream-to", upstream_name]);
+    state.run_cmd(term, &[], cmd)?;
+
+    let Some((remote, branch)) = get_upstream_components(&state.repo)? else {
+        return Ok(());
+    };
+
+    let refspec = format!("refs/heads/{}", branch);
+    pull(state, term, &[&remote, &refspec])
 }
 
 pub(crate) struct PullFromElsewhere;

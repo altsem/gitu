@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn pull_menu_no_remote_or_upstream_set() {
     let ctx = TestContext::setup_clone();
-    run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
+    run(ctx.dir.path(), &["git", "branch", "--unset-upstream"]);
     snapshot!(ctx, "F");
 }
 
@@ -43,7 +43,7 @@ fn pull_from_elsewhere_prompt() {
 #[test]
 fn pull_upstream_prompt() {
     let ctx = TestContext::setup_clone();
-    run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
+    run(ctx.dir.path(), &["git", "branch", "--unset-upstream"]);
     snapshot!(ctx, "Fu");
 }
 
@@ -54,10 +54,17 @@ fn pull_push_remote_prompt() {
 }
 
 #[test]
+fn pull_setup_upstream_same_as_head() {
+    let ctx = TestContext::setup_clone();
+    run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
+    snapshot!(ctx, "Funew-branch<enter>");
+}
+
+#[test]
 fn pull_setup_upstream() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
-    snapshot!(ctx, "Fuorigin/main<enter>F");
+    snapshot!(ctx, "Fumain<enter>F");
 }
 
 #[test]

@@ -2,10 +2,10 @@
 source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch new-branch                                                           |
+▌On branch main                                                                 |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main new-branch origin/main add initial-file                           |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Set upstream then pull: ›                                                     |
-styles_hash: 65b6f0066821e325
+styles_hash: 6165a658809718f7

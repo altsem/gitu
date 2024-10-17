@@ -1,4 +1,4 @@
-use git2::{Branch, Reference, Remote, Repository};
+use git2::{Branch, Remote, Repository};
 
 use crate::Res;
 
@@ -103,28 +103,4 @@ pub(crate) fn head_push_remote_cfg(repo: &Repository) -> Res<String> {
     };
     let push_remote_cfg = format!("branch.{branch}.pushRemote");
     Ok(push_remote_cfg)
-}
-
-/// Set the remote and upstream of the head. Can't be a detached head, must be a
-/// branch.
-pub(crate) fn set_upstream(repo: &Repository, upstream: Option<&str>) -> Res<()> {
-    let head = repo.head()?;
-    let mut head = if head.is_branch() {
-        Branch::wrap(head)
-    } else {
-        return Err("Head is not a branch".into());
-    };
-
-    match (head.set_upstream(upstream), upstream) {
-        (Ok(()), _) => Ok(()),
-        // `set_upstream` will error if there isn't an existing config for
-        // the branch when we try to remove the config
-        (Err(e), None) if e.class() == git2::ErrorClass::Config => Ok(()),
-        (Err(e), _) => Err(e.into()),
-    }
-}
-
-pub(crate) fn set_upstream_from_ref(repo: &Repository, upstream: Option<&Reference>) -> Res<()> {
-    let upstream = upstream.and_then(|r| r.shorthand());
-    set_upstream(repo, upstream)
 }
