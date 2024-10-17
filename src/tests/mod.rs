@@ -12,6 +12,7 @@ mod pull;
 mod push;
 mod quit;
 mod rebase;
+mod remote;
 mod reset;
 mod stage;
 mod stash;
@@ -199,13 +200,6 @@ fn fetch_all() {
     let ctx = TestContext::setup_clone();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
     snapshot!(ctx, "fa");
-}
-
-#[test]
-fn pull() {
-    let ctx = TestContext::setup_clone();
-    clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
-    snapshot!(ctx, "Fp");
 }
 
 mod show_refs {

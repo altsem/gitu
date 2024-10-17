@@ -1,10 +1,7 @@
 use super::OpTrait;
 use crate::{git::diff::PatchMode, items::TargetData, state::State, term::Term, Action};
-use derive_more::Display;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
-#[derive(Display)]
-#[display(fmt = "Unstage")]
 pub(crate) struct Unstage;
 impl OpTrait for Unstage {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -23,6 +20,10 @@ impl OpTrait for Unstage {
     }
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Unstage".into()
     }
 }
 

@@ -1,5 +1,5 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
@@ -12,14 +12,14 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git pull                                                                      |
+$ git pull origin refs/heads/main                                               |
 From                                                                            |
+ * branch            main       -> FETCH_HEAD                                   |
    b66a0bf..d07f2d3  main       -> origin/main                                  |
 Updating b66a0bf..d07f2d3                                                       |
 Fast-forward                                                                    |
  remote-file | 1 +                                                              |
  1 file changed, 1 insertion(+)                                                 |
  create mode 100644 remote-file                                                 |
-styles_hash: fe1a0f5d15268e04
+styles_hash: 5cab1b81bd346c16

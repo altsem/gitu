@@ -3,11 +3,13 @@ source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
- b66a0bf add initial-file                                                       |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push                                                                      |
-To                                                                              |
-   b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 4b89bed7f095a906
+? Set upstream then push: ›                                                     |
+styles_hash: 6165a658809718f7

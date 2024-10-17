@@ -39,6 +39,11 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         None
     };
 
+    let maybe_prompt = state.prompt.data.as_ref().map(|prompt_data| SizedWidget {
+        height: 2,
+        widget: TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block()),
+    });
+
     let maybe_menu = state.pending_menu.as_ref().and_then(|menu| {
         if menu.is_hidden {
             None
@@ -48,13 +53,9 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
                 &state.bindings,
                 menu,
                 state.screens.last().unwrap().get_selected_item(),
+                state,
             ))
         }
-    });
-
-    let maybe_prompt = state.prompt.data.as_ref().map(|prompt_data| SizedWidget {
-        height: 2,
-        widget: TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block()),
     });
 
     let layout = Layout::new(
@@ -70,14 +71,14 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
     frame.render_widget(state.screens.last().unwrap(), layout[0]);
 
+    maybe_render(maybe_menu, frame, layout[2]);
+    maybe_render(maybe_log, frame, layout[3]);
+
     if let Some(prompt) = maybe_prompt {
         frame.render_stateful_widget(prompt, layout[1], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
         frame.set_cursor(cx, cy);
     }
-
-    maybe_render(maybe_menu, frame, layout[2]);
-    maybe_render(maybe_log, frame, layout[3]);
 
     state.screens.last_mut().unwrap().size = layout[0];
 }

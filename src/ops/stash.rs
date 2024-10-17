@@ -1,6 +1,5 @@
 use super::{create_prompt, create_prompt_with_default, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
-use derive_more::Display;
 use git2::{Repository, Status, StatusOptions};
 use std::{process::Command, rc::Rc};
 
@@ -11,12 +10,14 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-#[derive(Display)]
-#[display(fmt = "both")]
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Stash message", stash_push, true))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "both".into()
     }
 }
 
@@ -33,12 +34,14 @@ fn stash_push(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "index")]
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Stash message", stash_push_index, true))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "index".into()
     }
 }
 
@@ -55,8 +58,6 @@ fn stash_push_index(state: &mut State, term: &mut Term, input: &str) -> Res<()> 
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "worktree")]
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -70,6 +71,10 @@ impl OpTrait for StashWorktree {
             Rc::get_mut(&mut create_prompt).unwrap()(state, term)?;
             Ok(())
         }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "worktree".into()
     }
 }
 
@@ -140,12 +145,14 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
     }))
 }
 
-#[derive(Display)]
-#[display(fmt = "keeping index")]
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(create_prompt("Stash message", stash_push_keep_index, true))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "keeping index".into()
     }
 }
 
@@ -162,8 +169,6 @@ fn stash_push_keep_index(state: &mut State, term: &mut Term, input: &str) -> Res
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "pop")]
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -173,6 +178,10 @@ impl OpTrait for StashPop {
             selected_stash,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "pop".into()
     }
 }
 
@@ -186,8 +195,6 @@ fn stash_pop(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "apply")]
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -197,6 +204,10 @@ impl OpTrait for StashApply {
             selected_stash,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "apply".into()
     }
 }
 
@@ -210,8 +221,6 @@ fn stash_apply(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "drop")]
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -221,6 +230,10 @@ impl OpTrait for StashDrop {
             selected_stash,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "drop".into()
     }
 }
 
