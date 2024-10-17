@@ -37,7 +37,7 @@ impl OpTrait for PullFromPushRemote {
     fn display(&self, state: &State) -> String {
         match get_push_remote(&state.repo) {
             Ok(Some(remote)) => format!("from {}", remote),
-            Ok(None) => "pushRemote".into(),
+            Ok(None) => "pushRemote, setting that".into(),
             Err(e) => format!("error: {}", e),
         }
     }
@@ -77,7 +77,7 @@ impl OpTrait for PullFromUpstream {
     fn display(&self, state: &State) -> String {
         match get_upstream_shortname(&state.repo) {
             Ok(Some(upstream)) => format!("from {}", upstream),
-            Ok(None) => "upstream".into(),
+            Ok(None) => "upstream, setting that".into(),
             Err(e) => format!("error: {}", e),
         }
     }

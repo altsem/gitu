@@ -2,11 +2,14 @@
 source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌On branch new-branch                                                           |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main new-branch origin/main add initial-file                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -18,8 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git pull origin refs/heads/main                                               |
-From                                                                            |
- * branch            main       -> FETCH_HEAD                                   |
-Already up to date.                                                             |
-styles_hash: a7f12e4c3c38781e
+? Set upstream then pull: ›                                                     |
+styles_hash: 65b6f0066821e325
