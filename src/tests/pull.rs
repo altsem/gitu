@@ -36,11 +36,6 @@ fn pull_push_remote() {
 }
 
 #[test]
-fn pull_from_elsewhere_prompt() {
-    snapshot!(TestContext::setup_clone(), "Fe");
-}
-
-#[test]
 fn pull_upstream_prompt() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "branch", "--unset-upstream"]);
@@ -54,13 +49,6 @@ fn pull_push_remote_prompt() {
 }
 
 #[test]
-fn pull_setup_upstream_same_as_head() {
-    let ctx = TestContext::setup_clone();
-    run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
-    snapshot!(ctx, "Funew-branch<enter>");
-}
-
-#[test]
 fn pull_setup_upstream() {
     let ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
@@ -68,9 +56,21 @@ fn pull_setup_upstream() {
 }
 
 #[test]
+fn pull_setup_upstream_same_as_head() {
+    let ctx = TestContext::setup_clone();
+    run(ctx.dir.path(), &["git", "checkout", "-b", "new-branch"]);
+    snapshot!(ctx, "Funew-branch<enter>");
+}
+
+#[test]
 fn pull_setup_push_remote() {
     let ctx = TestContext::setup_clone();
     snapshot!(ctx, "Fporigin<enter>F");
+}
+
+#[test]
+fn pull_from_elsewhere_prompt() {
+    snapshot!(TestContext::setup_clone(), "Fe");
 }
 
 #[test]
