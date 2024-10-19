@@ -16,7 +16,7 @@ Here's a list of so-far supported features:
 - **Commiting** _(commit, amend, fixup)_
 - **Fetching**
 - **Logging** _(current, other)_
-- **Pulling / Pushing** _(You may want to configure a [push.default](https://git-scm.com/docs/git-config/#Documentation/git-config.txt-pushdefault))_
+- **Pulling / Pushing** _to/from configured upstream/pushDefault_
 - **Rebasing** _(elsewhere, abort, continue, autosquash, interactive)_
 - **Resetting** _(soft, mixed, hard)_
 - **Reverting** _(commit)_
