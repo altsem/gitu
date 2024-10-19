@@ -129,6 +129,7 @@ log_menu.--grep = ["-F"]
 root.pull_menu = ["F"]
 pull_menu.--rebase = ["-r"]
 pull_menu.pull_from_push_remote = ["p"]
+pull_menu.pull_from_upstream = ["u"]
 pull_menu.pull_from_elsewhere = ["e"]
 pull_menu.quit = ["q", "<esc>"]
 
