@@ -1,5 +1,7 @@
 use super::SizedWidget;
-use crate::{bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op};
+use crate::{
+    bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op, state::State,
+};
 use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
@@ -19,6 +21,7 @@ impl<'a> MenuWidget<'a> {
         bindings: &'a Bindings,
         pending: &'a PendingMenu,
         item: &'a Item,
+        state: &'a State,
     ) -> SizedWidget<Self> {
         let style = &config.style;
 
@@ -42,7 +45,10 @@ impl<'a> MenuWidget<'a> {
                     binds.into_iter().map(|bind| &bind.raw).join("/"),
                     &style.hotkey,
                 ),
-                Span::styled(format!(" {}", op.clone().implementation()), Style::new()),
+                Span::styled(
+                    format!(" {}", op.clone().implementation().display(state)),
+                    Style::new(),
+                ),
             ]));
         }
 
@@ -89,7 +95,7 @@ impl<'a> MenuWidget<'a> {
                 right_column.push(Line::from(vec![
                     Span::styled(&bind.raw, &style.hotkey),
                     Span::styled(
-                        format!(" {}", bind.op.clone().implementation()),
+                        format!(" {}", bind.op.clone().implementation().display(state)),
                         Style::new(),
                     ),
                 ]));

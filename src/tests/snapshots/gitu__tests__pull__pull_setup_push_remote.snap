@@ -1,0 +1,25 @@
+---
+source: src/tests/pull.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Pull                    Arguments                                               |
+p from origin           -r Rebase local commits (--rebase)                      |
+u from origin/main                                                              |
+e from elsewhere                                                                |
+q/<esc> Quit/Close                                                              |
+────────────────────────────────────────────────────────────────────────────────|
+$ git pull origin refs/heads/main                                               |
+From                                                                            |
+ * branch            main       -> FETCH_HEAD                                   |
+Already up to date.                                                             |
+styles_hash: 58b8068f5146eed2

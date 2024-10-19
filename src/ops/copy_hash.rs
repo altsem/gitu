@@ -1,10 +1,7 @@
 use super::{Action, OpTrait};
-use crate::items::TargetData;
-use derive_more::Display;
+use crate::{items::TargetData, state::State};
 use std::rc::Rc;
 
-#[derive(Display)]
-#[display(fmt = "Copy hash")]
 pub(crate) struct CopyHash;
 impl OpTrait for CopyHash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -15,6 +12,10 @@ impl OpTrait for CopyHash {
     }
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Copy hash".into()
     }
 }
 

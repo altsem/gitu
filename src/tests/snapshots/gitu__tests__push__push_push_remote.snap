@@ -6,8 +6,9 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
- b66a0bf add initial-file                                                       |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push --force-with-lease origin refs/heads/main:refs/heads/main            |
-To                                                                              |
-   b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 346b2eb0e6fdb3f3
+$ git push origin refs/heads/main:refs/heads/main                               |
+Everything up-to-date                                                           |
+styles_hash: 8edd5c1754c00b3

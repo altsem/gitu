@@ -2,24 +2,24 @@
 source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 1 commit.                             |
+▌On branch new-branch                                                           |
+▌Your branch is up to date with 'refs/heads/main'.                              |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main add new-file                                                      |
+ e7eb2bd main new-branch add new-file                                           |
  b66a0bf origin/main add initial-file                                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 Push                            Arguments                                       |
 p pushRemote, setting that      -n Dry run (--dry-run)                          |
-u to origin/main                -F Force (--force)                              |
+u to main                       -F Force (--force)                              |
 e to elsewhere                  -f Force with lease (--force-with-lease)        |
 q/<esc> Quit/Close              -h Disable hooks (--no-verify)                  |
-styles_hash: 9707ae3534644d0c
+────────────────────────────────────────────────────────────────────────────────|
+$ git branch --set-upstream-to main                                             |
+branch 'new-branch' set up to track 'main'.                                     |
+$ git push . refs/heads/new-branch:refs/heads/main                              |
+To .                                                                            |
+   b66a0bf..e7eb2bd  new-branch -> main                                         |
+styles_hash: 26e2aff5c0eae868

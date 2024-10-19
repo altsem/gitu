@@ -1,13 +1,12 @@
 ---
-source: src/tests/push.rs
+source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
- b66a0bf add initial-file                                                       |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +18,8 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push --force-with-lease origin refs/heads/main:refs/heads/main            |
-To                                                                              |
-   b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 346b2eb0e6fdb3f3
+$ git pull origin refs/heads/main                                               |
+From                                                                            |
+ * branch            main       -> FETCH_HEAD                                   |
+Already up to date.                                                             |
+styles_hash: a7f12e4c3c38781e

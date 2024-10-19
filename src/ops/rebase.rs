@@ -1,6 +1,5 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
-use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -23,8 +22,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-#[derive(Display)]
-#[display(fmt = "continue")]
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -37,10 +34,12 @@ impl OpTrait for RebaseContinue {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "continue".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "abort")]
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -53,10 +52,12 @@ impl OpTrait for RebaseAbort {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "abort".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "onto elsewhere")]
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -66,6 +67,10 @@ impl OpTrait for RebaseElsewhere {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "onto elsewhere".into()
     }
 }
 
@@ -80,8 +85,6 @@ fn rebase_elsewhere(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "interactively")]
 pub(crate) struct RebaseInteractive;
 impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -102,6 +105,10 @@ impl OpTrait for RebaseInteractive {
     fn is_target_op(&self) -> bool {
         true
     }
+
+    fn display(&self, _state: &State) -> String {
+        "interactively".into()
+    }
 }
 
 fn rebase_interactive_cmd(args: &[OsString], rev: &OsStr) -> Command {
@@ -118,8 +125,6 @@ fn parent(reference: &OsStr) -> OsString {
     parent
 }
 
-#[derive(Display)]
-#[display(fmt = "autosquash")]
 pub(crate) struct RebaseAutosquash;
 impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -139,6 +144,10 @@ impl OpTrait for RebaseAutosquash {
     }
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "autosquash".into()
     }
 }
 

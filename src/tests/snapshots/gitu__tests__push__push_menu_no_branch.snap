@@ -2,12 +2,10 @@
 source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌On branch HEAD                                                                 |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
- b66a0bf add initial-file                                                       |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push --force-with-lease origin refs/heads/main:refs/heads/main            |
-To                                                                              |
-   b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 346b2eb0e6fdb3f3
+Push                               Arguments                                    |
+p error: Head is not a branch      -n Dry run (--dry-run)                       |
+u error: Head is not a branch      -F Force (--force)                           |
+e to elsewhere                     -f Force with lease (--force-with-lease)     |
+q/<esc> Quit/Close                 -h Disable hooks (--no-verify)               |
+styles_hash: 18ab2c30f676c031

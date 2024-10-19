@@ -1,10 +1,7 @@
 use super::{Action, OpTrait};
-use crate::{git::diff::Hunk, items::TargetData};
-use derive_more::Display;
+use crate::{git::diff::Hunk, items::TargetData, state::State};
 use std::{path::PathBuf, process::Command, rc::Rc};
 
-#[derive(Display)]
-#[display(fmt = "Discard")]
 pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -25,6 +22,10 @@ impl OpTrait for Discard {
 
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Discard".into()
     }
 }
 
