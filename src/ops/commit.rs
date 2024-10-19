@@ -1,6 +1,5 @@
 use super::{Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term};
-use derive_more::Display;
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -24,8 +23,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
     ]
 }
 
-#[derive(Display)]
-#[display(fmt = "Commit")]
 pub(crate) struct Commit;
 impl OpTrait for Commit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -39,10 +36,12 @@ impl OpTrait for Commit {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "Commit".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "amend")]
 pub(crate) struct CommitAmend;
 impl OpTrait for CommitAmend {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -56,10 +55,12 @@ impl OpTrait for CommitAmend {
             Ok(())
         }))
     }
+
+    fn display(&self, _state: &State) -> String {
+        "amend".into()
+    }
 }
 
-#[derive(Display)]
-#[display(fmt = "fixup")]
 pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -77,8 +78,13 @@ impl OpTrait for CommitFixup {
             _ => None,
         }
     }
+
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "fixup".into()
     }
 }
 
@@ -90,8 +96,6 @@ fn commit_fixup_cmd(args: &[OsString], rev: &OsStr) -> Command {
     cmd
 }
 
-#[derive(Display)]
-#[display(fmt = "instant fixup")]
 pub(crate) struct CommitInstantFixup;
 impl OpTrait for CommitInstantFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
@@ -111,8 +115,13 @@ impl OpTrait for CommitInstantFixup {
             _ => None,
         }
     }
+
     fn is_target_op(&self) -> bool {
         true
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "instant fixup".into()
     }
 }
 

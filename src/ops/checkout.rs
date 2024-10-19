@@ -1,6 +1,5 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, term::Term, Res};
-use derive_more::Display;
 use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
@@ -8,8 +7,6 @@ pub(crate) fn init_args() -> Vec<Arg> {
     vec![]
 }
 
-#[derive(Display)]
-#[display(fmt = "Checkout branch/revision")]
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -19,6 +16,10 @@ impl OpTrait for Checkout {
             selected_rev,
             true,
         ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Checkout branch/revision".into()
     }
 }
 
@@ -33,8 +34,6 @@ fn checkout(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
     Ok(())
 }
 
-#[derive(Display)]
-#[display(fmt = "Checkout new branch")]
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
@@ -46,6 +45,10 @@ impl OpTrait for CheckoutNewBranch {
             });
             Ok(())
         }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Checkout new branch".into()
     }
 }
 

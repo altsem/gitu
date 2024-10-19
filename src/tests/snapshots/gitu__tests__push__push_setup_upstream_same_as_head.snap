@@ -2,10 +2,10 @@
 source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌On branch new-branch                                                           |
                                                                                 |
  Recent commits                                                                 |
+ e7eb2bd new-branch add new-file                                                |
  b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git push origin                                                               |
-Everything up-to-date                                                           |
-styles_hash: baa329f6340fcc8b
+Push                            Arguments                                       |
+p pushRemote, setting that      -n Dry run (--dry-run)                          |
+u upstream, setting that        -F Force (--force)                              |
+e to elsewhere                  -f Force with lease (--force-with-lease)        |
+q/<esc> Quit/Close              -h Disable hooks (--no-verify)                  |
+────────────────────────────────────────────────────────────────────────────────|
+$ git branch --set-upstream-to new-branch                                       |
+warning: not setting branch 'new-branch' as its own upstream                    |
+styles_hash: b60340121bd76ccb

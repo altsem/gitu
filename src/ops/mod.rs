@@ -27,7 +27,7 @@ pub(crate) mod unstage;
 
 pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
 
-pub(crate) trait OpTrait: Display {
+pub(crate) trait OpTrait {
     /// Get the implementation (which may or may not exist) of the Op given some TargetData.
     /// This indirection allows Gitu to show a contextual menu of applicable actions.
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
@@ -37,6 +37,8 @@ pub(crate) trait OpTrait: Display {
     fn is_target_op(&self) -> bool {
         false
     }
+
+    fn display(&self, state: &State) -> String;
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -49,10 +51,12 @@ pub(crate) enum Op {
     FetchAll,
     FetchElsewhere,
     LogCurrent,
-    Pull,
-    PullElsewhere,
-    Push,
-    PushElsewhere,
+    PullFromPushRemote,
+    PullFromUpstream,
+    PullFromElsewhere,
+    PushToPushRemote,
+    PushToUpstream,
+    PushToElsewhere,
     RebaseAbort,
     RebaseContinue,
     RebaseElsewhere,
@@ -127,10 +131,12 @@ impl Op {
             Op::FetchAll => Box::new(fetch::FetchAll),
             Op::FetchElsewhere => Box::new(fetch::FetchElsewhere),
             Op::LogCurrent => Box::new(log::LogCurrent),
-            Op::Pull => Box::new(pull::Pull),
-            Op::PullElsewhere => Box::new(pull::PullElsewhere),
-            Op::Push => Box::new(push::Push),
-            Op::PushElsewhere => Box::new(push::PushElsewhere),
+            Op::PullFromPushRemote => Box::new(pull::PullFromPushRemote),
+            Op::PullFromUpstream => Box::new(pull::PullFromUpstream),
+            Op::PullFromElsewhere => Box::new(pull::PullFromElsewhere),
+            Op::PushToPushRemote => Box::new(push::PushToPushRemote),
+            Op::PushToUpstream => Box::new(push::PushToUpstream),
+            Op::PushToElsewhere => Box::new(push::PushToElsewhere),
             Op::RebaseAbort => Box::new(rebase::RebaseAbort),
             Op::RebaseContinue => Box::new(rebase::RebaseContinue),
             Op::RebaseElsewhere => Box::new(rebase::RebaseElsewhere),

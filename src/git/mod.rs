@@ -14,6 +14,7 @@ pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
 pub(crate) mod rebase_status;
+pub(crate) mod remote;
 
 // TODO Use only plumbing commands
 
@@ -187,4 +188,13 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
         hash: commit.id().to_string(),
         details,
     })
+}
+
+pub(crate) fn get_head(repo: &git2::Repository) -> Res<String> {
+    let head = repo.head()?;
+    if head.is_branch() {
+        Ok(head.name().ok_or("Branch is not valid UTF-8")?.into())
+    } else {
+        Err("Head is not a branch".into())
+    }
 }
