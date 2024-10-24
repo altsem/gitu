@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.0] - 2024-10-24
+
+### 🚀 Features
+
+- Support "The Two Remotes": https://magit.vc/manual/3.2.0/magit/The-Two-Remotes.html
+
+### 🔧 Configuration
+
+- Bind 'Pu' to new action: `push_to_upstream`
+- Bind 'Pp' to new action: `push_to_push_remote`
+- Bind 'Fu' to new action: `pull_from_upstream`
+- Bind 'Fp' to new action: `pull_from_push_remote`
+- Remove 'Pp' <-> `git push` (depended on `push.default`)
+- Remove 'Fp' <-> `git pull` (from upstream)
+- Rename `push_elsewhere` to `push_to_elsewhere`
+- Rename `pull_elsewhere` to `pull_from_elsewhere`
+
 ## [0.25.0] - 2024-09-03
 
 ### 🚀 Features
