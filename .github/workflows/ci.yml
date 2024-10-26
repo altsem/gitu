@@ -17,7 +17,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Cache
-      uses: actions/cache@v4.0.2
+      uses: actions/cache@v4.1.2
       with:
         path: |
             ~/.cargo/bin
@@ -64,7 +64,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Cache
-      uses: actions/cache@v4.0.2
+      uses: actions/cache@v4.1.2
       with:
         path: |
             ~/.cargo/bin
