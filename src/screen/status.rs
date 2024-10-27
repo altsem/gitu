@@ -8,12 +8,12 @@ use crate::{
 };
 use git2::Repository;
 use ratatui::{
-    prelude::Rect,
+    prelude::Size,
     text::{Line, Span},
 };
 use std::{path::PathBuf, rc::Rc};
 
-pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Rect) -> Res<Screen> {
+pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
     Screen::new(
         Rc::clone(&config),
         size,

@@ -15,7 +15,7 @@ use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
 use crossterm::event::KeyModifiers;
 use git2::Repository;
-use ratatui::layout::Rect;
+use ratatui::layout::Size;
 use tui_prompts::State as _;
 use tui_prompts::Status;
 
@@ -53,7 +53,7 @@ pub(crate) struct State {
 impl State {
     pub fn create(
         repo: Rc<Repository>,
-        size: Rect,
+        size: Size,
         args: &cli::Args,
         config: Rc<Config>,
         enable_async_cmds: bool,
@@ -102,7 +102,7 @@ impl State {
             match *event {
                 Event::Resize(w, h) => {
                     for screen in self.screens.iter_mut() {
-                        screen.size = Rect::new(0, 0, w, h);
+                        screen.size = Size::new(w, h);
                     }
                 }
                 Event::Key(key) => {
