@@ -67,7 +67,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
             widget_height(&maybe_log),
         ],
     )
-    .split(frame.size());
+    .split(frame.area());
 
     frame.render_widget(state.screens.last().unwrap(), layout[0]);
 
@@ -77,10 +77,10 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     if let Some(prompt) = maybe_prompt {
         frame.render_stateful_widget(prompt, layout[1], &mut state.prompt.state);
         let (cx, cy) = state.prompt.state.cursor();
-        frame.set_cursor(cx, cy);
+        frame.set_cursor_position((cx, cy));
     }
 
-    state.screens.last_mut().unwrap().size = layout[0];
+    state.screens.last_mut().unwrap().size = layout[0].as_size();
 }
 
 fn popup_block() -> Block<'static> {

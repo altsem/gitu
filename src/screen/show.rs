@@ -8,7 +8,7 @@ use crate::{
 };
 use git2::Repository;
 use ratatui::{
-    prelude::Rect,
+    layout::Size,
     text::{Line, Text},
 };
 
@@ -17,7 +17,7 @@ use super::Screen;
 pub(crate) fn create(
     config: Rc<Config>,
     repo: Rc<Repository>,
-    size: Rect,
+    size: Size,
     reference: String,
 ) -> Res<Screen> {
     Screen::new(

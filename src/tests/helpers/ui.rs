@@ -8,7 +8,7 @@ use crate::{
 };
 use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
-use ratatui::{backend::TestBackend, prelude::Rect, Terminal};
+use ratatui::{backend::TestBackend, layout::Size, Terminal};
 use std::{path::PathBuf, rc::Rc};
 use temp_dir::TempDir;
 
@@ -31,35 +31,35 @@ pub struct TestContext {
     pub term: Term,
     pub dir: TempDir,
     pub remote_dir: TempDir,
-    pub size: Rect,
+    pub size: Size,
     config: Rc<Config>,
 }
 
 impl TestContext {
     pub fn setup_init() -> Self {
-        let width = 80;
-        let height = 20;
-        let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
+        let size = Size::new(80, 20);
+        let term =
+            Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
         let repo_ctx = RepoTestContext::setup_init();
         Self {
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
-            size: Rect::new(0, 0, width, height),
+            size,
             config: Rc::new(config::init_test_config().unwrap()),
         }
     }
 
     pub fn setup_clone() -> Self {
-        let width = 80;
-        let height = 20;
-        let term = Terminal::new(TermBackend::Test(TestBackend::new(width, height))).unwrap();
+        let size = Size::new(80, 20);
+        let term =
+            Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
         let repo_ctx = RepoTestContext::setup_clone();
         Self {
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
-            size: Rect::new(0, 0, width, height),
+            size,
             config: Rc::new(config::init_test_config().unwrap()),
         }
     }
