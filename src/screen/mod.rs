@@ -20,7 +20,7 @@ pub(crate) enum NavMode {
 }
 
 pub(crate) struct Screen {
-    pub(crate) size: Rect,
+    pub(crate) size: Size,
     cursor: usize,
     scroll: usize,
     config: Rc<Config>,
@@ -33,7 +33,7 @@ pub(crate) struct Screen {
 impl Screen {
     pub(crate) fn new(
         config: Rc<Config>,
-        size: Rect,
+        size: Size,
         refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     ) -> Res<Self> {
         let mut screen = Self {
@@ -276,7 +276,7 @@ impl Screen {
         &self.items[self.line_index[self.cursor]]
     }
 
-    fn line_views(&self, area: Rect) -> impl Iterator<Item = LineView> {
+    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView> {
         let scan_start = self.scroll.min(self.cursor);
         let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);
@@ -314,7 +314,7 @@ impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let style = &self.config.style;
 
-        for (line_index, line) in self.line_views(area).enumerate() {
+        for (line_index, line) in self.line_views(area.as_size()).enumerate() {
             let line_area = Rect {
                 x: 0,
                 y: line_index as u16,
@@ -330,7 +330,7 @@ impl Widget for &Screen {
                 if self.line_index[self.cursor] == line.item_index {
                     buf.set_style(line_area, &style.selection_line);
                 } else {
-                    buf.get_mut(0, line_index as u16)
+                    buf[(0, line_index as u16)]
                         .set_char(style.selection_bar.symbol)
                         .set_style(&style.selection_bar);
                 }
@@ -342,11 +342,11 @@ impl Widget for &Screen {
             if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
                 let line_end =
                     (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
-                buf.get_mut(line_end, line_index as u16).set_char('…');
+                buf[(line_end, line_index as u16)].set_char('…');
             }
 
             if self.line_index[self.cursor] == line.item_index {
-                buf.get_mut(0, line_index as u16)
+                buf[(0, line_index as u16)]
                     .set_char(style.cursor.symbol)
                     .set_style(&style.cursor);
             }

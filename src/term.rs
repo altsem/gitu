@@ -1,21 +1,19 @@
 use crate::Res;
-use crossterm::terminal::disable_raw_mode;
-use crossterm::terminal::enable_raw_mode;
-use crossterm::terminal::is_raw_mode_enabled;
-use crossterm::terminal::EnterAlternateScreen;
-use crossterm::terminal::LeaveAlternateScreen;
-use crossterm::ExecutableCommand;
-use ratatui::backend::Backend;
-use ratatui::backend::CrosstermBackend;
-use ratatui::backend::TestBackend;
-use ratatui::prelude::backend::WindowSize;
-use ratatui::prelude::buffer::Cell;
-use ratatui::prelude::Rect;
-use ratatui::Terminal;
+use crossterm::{
+    terminal::{
+        disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
+    ExecutableCommand,
+};
+use ratatui::{
+    backend::{Backend, CrosstermBackend, TestBackend},
+    layout::Size,
+    prelude::{backend::WindowSize, buffer::Cell, Position},
+    Terminal,
+};
 use std::fmt::Display;
-use std::io;
-use std::io::stderr;
-use std::io::Stderr;
+use std::io::{self, stderr, Stderr};
 
 pub type Term = Terminal<TermBackend>;
 
@@ -95,17 +93,17 @@ impl Backend for TermBackend {
         }
     }
 
-    fn get_cursor(&mut self) -> io::Result<(u16, u16)> {
+    fn get_cursor_position(&mut self) -> io::Result<Position> {
         match self {
-            TermBackend::Crossterm(t) => t.get_cursor(),
-            TermBackend::Test(t) => t.get_cursor(),
+            TermBackend::Crossterm(t) => t.get_cursor_position(),
+            TermBackend::Test(t) => t.get_cursor_position(),
         }
     }
 
-    fn set_cursor(&mut self, x: u16, y: u16) -> io::Result<()> {
+    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
         match self {
-            TermBackend::Crossterm(t) => t.set_cursor(x, y),
-            TermBackend::Test(t) => t.set_cursor(x, y),
+            TermBackend::Crossterm(t) => t.set_cursor_position(position),
+            TermBackend::Test(t) => t.set_cursor_position(position),
         }
     }
 
@@ -116,7 +114,7 @@ impl Backend for TermBackend {
         }
     }
 
-    fn size(&self) -> io::Result<Rect> {
+    fn size(&self) -> io::Result<Size> {
         match self {
             TermBackend::Crossterm(t) => t.size(),
             TermBackend::Test(t) => t.size(),
