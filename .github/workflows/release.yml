@@ -94,6 +94,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Workaround to have a version set (gitu --version)
+        fetch-tags: true
 
     - name: Build release binary
       run: cargo build --verbose --release --locked ${{ env.TARGET_FLAGS }}
@@ -108,6 +111,8 @@ jobs:
         cp {README.md,LICENSE} "$staging/"
         cp "target/${{ matrix.target }}/release/gitu" "$staging/"
 
+        "$staging/gitu" --version
+
         7z a -r "$staging.zip" "$staging"
         echo "ASSET=$staging.zip" >> $GITHUB_ENV
 
@@ -120,6 +125,8 @@ jobs:
 
         cp {README.md,LICENSE} "$staging/"
         cp "target/${{ matrix.target }}/release/gitu" "$staging/"
+
+        "$staging/gitu" --version
 
         tar czvf "$staging.tar.gz" "$staging"
         echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
