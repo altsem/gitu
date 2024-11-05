@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.0] - 2024-11-05
+
+### 🚀 Features
+
+- *(config)* Collapse screen headers via e.g. `general.collapsed_sections = ["recent_commits"]`
+
+### 🐛 Bug Fixes
+
+- Set version properly in Github release
+
 ## [0.26.0] - 2024-10-24
 
 ### 🚀 Features

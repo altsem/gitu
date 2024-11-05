@@ -1,17 +1,10 @@
-## [0.26.0] - 2024-10-24
+## [0.27.0] - 2024-11-05
 
 ### 🚀 Features
 
-- Support "The Two Remotes": https://magit.vc/manual/3.2.0/magit/The-Two-Remotes.html
+- *(config)* Collapse screen headers via e.g. `general.collapsed_sections = ["recent_commits"]`
 
-### 🔧 Configuration
+### 🐛 Bug Fixes
 
-- Bind 'Pu' to new action: `push_to_upstream`
-- Bind 'Pp' to new action: `push_to_push_remote`
-- Bind 'Fu' to new action: `pull_from_upstream`
-- Bind 'Fp' to new action: `pull_from_push_remote`
-- Remove 'Pp' <-> `git push` (depended on `push.default`)
-- Remove 'Fp' <-> `git pull` (from upstream)
-- Rename `push_elsewhere` to `push_to_elsewhere`
-- Rename `pull_elsewhere` to `pull_from_elsewhere`
+- Set version properly in Github release
 
