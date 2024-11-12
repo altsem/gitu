@@ -3,8 +3,6 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
-    branches:
-      - ci-release
 
 jobs:
   cargo-publish:
@@ -14,54 +12,54 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Cargo publish
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      run: |
-        cargo publish
+    # - name: Cargo publish
+    #   env:
+    #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    #   run: |
+    #     cargo publish
 
-  create-github-release:
-    runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      contents: write
-    env:
-      GITU_VERSION: ""
-    outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
-      gitu_version: ${{ env.GITU_VERSION }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .recent-changelog-entry
-          sparse-checkout-cone-mode: false
+  # create-github-release:
+  #   runs-on: ubuntu-latest
+  #   environment: release
+  #   permissions:
+  #     contents: write
+  #   env:
+  #     GITU_VERSION: ""
+  #   outputs:
+  #     upload_url: ${{ steps.release.outputs.upload_url }}
+  #     gitu_version: ${{ env.GITU_VERSION }}
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .recent-changelog-entry
+  #         sparse-checkout-cone-mode: false
 
-      - name: Gather information
-        shell: bash
-        if: env.GITU_VERSION == ''
-        run: |
-          echo "GITU_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
-          echo "version is: ${{ env.GITU_VERSION }}"
+  #     - name: Gather information
+  #       shell: bash
+  #       if: env.GITU_VERSION == ''
+  #       run: |
+  #         echo "GITU_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+  #         echo "version is: ${{ env.GITU_VERSION }}"
 
-          echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_ENV
-          cat .recent-changelog-entry >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          echo "changelog entry:"
-          echo "${{ env.CHANGELOG_ENTRY }}"
+  #         echo "CHANGELOG_ENTRY<<EOF" >> $GITHUB_ENV
+  #         cat .recent-changelog-entry >> $GITHUB_ENV
+  #         echo "EOF" >> $GITHUB_ENV
+  #         echo "changelog entry:"
+  #         echo "${{ env.CHANGELOG_ENTRY }}"
 
-      - name: Create GitHub release
-        id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.GITU_VERSION }}
-          release_name: ${{ env.GITU_VERSION }}
-          body: "${{ env.CHANGELOG_ENTRY }}"
+  #     - name: Create GitHub release
+  #       id: release
+  #       uses: actions/create-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         tag_name: ${{ env.GITU_VERSION }}
+  #         release_name: ${{ env.GITU_VERSION }}
+  #         body: "${{ env.CHANGELOG_ENTRY }}"
 
   build-github-release:
-    needs: ['create-github-release']
+    # needs: ['create-github-release']
     runs-on: ${{ matrix.os }}
     environment: release
     permissions:
@@ -94,18 +92,17 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # Workaround to have a version set (gitu --version)
-        fetch-tags: true
 
     - name: Build release binary
-      run: cargo build --verbose --release --locked ${{ env.TARGET_FLAGS }}
+      run: |
+        git tag -am "$GITHUB_REF_NAME" "$GITHUB_REF_NAME"
+        cargo build --verbose --release --locked ${{ env.TARGET_FLAGS }}
 
     - name: Build archive (Windows)
       if: matrix.build == 'windows'
       shell: bash
       run: |
-        staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
+        staging="gitu-$GITHUB_REF_NAME-${{ matrix.target }}"
         mkdir -p "$staging"
 
         cp {README.md,LICENSE} "$staging/"
@@ -120,7 +117,7 @@ jobs:
       if: matrix.build != 'windows'
       shell: bash
       run: |
-        staging="gitu-${{ needs.create-github-release.outputs.gitu_version }}-${{ matrix.target }}"
+        staging="gitu-$GITHUB_REF_NAME-${{ matrix.target }}"
         mkdir -p "$staging"
 
         cp {README.md,LICENSE} "$staging/"
@@ -131,12 +128,12 @@ jobs:
         tar czvf "$staging.tar.gz" "$staging"
         echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
 
-    - name: Upload release archive
-      uses: actions/upload-release-asset@v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-github-release.outputs.upload_url }}
-        asset_path: ${{ env.ASSET }}
-        asset_name: ${{ env.ASSET }}
-        asset_content_type: application/octet-stream
+    # - name: Upload release archive
+    #   uses: actions/upload-release-asset@v1.0.2
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ needs.create-github-release.outputs.upload_url }}
+    #     asset_path: ${{ env.ASSET }}
+    #     asset_name: ${{ env.ASSET }}
+    #     asset_content_type: application/octet-stream
