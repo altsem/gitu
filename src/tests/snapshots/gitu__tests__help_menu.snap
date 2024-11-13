@@ -12,7 +12,7 @@ Help                                Submenu                                     
 Y Show Refs                         b Branch                                    |
 <tab> Toggle section                c Commit                                    |
 k/<up> Up                           f Fetch                                     |
-j/<down> Down                       h Help                                      |
+j/<down> Down                       h/? Help                                    |
 <ctrl+k>/<ctrl+up> Up line          l Log                                       |
 <ctrl+j>/<ctrl+down> Down line      F Pull                                      |
 <alt+k>/<alt+up> Prev section       P Push                                      |
@@ -22,4 +22,4 @@ j/<down> Down                       h Help                                      
 <ctrl+d> Half page down             z Stash                                     |
 g Refresh                                                                       |
 q/<esc> Quit/Close                                                              |
-styles_hash: 5a8c4080986bbe0d
+styles_hash: 1eae0d246821e31

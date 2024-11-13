@@ -61,13 +61,16 @@ impl<'a> MenuWidget<'a> {
         if !menus.is_empty() {
             menu_binds_column.push(Line::styled("Submenu", &style.command));
         }
-        for bind in menus {
-            let Op::OpenMenu(menu) = bind.op else {
+        for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
+            let Op::OpenMenu(menu) = op else {
                 unreachable!();
             };
 
             menu_binds_column.push(Line::from(vec![
-                Span::styled(&bind.raw, &style.hotkey),
+                Span::styled(
+                    binds.into_iter().map(|bind| &bind.raw).join("/"),
+                    &style.hotkey,
+                ),
                 Span::styled(format!(" {}", menu), Style::new()),
             ]));
         }
