@@ -24,7 +24,7 @@ arboard = { version = "3.4.0", default-features = false, features = [
   "windows-sys",
 ] }
 chrono = "0.4.38"
-clap = { version = "4.5.16", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 crossterm = "0.28.1"
 etcetera = "0.8.0"
 figment = { version = "0.10.19", features = ["toml"] }
@@ -34,7 +34,7 @@ itertools = "0.13.0"
 log = "0.4.22"
 nom = "7.1.3"
 ratatui = { version = "0.29.0", features = ["serde"] }
-serde = { version = "1.0.214", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
 similar = { version = "2.6.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
 toml = "0.8.15"
