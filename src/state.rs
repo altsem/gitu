@@ -303,6 +303,11 @@ impl State {
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
+
+        // git will have staircased output in raw mode (issue #290)
+        // disable raw mode temporarily for the git command
+        term.backend().disable_raw_mode()?;
+
         let child = cmd.spawn()?;
 
         let out = child.wait_with_output()?;
@@ -311,6 +316,9 @@ impl State {
             .into();
 
         self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
+
+        // restore the raw mode
+        term.backend().enable_raw_mode()?;
 
         // Prevents cursor flash when exiting editor
         term.hide_cursor()?;
