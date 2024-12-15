@@ -143,4 +143,18 @@ impl TermBackend {
             TermBackend::Test(_) => Ok(()),
         }
     }
+
+    pub fn enable_raw_mode(&self) -> io::Result<()> {
+        match self {
+            TermBackend::Crossterm(_) => enable_raw_mode(),
+            TermBackend::Test(_) => Ok(()),
+        }
+    }
+
+    pub fn disable_raw_mode(&self) -> io::Result<()> {
+        match self {
+            TermBackend::Crossterm(_) => disable_raw_mode(),
+            TermBackend::Test(_) => Ok(()),
+        }
+    }
 }
