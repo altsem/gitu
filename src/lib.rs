@@ -2,6 +2,7 @@ mod bindings;
 pub mod cli;
 mod cmd_log;
 pub mod config;
+mod file_watcher;
 mod git;
 mod git2_opts;
 mod items;
@@ -18,6 +19,7 @@ mod tests;
 mod ui;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
+use file_watcher::FileWatcher;
 use git2::Repository;
 use items::Item;
 use ops::Action;
@@ -63,6 +65,11 @@ use term::Term;
 
 pub type Res<T> = Result<T, Box<dyn Error>>;
 
+pub enum GituEvent {
+    Term(Event),
+    FileUpdate,
+}
+
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     log::debug!("Finding git dir");
     let dir = PathBuf::from(
@@ -86,7 +93,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let mut state = state::State::create(Rc::new(repo), term.size()?, args, Rc::new(config), true)?;
 
     log::debug!("Initial update");
-    state.update(term, &[Event::FocusGained])?;
+    state.update(term, &[GituEvent::Term(Event::FocusGained)])?;
 
     if args.print {
         return Ok(());
@@ -99,13 +106,18 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         handle_initial_send_keys(&keys, &mut state, term)?;
     }
 
+    let watcher = FileWatcher::new(&dir)?;
+
     while !state.quit {
-        let events = if event::poll(Duration::from_millis(100))? {
-            vec![event::read()?]
+        let mut events = if event::poll(Duration::from_millis(100))? {
+            vec![GituEvent::Term(event::read()?)]
         } else {
             vec![]
         };
 
+        if watcher.pending_updates() {
+            events.push(GituEvent::FileUpdate);
+        }
         state.update(term, &events)?;
     }
 
@@ -130,12 +142,12 @@ fn handle_initial_send_keys(
     let initial_events = keys
         .iter()
         .map(|(mods, key)| {
-            Event::Key(KeyEvent {
+            GituEvent::Term(Event::Key(KeyEvent {
                 code: *key,
                 modifiers: *mods,
                 kind: event::KeyEventKind::Press,
                 state: KeyEventState::NONE,
-            })
+            }))
         })
         .collect::<Vec<_>>();
 
