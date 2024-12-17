@@ -61,7 +61,7 @@ fn styles(style: &crate::config::StyleConfig) -> [Style; 22] {
 pub(crate) fn split_at_newlines<'a, D: Copy + 'a>(
     content: &'a str,
     (range, style): (Range<usize>, D),
-) -> impl Iterator<Item = (Range<usize>, D)> + '_ {
+) -> impl Iterator<Item = (Range<usize>, D)> + 'a {
     let range_indices = iter::once(range.start)
         .chain(
             content[range.clone()]
