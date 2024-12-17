@@ -7,7 +7,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub(crate) struct TestBuffer<'a>(pub &'a Buffer);
 
-impl<'a> std::fmt::Debug for TestBuffer<'a> {
+impl std::fmt::Debug for TestBuffer<'_> {
     // Stolen from ratatui-0.26.1/src/buffer/buffer.rs:394
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let mut last_style = None;

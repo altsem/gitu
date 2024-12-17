@@ -165,7 +165,7 @@ fn col_width(column: &[Line<'_>]) -> Constraint {
     Constraint::Length(column.iter().map(|line| line.width()).max().unwrap_or(0) as u16)
 }
 
-impl<'a> Widget for MenuWidget<'a> {
+impl Widget for MenuWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
