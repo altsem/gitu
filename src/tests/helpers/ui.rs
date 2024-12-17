@@ -5,6 +5,7 @@ use crate::{
     state::State,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
+    GituEvent,
 };
 use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
@@ -83,7 +84,9 @@ impl TestContext {
         .unwrap();
 
         // hack: Pass in an event just to force re-rendering
-        state.update(&mut self.term, &[Event::FocusGained]).unwrap();
+        state
+            .update(&mut self.term, &[GituEvent::Term(Event::FocusGained)])
+            .unwrap();
         state
     }
 
@@ -105,12 +108,12 @@ fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
     *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
 }
 
-pub fn keys(input: &str) -> Vec<Event> {
+pub fn keys(input: &str) -> Vec<GituEvent> {
     let ("", keys) = parse_keys(input).unwrap() else {
         unreachable!();
     };
 
     keys.into_iter()
-        .map(|(mods, key)| Event::Key(KeyEvent::new(key, mods)))
+        .map(|(mods, key)| GituEvent::Term(Event::Key(KeyEvent::new(key, mods))))
         .collect()
 }
