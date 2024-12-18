@@ -33,6 +33,7 @@ use crate::screen::Screen;
 use crate::term::Term;
 use crate::ui;
 
+use super::GituEvent;
 use super::Res;
 
 pub(crate) struct State {
@@ -97,15 +98,15 @@ impl State {
         })
     }
 
-    pub fn update(&mut self, term: &mut Term, events: &[Event]) -> Res<()> {
+    pub fn update(&mut self, term: &mut Term, events: &[GituEvent]) -> Res<()> {
         for event in events {
             match *event {
-                Event::Resize(w, h) => {
+                GituEvent::Term(Event::Resize(w, h)) => {
                     for screen in self.screens.iter_mut() {
                         screen.size = Size::new(w, h);
                     }
                 }
-                Event::Key(key) => {
+                GituEvent::Term(Event::Key(key)) => {
                     if self.prompt.state.is_focused() {
                         self.prompt.state.handle_key_event(key)
                     } else if key.kind == KeyEventKind::Press {
@@ -115,6 +116,9 @@ impl State {
 
                         self.handle_key_input(term, key)?;
                     }
+                }
+                GituEvent::FileUpdate => {
+                    self.screen_mut().update()?;
                 }
                 _ => (),
             }
