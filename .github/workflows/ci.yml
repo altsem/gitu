@@ -45,7 +45,7 @@ jobs:
       run: grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/tests.lcov
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4.6.0
+      uses: codecov/codecov-action@v5.1.1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: altsem/gitu
