@@ -106,7 +106,7 @@ impl State {
                         screen.size = Size::new(w, h);
                     }
                 }
-                Event::Key(key) if self.is_system_quit(&key) => self.quit = true,
+                Event::Key(key) if State::is_system_quit(&key) => self.quit = true,
                 Event::Key(key) => {
                     if self.prompt.state.is_focused() {
                         self.prompt.state.handle_key_event(key)
@@ -138,7 +138,7 @@ impl State {
         Ok(())
     }
 
-    fn is_system_quit(&mut self, key: &KeyEvent) -> bool {
+    fn is_system_quit(key: &KeyEvent) -> bool {
         matches!(
             (key.code, key.modifiers),
             (KeyCode::Char('c'), KeyModifiers::CONTROL)
