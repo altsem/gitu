@@ -12,6 +12,7 @@ use arboard::Clipboard;
 use crossterm::event;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
 use crossterm::event::KeyModifiers;
 use git2::Repository;
@@ -105,6 +106,7 @@ impl State {
                         screen.size = Size::new(w, h);
                     }
                 }
+                Event::Key(key) if self.is_system_quit(&key) => self.quit = true,
                 Event::Key(key) => {
                     if self.prompt.state.is_focused() {
                         self.prompt.state.handle_key_event(key)
@@ -134,6 +136,13 @@ impl State {
         }
 
         Ok(())
+    }
+
+    fn is_system_quit(&mut self, key: &KeyEvent) -> bool {
+        matches!(
+            (key.code, key.modifiers),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL)
+        )
     }
 
     fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
