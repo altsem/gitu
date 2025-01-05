@@ -306,7 +306,8 @@ impl State {
 
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
-        cmd.stdin(Stdio::piped());
+        // Redirect stderr so we can capture it via `Child::wait_with_output()`
+        cmd.stderr(Stdio::piped());
 
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
