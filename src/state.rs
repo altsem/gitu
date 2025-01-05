@@ -302,11 +302,17 @@ impl State {
 
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
 
-        cmd.stdin(Stdio::piped());
+        // Previously `Stdio::pipe()` was used here, likely causing
+        // https://github.com/altsem/gitu/issues/215 and similar issues.
+        cmd.stdin(Stdio::inherit());
 
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
         term.backend().disable_raw_mode()?;
+
+        // If we don't show the cursor prior spawning (thus restore the default
+        // state), the cursor may be missing in $EDITOR.
+        term.show_cursor()?;
 
         let child = cmd.spawn()?;
 
