@@ -305,6 +305,8 @@ impl State {
         // Previously `Stdio::pipe()` was used here, likely causing
         // https://github.com/altsem/gitu/issues/215 and similar issues.
         cmd.stdin(Stdio::inherit());
+        // Redirect stderr so we can capture it via `Child::wait_with_output()`
+        cmd.stderr(Stdio::piped());
 
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
