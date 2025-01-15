@@ -87,10 +87,10 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     repo.set_workdir(&dir, false)?;
 
     log::debug!("Initializing config");
-    let config = config::init_config()?;
+    let config = Rc::new(config::init_config()?);
 
     log::debug!("Creating initial state");
-    let mut state = state::State::create(Rc::new(repo), term.size()?, args, Rc::new(config), true)?;
+    let mut state = state::State::create(Rc::new(repo), term.size()?, args, config.clone(), true)?;
 
     log::debug!("Initial update");
     state.update(term, &[GituEvent::Term(Event::FocusGained)])?;
@@ -106,7 +106,12 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         handle_initial_send_keys(&keys, &mut state, term)?;
     }
 
-    let watcher = FileWatcher::new(&dir)?;
+    let watcher = config
+        .general
+        .refresh_on_file_change
+        .enabled
+        .then(|| FileWatcher::new(&dir))
+        .transpose()?;
 
     while !state.quit {
         let mut events = if event::poll(Duration::from_millis(100))? {
@@ -115,7 +120,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
             vec![]
         };
 
-        if watcher.pending_updates() {
+        if watcher.as_ref().is_some_and(|w| w.pending_updates()) {
             events.push(GituEvent::FileUpdate);
         }
         state.update(term, &events)?;

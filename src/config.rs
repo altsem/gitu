@@ -22,6 +22,7 @@ pub(crate) struct Config {
 pub struct GeneralConfig {
     pub always_show_help: BoolConfigEntry,
     pub confirm_quit: BoolConfigEntry,
+    pub refresh_on_file_change: BoolConfigEntry,
     pub collapsed_sections: Vec<String>,
 }
 
