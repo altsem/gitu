@@ -3,8 +3,7 @@ updates:
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "saturday"
+      interval: "monthly"
     ignore:
       - dependency-name: "tree-sitter*"
     groups:
@@ -16,5 +15,4 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "saturday"
+      interval: "monthly"
