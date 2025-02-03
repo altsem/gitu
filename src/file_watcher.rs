@@ -1,6 +1,6 @@
 use crate::Res;
 use ignore::gitignore::GitignoreBuilder;
-use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
     path::Path,
     sync::{
@@ -23,8 +23,13 @@ impl FileWatcher {
 
         let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
             if let Ok(event) = res {
+                if !is_changed(&event) {
+                    return;
+                }
+
                 for path in event.paths {
                     if !gitignore.matched(&path, path.is_dir()).is_ignore() {
+                        log::info!("File changed: {:?}", path);
                         pending_updates_w.store(true, Ordering::Relaxed);
                         break;
                     }
@@ -43,4 +48,11 @@ impl FileWatcher {
     pub fn pending_updates(&self) -> bool {
         self.pending_updates.swap(false, Ordering::Relaxed)
     }
+}
+
+fn is_changed(event: &Event) -> bool {
+    matches!(
+        event.kind,
+        EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+    )
 }
