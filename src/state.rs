@@ -313,6 +313,10 @@ impl State {
         // disable raw mode temporarily for the git command
         term.backend().disable_raw_mode()?;
 
+        // If we don't show the cursor prior spawning (thus restore the default
+        // state), the cursor may be missing in $EDITOR.
+        term.show_cursor()?;
+
         let child = cmd.spawn()?;
 
         let out = child.wait_with_output()?;
