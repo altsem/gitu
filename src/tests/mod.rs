@@ -168,13 +168,13 @@ fn revert_menu() {
 #[test]
 fn revert_commit_prompt() {
     let ctx = TestContext::setup_clone();
-    snapshot!(ctx, "llV-eV");
+    snapshot!(ctx, "llVV");
 }
 
 #[test]
 fn revert_commit() {
     let ctx = TestContext::setup_clone();
-    snapshot!(ctx, "llV-eV<enter>");
+    snapshot!(ctx, "llV-EV<enter>");
 }
 
 #[test]

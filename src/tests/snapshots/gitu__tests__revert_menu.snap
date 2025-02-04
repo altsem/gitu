@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 Revert                  Arguments                                               |
 a Abort                 -e Edit commit message (--edit)                         |
-c Continue              -s Add Signed-off-by lines (--signoff)                  |
-V Revert commit(s)                                                              |
+c Continue              -E Don't edit commit message (--no-edit)                |
+V Revert commit(s)      -s Add Signed-off-by lines (--signoff)                  |
 q/<esc> Quit/Close                                                              |
-styles_hash: 4670321c3192e40c
+styles_hash: f7fbb78008d07bf9
