@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.0] - 2025-02-04
+
+### 🚀 Features
+
+- *(Revert)* Add --no-edit flag (bound to -E)
+- Update on file changes
+- Open help with `?` too, close with `h` / `?` (#280)
+
+### 🐛 Bug Fixes
+
+- Cursor sometimes hidden when spawning editor
+- 'Standard input is not a terminal' when opening editor
+- Staircased git output
+
+### 🔧 Configuration
+
+- Add `refresh_on_file_change` bool to en/disable file watcher
+
 ## [0.27.0] - 2024-11-05
 
 ### 🚀 Features

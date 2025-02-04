@@ -1,10 +1,18 @@
-## [0.27.0] - 2024-11-05
+## [0.28.0] - 2025-02-04
 
 ### 🚀 Features
 
-- *(config)* Collapse screen headers via e.g. `general.collapsed_sections = ["recent_commits"]`
+- *(Revert)* Add --no-edit flag (bound to -E)
+- Update on file changes
+- Open help with `?` too, close with `h` / `?` (#280)
 
 ### 🐛 Bug Fixes
 
-- Set version properly in Github release
+- Cursor sometimes hidden when spawning editor
+- 'Standard input is not a terminal' when opening editor
+- Staircased git output
+
+### 🔧 Configuration
+
+- Add `refresh_on_file_change` bool to en/disable file watcher
 
