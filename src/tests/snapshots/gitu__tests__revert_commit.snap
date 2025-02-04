@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git revert b66a0bf82020d6a386e94d0fceedec1f817d20c7                           |
-styles_hash: b8c40dcdc41cf963
+$ git revert --edit --no-edit b66a0bf82020d6a386e94d0fceedec1f817d20c7          |
+styles_hash: 9fae57feca90a6d2

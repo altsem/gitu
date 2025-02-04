@@ -8,6 +8,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         // -m Replay merge relative to parent (--mainline=)
         Arg::new_flag("--edit", "Edit commit message", true),
+        Arg::new_flag("--no-edit", "Don't edit commit message", false),
         // =s Strategy (--strategy=)
         Arg::new_flag("--signoff", "Add Signed-off-by lines", false),
     ]
