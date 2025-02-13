@@ -19,7 +19,10 @@ impl FileWatcher {
         let pending_updates = Arc::new(AtomicBool::new(false));
         let pending_updates_w = pending_updates.clone();
 
-        let gitignore = GitignoreBuilder::new(path).build().unwrap();
+        let gitignore = GitignoreBuilder::new(path)
+            .add_line(None, super::LOG_FILE_NAME)?
+            .build()
+            .unwrap();
 
         let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
             if let Ok(event) = res {

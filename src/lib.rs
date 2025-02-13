@@ -26,6 +26,8 @@ use ops::Action;
 use std::{error::Error, path::PathBuf, process::Command, rc::Rc, time::Duration};
 use term::Term;
 
+pub const LOG_FILE_NAME: &str = "gitu.log";
+
 //                                An overview of Gitu's ui and terminology:
 //
 //                Screen (src/screen/*)
