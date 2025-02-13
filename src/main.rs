@@ -15,7 +15,7 @@ pub fn main() -> Res<()> {
     }
 
     if args.log {
-        simple_logging::log_to_file(gitu::LOG_FILE_NAME, LevelFilter::Trace)?;
+        simple_logging::log_to_file(gitu::LOG_FILE_NAME, LevelFilter::Debug)?;
     }
 
     panic::set_hook(Box::new(|panic_info| {
