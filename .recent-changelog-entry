@@ -1,18 +1,7 @@
-## [0.28.0] - 2025-02-04
-
-### 🚀 Features
-
-- *(Revert)* Add --no-edit flag (bound to -E)
-- Update on file changes
-- Open help with `?` too, close with `h` / `?` (#280)
+## [0.28.1] - 2025-02-13
 
 ### 🐛 Bug Fixes
 
-- Cursor sometimes hidden when spawning editor
-- 'Standard input is not a terminal' when opening editor
-- Staircased git output
-
-### 🔧 Configuration
-
-- Add `refresh_on_file_change` bool to en/disable file watcher
+- Change logging level to reduce inotify spam
+- Don't refresh on `gitu.log` writes (gitu --log)
 

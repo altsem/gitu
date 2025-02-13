@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.1] - 2025-02-13
+
+### 🐛 Bug Fixes
+
+- Change logging level to reduce inotify spam
+- Don't refresh on `gitu.log` writes (gitu --log)
+
 ## [0.28.0] - 2025-02-04
 
 ### 🚀 Features
