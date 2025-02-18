@@ -100,6 +100,8 @@ impl State {
 
     pub fn update(&mut self, term: &mut Term, events: &[GituEvent]) -> Res<()> {
         for event in events {
+            log::debug!("{:?}", event);
+
             match *event {
                 GituEvent::Term(Event::Resize(w, h)) => {
                     for screen in self.screens.iter_mut() {

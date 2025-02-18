@@ -67,6 +67,7 @@ pub const LOG_FILE_NAME: &str = "gitu.log";
 
 pub type Res<T> = Result<T, Box<dyn Error>>;
 
+#[derive(Debug)]
 pub enum GituEvent {
     Term(Event),
     FileUpdate,
