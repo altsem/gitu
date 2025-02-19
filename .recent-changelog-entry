@@ -1,7 +1,6 @@
-## [0.28.1] - 2025-02-13
+## [0.28.2] - 2025-02-19
 
 ### 🐛 Bug Fixes
 
-- Change logging level to reduce inotify spam
-- Don't refresh on `gitu.log` writes (gitu --log)
+- Rebase menu opening after closing Neovim
 

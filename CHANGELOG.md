@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.2] - 2025-02-19
+
+### 🐛 Bug Fixes
+
+- Rebase menu opening after closing Neovim
+
 ## [0.28.1] - 2025-02-13
 
 ### 🐛 Bug Fixes
