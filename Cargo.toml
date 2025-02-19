@@ -33,7 +33,7 @@ git2 = { version = "0.20.0", default-features = false }
 ignore = "0.4.23"
 itertools = "0.14.0"
 log = "0.4.25"
-nom = "7.1.3"
+nom = "8.0.0"
 notify = "7.0.0"
 ratatui = { version = "0.29.0", features = ["serde"] }
 serde = { version = "1.0.217", features = ["derive"] }
