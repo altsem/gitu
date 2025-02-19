@@ -322,7 +322,7 @@ impl State {
         let child = cmd.spawn()?;
 
         let out = child.wait_with_output()?;
-        let out_utf8 = String::from_utf8(out.stderr.clone())
+        let out_utf8 = String::from_utf8(strip_ansi_escapes::strip(out.stderr.clone()))
             .expect("Error turning command output to String")
             .into();
 
