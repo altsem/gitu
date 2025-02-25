@@ -1,5 +1,5 @@
 use crate::Res;
-use git2::{DiffOptions, Repository, StatusOptions};
+use git2::{Repository, StatusOptions};
 
 pub(crate) fn status(repo: &Repository) -> Res<StatusOptions> {
     let mut opts = StatusOptions::new();
@@ -12,10 +12,4 @@ pub(crate) fn status(repo: &Repository) -> Res<StatusOptions> {
     );
 
     Ok(opts)
-}
-
-pub(crate) fn diff(_repo: &Repository) -> Res<DiffOptions> {
-    let mut diff_options = DiffOptions::new();
-    diff_options.patience(true);
-    Ok(diff_options)
 }

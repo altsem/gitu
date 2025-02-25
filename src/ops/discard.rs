@@ -1,5 +1,12 @@
+use gitu_diff::Status;
+
 use super::{Action, OpTrait};
-use crate::{git::diff::Hunk, items::TargetData, state::State};
+use crate::{
+    git::diff::{format_patch, Diff},
+    items::TargetData,
+    state::State,
+};
+use core::str;
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;
@@ -8,12 +15,32 @@ impl OpTrait for Discard {
         let action = match target.cloned() {
             Some(TargetData::Branch(branch)) => discard_branch(branch),
             Some(TargetData::File(file)) => clean_file(file),
-            Some(TargetData::Delta(d)) => match d.status {
-                git2::Delta::Added => remove_file(d.new_file),
-                git2::Delta::Renamed => rename_file(d.new_file, d.old_file),
-                _ => checkout_file(d.old_file),
+            Some(TargetData::Delta { diff, file_i }) => match diff.file_diffs[file_i].header.status
+            {
+                Status::Added => remove_file(
+                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.new_file.clone()])
+                        .unwrap()
+                        .into(),
+                ),
+                Status::Renamed => rename_file(
+                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.new_file.clone()])
+                        .unwrap()
+                        .into(),
+                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.old_file.clone()])
+                        .unwrap()
+                        .into(),
+                ),
+                _ => checkout_file(
+                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.old_file.clone()])
+                        .unwrap()
+                        .into(),
+                ),
             },
-            Some(TargetData::Hunk(h)) => discard_unstaged_patch(h),
+            Some(TargetData::Hunk {
+                diff,
+                file_i,
+                hunk_i,
+            }) => discard_unstaged_patch(diff, file_i, hunk_i),
             _ => return None,
         };
 
@@ -85,12 +112,12 @@ fn checkout_file(file: PathBuf) -> Action {
     })
 }
 
-fn discard_unstaged_patch(h: Rc<Hunk>) -> Action {
+fn discard_unstaged_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
     Rc::new(move |state, term| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse"]);
 
         state.close_menu();
-        state.run_cmd(term, &h.format_patch().into_bytes(), cmd)
+        state.run_cmd(term, &format_patch(&diff, file_i, hunk_i).into_bytes(), cmd)
     })
 }
