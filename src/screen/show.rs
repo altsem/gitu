@@ -46,8 +46,8 @@ pub(crate) fn create(
             .chain([items::blank_line()])
             .chain(items::create_diff_items(
                 Rc::clone(&config),
-                &show,
-                &0,
+                &Rc::new(show),
+                0,
                 false,
             ))
             .collect())

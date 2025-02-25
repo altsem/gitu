@@ -78,7 +78,10 @@ impl Screen {
     fn find_first_hunk(&mut self) -> Option<usize> {
         (0..self.line_index.len()).find(|&line_i| {
             !self.at_line(line_i).unselectable
-                && matches!(self.at_line(line_i).target_data, Some(TargetData::Hunk(_)))
+                && matches!(
+                    self.at_line(line_i).target_data,
+                    Some(TargetData::Hunk { .. })
+                )
         })
     }
 
@@ -139,7 +142,7 @@ impl Screen {
             NavMode::Normal => {
                 let target_data = item.target_data.as_ref();
                 let is_hunk_line =
-                    target_data.is_some_and(|d| matches!(d, TargetData::HunkLine(_, _)));
+                    target_data.is_some_and(|d| matches!(d, TargetData::HunkLine { .. }));
 
                 !item.unselectable && !is_hunk_line
             }
@@ -224,7 +227,7 @@ impl Screen {
         }
 
         match self.get_selected_item().target_data {
-            Some(TargetData::HunkLine(_, _)) => NavMode::IncludeHunkLines,
+            Some(TargetData::HunkLine { .. }) => NavMode::IncludeHunkLines,
             _ => NavMode::Normal,
         }
     }

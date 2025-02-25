@@ -1,11 +1,12 @@
 use crate::config::Config;
-use crate::git::diff::Delta;
+use crate::git::diff::format_patch;
 use crate::git::diff::Diff;
-use crate::git::diff::Hunk;
 use crate::Res;
+use core::str;
 use git2::Commit;
 use git2::Oid;
 use git2::Repository;
+use gitu_diff::Status;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
@@ -33,101 +34,143 @@ pub(crate) enum TargetData {
     AllUntracked(Vec<PathBuf>),
     Branch(String),
     Commit(String),
-    Delta(Delta),
     File(PathBuf),
-    Hunk(Rc<Hunk>),
-    HunkLine(Rc<Hunk>, usize),
-    Stash { commit: String, id: usize },
+    Delta {
+        diff: Rc<Diff>,
+        file_i: usize,
+    },
+    Hunk {
+        diff: Rc<Diff>,
+        file_i: usize,
+        hunk_i: usize,
+    },
+    HunkLine {
+        diff: Rc<Diff>,
+        file_i: usize,
+        hunk_i: usize,
+        line_i: usize,
+    },
+    Stash {
+        commit: String,
+        id: usize,
+    },
 }
 
 pub(crate) fn create_diff_items<'a>(
     config: Rc<Config>,
-    diff: &'a Diff,
-    depth: &'a usize,
+    diff: &'a Rc<Diff>,
+    depth: usize,
     default_collapsed: bool,
 ) -> impl Iterator<Item = Item> + 'a {
-    diff.deltas.iter().flat_map(move |delta| {
-        let target_data = TargetData::Delta(delta.clone());
-        let config = Rc::clone(&config);
+    diff.file_diffs
+        .iter()
+        .enumerate()
+        .flat_map(move |(file_i, file_diff)| {
+            let target_data = TargetData::Delta {
+                diff: Rc::clone(diff),
+                file_i,
+            };
+            let config = Rc::clone(&config);
 
-        iter::once(Item {
-            id: delta.file_header.to_string().into(),
-            display: Line::styled(
-                format!(
-                    "{:8}   {}",
-                    format!("{:?}", delta.status).to_lowercase(),
-                    match delta.status {
-                        git2::Delta::Renamed => format!(
-                            "{} -> {}",
-                            delta.old_file.to_string_lossy(),
-                            delta.new_file.to_string_lossy()
-                        ),
-                        _ => delta.new_file.to_string_lossy().to_string(),
-                    }
+            iter::once(Item {
+                id: String::from_utf8(
+                    Rc::clone(diff).text[file_diff.header.range.clone()].to_vec(),
+                )
+                .unwrap()
+                .into(),
+                display: Line::styled(
+                    format!(
+                        "{:8}   {}",
+                        format!("{:?}", file_diff.header.status).to_lowercase(),
+                        match file_diff.header.status {
+                            Status::Renamed => format!(
+                                "{} -> {}",
+                                String::from_utf8(
+                                    Rc::clone(diff).text[file_diff.header.old_file.clone()]
+                                        .to_vec()
+                                )
+                                .unwrap(),
+                                String::from_utf8(
+                                    Rc::clone(diff).text[file_diff.header.new_file.clone()]
+                                        .to_vec()
+                                )
+                                .unwrap()
+                            ),
+                            _ => String::from_utf8(
+                                Rc::clone(diff).text[file_diff.header.new_file.clone()].to_vec()
+                            )
+                            .unwrap(),
+                        }
+                    ),
+                    &config.style.file_header,
                 ),
-                &config.style.file_header,
-            ),
-            section: true,
-            default_collapsed,
-            depth: *depth,
-            target_data: Some(target_data),
-            ..Default::default()
+                section: true,
+                default_collapsed,
+                depth,
+                target_data: Some(target_data),
+                ..Default::default()
+            })
+            .chain(file_diff.hunks.iter().cloned().enumerate().flat_map(
+                move |(hunk_i, _hunk)| {
+                    create_hunk_items(
+                        Rc::clone(&config),
+                        Rc::clone(diff),
+                        file_i,
+                        hunk_i,
+                        depth + 1,
+                    )
+                },
+            ))
         })
-        .chain(
-            delta
-                .hunks
-                .iter()
-                .cloned()
-                .flat_map(move |hunk| create_hunk_items(Rc::clone(&config), hunk, *depth + 1)),
-        )
-    })
 }
 
 fn create_hunk_items(
     config: Rc<Config>,
-    hunk: Rc<Hunk>,
+    diff: Rc<Diff>,
+    file_i: usize,
+    hunk_i: usize,
     depth: usize,
 ) -> impl Iterator<Item = Item> {
-    let target_data = TargetData::Hunk(Rc::clone(&hunk));
-
     iter::once(Item {
-        id: hunk.format_patch().into(),
-        display: Line::styled(hunk.header.clone(), &config.style.hunk_header),
+        // TODO Don't do this
+        id: format_patch(&diff, file_i, hunk_i).into(),
+        display: Line::styled(
+            String::from_utf8(
+                diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_vec(),
+            )
+            .unwrap(),
+            &config.style.hunk_header,
+        ),
         section: true,
         depth,
-        target_data: Some(target_data),
+        target_data: Some(TargetData::Hunk {
+            diff: Rc::clone(&diff),
+            file_i,
+            hunk_i,
+        }),
         ..Default::default()
     })
-    .chain(format_diff_hunk_items(depth + 1, hunk))
+    .chain(format_diff_hunk_items(diff, file_i, hunk_i, depth + 1))
 }
 
-fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
-    hunk.content
-        .lines
-        .iter()
+fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
+    str::from_utf8(&diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()])
+        .unwrap()
+        .split_inclusive('\n')
         .enumerate()
-        .map(|(i, line)| Item {
-            display: replace_tabs_with_spaces(line.clone()),
-            unselectable: line
-                .spans
-                .first()
-                .is_some_and(|s| s.content.starts_with(' ')),
+        .map(|(line_i, line)| Item {
+            display: Line::from(line.replace('\t', "    ")),
+            unselectable: line.starts_with(' '),
             depth,
-            target_data: Some(TargetData::HunkLine(Rc::clone(&hunk), i)),
+            target_data: Some(TargetData::HunkLine {
+                diff: Rc::clone(&diff),
+                file_i,
+                hunk_i,
+                line_i,
+            }),
             ..Default::default()
         })
         .collect()
-}
-
-fn replace_tabs_with_spaces(line: Line<'_>) -> Line<'_> {
-    let spans = line
-        .spans
-        .iter()
-        .cloned()
-        .map(|span| Span::styled(span.content.replace('\t', "    "), span.style))
-        .collect::<Vec<_>>();
-
-    Line { spans, ..line }
 }
 
 pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {

@@ -104,13 +104,13 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 Rc::clone(&config),
                 "unstaged_changes",
                 Some(TargetData::AllUnstaged),
-                &git::diff_unstaged(&config, repo.as_ref())?,
+                &Rc::new(git::diff_unstaged(&config, repo.as_ref())?),
             ))
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "staged_changes",
                 Some(TargetData::AllStaged),
-                &git::diff_staged(&config, repo.as_ref())?,
+                &Rc::new(git::diff_staged(&config, repo.as_ref())?),
             ))
             .chain(create_stash_list_section_items(
                 Rc::clone(&config),
@@ -221,10 +221,10 @@ fn create_status_section_items<'a>(
     config: Rc<Config>,
     snake_case_header: &str,
     header_data: Option<TargetData>,
-    diff: &'a Diff,
+    diff: &'a Rc<Diff>,
 ) -> impl Iterator<Item = Item> + 'a {
     let style = &config.style;
-    if diff.deltas.is_empty() {
+    if diff.file_diffs.is_empty() {
         vec![]
     } else {
         vec![
@@ -241,7 +241,7 @@ fn create_status_section_items<'a>(
                         capitalize(&snake_case_header.replace("_", " ")),
                         &style.section_header,
                     ),
-                    format!(" ({})", diff.deltas.len()).into(),
+                    format!(" ({})", diff.file_diffs.len()).into(),
                 ]),
                 section: true,
                 depth: 0,
@@ -251,7 +251,7 @@ fn create_status_section_items<'a>(
         ]
     }
     .into_iter()
-    .chain(items::create_diff_items(config, diff, &1, true))
+    .chain(items::create_diff_items(config, diff, 1, true))
 }
 
 fn capitalize(str: &str) -> String {
