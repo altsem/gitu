@@ -104,13 +104,13 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 Rc::clone(&config),
                 "unstaged_changes",
                 Some(TargetData::AllUnstaged),
-                &Rc::new(git::diff_unstaged(&config, repo.as_ref())?),
+                &Rc::new(git::diff_unstaged(repo.as_ref())?),
             ))
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "staged_changes",
                 Some(TargetData::AllStaged),
-                &Rc::new(git::diff_staged(&config, repo.as_ref())?),
+                &Rc::new(git::diff_staged(repo.as_ref())?),
             ))
             .chain(create_stash_list_section_items(
                 Rc::clone(&config),

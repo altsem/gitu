@@ -25,7 +25,7 @@ impl OpTrait for Show {
                     str::from_utf8(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()])
                         .unwrap(),
                 ),
-                Some(first_diff_line(&diff, *file_i, *hunk_i) as u32),
+                Some(first_diff_line(diff, *file_i, *hunk_i) as u32),
             ),
             Some(TargetData::Stash { id: _, commit }) => goto_show_screen(commit.clone()),
             _ => None,
