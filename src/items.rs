@@ -56,12 +56,12 @@ pub(crate) enum TargetData {
     },
 }
 
-pub(crate) fn create_diff_items<'a>(
+pub(crate) fn create_diff_items(
     config: Rc<Config>,
-    diff: &'a Rc<Diff>,
+    diff: &Rc<Diff>,
     depth: usize,
     default_collapsed: bool,
-) -> impl Iterator<Item = Item> + 'a {
+) -> impl Iterator<Item = Item> + '_ {
     diff.file_diffs
         .iter()
         .enumerate()

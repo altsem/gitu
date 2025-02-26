@@ -1,6 +1,6 @@
 use core::str;
-use gitu_diff::{FileDiff, Hunk};
-use std::{io::BufRead, ops::Range, rc::Rc};
+use gitu_diff::FileDiff;
+use std::{io::BufRead, ops::Range};
 
 // TODO Change the old "Diff" struct of Gitu to:
 //      - not contain String/Text copies of fields

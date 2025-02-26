@@ -3,7 +3,7 @@ use git2::Repository;
 use itertools::Itertools;
 
 use self::{commit::Commit, merge_status::MergeStatus, rebase_status::RebaseStatus};
-use crate::{config::Config, Res};
+use crate::Res;
 use std::{
     fs,
     path::Path,
@@ -115,8 +115,8 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
         .map(|line| line.split(' ').nth(1).unwrap().to_string()))
 }
 
-pub(crate) fn diff_unstaged(config: &Config, repo: &Repository) -> Res<Diff> {
-    let diff_output = Command::new("git")
+pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
+    let text = Command::new("git")
         // TODO What if bare repo?
         .current_dir(repo.workdir().expect("Bare repos unhandled"))
         .args(["diff"])
@@ -124,13 +124,13 @@ pub(crate) fn diff_unstaged(config: &Config, repo: &Repository) -> Res<Diff> {
         .stdout;
 
     Ok(Diff {
-        file_diffs: gitu_diff::parse_diff(&diff_output).unwrap(),
-        text: diff_output.into(),
+        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        text,
     })
 }
 
-pub(crate) fn diff_staged(config: &Config, repo: &Repository) -> Res<Diff> {
-    let diff_output = Command::new("git")
+pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
+    let text = Command::new("git")
         // TODO What if bare repo?
         .current_dir(repo.workdir().expect("Bare repos unhandled"))
         .args(["diff", "--staged"])
@@ -138,13 +138,13 @@ pub(crate) fn diff_staged(config: &Config, repo: &Repository) -> Res<Diff> {
         .stdout;
 
     Ok(Diff {
-        file_diffs: gitu_diff::parse_diff(&diff_output).unwrap(),
-        text: diff_output.into(),
+        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        text,
     })
 }
 
-pub(crate) fn show(config: &Config, repo: &Repository, reference: &str) -> Res<Diff> {
-    let diff_output = Command::new("git")
+pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
+    let text = Command::new("git")
         // TODO What if bare repo?
         .current_dir(repo.workdir().expect("Bare repos unhandled"))
         .args(["show", reference])
@@ -152,8 +152,8 @@ pub(crate) fn show(config: &Config, repo: &Repository, reference: &str) -> Res<D
         .stdout;
 
     Ok(Diff {
-        file_diffs: gitu_diff::parse_diff(&diff_output).unwrap(),
-        text: diff_output.into(),
+        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        text,
     })
 }
 
