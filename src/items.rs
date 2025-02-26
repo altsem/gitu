@@ -73,11 +73,9 @@ pub(crate) fn create_diff_items(
             let config = Rc::clone(&config);
 
             iter::once(Item {
-                id: String::from_utf8(
-                    Rc::clone(diff).text[file_diff.header.range.clone()].to_vec(),
-                )
-                .unwrap()
-                .into(),
+                id: Rc::clone(diff).text[file_diff.header.range.clone()]
+                    .to_string()
+                    .into(),
                 display: Line::styled(
                     format!(
                         "{:8}   {}",
@@ -85,21 +83,11 @@ pub(crate) fn create_diff_items(
                         match file_diff.header.status {
                             Status::Renamed => format!(
                                 "{} -> {}",
-                                String::from_utf8(
-                                    Rc::clone(diff).text[file_diff.header.old_file.clone()]
-                                        .to_vec()
-                                )
-                                .unwrap(),
-                                String::from_utf8(
-                                    Rc::clone(diff).text[file_diff.header.new_file.clone()]
-                                        .to_vec()
-                                )
-                                .unwrap()
+                                &Rc::clone(diff).text[file_diff.header.old_file.clone()],
+                                &Rc::clone(diff).text[file_diff.header.new_file.clone()]
                             ),
-                            _ => String::from_utf8(
-                                Rc::clone(diff).text[file_diff.header.new_file.clone()].to_vec()
-                            )
-                            .unwrap(),
+                            _ =>
+                                Rc::clone(diff).text[file_diff.header.new_file.clone()].to_string(),
                         }
                     ),
                     &config.style.file_header,
@@ -135,10 +123,7 @@ fn create_hunk_items(
         // TODO Don't do this
         id: format_patch(&diff, file_i, hunk_i).into(),
         display: Line::styled(
-            String::from_utf8(
-                diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_vec(),
-            )
-            .unwrap(),
+            diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string(),
             &config.style.hunk_header,
         ),
         section: true,
@@ -154,8 +139,7 @@ fn create_hunk_items(
 }
 
 fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
-    str::from_utf8(&diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()])
-        .unwrap()
+    diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()]
         .split_inclusive('\n')
         .enumerate()
         .map(|(line_i, line)| Item {

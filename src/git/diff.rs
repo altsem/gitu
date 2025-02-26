@@ -1,6 +1,5 @@
-use core::str;
 use gitu_diff::FileDiff;
-use std::{io::BufRead, ops::Range};
+use std::ops::Range;
 
 // TODO Change the old "Diff" struct of Gitu to:
 //      - not contain String/Text copies of fields
@@ -25,7 +24,7 @@ use std::{io::BufRead, ops::Range};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Diff {
-    pub text: Vec<u8>,
+    pub text: String,
     pub file_diffs: Vec<FileDiff>,
 }
 
@@ -42,8 +41,8 @@ pub(crate) fn format_patch(diff: &Diff, file_i: usize, hunk_i: usize) -> String 
     let file_diff = &diff.file_diffs[file_i];
     format!(
         "{}{}",
-        str::from_utf8(&diff.text[file_diff.header.range.clone()]).unwrap(),
-        str::from_utf8(&diff.text[file_diff.hunks[hunk_i].range.clone()]).unwrap()
+        &diff.text[file_diff.header.range.clone()],
+        &diff.text[file_diff.hunks[hunk_i].range.clone()]
     )
 }
 
