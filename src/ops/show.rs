@@ -10,10 +10,7 @@ impl OpTrait for Show {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => goto_show_screen(r.clone()),
             Some(TargetData::File(u)) => editor(u.as_path(), None),
             Some(TargetData::Delta { diff, file_i }) => editor(
-                Path::new(
-                    str::from_utf8(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()])
-                        .unwrap(),
-                ),
+                Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 None,
             ),
             Some(TargetData::Hunk {
@@ -21,10 +18,7 @@ impl OpTrait for Show {
                 file_i,
                 hunk_i,
             }) => editor(
-                Path::new(
-                    str::from_utf8(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()])
-                        .unwrap(),
-                ),
+                Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 Some(first_diff_line(diff, *file_i, *hunk_i) as u32),
             ),
             Some(TargetData::Stash { id: _, commit }) => goto_show_screen(commit.clone()),

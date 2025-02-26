@@ -6,7 +6,6 @@ use crate::{
     term::Term,
     Action,
 };
-use core::str;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Stage;
@@ -16,11 +15,9 @@ impl OpTrait for Stage {
             Some(TargetData::AllUnstaged) => stage_unstaged(),
             Some(TargetData::AllUntracked(untracked)) => stage_untracked(untracked),
             Some(TargetData::File(u)) => stage_file(u.into()),
-            Some(TargetData::Delta { diff, file_i }) => stage_file(
-                str::from_utf8(&diff.text[diff.file_diffs[file_i].header.new_file.clone()])
-                    .unwrap()
-                    .into(),
-            ),
+            Some(TargetData::Delta { diff, file_i }) => {
+                stage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+            }
             Some(TargetData::Hunk {
                 diff,
                 file_i,

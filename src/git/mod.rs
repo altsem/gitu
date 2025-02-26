@@ -116,12 +116,14 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
 }
 
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
-    let text = Command::new("git")
-        // TODO What if bare repo?
-        .current_dir(repo.workdir().expect("Bare repos unhandled"))
-        .args(["diff"])
-        .output()?
-        .stdout;
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["diff"])
+            .output()?
+            .stdout,
+    )?;
 
     Ok(Diff {
         file_diffs: gitu_diff::parse_diff(&text).unwrap(),
@@ -130,12 +132,14 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
 }
 
 pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
-    let text = Command::new("git")
-        // TODO What if bare repo?
-        .current_dir(repo.workdir().expect("Bare repos unhandled"))
-        .args(["diff", "--staged"])
-        .output()?
-        .stdout;
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["diff", "--staged"])
+            .output()?
+            .stdout,
+    )?;
 
     Ok(Diff {
         file_diffs: gitu_diff::parse_diff(&text).unwrap(),
@@ -144,12 +148,14 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
 }
 
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
-    let text = Command::new("git")
-        // TODO What if bare repo?
-        .current_dir(repo.workdir().expect("Bare repos unhandled"))
-        .args(["show", reference])
-        .output()?
-        .stdout;
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["show", reference])
+            .output()?
+            .stdout,
+    )?;
 
     Ok(Diff {
         file_diffs: gitu_diff::parse_diff(&text).unwrap(),

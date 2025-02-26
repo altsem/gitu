@@ -6,7 +6,6 @@ use crate::{
     term::Term,
     Action,
 };
-use core::str;
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
@@ -14,11 +13,9 @@ impl OpTrait for Unstage {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target.cloned() {
             Some(TargetData::AllStaged) => unstage_staged(),
-            Some(TargetData::Delta { diff, file_i }) => unstage_file(
-                str::from_utf8(&diff.text[diff.file_diffs[file_i].header.new_file.clone()])
-                    .unwrap()
-                    .into(),
-            ),
+            Some(TargetData::Delta { diff, file_i }) => {
+                unstage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+            }
             Some(TargetData::Hunk {
                 diff,
                 file_i,

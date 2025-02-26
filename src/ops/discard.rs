@@ -6,7 +6,6 @@ use crate::{
     items::TargetData,
     state::State,
 };
-use core::str;
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;
@@ -17,24 +16,16 @@ impl OpTrait for Discard {
             Some(TargetData::File(file)) => clean_file(file),
             Some(TargetData::Delta { diff, file_i }) => match diff.file_diffs[file_i].header.status
             {
-                Status::Added => remove_file(
-                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.new_file.clone()])
-                        .unwrap()
-                        .into(),
-                ),
+                Status::Added => {
+                    remove_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+                }
                 Status::Renamed => rename_file(
-                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.new_file.clone()])
-                        .unwrap()
-                        .into(),
-                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.old_file.clone()])
-                        .unwrap()
-                        .into(),
+                    diff.text[diff.file_diffs[file_i].header.new_file.clone()].into(),
+                    diff.text[diff.file_diffs[file_i].header.old_file.clone()].into(),
                 ),
-                _ => checkout_file(
-                    str::from_utf8(&diff.text[diff.file_diffs[file_i].header.old_file.clone()])
-                        .unwrap()
-                        .into(),
-                ),
+                _ => {
+                    checkout_file(diff.text[diff.file_diffs[file_i].header.old_file.clone()].into())
+                }
             },
             Some(TargetData::Hunk {
                 diff,
