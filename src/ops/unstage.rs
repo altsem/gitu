@@ -7,10 +7,21 @@ impl OpTrait for Unstage {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target.cloned() {
             Some(TargetData::AllStaged) => unstage_staged(),
-            Some(TargetData::Delta(d)) => unstage_file(d.new_file.into()),
-            Some(TargetData::Hunk(h)) => unstage_patch(h.format_patch().into_bytes()),
-            Some(TargetData::HunkLine(h, i)) => unstage_line(
-                h.format_line_patch(i..(i + 1), PatchMode::Reverse)
+            Some(TargetData::Delta { diff, file_i }) => {
+                unstage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+            }
+            Some(TargetData::Hunk {
+                diff,
+                file_i,
+                hunk_i,
+            }) => unstage_patch(diff.format_patch(file_i, hunk_i).into_bytes()),
+            Some(TargetData::HunkLine {
+                diff,
+                file_i,
+                hunk_i,
+                line_i,
+            }) => unstage_line(
+                diff.format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Reverse)
                     .into_bytes(),
             ),
             _ => return None,
