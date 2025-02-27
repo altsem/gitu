@@ -1,11 +1,7 @@
 use gitu_diff::Status;
 
 use super::{Action, OpTrait};
-use crate::{
-    git::diff::{format_patch, Diff},
-    items::TargetData,
-    state::State,
-};
+use crate::{git::diff::Diff, items::TargetData, state::State};
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;
@@ -109,6 +105,6 @@ fn discard_unstaged_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Actio
         cmd.args(["apply", "--reverse"]);
 
         state.close_menu();
-        state.run_cmd(term, &format_patch(&diff, file_i, hunk_i).into_bytes(), cmd)
+        state.run_cmd(term, &diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
     })
 }
