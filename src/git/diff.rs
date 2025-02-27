@@ -34,72 +34,71 @@ pub(crate) enum PatchMode {
     Reverse,
 }
 
-pub(crate) fn format_patch(diff: &Diff, file_i: usize, hunk_i: usize) -> String {
-    // format!("{}{}{}\n", &self.file_header, self.header, self.content)
-    // TODO
+impl Diff {
+    pub(crate) fn format_patch(&self, file_i: usize, hunk_i: usize) -> String {
+        let file_diff = &self.file_diffs[file_i];
+        format!(
+            "{}{}",
+            &self.text[file_diff.header.range.clone()],
+            &self.text[file_diff.hunks[hunk_i].range.clone()]
+        )
+    }
 
-    let file_diff = &diff.file_diffs[file_i];
-    format!(
-        "{}{}",
-        &diff.text[file_diff.header.range.clone()],
-        &diff.text[file_diff.hunks[hunk_i].range.clone()]
-    )
-}
+    pub(crate) fn format_line_patch(
+        &self,
+        file_i: usize,
+        hunk_i: usize,
+        line_range: Range<usize>,
+        mode: PatchMode,
+    ) -> String {
+        // let modified_content = self
+        //     .content
+        //     .lines
+        //     .iter()
+        //     .enumerate()
+        //     .filter_map(|(i, line)| {
+        //         let add = match mode {
+        //             PatchMode::Normal => '+',
+        //             PatchMode::Reverse => '-',
+        //         };
 
-pub(crate) fn format_line_patch(
-    diff: &Diff,
-    file_i: usize,
-    hunk_i: usize,
-    line_range: Range<usize>,
-    mode: PatchMode,
-) -> String {
-    // let modified_content = self
-    //     .content
-    //     .lines
-    //     .iter()
-    //     .enumerate()
-    //     .filter_map(|(i, line)| {
-    //         let add = match mode {
-    //             PatchMode::Normal => '+',
-    //             PatchMode::Reverse => '-',
-    //         };
+        //         let remove = match mode {
+        //             PatchMode::Normal => '-',
+        //             PatchMode::Reverse => '+',
+        //         };
 
-    //         let remove = match mode {
-    //             PatchMode::Normal => '-',
-    //             PatchMode::Reverse => '+',
-    //         };
+        //         let patch_line = format!("{line}");
 
-    //         let patch_line = format!("{line}");
+        //         if line_range.contains(&i) {
+        //             Some(patch_line)
+        //         } else if patch_line.starts_with(add) {
+        //             None
+        //         } else if let Some(stripped) = patch_line.strip_prefix(remove) {
+        //             Some(format!(" {}", stripped))
+        //         } else {
+        //             Some(patch_line)
+        //         }
+        //     })
+        //     .join("\n");
 
-    //         if line_range.contains(&i) {
-    //             Some(patch_line)
-    //         } else if patch_line.starts_with(add) {
-    //             None
-    //         } else if let Some(stripped) = patch_line.strip_prefix(remove) {
-    //             Some(format!(" {}", stripped))
-    //         } else {
-    //             Some(patch_line)
-    //         }
-    //     })
-    //     .join("\n");
+        // format!("{}{}{}\n", &self.file_header, self.header, modified_content)
+        todo!()
+    }
 
-    // format!("{}{}{}\n", &self.file_header, self.header, modified_content)
-    todo!()
-}
-
-pub(crate) fn first_diff_line(diff: &Diff, file_i: usize, hunk_i: usize) -> usize {
-    if let Some(change) = diff.file_diffs[file_i].hunks[hunk_i]
-        .content
-        .changes
-        .first()
-    {
-        change
-            .removed
-            .as_ref()
-            .or(change.added.as_ref())
-            .map(|change_range| diff.text[..change_range.start].lines().count())
-            .unwrap_or(0)
-    } else {
-        0
+    pub(crate) fn first_diff_line(&self, file_i: usize, hunk_i: usize) -> usize {
+        if let Some(change) = self.file_diffs[file_i].hunks[hunk_i]
+            .content
+            .changes
+            .first()
+        {
+            change
+                .removed
+                .as_ref()
+                .or(change.added.as_ref())
+                .map(|change_range| self.text[..change_range.start].lines().count())
+                .unwrap_or(0)
+        } else {
+            0
+        }
     }
 }
