@@ -1,6 +1,6 @@
 use super::OpTrait;
 use crate::{
-    git::diff::{format_line_patch, format_patch, Diff, PatchMode},
+    git::diff::{Diff, PatchMode},
     items::TargetData,
     state::State,
     term::Term,
@@ -82,7 +82,7 @@ fn stage_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
         cmd.args(["apply", "--cached"]);
 
         state.close_menu();
-        state.run_cmd(term, &format_patch(&diff, file_i, hunk_i).into_bytes(), cmd)
+        state.run_cmd(term, &diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
     })
 }
 
@@ -91,14 +91,9 @@ fn stage_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Ac
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--recount"]);
 
-        let input = format_line_patch(
-            &diff,
-            file_i,
-            hunk_i,
-            line_i..(line_i + 1),
-            PatchMode::Normal,
-        )
-        .into_bytes();
+        let input = diff
+            .format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Normal)
+            .into_bytes();
 
         state.close_menu();
         state.run_cmd(term, &input, cmd)

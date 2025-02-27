@@ -1,11 +1,5 @@
 use super::OpTrait;
-use crate::{
-    git::diff::{format_line_patch, format_patch, PatchMode},
-    items::TargetData,
-    state::State,
-    term::Term,
-    Action,
-};
+use crate::{git::diff::PatchMode, items::TargetData, state::State, term::Term, Action};
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
@@ -20,21 +14,15 @@ impl OpTrait for Unstage {
                 diff,
                 file_i,
                 hunk_i,
-            }) => unstage_patch(format_patch(&diff, file_i, hunk_i).into_bytes()),
+            }) => unstage_patch(diff.format_patch(file_i, hunk_i).into_bytes()),
             Some(TargetData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
                 line_i,
             }) => unstage_line(
-                format_line_patch(
-                    &diff,
-                    file_i,
-                    hunk_i,
-                    line_i..(line_i + 1),
-                    PatchMode::Reverse,
-                )
-                .into_bytes(),
+                diff.format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Reverse)
+                    .into_bytes(),
             ),
             _ => return None,
         };
