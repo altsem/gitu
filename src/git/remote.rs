@@ -102,5 +102,17 @@ pub(crate) fn head_push_remote_cfg(repo: &Repository) -> Res<String> {
         return Err("Head is not a branch".into());
     };
     let push_remote_cfg = format!("branch.{branch}.pushRemote");
-    Ok(push_remote_cfg)
+    
+    // Check if pushRemote is configured
+    if config.get_string(&push_remote_cfg).is_ok() {
+        Ok(push_remote_cfg)
+    } else {
+        // Fallback to push.default if pushRemote is not found
+        let push_default_cfg = "push.default".to_string();
+        if config.get_string(&push_default_cfg).is_ok() {
+            Ok(push_default_cfg)
+        } else {
+            Err("Neither pushRemote nor push.default is configured".into())
+        }
+    }
 }
