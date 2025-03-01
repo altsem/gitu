@@ -1,60 +1,87 @@
-use crate::config::Config;
-
 use itertools::Itertools;
-use ratatui::style::Style;
 use std::{cell::RefCell, collections::HashMap, iter, ops::Range, path::Path};
 use tree_sitter::Language;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, HighlightEvent, Highlighter};
 
-const HIGHLIGHT_NAMES: &[&str] = &[
-    "attribute",
-    "comment",
-    "constant.builtin",
-    "constant",
-    "constructor",
-    "embedded",
-    "function.builtin",
-    "function",
-    "keyword",
-    "number",
-    "module",
-    "property",
-    "operator",
-    "punctuation.bracket",
-    "punctuation.delimiter",
-    "string.special",
-    "string",
-    "tag",
-    "type",
-    "type.builtin",
-    "variable.builtin",
-    "variable.parameter",
-];
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyntaxTag {
+    Attribute,
+    Comment,
+    Constant,
+    ConstantBuiltin,
+    Constructor,
+    Embedded,
+    Function,
+    FunctionBuiltin,
+    Keyword,
+    Module,
+    Number,
+    Operator,
+    Property,
+    PunctuationBracket,
+    PunctuationDelimiter,
+    String,
+    StringSpecial,
+    Tag,
+    TypeBuiltin,
+    TypeRegular,
+    VariableBuiltin,
+    VariableParameter,
+}
 
-fn styles(style: &crate::config::StyleConfig) -> [Style; 22] {
+impl AsRef<str> for SyntaxTag {
+    fn as_ref(&self) -> &str {
+        match self {
+            SyntaxTag::Attribute => "attribute",
+            SyntaxTag::Comment => "comment",
+            SyntaxTag::ConstantBuiltin => "constant.builtin",
+            SyntaxTag::Constant => "constant",
+            SyntaxTag::Constructor => "constructor",
+            SyntaxTag::Embedded => "embedded",
+            SyntaxTag::FunctionBuiltin => "function.builtin",
+            SyntaxTag::Function => "function",
+            SyntaxTag::Keyword => "keyword",
+            SyntaxTag::Number => "number",
+            SyntaxTag::Module => "module",
+            SyntaxTag::Property => "property",
+            SyntaxTag::Operator => "operator",
+            SyntaxTag::PunctuationBracket => "punctuation.bracket",
+            SyntaxTag::PunctuationDelimiter => "punctuation.delimiter",
+            SyntaxTag::StringSpecial => "string.special",
+            SyntaxTag::String => "string",
+            SyntaxTag::Tag => "tag",
+            SyntaxTag::TypeRegular => "type",
+            SyntaxTag::TypeBuiltin => "type.builtin",
+            SyntaxTag::VariableBuiltin => "variable.builtin",
+            SyntaxTag::VariableParameter => "variable.parameter",
+        }
+    }
+}
+
+fn tags_by_highlight_index() -> [SyntaxTag; 22] {
     [
-        (&style.syntax_highlight.attribute).into(),
-        (&style.syntax_highlight.comment).into(),
-        (&style.syntax_highlight.constant_builtin).into(),
-        (&style.syntax_highlight.constant).into(),
-        (&style.syntax_highlight.constructor).into(),
-        (&style.syntax_highlight.embedded).into(),
-        (&style.syntax_highlight.function_builtin).into(),
-        (&style.syntax_highlight.function).into(),
-        (&style.syntax_highlight.keyword).into(),
-        (&style.syntax_highlight.number).into(),
-        (&style.syntax_highlight.module).into(),
-        (&style.syntax_highlight.property).into(),
-        (&style.syntax_highlight.operator).into(),
-        (&style.syntax_highlight.punctuation_bracket).into(),
-        (&style.syntax_highlight.punctuation_delimiter).into(),
-        (&style.syntax_highlight.string_special).into(),
-        (&style.syntax_highlight.string).into(),
-        (&style.syntax_highlight.tag).into(),
-        (&style.syntax_highlight.type_regular).into(),
-        (&style.syntax_highlight.type_builtin).into(),
-        (&style.syntax_highlight.variable_builtin).into(),
-        (&style.syntax_highlight.variable_parameter).into(),
+        SyntaxTag::Attribute,
+        SyntaxTag::Comment,
+        SyntaxTag::ConstantBuiltin,
+        SyntaxTag::Constant,
+        SyntaxTag::Constructor,
+        SyntaxTag::Embedded,
+        SyntaxTag::FunctionBuiltin,
+        SyntaxTag::Function,
+        SyntaxTag::Keyword,
+        SyntaxTag::Number,
+        SyntaxTag::Module,
+        SyntaxTag::Property,
+        SyntaxTag::Operator,
+        SyntaxTag::PunctuationBracket,
+        SyntaxTag::PunctuationDelimiter,
+        SyntaxTag::StringSpecial,
+        SyntaxTag::String,
+        SyntaxTag::Tag,
+        SyntaxTag::TypeRegular,
+        SyntaxTag::TypeBuiltin,
+        SyntaxTag::VariableBuiltin,
+        SyntaxTag::VariableParameter,
     ]
 }
 
@@ -194,7 +221,7 @@ fn create_highlight_config(lang: &Language) -> HighlightConfiguration {
         HighlightConfiguration::new(*lang, highlights_query, injections_query, locals_query)
             .unwrap();
 
-    highlight_config.configure(HIGHLIGHT_NAMES);
+    highlight_config.configure(&tags_by_highlight_index());
     highlight_config
 }
 
@@ -203,13 +230,8 @@ thread_local! {
     pub static LANG_CONFIGS: RefCell<HashMap<Language, HighlightConfiguration>> = RefCell::new(HashMap::new());
 }
 
-pub(crate) fn highlight<'a>(
-    config: &'a Config,
-    path: &'a Path,
-    content: &'a str,
-) -> Vec<(Range<usize>, Style)> {
-    let style = &config.style;
-    let styles = styles(style);
+pub(crate) fn highlight<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usize>, SyntaxTag)> {
+    let tags = tags_by_highlight_index();
 
     let Some(lang) = determine_lang(path) else {
         return vec![];
@@ -225,24 +247,65 @@ pub(crate) fn highlight<'a>(
             highlighter
                 .highlight(config, content.as_bytes(), None, |_| None)
                 .unwrap()
-                .scan((0..0, Style::new()), move |current, event| {
-                    match event.unwrap() {
-                        HighlightEvent::Source { start, end } => {
-                            Some(Some((start..end, current.1)))
-                        }
-                        HighlightEvent::HighlightStart(Highlight(highlight)) => {
-                            current.1 = styles[highlight];
-                            Some(None)
-                        }
-                        HighlightEvent::HighlightEnd => {
-                            current.1 = Style::new();
-                            Some(None)
-                        }
+                .scan(None, move |current_tag, event| match event.unwrap() {
+                    HighlightEvent::Source { start, end } => Some(Some((start..end, *current_tag))),
+                    HighlightEvent::HighlightStart(Highlight(highlight)) => {
+                        *current_tag = Some(tags[highlight]);
+                        Some(None)
+                    }
+                    HighlightEvent::HighlightEnd => {
+                        *current_tag = None;
+                        Some(None)
                     }
                 })
                 .flatten()
-                .flat_map(|style_range| split_at_newlines(content, style_range))
+                .filter_map(|(range, maybe_tag)| maybe_tag.map(|tag| (range, tag)))
+                .flat_map(|syntax_range| split_at_newlines(content, syntax_range))
                 .collect()
         })
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_highlight() {
+        let path = Path::new("test.rs");
+        let content = r#"
+fn main() {
+    println!("Hello, world!");
+}
+"#;
+
+        let highlights = highlight(path, content);
+        let highlights_with_content = highlights
+            .into_iter()
+            .map(|(range, style)| {
+                (
+                    std::str::from_utf8(&content.as_bytes()[range.clone()]).unwrap(),
+                    style,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            highlights_with_content,
+            vec![
+                ("fn", SyntaxTag::Keyword),
+                ("main", SyntaxTag::Function),
+                ("(", SyntaxTag::PunctuationBracket),
+                (")", SyntaxTag::PunctuationBracket),
+                ("{", SyntaxTag::PunctuationBracket),
+                ("println", SyntaxTag::Function),
+                ("!", SyntaxTag::Function),
+                ("(", SyntaxTag::PunctuationBracket),
+                ("\"Hello, world!\"", SyntaxTag::String),
+                (")", SyntaxTag::PunctuationBracket),
+                (";", SyntaxTag::PunctuationDelimiter),
+                ("}", SyntaxTag::PunctuationBracket),
+            ]
+        );
+    }
 }
