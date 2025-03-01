@@ -79,6 +79,7 @@ fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Co
             || lower.ends_with("vim")
             || lower.ends_with("nvim")
             || lower.ends_with("nano")
+            || lower.ends_with("nvr")
         {
             cmd.args([&format!("+{}", line), file]);
         } else {
