@@ -35,6 +35,24 @@ pub(crate) enum PatchMode {
 }
 
 impl Diff {
+    pub(crate) fn view_old_hunk(&self, file_i: usize, hunk_i: usize) -> String {
+        self.text[self.file_diffs[file_i].hunks[hunk_i].content.range.clone()]
+            .split_inclusive('\n')
+            .filter(|line| !line.starts_with('+'))
+            .filter(|line| !line.starts_with('\\'))
+            .map(|line| &line[1..])
+            .collect::<String>()
+    }
+
+    pub(crate) fn view_new_hunk(&self, file_i: usize, hunk_i: usize) -> String {
+        self.text[self.file_diffs[file_i].hunks[hunk_i].content.range.clone()]
+            .split_inclusive('\n')
+            .filter(|line| !line.starts_with('-'))
+            .filter(|line| !line.starts_with('\\'))
+            .map(|line| &line[1..])
+            .collect::<String>()
+    }
+
     pub(crate) fn format_patch(&self, file_i: usize, hunk_i: usize) -> String {
         let file_diff = &self.file_diffs[file_i];
         format!(
