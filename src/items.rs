@@ -162,30 +162,24 @@ fn format_diff_hunk_items(
     let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
 
     let content = &diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()];
-    let old_content = diff.view_old_hunk(file_i, hunk_i);
-    let new_content = diff.view_new_hunk(file_i, hunk_i);
+    let old_mask = diff.mask_old_hunk(file_i, hunk_i);
+    let new_mask = diff.mask_new_hunk(file_i, hunk_i);
 
-    let old_tags_iter = &mut iter_highlights(old_path, &old_content).peekable();
-    let new_tags_iter = &mut iter_highlights(new_path, &new_content).peekable();
+    let old_tags_iter = &mut iter_highlights(&config.style, old_path, &old_mask);
+    let new_tags_iter = &mut iter_highlights(&config.style, new_path, &new_mask);
 
-    iter_diff_lines(content)
+    iter_line_ranges(content)
         .enumerate()
-        .map(|(line_i, (_, old_r, new_r))| {
-            let spans = match (&old_r, &new_r) {
-                (Some(o), None) => build_diff_line("-", old_tags_iter, o, &old_content, config),
-                (None, Some(n)) => build_diff_line("+", new_tags_iter, n, &new_content, config),
-                (Some(o), Some(n)) => {
-                    // Drain both iters
-                    new_tags_iter
-                        .peeking_take_while(|(r, _)| r.end <= n.end)
-                        .for_each(drop);
-
-                    build_diff_line(" ", old_tags_iter, o, &old_content, config)
-                }
-                (None, None) => unreachable!(),
+        .map(|(line_i, (line_range, line))| {
+            let spans = if line.starts_with('-') {
+                build_diff_line(old_tags_iter, &line_range, content)
+            } else if line.starts_with('+') {
+                build_diff_line(new_tags_iter, &line_range, content)
+            } else {
+                build_diff_line(old_tags_iter, &line_range, content)
             };
 
-            let unselectable = old_r.is_none() && new_r.is_none();
+            let unselectable = line.starts_with(' ');
 
             Item {
                 display: Line::from(spans),
@@ -203,76 +197,47 @@ fn format_diff_hunk_items(
         .collect()
 }
 
-fn iter_diff_lines(
-    content: &str,
-) -> impl Iterator<Item = (Range<usize>, Option<Range<usize>>, Option<Range<usize>>)> + '_ {
+fn iter_line_ranges(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> + '_ {
     content
         .split_inclusive('\n')
-        .scan((0..0, 0..0, 0..0), |line_ranges, line| {
-            // Map line ranges of the diff / old / new
-            // Example:
-            //
-            // diff_r: `+    print("hi")`
-            // old_r:  ``
-            // new_r:  `    print("hi")`
-
-            if line.starts_with('-') {
-                let diff_r = line_ranges.0.end..(line_ranges.0.end + line.len());
-                let old_r = line_ranges.1.end..(line_ranges.1.end + line.len() - 1);
-                let new_r = line_ranges.2.clone();
-                *line_ranges = (diff_r.clone(), old_r.clone(), new_r.clone());
-                Some((diff_r, Some(old_r), None))
-            } else if line.starts_with('+') {
-                let diff_r = line_ranges.0.end..(line_ranges.0.end + line.len());
-                let old_r = line_ranges.1.clone();
-                let new_r = line_ranges.2.end..(line_ranges.2.end + line.len() - 1);
-                *line_ranges = (diff_r.clone(), old_r.clone(), new_r.clone());
-                Some((diff_r, None, Some(new_r)))
-            } else {
-                let diff_r = line_ranges.0.end..(line_ranges.0.end + line.len());
-                let old_r = line_ranges.1.end..(line_ranges.1.end + line.len() - 1);
-                let new_r = line_ranges.2.end..(line_ranges.2.end + line.len() - 1);
-                *line_ranges = (diff_r.clone(), old_r.clone(), new_r.clone());
-                Some((diff_r, Some(old_r), Some(new_r)))
-            }
+        .scan(0..0, |prev_line_range, line| {
+            let line_range = prev_line_range.end..(prev_line_range.end + line.len());
+            *prev_line_range = line_range.clone();
+            Some((line_range, line))
         })
 }
 
-fn iter_highlights(
-    path: &str,
-    content: &str,
-) -> impl Iterator<Item = (Range<usize>, Option<SyntaxTag>)> {
-    iter::once((0, None))
-        .chain(
-            syntax_parser::highlight(Path::new(path), content)
-                .into_iter()
-                .flat_map(|(range, tag)| [(range.start, Some(tag)), (range.end, None)]),
-        )
-        .chain([(content.len(), None)])
-        .tuple_windows()
-        .map(|((start, tag), (end, _))| (start..end, tag))
-        .filter(|(range, _)| !range.is_empty())
+fn iter_highlights<'a>(
+    config: &'a StyleConfig,
+    path: &'a str,
+    content: &'a str,
+) -> iter::Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    syntax_parser::highlight(Path::new(path), content)
+        .into_iter()
+        .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag)))
+        .peekable()
 }
 
 fn build_diff_line<'a>(
-    prefix: &'a str,
-    syntax_tags_iter: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Option<SyntaxTag>)>>,
+    syntax_tags_iter: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
     line_range: &Range<usize>,
     content: &str,
-    config: &Config,
 ) -> Vec<Span<'a>> {
-    iter::once(Span::raw(prefix))
+    syntax_tags_iter
+        .peeking_take_while(|(syntax_range, _)| syntax_range.end <= line_range.start)
+        .map(|(_, tag)| tag)
+        .for_each(drop);
+
+    iter::once((line_range.start, Style::new()))
         .chain(
             syntax_tags_iter
-                .peeking_take_while(|(r, _)| r.end <= line_range.end)
-                .map(|(range, tag)| {
-                    Span::styled(
-                        content[range].replace('\t', "    "),
-                        tag.map(|tag| syntax_highlight_tag_style(&config.style, tag))
-                            .unwrap_or(Style::new()),
-                    )
-                }),
+                .peeking_take_while(|(syntax_range, _)| syntax_range.start < line_range.end)
+                .flat_map(|(range, style)| [(range.start, style), (range.end, Style::new())]),
         )
+        .chain([(line_range.end, Style::new())])
+        .tuple_windows()
+        .map(|((start, style), (end, _))| (start..end, style))
+        .map(|(range, style)| Span::styled(content[range].replace('\t', "    "), style))
         .collect::<Vec<_>>()
 }
 

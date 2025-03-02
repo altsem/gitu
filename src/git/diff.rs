@@ -35,22 +35,14 @@ pub(crate) enum PatchMode {
 }
 
 impl Diff {
-    pub(crate) fn view_old_hunk(&self, file_i: usize, hunk_i: usize) -> String {
-        self.text[self.file_diffs[file_i].hunks[hunk_i].content.range.clone()]
-            .split_inclusive('\n')
-            .filter(|line| !line.starts_with('+'))
-            .filter(|line| !line.starts_with('\\'))
-            .map(|line| &line[1..])
-            .collect::<String>()
+    pub(crate) fn mask_old_hunk(&self, file_i: usize, hunk_i: usize) -> String {
+        let content = &self.text[self.file_diffs[file_i].hunks[hunk_i].content.range.clone()];
+        mask_hunk_content(content, '-', '+')
     }
 
-    pub(crate) fn view_new_hunk(&self, file_i: usize, hunk_i: usize) -> String {
-        self.text[self.file_diffs[file_i].hunks[hunk_i].content.range.clone()]
-            .split_inclusive('\n')
-            .filter(|line| !line.starts_with('-'))
-            .filter(|line| !line.starts_with('\\'))
-            .map(|line| &line[1..])
-            .collect::<String>()
+    pub(crate) fn mask_new_hunk(&self, file_i: usize, hunk_i: usize) -> String {
+        let content = &self.text[self.file_diffs[file_i].hunks[hunk_i].content.range.clone()];
+        mask_hunk_content(content, '+', '-')
     }
 
     pub(crate) fn format_patch(&self, file_i: usize, hunk_i: usize) -> String {
@@ -119,4 +111,31 @@ impl Diff {
             0
         }
     }
+}
+
+fn mask_hunk_content(content: &str, keep: char, mask: char) -> String {
+    let mut result = String::new();
+
+    content.split_inclusive('\n').for_each(|line| {
+        if line.starts_with(mask) {
+            if line.ends_with("\r\n") {
+                for _ in 0..(line.len() - 2) {
+                    result.push(' ');
+                }
+                result.push_str("\r\n");
+            } else if line.ends_with('\n') {
+                for _ in 0..(line.len() - 1) {
+                    result.push(' ');
+                }
+                result.push('\n');
+            }
+        } else if line.starts_with(keep) {
+            result.push(' ');
+            result.push_str(&line[1..]);
+        } else if !line.starts_with('\\') {
+            result.push_str(line);
+        }
+    });
+
+    result
 }
