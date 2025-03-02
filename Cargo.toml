@@ -20,8 +20,9 @@ unicode-width = "0.2.0"
 strip = true
 
 [dependencies]
+gitu-diff = { version = "0.1.0", path = "./gitu-diff" }
 arboard = { version = "3.4.0", default-features = false, features = [
-  "windows-sys",
+    "windows-sys",
 ] }
 chrono = "0.4.39"
 clap = { version = "4.5.26", features = ["derive"] }

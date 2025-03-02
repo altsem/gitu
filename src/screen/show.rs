@@ -26,7 +26,7 @@ pub(crate) fn create(
         Box::new(move || {
             let style = &config.style;
             let commit = git::show_summary(repo.as_ref(), &reference)?;
-            let show = git::show(&config, repo.as_ref(), &reference)?;
+            let show = git::show(repo.as_ref(), &reference)?;
             let details = Text::from(commit.details).lines;
 
             Ok(iter::once(Item {
@@ -46,8 +46,8 @@ pub(crate) fn create(
             .chain([items::blank_line()])
             .chain(items::create_diff_items(
                 Rc::clone(&config),
-                &show,
-                &0,
+                &Rc::new(show),
+                0,
                 false,
             ))
             .collect())

@@ -1,17 +1,23 @@
 use crate::config::Config;
-use crate::git::diff::Delta;
+use crate::config::StyleConfig;
 use crate::git::diff::Diff;
-use crate::git::diff::Hunk;
+use crate::syntax_parser;
+use crate::syntax_parser::SyntaxTag;
 use crate::Res;
+use core::str;
 use git2::Commit;
 use git2::Oid;
 use git2::Repository;
+use gitu_diff::Status;
+use itertools::Itertools;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
 use regex::Regex;
 use std::borrow::Cow;
 use std::iter;
+use std::ops::Range;
+use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -33,101 +39,234 @@ pub(crate) enum TargetData {
     AllUntracked(Vec<PathBuf>),
     Branch(String),
     Commit(String),
-    Delta(Delta),
     File(PathBuf),
-    Hunk(Rc<Hunk>),
-    HunkLine(Rc<Hunk>, usize),
-    Stash { commit: String, id: usize },
+    Delta {
+        diff: Rc<Diff>,
+        file_i: usize,
+    },
+    Hunk {
+        diff: Rc<Diff>,
+        file_i: usize,
+        hunk_i: usize,
+    },
+    HunkLine {
+        diff: Rc<Diff>,
+        file_i: usize,
+        hunk_i: usize,
+        line_i: usize,
+    },
+    Stash {
+        commit: String,
+        id: usize,
+    },
 }
 
-pub(crate) fn create_diff_items<'a>(
+pub(crate) fn create_diff_items(
     config: Rc<Config>,
-    diff: &'a Diff,
-    depth: &'a usize,
+    diff: &Rc<Diff>,
+    depth: usize,
     default_collapsed: bool,
-) -> impl Iterator<Item = Item> + 'a {
-    diff.deltas.iter().flat_map(move |delta| {
-        let target_data = TargetData::Delta(delta.clone());
-        let config = Rc::clone(&config);
+) -> impl Iterator<Item = Item> + '_ {
+    diff.file_diffs
+        .iter()
+        .enumerate()
+        .flat_map(move |(file_i, file_diff)| {
+            let target_data = TargetData::Delta {
+                diff: Rc::clone(diff),
+                file_i,
+            };
+            let config = Rc::clone(&config);
 
-        iter::once(Item {
-            id: delta.file_header.to_string().into(),
-            display: Line::styled(
-                format!(
-                    "{:8}   {}",
-                    format!("{:?}", delta.status).to_lowercase(),
-                    match delta.status {
-                        git2::Delta::Renamed => format!(
-                            "{} -> {}",
-                            delta.old_file.to_string_lossy(),
-                            delta.new_file.to_string_lossy()
-                        ),
-                        _ => delta.new_file.to_string_lossy().to_string(),
-                    }
+            iter::once(Item {
+                id: Rc::clone(diff).text[file_diff.header.range.clone()]
+                    .to_string()
+                    .into(),
+                display: Line::styled(
+                    format!(
+                        "{:8}   {}",
+                        format!("{:?}", file_diff.header.status).to_lowercase(),
+                        match file_diff.header.status {
+                            Status::Renamed => format!(
+                                "{} -> {}",
+                                &Rc::clone(diff).text[file_diff.header.old_file.clone()],
+                                &Rc::clone(diff).text[file_diff.header.new_file.clone()]
+                            ),
+                            _ =>
+                                Rc::clone(diff).text[file_diff.header.new_file.clone()].to_string(),
+                        }
+                    ),
+                    &config.style.file_header,
                 ),
-                &config.style.file_header,
-            ),
-            section: true,
-            default_collapsed,
-            depth: *depth,
-            target_data: Some(target_data),
-            ..Default::default()
+                section: true,
+                default_collapsed,
+                depth,
+                target_data: Some(target_data),
+                ..Default::default()
+            })
+            .chain(file_diff.hunks.iter().cloned().enumerate().flat_map(
+                move |(hunk_i, _hunk)| {
+                    create_hunk_items(
+                        Rc::clone(&config),
+                        Rc::clone(diff),
+                        file_i,
+                        hunk_i,
+                        depth + 1,
+                    )
+                },
+            ))
         })
-        .chain(
-            delta
-                .hunks
-                .iter()
-                .cloned()
-                .flat_map(move |hunk| create_hunk_items(Rc::clone(&config), hunk, *depth + 1)),
-        )
-    })
 }
 
 fn create_hunk_items(
     config: Rc<Config>,
-    hunk: Rc<Hunk>,
+    diff: Rc<Diff>,
+    file_i: usize,
+    hunk_i: usize,
     depth: usize,
 ) -> impl Iterator<Item = Item> {
-    let target_data = TargetData::Hunk(Rc::clone(&hunk));
-
     iter::once(Item {
-        id: hunk.format_patch().into(),
-        display: Line::styled(hunk.header.clone(), &config.style.hunk_header),
+        // TODO Don't do this
+        id: diff.format_patch(file_i, hunk_i).into(),
+        display: Line::styled(
+            diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string(),
+            &config.style.hunk_header,
+        ),
         section: true,
         depth,
-        target_data: Some(target_data),
+        target_data: Some(TargetData::Hunk {
+            diff: Rc::clone(&diff),
+            file_i,
+            hunk_i,
+        }),
         ..Default::default()
     })
-    .chain(format_diff_hunk_items(depth + 1, hunk))
+    .chain(format_diff_hunk_items(
+        &config,
+        diff,
+        file_i,
+        hunk_i,
+        depth + 1,
+    ))
 }
 
-fn format_diff_hunk_items(depth: usize, hunk: Rc<Hunk>) -> Vec<Item> {
-    hunk.content
-        .lines
-        .iter()
+fn format_diff_hunk_items(
+    config: &Config,
+    diff: Rc<Diff>,
+    file_i: usize,
+    hunk_i: usize,
+    depth: usize,
+) -> Vec<Item> {
+    // TODO include function context in syntax highlights?
+
+    let old_path = &diff.text[diff.file_diffs[file_i].header.old_file.clone()];
+    let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
+
+    let content = &diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()];
+    let old_mask = diff.mask_old_hunk(file_i, hunk_i);
+    let new_mask = diff.mask_new_hunk(file_i, hunk_i);
+
+    let old_tags_iter = &mut iter_highlights(&config.style, old_path, &old_mask);
+    let new_tags_iter = &mut iter_highlights(&config.style, new_path, &new_mask);
+
+    iter_line_ranges(content)
         .enumerate()
-        .map(|(i, line)| Item {
-            display: replace_tabs_with_spaces(line.clone()),
-            unselectable: line
-                .spans
-                .first()
-                .is_some_and(|s| s.content.starts_with(' ')),
-            depth,
-            target_data: Some(TargetData::HunkLine(Rc::clone(&hunk), i)),
-            ..Default::default()
+        .map(|(line_i, (line_range, line))| {
+            let spans = if line.starts_with('-') {
+                build_diff_line(old_tags_iter, &line_range, content)
+            } else if line.starts_with('+') {
+                build_diff_line(new_tags_iter, &line_range, content)
+            } else {
+                build_diff_line(old_tags_iter, &line_range, content)
+            };
+
+            let unselectable = line.starts_with(' ');
+
+            Item {
+                display: Line::from(spans),
+                unselectable,
+                depth,
+                target_data: Some(TargetData::HunkLine {
+                    diff: Rc::clone(&diff),
+                    file_i,
+                    hunk_i,
+                    line_i,
+                }),
+                ..Default::default()
+            }
         })
         .collect()
 }
 
-fn replace_tabs_with_spaces(line: Line<'_>) -> Line<'_> {
-    let spans = line
-        .spans
-        .iter()
-        .cloned()
-        .map(|span| Span::styled(span.content.replace('\t', "    "), span.style))
-        .collect::<Vec<_>>();
+fn iter_line_ranges(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> + '_ {
+    content
+        .split_inclusive('\n')
+        .scan(0..0, |prev_line_range, line| {
+            let line_range = prev_line_range.end..(prev_line_range.end + line.len());
+            *prev_line_range = line_range.clone();
+            Some((line_range, line))
+        })
+}
 
-    Line { spans, ..line }
+fn iter_highlights<'a>(
+    config: &'a StyleConfig,
+    path: &'a str,
+    content: &'a str,
+) -> iter::Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    syntax_parser::highlight(Path::new(path), content)
+        .into_iter()
+        .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag)))
+        .peekable()
+}
+
+fn build_diff_line<'a>(
+    syntax_tags_iter: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    line_range: &Range<usize>,
+    content: &str,
+) -> Vec<Span<'a>> {
+    syntax_tags_iter
+        .peeking_take_while(|(syntax_range, _)| syntax_range.end <= line_range.start)
+        .map(|(_, tag)| tag)
+        .for_each(drop);
+
+    iter::once((line_range.start, Style::new()))
+        .chain(
+            syntax_tags_iter
+                .peeking_take_while(|(syntax_range, _)| syntax_range.start < line_range.end)
+                .flat_map(|(range, style)| [(range.start, style), (range.end, Style::new())]),
+        )
+        .chain([(line_range.end, Style::new())])
+        .tuple_windows()
+        .map(|((start, style), (end, _))| (start..end, style))
+        .map(|(range, style)| Span::styled(content[range].replace('\t', "    "), style))
+        .collect::<Vec<_>>()
+}
+
+fn syntax_highlight_tag_style(config: &StyleConfig, tag: SyntaxTag) -> Style {
+    match tag {
+        SyntaxTag::Attribute => &config.syntax_highlight.attribute,
+        SyntaxTag::Comment => &config.syntax_highlight.comment,
+        SyntaxTag::Constant => &config.syntax_highlight.constant,
+        SyntaxTag::ConstantBuiltin => &config.syntax_highlight.constant_builtin,
+        SyntaxTag::Constructor => &config.syntax_highlight.constructor,
+        SyntaxTag::Embedded => &config.syntax_highlight.embedded,
+        SyntaxTag::Function => &config.syntax_highlight.function,
+        SyntaxTag::FunctionBuiltin => &config.syntax_highlight.function_builtin,
+        SyntaxTag::Keyword => &config.syntax_highlight.keyword,
+        SyntaxTag::Module => &config.syntax_highlight.module,
+        SyntaxTag::Number => &config.syntax_highlight.number,
+        SyntaxTag::Operator => &config.syntax_highlight.operator,
+        SyntaxTag::Property => &config.syntax_highlight.property,
+        SyntaxTag::PunctuationBracket => &config.syntax_highlight.punctuation_bracket,
+        SyntaxTag::PunctuationDelimiter => &config.syntax_highlight.punctuation_delimiter,
+        SyntaxTag::String => &config.syntax_highlight.string,
+        SyntaxTag::StringSpecial => &config.syntax_highlight.string_special,
+        SyntaxTag::Tag => &config.syntax_highlight.tag,
+        SyntaxTag::TypeBuiltin => &config.syntax_highlight.type_builtin,
+        SyntaxTag::TypeRegular => &config.syntax_highlight.type_regular,
+        SyntaxTag::VariableBuiltin => &config.syntax_highlight.variable_builtin,
+        SyntaxTag::VariableParameter => &config.syntax_highlight.variable_parameter,
+    }
+    .into()
 }
 
 pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Res<Vec<Item>> {
