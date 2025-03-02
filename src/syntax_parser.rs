@@ -1,5 +1,4 @@
-use itertools::Itertools;
-use std::{cell::RefCell, collections::HashMap, iter, ops::Range, path::Path};
+use std::{cell::RefCell, collections::HashMap, ops::Range, path::Path};
 use tree_sitter::Language;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, HighlightEvent, Highlighter};
 
@@ -83,23 +82,6 @@ fn tags_by_highlight_index() -> [SyntaxTag; 22] {
         SyntaxTag::VariableBuiltin,
         SyntaxTag::VariableParameter,
     ]
-}
-
-pub(crate) fn split_at_newlines<'a, D: Copy + 'a>(
-    content: &'a str,
-    (range, style): (Range<usize>, D),
-) -> impl Iterator<Item = (Range<usize>, D)> + 'a {
-    let range_indices = iter::once(range.start)
-        .chain(
-            content[range.clone()]
-                .match_indices('\n')
-                .map(move |(i, _)| i + 1 + range.start),
-        )
-        .chain([range.end]);
-
-    range_indices
-        .tuple_windows()
-        .map(move |(a, b)| (a..b, style))
 }
 
 /// The defaults for these seem to exist in the `package.json` of each repo:
@@ -260,7 +242,6 @@ pub(crate) fn highlight<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usiz
                 })
                 .flatten()
                 .filter_map(|(range, maybe_tag)| maybe_tag.map(|tag| (range, tag)))
-                .flat_map(|syntax_range| split_at_newlines(content, syntax_range))
                 .collect()
         })
     })
