@@ -10,6 +10,7 @@ use git2::Oid;
 use git2::Repository;
 use gitu_diff::Status;
 use itertools::Itertools;
+use ratatui::style::Color;
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
@@ -161,22 +162,25 @@ fn format_diff_hunk_items(
     let old_path = &diff.text[diff.file_diffs[file_i].header.old_file.clone()];
     let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
 
-    let content = &diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()];
+    let hunk = &diff.file_diffs[file_i].hunks[hunk_i];
+    let hunk_content = &diff.text[hunk.content.range.clone()];
     let old_mask = diff.mask_old_hunk(file_i, hunk_i);
     let new_mask = diff.mask_new_hunk(file_i, hunk_i);
 
     let old_tags_iter = &mut iter_highlights(&config.style, old_path, &old_mask);
     let new_tags_iter = &mut iter_highlights(&config.style, new_path, &new_mask);
 
-    iter_line_ranges(content)
+    let diff_style_iter = &mut iter_diff_tags(&diff.text, hunk);
+
+    iter_line_ranges(hunk_content)
         .enumerate()
         .map(|(line_i, (line_range, line))| {
             let spans = if line.starts_with('-') {
-                build_diff_line(old_tags_iter, &line_range, content)
+                build_diff_line(diff_style_iter, &line_range, hunk_content)
             } else if line.starts_with('+') {
-                build_diff_line(new_tags_iter, &line_range, content)
+                build_diff_line(diff_style_iter, &line_range, hunk_content)
             } else {
-                build_diff_line(old_tags_iter, &line_range, content)
+                build_diff_line(diff_style_iter, &line_range, hunk_content)
             };
 
             let unselectable = line.starts_with(' ');
@@ -195,6 +199,53 @@ fn format_diff_hunk_items(
             }
         })
         .collect()
+}
+
+fn iter_diff_tags<'a>(
+    source: &'a str,
+    hunk: &'a gitu_diff::Hunk,
+) -> iter::Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    let hunk_content = source[hunk.content.range.clone()].as_bytes();
+
+    hunk.content
+        .changes
+        .iter()
+        .filter_map(|change| {
+            let (Some(old_change), Some(new_change)) = (&change.old, &change.new) else {
+                return None;
+            };
+
+            let old_start = old_change.start - hunk.content.range.start;
+            let old_end = old_change.end - hunk.content.range.start;
+            let new_start = new_change.start - hunk.content.range.start;
+            let new_end = new_change.end - hunk.content.range.start;
+
+            // TODO Might result in a lot of Vec allocations
+            let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff(
+                similar::Algorithm::Lcs,
+                hunk_content,
+                old_start..old_end,
+                hunk_content,
+                new_start..new_end,
+            )
+            .into_iter()
+            .map(|op| match op.tag() {
+                similar::DiffTag::Equal => (None, None),
+                similar::DiffTag::Delete => (Some((op.old_range(), Style::from(Color::Red))), None),
+                similar::DiffTag::Insert => {
+                    (Some((op.new_range(), Style::from(Color::Green))), None)
+                }
+                similar::DiffTag::Replace => (
+                    Some((op.old_range(), Style::from(Color::Red))),
+                    Some((op.new_range(), Style::from(Color::Green))),
+                ),
+            })
+            .unzip();
+
+            Some(old.into_iter().chain(new).flatten())
+        })
+        .flatten()
+        .peekable()
 }
 
 fn iter_line_ranges(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> + '_ {
@@ -227,6 +278,8 @@ fn build_diff_line<'a>(
         .peeking_take_while(|(syntax_range, _)| syntax_range.end <= line_range.start)
         .map(|(_, tag)| tag)
         .for_each(drop);
+
+    // FIXME: There's something wrong about line boundaries. Can't use previous tag if it ends before the line start?
 
     iter::once((line_range.start, Style::new()))
         .chain(

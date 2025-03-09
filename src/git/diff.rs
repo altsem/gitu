@@ -102,9 +102,9 @@ impl Diff {
             .first()
         {
             change
-                .removed
+                .old
                 .as_ref()
-                .or(change.added.as_ref())
+                .or(change.new.as_ref())
                 .map(|change_range| self.text[..change_range.start].lines().count())
                 .unwrap_or(0)
         } else {
