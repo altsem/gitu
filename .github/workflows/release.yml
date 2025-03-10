@@ -109,6 +109,8 @@ jobs:
           path: artifacts
 
       - name: Create Github release
+        working-directory: artifacts
         run: |
-          gh release create "$GITHUB_REF_NAME" -F .recent-changelog-entry
-          ls artifacts | xargs gh release upload "$GITHUB_REF_NAME"
+          gh release create "$GITHUB_REF_NAME" -F ../.recent-changelog-entry
+          ls | xargs -I{} zip -r {}.zip {}
+          ls *.zip | xargs gh release upload "$GITHUB_REF_NAME"
