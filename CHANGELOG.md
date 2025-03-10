@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.29.0] - 2025-03-10
+
+### 🚀 Features
+
+- Add support for `nvr` command with line number navigation
+
 ## [0.28.2] - 2025-02-19
 
 ### 🐛 Bug Fixes

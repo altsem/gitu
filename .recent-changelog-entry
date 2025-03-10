@@ -1,6 +1,6 @@
-## [0.28.2] - 2025-02-19
+## [0.29.0] - 2025-03-10
 
-### 🐛 Bug Fixes
+### 🚀 Features
 
-- Rebase menu opening after closing Neovim
+- Add support for `nvr` command with line number navigation
 
