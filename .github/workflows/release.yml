@@ -39,7 +39,7 @@ jobs:
       run: git fetch --tags --force
 
     - name: Cache
-      uses: actions/cache@v4.2.0
+      uses: actions/cache@v4.2.2
       with:
         path: |
             ~/.cargo/bin
