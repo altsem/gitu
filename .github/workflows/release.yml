@@ -33,8 +33,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Workaround to have a version set (gitu --version)
-        fetch-tags: true
+        fetch-depth: 50
+
+    - name: Fetch tags
+      run: git fetch --tags --force
 
     - name: Cache
       uses: actions/cache@v4.2.0
@@ -75,8 +77,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Workaround to have a version set (gitu --version)
-        fetch-tags: true
+        fetch-depth: 50
+
+    - name: Fetch tags
+      run: git fetch --tags --force
 
     - name: Cargo publish
       env:
@@ -93,7 +97,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout repository
+      - name: Checkout .recent-changelog-entry
         uses: actions/checkout@v4
         with:
           sparse-checkout: .recent-changelog-entry
