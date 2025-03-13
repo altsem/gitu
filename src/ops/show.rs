@@ -69,6 +69,15 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
 
 fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Command {
     let args = &editor.split_whitespace().collect::<Vec<_>>();
+    #[cfg(windows)]
+    let mut cmd = {
+        let mut c = Command::new("cmd");
+        c.arg("/C");
+        c.arg(args[0]);
+        c
+    };
+
+    #[cfg(not(windows))]
     let mut cmd = Command::new(args[0]);
     cmd.args(&args[1..]);
 
