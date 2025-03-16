@@ -17,6 +17,7 @@ use ratatui::text::Span;
 use regex::Regex;
 use std::borrow::Cow;
 use std::iter;
+use std::iter::Peekable;
 use std::ops::Range;
 use std::path::Path;
 use std::path::PathBuf;
@@ -167,22 +168,17 @@ fn format_diff_hunk_items(
     let old_mask = diff.mask_old_hunk(file_i, hunk_i);
     let new_mask = diff.mask_new_hunk(file_i, hunk_i);
 
-    let old_tags_iter = &mut iter_highlights(&config.style, old_path, &old_mask);
-    let new_tags_iter = &mut iter_highlights(&config.style, new_path, &new_mask);
+    let old_syntax_highlights = &mut iter_syntax_highlights(&config.style, old_path, &old_mask);
+    let new_syntax_highlights = &mut iter_syntax_highlights(&config.style, new_path, &new_mask);
+    let syntax_highlights = &mut zip_styles(old_syntax_highlights, new_syntax_highlights);
+    let diff_highlights = &mut iter_diff_tags(&diff.text, hunk);
 
-    let diff_style_iter = &mut iter_diff_tags(&diff.text, hunk);
+    let mut style_iter = zip_styles(diff_highlights, syntax_highlights);
 
     iter_line_ranges(hunk_content)
         .enumerate()
         .map(|(line_i, (line_range, line))| {
-            let spans = if line.starts_with('-') {
-                build_diff_line(diff_style_iter, &line_range, hunk_content)
-            } else if line.starts_with('+') {
-                build_diff_line(diff_style_iter, &line_range, hunk_content)
-            } else {
-                build_diff_line(diff_style_iter, &line_range, hunk_content)
-            };
-
+            let spans = build_diff_line(&mut style_iter, &line_range, hunk_content);
             let unselectable = line.starts_with(' ');
 
             Item {
@@ -204,48 +200,52 @@ fn format_diff_hunk_items(
 fn iter_diff_tags<'a>(
     source: &'a str,
     hunk: &'a gitu_diff::Hunk,
-) -> iter::Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
     let hunk_content = source[hunk.content.range.clone()].as_bytes();
 
-    hunk.content
-        .changes
-        .iter()
-        .filter_map(|change| {
-            let (Some(old_change), Some(new_change)) = (&change.old, &change.new) else {
-                return None;
-            };
+    fill_gaps(
+        hunk.content
+            .changes
+            .iter()
+            .filter_map(|change| {
+                let (Some(old_change), Some(new_change)) = (&change.old, &change.new) else {
+                    return None;
+                };
 
-            let old_start = old_change.start - hunk.content.range.start;
-            let old_end = old_change.end - hunk.content.range.start;
-            let new_start = new_change.start - hunk.content.range.start;
-            let new_end = new_change.end - hunk.content.range.start;
+                let old_start = old_change.start - hunk.content.range.start;
+                let old_end = old_change.end - hunk.content.range.start;
+                let new_start = new_change.start - hunk.content.range.start;
+                let new_end = new_change.end - hunk.content.range.start;
 
-            // TODO Might result in a lot of Vec allocations
-            let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff(
-                similar::Algorithm::Lcs,
-                hunk_content,
-                old_start..old_end,
-                hunk_content,
-                new_start..new_end,
-            )
-            .into_iter()
-            .map(|op| match op.tag() {
-                similar::DiffTag::Equal => (None, None),
-                similar::DiffTag::Delete => (Some((op.old_range(), Style::from(Color::Red))), None),
-                similar::DiffTag::Insert => {
-                    (Some((op.new_range(), Style::from(Color::Green))), None)
-                }
-                similar::DiffTag::Replace => (
-                    Some((op.old_range(), Style::from(Color::Red))),
-                    Some((op.new_range(), Style::from(Color::Green))),
-                ),
+                // TODO Might result in a lot of Vec allocations
+                let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff(
+                    similar::Algorithm::Lcs,
+                    hunk_content,
+                    old_start..old_end,
+                    hunk_content,
+                    new_start..new_end,
+                )
+                .into_iter()
+                .map(|op| match op.tag() {
+                    similar::DiffTag::Equal => (None, None),
+                    similar::DiffTag::Delete => {
+                        (Some((op.old_range(), Style::from(Color::Red))), None)
+                    }
+                    similar::DiffTag::Insert => {
+                        (Some((op.new_range(), Style::from(Color::Green))), None)
+                    }
+                    similar::DiffTag::Replace => (
+                        Some((op.old_range(), Style::from(Color::Red))),
+                        Some((op.new_range(), Style::from(Color::Green))),
+                    ),
+                })
+                .unzip();
+
+                Some(old.into_iter().chain(new).flatten())
             })
-            .unzip();
-
-            Some(old.into_iter().chain(new).flatten())
-        })
-        .flatten()
-        .peekable()
+            .flatten(),
+    )
+    .peekable()
 }
 
 fn iter_line_ranges(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> + '_ {
@@ -258,33 +258,108 @@ fn iter_line_ranges(content: &str) -> impl Iterator<Item = (Range<usize>, &str)>
         })
 }
 
-fn iter_highlights<'a>(
+fn iter_syntax_highlights<'a>(
     config: &'a StyleConfig,
     path: &'a str,
     content: &'a str,
-) -> iter::Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
-    syntax_parser::highlight(Path::new(path), content)
-        .into_iter()
-        .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag)))
+) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    fill_gaps(
+        syntax_parser::highlight(Path::new(path), content)
+            .into_iter()
+            .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag))),
+    )
+    .peekable()
+}
+
+fn fill_gaps<T: Clone + Default>(
+    map: impl Iterator<Item = (Range<usize>, T)>,
+) -> impl Iterator<Item = (Range<usize>, T)> {
+    map.flat_map(|(range, item)| [(range.start, Some(item)), (range.end, None)])
+        .tuple_windows()
+        .map(|((start, item_a), (end, _))| (start..end, item_a.unwrap_or_default()))
         .peekable()
 }
 
+fn zip_styles<'a>(
+    a: &'a mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    b: &'a mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    iter::from_fn(move || next_merged_style(a, b))
+        .dedup()
+        .peekable()
+}
+
+/// Merges overlapping style-ranges from two iterators.
+/// This should produce a continuous range, given that a and b are continuous.
+fn next_merged_style(
+    a: &mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    b: &mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+) -> Option<(Range<usize>, Style)> {
+    let ((a_range, a_style), (b_range, b_style)) = match (a.peek(), b.peek()) {
+        (Some(a), Some(b)) => (a, b),
+        (Some(_), None) => {
+            return a.next();
+        }
+        (None, Some(_)) => {
+            return b.next();
+        }
+        (None, None) => {
+            return None;
+        }
+    };
+
+    if a_range.end == b_range.end {
+        let next = (
+            a_range.start.max(b_range.start)..a_range.end,
+            a_style.patch(*b_style),
+        );
+        a.next();
+        b.next();
+        Some(next)
+    } else if a_range.contains(&b_range.start) {
+        if a_range.contains(&(b_range.end - 1)) {
+            // a: (       )
+            // b:   ( X )
+            let next = (b_range.start..b_range.end, a_style.patch(*b_style));
+            b.next();
+            Some(next)
+        } else {
+            // a: ( X )
+            // b:   (   )
+            let next = (b_range.start..a_range.end, a_style.patch(*b_style));
+            a.next();
+            Some(next)
+        }
+    } else if b_range.contains(&a_range.start) {
+        if b_range.contains(&(a_range.end - 1)) {
+            // a:   ( X )
+            // b: (       )
+            let next = (a_range.start..a_range.end, a_style.patch(*b_style));
+            a.next();
+            Some(next)
+        } else {
+            // a:   (   )
+            // b: ( X )
+            let next = (a_range.start..b_range.end, a_style.patch(*b_style));
+            b.next();
+            Some(next)
+        }
+    } else {
+        unreachable!("ranges are disjoint: a: {:?} b: {:?}", a_range, b_range);
+    }
+}
+
 fn build_diff_line<'a>(
-    syntax_tags_iter: &mut iter::Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
+    style_tags_ter: &mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
     line_range: &Range<usize>,
     content: &str,
 ) -> Vec<Span<'a>> {
-    syntax_tags_iter
-        .peeking_take_while(|(syntax_range, _)| syntax_range.end <= line_range.start)
-        .map(|(_, tag)| tag)
-        .for_each(drop);
-
     // FIXME: There's something wrong about line boundaries. Can't use previous tag if it ends before the line start?
 
     iter::once((line_range.start, Style::new()))
         .chain(
-            syntax_tags_iter
-                .peeking_take_while(|(syntax_range, _)| syntax_range.start < line_range.end)
+            style_tags_ter
+                .peeking_take_while(|(style_range, _)| style_range.start < line_range.end)
                 .flat_map(|(range, style)| [(range.start, style), (range.end, Style::new())]),
         )
         .chain([(line_range.end, Style::new())])
@@ -464,5 +539,65 @@ pub(crate) fn blank_line() -> Item {
         depth: 0,
         unselectable: true,
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::rc::Rc;
+
+    use super::{create_diff_items, Config, Diff};
+
+    #[test]
+    fn diff_items() {
+        let diff = r#"diff --git a/src/items.rs b/src/items.rs
+index dd924fa..69035bc 100644
+--- a/src/items.rs
++++ b/src/items.rs
+@@ -161,22 +162,25 @@ fn format_diff_hunk_items(
+     let old_path = &diff.text[diff.file_diffs[file_i].header.old_file.clone()];
+     let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
+
+-    let content = &diff.text[diff.file_diffs[file_i].hunks[hunk_i].content.range.clone()];
++    let hunk = &diff.file_diffs[file_i].hunks[hunk_i];
++    let hunk_content = &diff.text[hunk.content.range.clone()];
+     let old_mask = diff.mask_old_hunk(file_i, hunk_i);
+     let new_mask = diff.mask_new_hunk(file_i, hunk_i);
+
+     let old_tags_iter = &mut iter_highlights(&config.style, old_path, &old_mask);
+     let new_tags_iter = &mut iter_highlights(&config.style, new_path, &new_mask);
+
+-    iter_line_ranges(content)
++    let diff_style_iter = &mut iter_diff_tags(&diff.text, hunk);
++
++    iter_line_ranges(hunk_content)
+         .enumerate()
+         .map(|(line_i, (line_range, line))| {
+             let spans = if line.starts_with('-') {
+-                build_diff_line(old_tags_iter, &line_range, content)
++                build_diff_line(diff_style_iter, &line_range, hunk_content)
+             } else if line.starts_with('+') {
+-                build_diff_line(new_tags_iter, &line_range, content)
++                build_diff_line(diff_style_iter, &line_range, hunk_content)
+             } else {
+-                build_diff_line(old_tags_iter, &line_range, content)
++                build_diff_line(diff_style_iter, &line_range, hunk_content)
+             };
+
+             let unselectable = line.starts_with(' ');
+"#;
+
+        create_diff_items(
+            Rc::new(Config::default()),
+            &Rc::new(Diff {
+                file_diffs: gitu_diff::parse_diff(diff).unwrap(),
+                text: diff.to_string(),
+            }),
+            0,
+            false,
+        )
+        .for_each(drop);
+
+        // TODO Assert something, or delete the test
     }
 }
