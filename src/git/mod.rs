@@ -1,8 +1,9 @@
-use git2::{DiffFindOptions, Repository};
+use diff::Diff;
+use git2::Repository;
 use itertools::Itertools;
 
-use self::{commit::Commit, diff::Diff, merge_status::MergeStatus, rebase_status::RebaseStatus};
-use crate::{config::Config, git2_opts, Res};
+use self::{commit::Commit, merge_status::MergeStatus, rebase_status::RebaseStatus};
+use crate::Res;
 use std::{
     fs,
     path::Path,
@@ -114,41 +115,52 @@ fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
         .map(|line| line.split(' ').nth(1).unwrap().to_string()))
 }
 
-pub(crate) fn diff_unstaged(config: &Config, repo: &Repository) -> Res<Diff> {
-    let diff = repo.diff_index_to_workdir(None, Some(&mut git2_opts::diff(repo)?))?;
-    diff::convert_diff(config, repo, diff, true)
-}
-
-pub(crate) fn diff_staged(config: &Config, repo: &Repository) -> Res<Diff> {
-    let opts = &mut git2_opts::diff(repo)?;
-
-    let mut diff = match repo.head() {
-        Ok(head) => repo.diff_tree_to_index(Some(&head.peel_to_tree()?), None, Some(opts))?,
-        Err(_) => repo.diff_tree_to_index(None, None, Some(opts))?,
-    };
-
-    diff.find_similar(Some(&mut DiffFindOptions::new().renames(true)))?;
-
-    diff::convert_diff(config, repo, diff, false)
-}
-
-pub(crate) fn show(config: &Config, repo: &Repository, reference: &str) -> Res<Diff> {
-    let object = &repo.revparse_single(reference)?;
-
-    let commit = object.peel_to_commit()?;
-    let tree = commit.tree()?;
-    let parent_tree = commit
-        .parents()
-        .next()
-        .and_then(|parent| parent.tree().ok());
-
-    let diff = repo.diff_tree_to_tree(
-        parent_tree.as_ref(),
-        Some(&tree),
-        Some(&mut git2_opts::diff(repo)?),
+pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["diff"])
+            .output()?
+            .stdout,
     )?;
 
-    diff::convert_diff(config, repo, diff, false)
+    Ok(Diff {
+        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        text,
+    })
+}
+
+pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["diff", "--staged"])
+            .output()?
+            .stdout,
+    )?;
+
+    Ok(Diff {
+        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        text,
+    })
+}
+
+pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["show", reference])
+            .output()?
+            .stdout,
+    )?;
+
+    Ok(Diff {
+        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        text,
+    })
 }
 
 pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
