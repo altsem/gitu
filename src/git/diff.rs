@@ -1,27 +1,6 @@
 use gitu_diff::FileDiff;
 use std::ops::Range;
 
-// TODO Change the old "Diff" struct of Gitu to:
-//      - not contain String/Text copies of fields
-//      - don't re-assemble this back into lines via Ratatui's Line/Span structs,
-//        error prone and messy.
-//      - Store the final styling alongside the original diff:
-//        ```
-//        raw: Vec<u8>
-//        styles: Vec<(Range<usize>, *Style*), <- Merged line diff/inline diff/syntax highlights
-//        ````
-//
-// The whole diff could now be stored as the original string output from git.
-// We'll then use the parsed structure of `Range<usize>`'s to reference into the original diff
-// to:
-// - perform diff highlighting
-// - interpret parts of the diff
-//
-// TODO Re-introduce in-line diff highlighting.
-// TODO Re-introduce syntax highlighting. Maybe don't highlight entire files like done before.
-//      Could try include the hunk function context part in the syntax hihlight too.
-//      Should be much easier to merge with diff highlights, now they are both `Range<usize>`.
-
 #[derive(Debug, Clone)]
 pub(crate) struct Diff {
     pub text: String,

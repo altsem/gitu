@@ -212,7 +212,7 @@ thread_local! {
     pub static LANG_CONFIGS: RefCell<HashMap<Language, HighlightConfiguration>> = RefCell::new(HashMap::new());
 }
 
-pub(crate) fn highlight<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usize>, SyntaxTag)> {
+pub(crate) fn parse<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usize>, SyntaxTag)> {
     let tags = tags_by_highlight_index();
 
     let Some(lang) = determine_lang(path) else {
@@ -260,8 +260,8 @@ fn main() {
 }
 "#;
 
-        let highlights = highlight(path, content);
-        let highlights_with_content = highlights
+        let syntax = parse(path, content);
+        let syntax_with_content = syntax
             .into_iter()
             .map(|(range, style)| {
                 (
@@ -272,7 +272,7 @@ fn main() {
             .collect::<Vec<_>>();
 
         assert_eq!(
-            highlights_with_content,
+            syntax_with_content,
             vec![
                 ("fn", SyntaxTag::Keyword),
                 ("main", SyntaxTag::Function),
