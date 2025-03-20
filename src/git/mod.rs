@@ -126,7 +126,7 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
     )?;
 
     Ok(Diff {
-        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         text,
     })
 }
@@ -142,7 +142,7 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
     )?;
 
     Ok(Diff {
-        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         text,
     })
 }
@@ -158,7 +158,7 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     )?;
 
     Ok(Diff {
-        file_diffs: gitu_diff::parse_diff(&text).unwrap(),
+        file_diffs: gitu_diff::Parser::new(&text).parse_commit().unwrap().diff,
         text,
     })
 }
