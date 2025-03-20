@@ -5,6 +5,7 @@ pub mod config;
 mod file_watcher;
 mod git;
 mod git2_opts;
+mod highlight;
 mod items;
 mod key_parser;
 mod menu;
