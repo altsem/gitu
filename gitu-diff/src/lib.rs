@@ -1,8 +1,5 @@
 use core::ops::Range;
-use std::{
-    fmt::{self, Debug},
-    str,
-};
+use std::fmt::{self, Debug};
 
 #[derive(Debug, Clone)]
 pub struct Commit {
@@ -120,7 +117,7 @@ impl<'a> Parser<'a> {
     /// # Example
     ///
     /// ```
-    /// let input = b"diff --git a/file1.txt b/file2.txt\n\
+    /// let input = "diff --git a/file1.txt b/file2.txt\n\
     /// index 0000000..1111111 100644\n\
     /// --- a/file1.txt\n\
     /// +++ b/file2.txt\n\
@@ -128,7 +125,7 @@ impl<'a> Parser<'a> {
     /// -foo\n\
     /// +bar\n";
     ///
-    /// let diff = gitu_diff::parser.parse_diff().unwrap();
+    /// let diff = gitu_diff::Parser::new(input).parse_diff().unwrap();
     /// assert_eq!(diff[0].header.new_file, 25..34); // "file2.txt"
     /// ```
 
@@ -173,7 +170,7 @@ impl<'a> Parser<'a> {
     }
 
     fn is_at_diff_header(&mut self) -> bool {
-        self.input[self.pos..].starts_with("diff --git ")
+        self.peek("diff --git ")
     }
 
     fn parse_file_diff(&mut self) -> Result<FileDiff, ParseError<'a>> {
@@ -181,7 +178,7 @@ impl<'a> Parser<'a> {
         let header = self.parse_diff_header()?;
         let mut hunks = vec![];
 
-        while self.is_at_hunk_header() {
+        while self.peek("@@") {
             hunks.push(self.parse_hunk()?);
         }
 
@@ -192,10 +189,6 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn is_at_hunk_header(&mut self) -> bool {
-        self.input[self.pos..].starts_with("@@")
-    }
-
     fn parse_diff_header(&mut self) -> Result<DiffHeader, ParseError<'a>> {
         let diff_header_start = self.pos;
         let mut diff_type = Status::Modified;
@@ -204,10 +197,10 @@ impl<'a> Parser<'a> {
         let old_file = self.read_until(" b/")?;
         let new_file = self.read_to_before_newline();
 
-        if self.input[self.pos..].starts_with("new file") {
+        if self.peek("new file") {
             diff_type = Status::Added;
             self.read_rest_of_line();
-        } else if self.input[self.pos..].starts_with("deleted file") {
+        } else if self.peek("deleted file") {
             diff_type = Status::Deleted;
             self.read_rest_of_line();
         }
@@ -220,35 +213,33 @@ impl<'a> Parser<'a> {
             self.read_rest_of_line();
         }
 
-        if self.input[self.pos..].starts_with("index") {
-        } else if self.input[self.pos..].starts_with("old mode")
-            || self.input[self.pos..].starts_with("new mode")
-        {
+        if self.peek("index") {
+        } else if self.peek("old mode") || self.peek("new mode") {
             self.read_rest_of_line();
-        } else if self.input[self.pos..].starts_with("deleted file mode") {
+        } else if self.peek("deleted file mode") {
             diff_type = Status::Deleted;
             self.read_rest_of_line();
-        } else if self.input[self.pos..].starts_with("new file mode") {
+        } else if self.peek("new file mode") {
             diff_type = Status::Added;
             self.read_rest_of_line();
-        } else if self.input[self.pos..].starts_with("copy from") {
+        } else if self.peek("copy from") {
             diff_type = Status::Copied;
             self.read_rest_of_line();
             self.read("copy to")?;
             self.read_rest_of_line();
-        } else if self.input[self.pos..].starts_with("rename from") {
+        } else if self.peek("rename from") {
             diff_type = Status::Renamed;
             self.read_rest_of_line();
             self.read("rename to")?;
             self.read_rest_of_line();
         }
 
-        if self.input[self.pos..].starts_with("index") {
+        if self.peek("index") {
             self.read("index ")?;
             self.read_rest_of_line();
         }
 
-        if self.input[self.pos..].starts_with("---") {
+        if self.peek("---") {
             self.read_rest_of_line();
             self.read("+++")?;
             self.read_rest_of_line();
@@ -280,16 +271,14 @@ impl<'a> Parser<'a> {
         let mut changes = vec![];
 
         while self.pos < self.input.len()
-            && [' ', '-', '+']
-                .into_iter()
-                .any(|prefix| self.input[self.pos..].starts_with(prefix))
+            && [" ", "-", "+"].into_iter().any(|prefix| self.peek(prefix))
         {
-            self.read_lines_while_prefixed(' ');
+            self.read_lines_while_prefixed(" ");
             changes.push(self.parse_change());
-            self.read_lines_while_prefixed(' ');
+            self.read_lines_while_prefixed(" ");
         }
 
-        let no_newline = self.read_lines_while_prefixed('\\');
+        let no_newline = self.read_lines_while_prefixed("\\");
 
         HunkContent {
             range: hunk_content_start..self.pos,
@@ -331,8 +320,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_change(&mut self) -> Change {
-        let removed = self.read_lines_while_prefixed('-');
-        let added = self.read_lines_while_prefixed('+');
+        let removed = self.read_lines_while_prefixed("-");
+        let added = self.read_lines_while_prefixed("+");
 
         Change {
             old: removed,
@@ -340,9 +329,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn read_lines_while_prefixed(&mut self, prefix: char) -> Option<Range<usize>> {
+    fn read_lines_while_prefixed(&mut self, prefix: &str) -> Option<Range<usize>> {
         let start = self.pos;
-        while self.pos < self.input.len() && self.input[self.pos..].starts_with(prefix) {
+        while self.pos < self.input.len() && self.peek(prefix) {
             self.read_rest_of_line();
         }
 
@@ -356,7 +345,7 @@ impl<'a> Parser<'a> {
     fn read(&mut self, expected: &'static str) -> Result<Range<usize>, ParseError<'a>> {
         let start = self.pos;
 
-        if !self.input[self.pos..].starts_with(expected) {
+        if !self.peek(expected) {
             return Err(ParseError::new(self, expected));
         }
 
@@ -367,7 +356,7 @@ impl<'a> Parser<'a> {
     fn read_until(&mut self, until: &'static str) -> Result<Range<usize>, ParseError<'a>> {
         let start = self.pos;
 
-        while !self.input[self.pos..].starts_with(until) {
+        while !self.peek(until) {
             self.pos += 1;
 
             if self.pos >= self.input.len() {
@@ -384,7 +373,7 @@ impl<'a> Parser<'a> {
     fn read_to_before_newline(&mut self) -> Range<usize> {
         let start = self.pos;
 
-        while self.pos < self.input.len() && !self.input[self.pos..].starts_with('\n') {
+        while self.pos < self.input.len() && !self.peek("\n") {
             self.pos += 1;
         }
 
@@ -398,17 +387,21 @@ impl<'a> Parser<'a> {
     }
 
     fn read_number(&mut self) -> Result<u32, ParseError<'a>> {
-        let digit_count = &self.input[self.pos..]
-            .chars()
-            .take_while(|c| c.is_ascii_digit())
-            .count();
+        let digit_count = &self
+            .input
+            .get(self.pos..)
+            .map(|s| s.chars().take_while(|c| c.is_ascii_digit()).count())
+            .unwrap_or(0);
 
         if digit_count == &0 {
             return Err(ParseError::new(self, "*number*"));
         }
 
         self.pos += digit_count;
-        Ok(self.input[self.pos - digit_count..self.pos]
+        Ok(self
+            .input
+            .get(self.pos - digit_count..self.pos)
+            .ok_or(ParseError::new(self, "*number*"))?
             .parse()
             .unwrap())
     }
@@ -416,12 +409,18 @@ impl<'a> Parser<'a> {
     fn read_rest_of_line(&mut self) -> Range<usize> {
         let start = self.pos;
 
-        while self.pos < self.input.len() && !self.input[self.pos..].starts_with('\n') {
+        while self.pos < self.input.len() && !self.peek("\n") {
             self.pos += 1;
         }
 
         self.pos += 1;
         start..self.pos
+    }
+
+    fn peek(&mut self, pattern: &str) -> bool {
+        self.input
+            .get(self.pos..)
+            .is_some_and(|s| s.starts_with(pattern))
     }
 }
 
@@ -671,7 +670,7 @@ mod tests {
             +++ b/.recent-changelog-entry\n\
             @@ -1,7 +1,6 @@\n\
             -## [0.28.1] - 2025-02-13\n\
-            +## [0.28.2] - 2025-02-19\n\
+            +## [0.28.2] - 2025-02-19\n ### 🐛 Bug Fixes\n \n\
             -- Change logging level to reduce inotify spam\n\
             -- Don't refresh on `gitu.log` writes (gitu --log)\n\
             +- Rebase menu opening after closing Neovim\n";
