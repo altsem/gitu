@@ -11,6 +11,7 @@ use std::iter::Peekable;
 use std::ops::Range;
 use std::path::Path;
 use std::rc::Rc;
+use unicode_segmentation::UnicodeSegmentation;
 
 type LineHighlights<'a> = (&'a str, Vec<(Range<usize>, Style)>);
 
@@ -28,87 +29,115 @@ pub(crate) fn highlight_hunk_lines<'a>(
     let old_mask = diff.mask_old_hunk(file_i, hunk_i);
     let new_mask = diff.mask_new_hunk(file_i, hunk_i);
 
-    // TODO include function context in syntax highlights?
     let old_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, old_path, old_mask);
     let new_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, new_path, new_mask);
-    let diff_highlights = iter_diff_highlights(&config.style.diff_highlight, &diff.text, hunk);
+    let diff_highlights = iter_diff_highlights(&config.style.diff_highlight, hunk_content, hunk);
 
     let mut highlights_iter = zip_styles(
         zip_styles(old_syntax_highlights, new_syntax_highlights),
         diff_highlights,
     );
 
-    iter_line_ranges(hunk_content).map(move |(line_range, line)| {
-        let highlights = collect_line_highlights(&mut highlights_iter, &line_range);
-        (line, highlights)
-    })
+    hunk_content
+        .split_inclusive('\n')
+        .scan_byte_ranges()
+        .map(move |(line_range, line)| {
+            let highlights = collect_line_highlights(&mut highlights_iter, &line_range);
+            (line, highlights)
+        })
 }
 
 pub(crate) fn iter_diff_highlights<'a>(
     config: &'a DiffHighlightConfig,
-    source: &'a str,
+    hunk_text: &'a str,
     hunk: &'a gitu_diff::Hunk,
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
-    let hunk_content = source[hunk.content.range.clone()].as_bytes();
+    let hunk_bytes = hunk_text.as_bytes();
 
     fill_gaps(
-        0..hunk_content.len(),
-        hunk.content
-            .changes
-            .iter()
-            .filter_map(|change| {
-                let (Some(old_change), Some(new_change)) = (&change.old, &change.new) else {
-                    return None;
-                };
+        0..hunk_bytes.len(),
+        hunk.content.changes.iter().flat_map(|change| {
+            log::debug!("{change:?}");
 
-                let base = hunk.content.range.start;
+            let base = hunk.content.range.start;
 
-                // TODO Might result in a lot of Vec allocations
-                let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff(
-                    similar::Algorithm::Patience,
-                    hunk_content,
-                    (old_change.start - base)..(old_change.end - base),
-                    hunk_content,
-                    (new_change.start - base)..(new_change.end - base),
-                )
-                .into_iter()
-                .map(|op| match op.tag() {
-                    similar::DiffTag::Equal => (
-                        Some((op.old_range(), Style::from(&config.unchanged_old))),
-                        Some((op.new_range(), Style::from(&config.unchanged_new))),
-                    ),
-                    similar::DiffTag::Delete => (
-                        Some((op.old_range(), Style::from(&config.changed_old))),
-                        None,
-                    ),
-                    similar::DiffTag::Insert => (
-                        None,
-                        Some((op.new_range(), Style::from(&config.changed_new))),
-                    ),
-                    similar::DiffTag::Replace => (
-                        Some((op.old_range(), Style::from(&config.changed_old))),
-                        Some((op.new_range(), Style::from(&config.changed_new))),
-                    ),
-                })
+            let (old_indices, old_tokens): (Vec<_>, Vec<_>) = hunk_text
+                [(change.old.start - base)..(change.old.end - base)]
+                .split_word_bound_indices()
+                .map(|(index, content)| (index + change.old.start - base, content))
                 .unzip();
 
-                Some(old.into_iter().chain(new).flatten())
+            let (new_indices, new_tokens): (Vec<_>, Vec<_>) = hunk_text
+                [(change.new.start - base)..(change.new.end - base)]
+                .split_word_bound_indices()
+                .map(|(index, content)| (index + change.new.start - base, content))
+                .unzip();
+
+            let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff(
+                similar::Algorithm::Patience,
+                &old_tokens,
+                0..old_tokens.len(),
+                &new_tokens,
+                0..new_tokens.len(),
+            )
+            .into_iter()
+            .map(|op| {
+                let old_range = {
+                    if old_indices.is_empty() {
+                        change.old.clone()
+                    } else {
+                        let old_start = old_indices[op.old_range().start];
+                        let old_end =
+                            old_start + op.old_range().map(|i| old_tokens[i].len()).sum::<usize>();
+                        old_start..old_end
+                    }
+                };
+
+                let new_range = {
+                    if new_indices.is_empty() {
+                        change.new.clone()
+                    } else {
+                        let new_start = new_indices[op.new_range().start];
+                        let new_end =
+                            new_start + op.new_range().map(|i| new_tokens[i].len()).sum::<usize>();
+                        new_start..new_end
+                    }
+                };
+
+                let (old_style_config, new_style_config) = match op.tag() {
+                    similar::DiffTag::Equal => (&config.unchanged_old, &config.unchanged_new),
+                    _ => (&config.changed_old, &config.changed_new),
+                };
+
+                (
+                    (old_range, Style::from(old_style_config)),
+                    (new_range, Style::from(new_style_config)),
+                )
             })
-            .flatten(),
+            .unzip();
+
+            old.into_iter()
+                .chain(new)
+                .filter(|(range, _)| !range.is_empty())
+        }),
     )
     .peekable()
 }
 
-pub(crate) fn iter_line_ranges(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> + '_ {
-    content
-        .split_inclusive('\n')
-        .scan(0..0, |prev_line_range, line| {
+trait ScanByteRanges<T> {
+    fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, T)>;
+}
+
+impl<'a, I: Iterator<Item = &'a str>> ScanByteRanges<&'a str> for I {
+    fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, &'a str)> {
+        self.scan(0..0, |prev_line_range, line| {
             let line_range = prev_line_range.end..(prev_line_range.end + line.len());
             *prev_line_range = line_range.clone();
             Some((line_range, line))
         })
+    }
 }
 
 pub(crate) fn iter_syntax_highlights<'a>(
