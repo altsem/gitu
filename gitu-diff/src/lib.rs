@@ -69,8 +69,8 @@ pub struct HunkHeader {
 
 #[derive(Debug, Clone)]
 pub struct Change {
-    pub old: Option<Range<usize>>,
-    pub new: Option<Range<usize>>,
+    pub old: Range<usize>,
+    pub new: Range<usize>,
 }
 
 pub struct ParseError<'a> {
@@ -285,7 +285,7 @@ impl<'a> Parser<'a> {
         HunkContent {
             range: hunk_content_start..self.pos,
             changes: changes.into(),
-            no_newline,
+            no_newline: (!no_newline.is_empty()).then_some(no_newline),
         }
     }
 
@@ -331,17 +331,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn read_lines_while_prefixed(&mut self, prefix: &str) -> Option<Range<usize>> {
+    fn read_lines_while_prefixed(&mut self, prefix: &str) -> Range<usize> {
         let start = self.pos;
         while self.pos < self.input.len() && self.peek(prefix) {
             self.read_rest_of_line();
         }
 
-        if (start..self.pos).is_empty() {
-            None
-        } else {
-            Some(start..self.pos)
-        }
+        start..self.pos
     }
 
     fn read(&mut self, expected: &'static str) -> Result<Range<usize>, ParseError<'a>> {

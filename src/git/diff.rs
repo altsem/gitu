@@ -80,12 +80,7 @@ impl Diff {
             .changes
             .first()
         {
-            change
-                .old
-                .as_ref()
-                .or(change.new.as_ref())
-                .map(|change_range| self.text[..change_range.start].lines().count())
-                .unwrap_or(0)
+            self.text[..change.old.start].lines().count()
         } else {
             0
         }
