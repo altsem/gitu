@@ -63,7 +63,7 @@ pub struct HunkHeader {
     pub old_line_count: u32,
     pub new_line_start: u32,
     pub new_line_count: u32,
-    pub function_context: Range<usize>,
+    pub fn_ctx: Range<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -307,7 +307,7 @@ impl<'a> Parser<'a> {
         self.read(" @@")?;
         self.read(" ").ok();
 
-        let function_context = self.read_to_before_newline();
+        let fn_ctx = self.read_rest_of_line();
 
         Ok(HunkHeader {
             range: hunk_header_start..self.pos,
@@ -315,7 +315,7 @@ impl<'a> Parser<'a> {
             old_line_count,
             new_line_start,
             new_line_count,
-            function_context,
+            fn_ctx,
         })
     }
 
@@ -463,8 +463,8 @@ mod tests {
         assert_eq!(hunk.header.new_line_start, 1, "New line start should be 1");
         assert_eq!(hunk.header.new_line_count, 2, "New line count should be 2");
 
-        let func_ctx = &input[hunk.header.function_context.clone()];
-        assert_eq!(func_ctx, "fn main() {", "Expected function context");
+        let func_ctx = &input[hunk.header.fn_ctx.clone()];
+        assert_eq!(func_ctx, "fn main() {\n", "Expected function context");
 
         assert_eq!(
             hunk.content.changes.len(),
