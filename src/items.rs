@@ -152,7 +152,6 @@ fn format_diff_hunk_items(
     depth: usize,
 ) -> Vec<Item> {
     highlight::highlight_hunk_lines(config, &diff, file_i, hunk_i)
-        .into_iter()
         .enumerate()
         .map(|(line_i, (line, spans))| {
             let display = Line::from(
