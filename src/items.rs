@@ -158,7 +158,12 @@ fn format_diff_hunk_items(
                 spans
                     .into_iter()
                     .map(|(range, style)| {
-                        Span::styled(line[range.clone()].replace('\t', "    "), style)
+                        Span::styled(
+                            line[range.clone()]
+                                .trim_end_matches("\r\n")
+                                .replace('\t', "    "),
+                            style,
+                        )
                     })
                     .collect::<Vec<_>>(),
             );
