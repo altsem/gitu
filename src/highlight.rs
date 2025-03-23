@@ -56,68 +56,68 @@ pub(crate) fn iter_diff_highlights<'a>(
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
     let hunk_bytes = hunk_text.as_bytes();
 
-    fill_gaps(
-        0..hunk_bytes.len(),
-        hunk.content.changes.iter().flat_map(|change| {
-            let base = hunk.content.range.start;
-            let old_range = change.old.start - base..change.old.end - base;
-            let new_range = change.new.start - base..change.new.end - base;
+    let change_highlights = hunk.content.changes.iter().flat_map(|change| {
+        let base = hunk.content.range.start;
+        let old_range = change.old.start - base..change.old.end - base;
+        let new_range = change.new.start - base..change.new.end - base;
 
-            let (old_indices, old_tokens): (Vec<_>, Vec<_>) = hunk_text[old_range.clone()]
-                .split_word_bound_indices()
-                .map(|(index, content)| (index + old_range.start, content))
-                .unzip();
-
-            let (new_indices, new_tokens): (Vec<_>, Vec<_>) = hunk_text[new_range.clone()]
-                .split_word_bound_indices()
-                .map(|(index, content)| (index + new_range.start, content))
-                .unzip();
-
-            let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff_slices(
-                similar::Algorithm::Patience,
-                &old_tokens,
-                &new_tokens,
-            )
-            .into_iter()
-            .map(|op| {
-                let old_range = {
-                    if op.old_range().is_empty() {
-                        op.old_range()
-                    } else {
-                        let old_start = old_indices[op.old_range().start];
-                        let old_end =
-                            old_start + op.old_range().map(|i| old_tokens[i].len()).sum::<usize>();
-                        old_start..old_end
-                    }
-                };
-
-                let new_range = {
-                    if op.new_range().is_empty() {
-                        op.new_range()
-                    } else {
-                        let new_start = new_indices[op.new_range().start];
-                        let new_end =
-                            new_start + op.new_range().map(|i| new_tokens[i].len()).sum::<usize>();
-                        new_start..new_end
-                    }
-                };
-
-                let (old_style_config, new_style_config) = match op.tag() {
-                    similar::DiffTag::Equal => (&config.unchanged_old, &config.unchanged_new),
-                    _ => (&config.changed_old, &config.changed_new),
-                };
-
-                (
-                    (old_range, Style::from(old_style_config)),
-                    (new_range, Style::from(new_style_config)),
-                )
-            })
+        let (old_indices, old_tokens): (Vec<_>, Vec<_>) = hunk_text[old_range.clone()]
+            .split_word_bound_indices()
+            .map(|(index, content)| (index + old_range.start, content))
             .unzip();
 
-            old.into_iter()
-                .chain(new)
-                .filter(|(range, _)| !range.is_empty())
-        }),
+        let (new_indices, new_tokens): (Vec<_>, Vec<_>) = hunk_text[new_range.clone()]
+            .split_word_bound_indices()
+            .map(|(index, content)| (index + new_range.start, content))
+            .unzip();
+
+        let (old, new): (Vec<_>, Vec<_>) =
+            similar::capture_diff_slices(similar::Algorithm::Patience, &old_tokens, &new_tokens)
+                .into_iter()
+                .map(|op| {
+                    let old_range = {
+                        if op.old_range().is_empty() {
+                            op.old_range()
+                        } else {
+                            let old_start = old_indices[op.old_range().start];
+                            let old_end = old_start
+                                + op.old_range().map(|i| old_tokens[i].len()).sum::<usize>();
+                            old_start..old_end
+                        }
+                    };
+
+                    let new_range = {
+                        if op.new_range().is_empty() {
+                            op.new_range()
+                        } else {
+                            let new_start = new_indices[op.new_range().start];
+                            let new_end = new_start
+                                + op.new_range().map(|i| new_tokens[i].len()).sum::<usize>();
+                            new_start..new_end
+                        }
+                    };
+
+                    let (old_style_config, new_style_config) = match op.tag() {
+                        similar::DiffTag::Equal => (&config.unchanged_old, &config.unchanged_new),
+                        _ => (&config.changed_old, &config.changed_new),
+                    };
+
+                    (
+                        (old_range, Style::from(old_style_config)),
+                        (new_range, Style::from(new_style_config)),
+                    )
+                })
+                .unzip();
+
+        old.into_iter()
+            .chain(new)
+            .filter(|(range, _)| !range.is_empty())
+    });
+
+    fill_gaps(
+        0..hunk_bytes.len(),
+        change_highlights,
+        Style::from(&config.unchanged_old),
     )
     .peekable()
 }
@@ -146,6 +146,7 @@ pub(crate) fn iter_syntax_highlights<'a>(
         syntax_parser::parse(Path::new(path), &content)
             .into_iter()
             .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag))),
+        Style::new(),
     )
     .peekable()
 }
@@ -153,12 +154,13 @@ pub(crate) fn iter_syntax_highlights<'a>(
 pub(crate) fn fill_gaps<T: Clone + Default>(
     full_range: Range<usize>,
     ranges: impl Iterator<Item = (Range<usize>, T)>,
+    fill: T,
 ) -> impl Iterator<Item = (Range<usize>, T)> {
     iter::once((full_range.start, None))
         .chain(ranges.flat_map(|(range, item)| vec![(range.start, Some(item)), (range.end, None)]))
         .chain([(full_range.end, None)])
         .tuple_windows()
-        .map(|((start, item_a), (end, _))| (start..end, item_a.unwrap_or_default()))
+        .map(move |((start, item_a), (end, _))| (start..end, item_a.unwrap_or(fill.clone())))
         .filter(|(range, _)| !range.is_empty())
         .peekable()
 }
