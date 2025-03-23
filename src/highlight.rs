@@ -59,8 +59,6 @@ pub(crate) fn iter_diff_highlights<'a>(
     fill_gaps(
         0..hunk_bytes.len(),
         hunk.content.changes.iter().flat_map(|change| {
-            log::debug!("{change:?}");
-
             let base = hunk.content.range.start;
 
             let (old_indices, old_tokens): (Vec<_>, Vec<_>) = hunk_text
