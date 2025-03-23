@@ -34,10 +34,12 @@ pub(crate) fn highlight_hunk_lines<'a>(
     let new_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, new_path, new_mask);
     let diff_highlights = iter_diff_highlights(&config.style.diff_highlight, hunk_content, hunk);
+    let diff_context_highlights =
+        iter_diff_context_highlights(&config.style.diff_highlight, hunk_content);
 
     let mut highlights_iter = zip_styles(
         zip_styles(old_syntax_highlights, new_syntax_highlights),
-        diff_highlights,
+        zip_styles(diff_highlights, diff_context_highlights),
     );
 
     hunk_content
@@ -118,6 +120,29 @@ pub(crate) fn iter_diff_highlights<'a>(
         0..hunk_bytes.len(),
         change_highlights,
         Style::from(&config.unchanged_old),
+    )
+    .peekable()
+}
+
+pub(crate) fn iter_diff_context_highlights<'a>(
+    config: &'a DiffHighlightConfig,
+    hunk_text: &'a str,
+) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    fill_gaps(
+        0..hunk_text.len(),
+        hunk_text
+            .split_inclusive('\n')
+            .scan_byte_ranges()
+            .flat_map(|(range, line)| {
+                if line.starts_with('-') {
+                    Some((range.start..range.start + 1, Style::from(&config.tag_old)))
+                } else if line.starts_with('+') {
+                    Some((range.start..range.start + 1, Style::from(&config.tag_new)))
+                } else {
+                    None
+                }
+            }),
+        Style::new(),
     )
     .peekable()
 }
