@@ -22,17 +22,12 @@ pub struct FileDiff {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Status {
-    Unmodified,
     Added,
     Deleted,
     Modified,
     Renamed,
     Copied,
-    Ignored,
-    Untracked,
-    Typechange,
-    Unreadable,
-    Conflicted,
+    BinaryDiff,
 }
 
 #[derive(Debug, Clone)]
@@ -238,6 +233,13 @@ impl<'a> Parser<'a> {
 
         if self.peek("index") {
             self.read("index ")?;
+            self.read_rest_of_line();
+        }
+
+        if self.peek("Binary files ") {
+            diff_type = Status::BinaryDiff;
+            self.read_until(" and ")?;
+            self.read_until(" differ")?;
             self.read_rest_of_line();
         }
 
@@ -687,5 +689,13 @@ mod tests {
         let mut parser = Parser::new(input);
         let commit = parser.parse_commit().unwrap();
         assert_eq!(commit.diff.len(), 0);
+    }
+
+    #[test]
+    fn binary_file() {
+        let input = "commit 664b2f5a3223f48d3cf38c7b517014ea98b9cb55\nAuthor: altsem <alltidsemester@pm.me>\nDate:   Sat Apr 20 13:43:23 2024 +0200\n\n    update vhs/rec\n\ndiff --git a/vhs/help.png b/vhs/help.png\nindex 876e6a1..8c46810 100644\nBinary files a/vhs/help.png and b/vhs/help.png differ\ndiff --git a/vhs/rec.gif b/vhs/rec.gif\nindex 746d957..333bc94 100644\nBinary files a/vhs/rec.gif and b/vhs/rec.gif differ\ndiff --git a/vhs/rec.tape b/vhs/rec.tape\nindex bd36591..fd56c37 100644\n--- a/vhs/rec.tape\n+++ b/vhs/rec.tape\n@@ -4,7 +4,7 @@ Set Height 800\n Set Padding 5\n \n Hide\n-Type \"git checkout 3259529\"\n+Type \"git checkout f613098b14ed99fab61bd0b78a4a41e192d90ea2\"\n Enter\n Type \"git checkout -b demo-branch\"\n Enter\n";
+
+        let mut parser = Parser::new(input);
+        let commit = parser.parse_commit().unwrap();
     }
 }
