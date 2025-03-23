@@ -161,7 +161,7 @@ impl<'a> Parser<'a> {
         self.read("commit ")?;
         let hash = self.read_rest_of_line();
 
-        while !self.is_at_diff_header() {
+        while self.pos < self.input.len() && !self.is_at_diff_header() {
             self.read_rest_of_line();
         }
 
@@ -470,9 +470,9 @@ mod tests {
             "Expected one change in the hunk"
         );
         let change = &hunk.content.changes[0];
-        let removed_str = &input[change.old.as_ref().unwrap().clone()];
+        let removed_str = &input[change.old.clone()];
         assert_eq!(removed_str, "-foo\n", "Removed line does not match");
-        let added_str = &input[change.new.as_ref().unwrap().clone()];
+        let added_str = &input[change.new.clone()];
         assert_eq!(added_str, "+bar\n", "Added line does not match");
     }
 
@@ -678,5 +678,14 @@ mod tests {
         assert!(input[commit.header.range.clone()].ends_with("28.2\n\n"));
         assert!(input[commit.header.hash.clone()]
             .starts_with("9318f4040de9e6cf60033f21f6ae91a0f2239d38"));
+    }
+
+    #[test]
+    fn empty_commit() {
+        let input = "commit 6c9991b0006b38b439605eb68baff05f0c0ebf95\nAuthor: altsem <alltidsemester@pm.me>\nDate:   Sun Jun 16 19:01:00 2024 +0200\n\n    feat: -n argument to limit log\n            \n        ";
+
+        let mut parser = Parser::new(input);
+        let commit = parser.parse_commit().unwrap();
+        assert_eq!(commit.diff.len(), 0);
     }
 }
