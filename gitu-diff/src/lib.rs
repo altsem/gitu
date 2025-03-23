@@ -10,6 +10,7 @@ pub struct Commit {
 #[derive(Debug, Clone)]
 pub struct CommitHeader {
     pub range: Range<usize>,
+    pub hash: Range<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -158,7 +159,7 @@ impl<'a> Parser<'a> {
         let start = self.pos;
 
         self.read("commit ")?;
-        self.read_rest_of_line();
+        let hash = self.read_rest_of_line();
 
         while !self.is_at_diff_header() {
             self.read_rest_of_line();
@@ -166,6 +167,7 @@ impl<'a> Parser<'a> {
 
         Ok(CommitHeader {
             range: start..self.pos,
+            hash,
         })
     }
 
@@ -678,5 +680,7 @@ mod tests {
         let commit = parser.parse_commit().unwrap();
         assert!(input[commit.header.range.clone()].starts_with("commit 931"));
         assert!(input[commit.header.range.clone()].ends_with("28.2\n\n"));
+        assert!(input[commit.header.hash.clone()]
+            .starts_with("9318f4040de9e6cf60033f21f6ae91a0f2239d38"));
     }
 }
