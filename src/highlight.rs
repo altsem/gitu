@@ -60,31 +60,29 @@ pub(crate) fn iter_diff_highlights<'a>(
         0..hunk_bytes.len(),
         hunk.content.changes.iter().flat_map(|change| {
             let base = hunk.content.range.start;
+            let old_range = change.old.start - base..change.old.end - base;
+            let new_range = change.new.start - base..change.new.end - base;
 
-            let (old_indices, old_tokens): (Vec<_>, Vec<_>) = hunk_text
-                [(change.old.start - base)..(change.old.end - base)]
+            let (old_indices, old_tokens): (Vec<_>, Vec<_>) = hunk_text[old_range.clone()]
                 .split_word_bound_indices()
-                .map(|(index, content)| (index + change.old.start - base, content))
+                .map(|(index, content)| (index + old_range.start, content))
                 .unzip();
 
-            let (new_indices, new_tokens): (Vec<_>, Vec<_>) = hunk_text
-                [(change.new.start - base)..(change.new.end - base)]
+            let (new_indices, new_tokens): (Vec<_>, Vec<_>) = hunk_text[new_range.clone()]
                 .split_word_bound_indices()
-                .map(|(index, content)| (index + change.new.start - base, content))
+                .map(|(index, content)| (index + new_range.start, content))
                 .unzip();
 
-            let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff(
+            let (old, new): (Vec<_>, Vec<_>) = similar::capture_diff_slices(
                 similar::Algorithm::Patience,
                 &old_tokens,
-                0..old_tokens.len(),
                 &new_tokens,
-                0..new_tokens.len(),
             )
             .into_iter()
             .map(|op| {
                 let old_range = {
-                    if old_indices.is_empty() {
-                        change.old.clone()
+                    if op.old_range().is_empty() {
+                        op.old_range()
                     } else {
                         let old_start = old_indices[op.old_range().start];
                         let old_end =
@@ -94,8 +92,8 @@ pub(crate) fn iter_diff_highlights<'a>(
                 };
 
                 let new_range = {
-                    if new_indices.is_empty() {
-                        change.new.clone()
+                    if op.new_range().is_empty() {
+                        op.new_range()
                     } else {
                         let new_start = new_indices[op.new_range().start];
                         let new_end =
