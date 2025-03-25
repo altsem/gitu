@@ -7,6 +7,7 @@ use std::{
 use super::Screen;
 use crate::{
     config::{Config, StyleConfigEntry},
+    error::Error,
     items::{self, Item, TargetData},
     Res,
 };
@@ -58,7 +59,12 @@ fn create_remotes_sections<'a>(
     let all_remotes = create_references_section(repo, Reference::is_remote, item_style)?;
     let mut remotes = BTreeMap::new();
     for remote in all_remotes {
-        let name = String::from_utf8_lossy(&repo.branch_remote_name(&remote.id)?).to_string();
+        let name = String::from_utf8_lossy(
+            &repo
+                .branch_remote_name(&remote.id)
+                .map_err(Error::GetRemote)?,
+        )
+        .to_string();
 
         match remotes.entry(name) {
             Entry::Vacant(entry) => {
@@ -120,7 +126,8 @@ where
     F: FnMut(&Reference<'a>) -> bool + 'a,
 {
     Ok(repo
-        .references()?
+        .references()
+        .map_err(Error::ListGitReferences)?
         .filter_map(Result::ok)
         .filter(filter)
         .map(move |reference| {

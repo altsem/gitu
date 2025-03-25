@@ -1,4 +1,4 @@
-use crate::Res;
+use crate::{error::Error, Res};
 use regex::Regex;
 
 #[derive(Debug)]
@@ -169,11 +169,11 @@ pub fn positive_number(s: &str) -> Res<u32> {
         return Ok(n);
     }
 
-    Err("Value must be a number greater than 0".into())
+    Err(Error::ArgMustBePositiveNumber)
 }
 
 pub fn any_regex(s: &str) -> Res<Regex> {
-    Ok(Regex::try_from(s)?)
+    Regex::try_from(s).map_err(Error::ArgInvalidRegex)
 }
 
 #[cfg(test)]

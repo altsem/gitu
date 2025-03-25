@@ -1,6 +1,7 @@
 use super::Screen;
 use crate::{
     config::Config,
+    error::Error,
     git::{self, diff::Diff},
     git2_opts,
     items::{self, Item, TargetData},
@@ -19,7 +20,9 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
         size,
         Box::new(move || {
             let style = &config.style;
-            let statuses = repo.statuses(Some(&mut git2_opts::status(&repo)?))?;
+            let statuses = repo
+                .statuses(Some(&mut git2_opts::status(&repo)?))
+                .map_err(Error::GitStatus)?;
 
             let untracked_files = statuses
                 .iter()
@@ -168,7 +171,9 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
         return Ok(items);
     };
 
-    let (ahead, behind) = repo.graph_ahead_behind(head.target().unwrap(), upstream_id)?;
+    let (ahead, behind) = repo
+        .graph_ahead_behind(head.target().unwrap(), upstream_id)
+        .map_err(Error::GitStatus)?;
 
     items.push(Item {
         id: "branch_status".into(),

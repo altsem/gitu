@@ -1,9 +1,12 @@
 use diff::Diff;
-use git2::Repository;
+use git2::{Branch, Repository};
 use itertools::Itertools;
 
 use self::{commit::Commit, merge_status::MergeStatus, rebase_status::RebaseStatus};
-use crate::Res;
+use crate::{
+    error::{Error, Utf8Error},
+    Res,
+};
 use std::{
     fs,
     path::Path,
@@ -31,8 +34,10 @@ pub(crate) fn rebase_status(repo: &Repository) -> Res<Option<RebaseStatus>> {
         Ok(content) => {
             let onto_hash = content.trim().to_string();
             Ok(Some(RebaseStatus {
-                onto: branch_name(dir, &onto_hash)?.unwrap_or_else(|| onto_hash[..7].to_string()),
-                head_name: fs::read_to_string(rebase_head_name_file)?
+                onto: branch_name_lossy(dir, &onto_hash)?
+                    .unwrap_or_else(|| onto_hash[..7].to_string()),
+                head_name: fs::read_to_string(rebase_head_name_file)
+                    .map_err(Error::ReadRebaseStatusFile)?
                     .trim()
                     .strip_prefix("refs/heads/")
                     .unwrap()
@@ -60,7 +65,7 @@ pub(crate) fn merge_status(repo: &Repository) -> Res<Option<MergeStatus>> {
         Ok(content) => {
             let head = content.trim().to_string();
             Ok(Some(MergeStatus {
-                head: branch_name(dir, &head)?.unwrap_or(head[..7].to_string()),
+                head: branch_name_lossy(dir, &head)?.unwrap_or(head[..7].to_string()),
             }))
         }
         Err(err) => {
@@ -87,7 +92,7 @@ pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
         Ok(content) => {
             let head = content.trim().to_string();
             Ok(Some(RevertStatus {
-                head: branch_name(dir, &head)?.unwrap_or(head[..7].to_string()),
+                head: branch_name_lossy(dir, &head)?.unwrap_or(head[..7].to_string()),
             }))
         }
         Err(err) => {
@@ -102,14 +107,15 @@ pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
 }
 
 // TODO replace with libgit2
-fn branch_name(dir: &Path, hash: &str) -> Res<Option<String>> {
+fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
     let out = Command::new("git")
         .args(["for-each-ref", "--format", "%(objectname) %(refname:short)"])
         .current_dir(dir)
-        .output()?
+        .output()
+        .map_err(Error::ReadBranchName)?
         .stdout;
 
-    Ok(str::from_utf8(&out)?
+    Ok(String::from_utf8_lossy(&out)
         .lines()
         .find(|line| line.starts_with(hash))
         .map(|line| line.split(' ').nth(1).unwrap().to_string()))
@@ -121,9 +127,11 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
             // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["diff"])
-            .output()?
+            .output()
+            .map_err(Error::GitDiff)?
             .stdout,
-    )?;
+    )
+    .map_err(Error::GitDiffUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -137,9 +145,11 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
             // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["diff", "--staged"])
-            .output()?
+            .output()
+            .map_err(Error::GitDiff)?
             .stdout,
-    )?;
+    )
+    .map_err(Error::GitDiffUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -153,9 +163,11 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
             // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["show", reference])
-            .output()?
+            .output()
+            .map_err(Error::GitShow)?
             .stdout,
-    )?;
+    )
+    .map_err(Error::GitShowUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_commit().unwrap().diff,
@@ -164,8 +176,10 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 }
 
 pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
-    let object = &repo.revparse_single(reference)?;
-    let commit = object.peel_to_commit()?;
+    let object = &repo
+        .revparse_single(reference)
+        .map_err(Error::GitShowMeta)?;
+    let commit = object.peel_to_commit().map_err(Error::GitShowMeta)?;
 
     let author = commit.author();
     let name = author.name().unwrap_or("");
@@ -202,11 +216,28 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     })
 }
 
-pub(crate) fn get_head(repo: &git2::Repository) -> Res<String> {
-    let head = repo.head()?;
+pub(crate) fn get_current_branch_name(repo: &git2::Repository) -> Res<String> {
+    String::from_utf8(
+        get_current_branch(repo)?
+            .name_bytes()
+            .map_err(Error::CurrentBranchName)?
+            .to_vec(),
+    )
+    .map_err(Utf8Error::String)
+    .map_err(Error::BranchNameUtf8)
+}
+
+pub(crate) fn get_head_name(repo: &git2::Repository) -> Res<String> {
+    String::from_utf8(repo.head().map_err(Error::GetHead)?.name_bytes().to_vec())
+        .map_err(Utf8Error::String)
+        .map_err(Error::BranchNameUtf8)
+}
+
+pub(crate) fn get_current_branch(repo: &git2::Repository) -> Res<Branch> {
+    let head = repo.head().map_err(Error::GetHead)?;
     if head.is_branch() {
-        Ok(head.name().ok_or("Branch is not valid UTF-8")?.into())
+        Ok(Branch::wrap(head))
     } else {
-        Err("Head is not a branch".into())
+        Err(Error::NotOnBranch)
     }
 }

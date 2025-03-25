@@ -1,5 +1,5 @@
 use super::{create_prompt, create_prompt_with_default, Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use crate::{error::Error, items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use git2::{Repository, Status, StatusOptions};
 use std::{process::Command, rc::Rc};
 
@@ -64,7 +64,7 @@ impl OpTrait for StashWorktree {
         Some(Rc::new(|state: &mut State, term: &mut Term| -> Res<()> {
             if is_working_tree_empty(&state.repo)? {
                 state.close_menu();
-                return Err("Cannot stash: working tree is empty".into());
+                return Err(Error::StashWorkTreeEmpty);
             }
 
             let mut create_prompt = create_prompt("Stash message", stash_worktree, true);
@@ -79,11 +79,13 @@ impl OpTrait for StashWorktree {
 }
 
 fn is_working_tree_empty(repo: &Repository) -> Res<bool> {
-    let statuses = repo.statuses(Some(
-        StatusOptions::new()
-            .include_untracked(true)
-            .include_ignored(false),
-    ))?;
+    let statuses = repo
+        .statuses(Some(
+            StatusOptions::new()
+                .include_untracked(true)
+                .include_ignored(false),
+        ))
+        .map_err(Error::GitStatus)?;
 
     let is_working_tree_not_empty = statuses.iter().any(|e| {
         e.status().intersects(
@@ -128,11 +130,13 @@ fn stash_worktree(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 }
 
 fn is_something_staged(repo: &Repository) -> Res<bool> {
-    let statuses = repo.statuses(Some(
-        StatusOptions::new()
-            .include_untracked(true)
-            .include_ignored(false),
-    ))?;
+    let statuses = repo
+        .statuses(Some(
+            StatusOptions::new()
+                .include_untracked(true)
+                .include_ignored(false),
+        ))
+        .map_err(Error::GitStatus)?;
 
     Ok(statuses.iter().any(|e| {
         e.status().intersects(

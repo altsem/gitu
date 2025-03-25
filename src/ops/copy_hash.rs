@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, state::State};
+use crate::{error::Error, items::TargetData, state::State};
 use std::rc::Rc;
 
 pub(crate) struct CopyHash;
@@ -24,7 +24,7 @@ fn copy_hash(r: String) -> Option<Action> {
         state.close_menu();
         match &mut state.clipboard {
             Some(cb) => {
-                cb.set_text(r.clone())?;
+                cb.set_text(r.clone()).map_err(Error::Clipboard)?;
                 state.display_info("Commit hash copied to clipboard".to_owned());
             }
             None => state.display_error("Clipboard not available".to_owned()),
