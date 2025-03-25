@@ -27,7 +27,6 @@ pub enum Status {
     Modified,
     Renamed,
     Copied,
-    BinaryDiff,
 }
 
 #[derive(Debug, Clone)]
@@ -237,9 +236,6 @@ impl<'a> Parser<'a> {
         }
 
         if self.peek("Binary files ") {
-            diff_type = Status::BinaryDiff;
-            self.read_until(" and ")?;
-            self.read_until(" differ")?;
             self.read_rest_of_line();
         }
 
