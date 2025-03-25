@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::error::Error;
 use crate::git::diff::Diff;
 use crate::highlight;
 use crate::Res;
@@ -189,7 +190,8 @@ pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Re
     let style = &config.style;
 
     Ok(repo
-        .reflog("refs/stash")?
+        .reflog("refs/stash")
+        .map_err(Error::StashList)?
         .iter()
         .enumerate()
         .map(|(i, stash)| -> Res<Item> {
@@ -234,15 +236,16 @@ pub(crate) fn log(
     msg_regex: Option<Regex>,
 ) -> Res<Vec<Item>> {
     let style = &config.style;
-    let mut revwalk = repo.revwalk()?;
+    let mut revwalk = repo.revwalk().map_err(Error::ReadLog)?;
     if let Some(r) = rev {
-        revwalk.push(r)?;
+        revwalk.push(r).map_err(Error::ReadLog)?;
     } else if revwalk.push_head().is_err() {
         return Ok(vec![]);
     }
 
     let references = repo
-        .references()?
+        .references()
+        .map_err(Error::ReadLog)?
         .filter_map(Result::ok)
         .filter_map(
             |reference| match (reference.peel_to_commit(), reference.shorthand()) {
@@ -269,9 +272,11 @@ pub(crate) fn log(
 
     let items: Vec<Item> = revwalk
         .map(|oid_result| -> Res<Option<Item>> {
-            let oid = oid_result?;
-            let commit = repo.find_commit(oid)?;
-            let short_id = commit.as_object().short_id()?.as_str().unwrap().to_string();
+            let oid = oid_result.map_err(Error::ReadLog)?;
+            let commit = repo.find_commit(oid).map_err(Error::ReadLog)?;
+            let short_id =
+                String::from_utf8_lossy(&commit.as_object().short_id().map_err(Error::ReadOid)?)
+                    .to_string();
 
             let spans = itertools::intersperse(
                 iter::once(Span::styled(short_id, &style.hash))

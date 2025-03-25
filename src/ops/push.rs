@@ -1,4 +1,5 @@
 use super::{create_prompt, Action, OpTrait};
+use crate::error::Error;
 use crate::git;
 use crate::git::remote::{
     get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
@@ -26,7 +27,7 @@ impl OpTrait for PushToPushRemote {
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some(push_remote) => {
-                    let head_ref = git::get_head(&state.repo)?;
+                    let head_ref = git::get_head_name(&state.repo)?;
                     let refspec = format!("{0}:{0}", head_ref);
                     push(state, term, &[&push_remote, &refspec])
                 }
@@ -47,12 +48,12 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
     let repo = state.repo.clone();
     let push_remote = repo
         .find_remote(push_remote_name)
-        .map_err(|_| "Invalid pushRemote")?;
+        .map_err(Error::GetRemote)?;
 
     // TODO Would be nice to have the command visible in the log. Resort to `git config`?
-    set_push_remote(&repo, Some(&push_remote)).map_err(|_| "Could not set pushRemote config")?;
+    set_push_remote(&repo, Some(&push_remote))?;
 
-    let head_ref = git::get_head(&state.repo)?;
+    let head_ref = git::get_head_name(&state.repo)?;
     let refspec = format!("{0}:{0}", head_ref);
     push(state, term, &[push_remote_name, &refspec])
 }
@@ -109,7 +110,7 @@ fn push_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
 }
 
 fn push_head_to(state: &mut State, term: &mut Term, remote: &str, branch: &str) -> Res<()> {
-    let head_ref = git::get_head(&state.repo)?;
+    let head_ref = git::get_head_name(&state.repo)?;
     let refspec = format!("{}:refs/heads/{}", head_ref, branch);
     push(state, term, &[remote, &refspec])
 }

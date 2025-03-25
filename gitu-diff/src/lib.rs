@@ -68,6 +68,7 @@ pub struct Change {
     pub new: Range<usize>,
 }
 
+#[derive(Debug)]
 pub struct ParseError<'a> {
     input: &'a str,
     pos: usize,
@@ -84,7 +85,7 @@ impl<'a> ParseError<'a> {
     }
 }
 
-impl fmt::Debug for ParseError<'_> {
+impl fmt::Display for ParseError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -94,6 +95,8 @@ impl fmt::Debug for ParseError<'_> {
         )
     }
 }
+
+impl std::error::Error for ParseError<'_> {}
 
 pub struct Parser<'a> {
     input: &'a str,

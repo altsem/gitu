@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::io::Read;
 use std::ops::DerefMut;
 use std::process::Child;
@@ -24,6 +23,7 @@ use crate::cli;
 use crate::cmd_log::CmdLog;
 use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
+use crate::error::Error;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
@@ -136,7 +136,8 @@ impl State {
         let needs_redraw = !events.is_empty() || pending_cmd_done;
 
         if needs_redraw && self.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui(frame, self))?;
+            term.draw(|frame| ui::ui(frame, self))
+                .map_err(Error::Term)?;
         }
 
         Ok(())
@@ -201,7 +202,7 @@ impl State {
         Ok(())
     }
 
-    fn handle_result<T>(&mut self, result: Result<T, Box<dyn Error>>) -> Option<T> {
+    fn handle_result<T>(&mut self, result: Res<T>) -> Option<T> {
         match result {
             Ok(value) => Some(value),
             Err(error) => {
@@ -248,7 +249,7 @@ impl State {
     /// Will return `Ok(())` if one is already running.
     pub fn run_cmd_async(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
         if self.pending_cmd.is_some() {
-            return Err("A command is already running".into());
+            return Err(Error::CmdAlreadyRunning);
         }
 
         cmd.current_dir(self.repo.workdir().expect("No workdir"));
@@ -258,12 +259,18 @@ impl State {
         cmd.stderr(Stdio::piped());
 
         let log_entry = self.current_cmd_log.push_cmd(&cmd);
-        term.draw(|frame| ui::ui(frame, self))?;
+        term.draw(|frame| ui::ui(frame, self))
+            .map_err(Error::Term)?;
 
-        let mut child = cmd.spawn()?;
+        let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
         use std::io::Write;
-        child.stdin.take().unwrap().write_all(input)?;
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(input)
+            .map_err(Error::Term)?;
 
         self.pending_cmd = Some((child, log_entry));
 
@@ -276,7 +283,7 @@ impl State {
 
     fn await_pending_cmd(&mut self) -> Res<()> {
         if let Some((child, _)) = &mut self.pending_cmd {
-            child.wait()?;
+            child.wait().map_err(Error::CouldntAwaitCmd)?;
         }
         Ok(())
     }
@@ -287,7 +294,7 @@ impl State {
             return Ok(false);
         };
 
-        let Some(status) = child.try_wait()? else {
+        let Some(status) = child.try_wait().map_err(Error::CouldntAwaitCmd)? else {
             return Ok(false);
         };
 
@@ -303,10 +310,10 @@ impl State {
 
     pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
         if self.pending_cmd.is_some() {
-            return Err("A command is already running".into());
+            return Err(Error::CmdAlreadyRunning);
         }
 
-        cmd.current_dir(self.repo.workdir().expect("No workdir"));
+        cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
         // Redirect stderr so we can capture it via `Child::wait_with_output()`
         cmd.stderr(Stdio::piped());
@@ -317,11 +324,11 @@ impl State {
 
         // If we don't show the cursor prior spawning (thus restore the default
         // state), the cursor may be missing in $EDITOR.
-        term.show_cursor()?;
+        term.show_cursor().map_err(Error::Term)?;
 
-        let child = cmd.spawn()?;
+        let child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
-        let out = child.wait_with_output()?;
+        let out = child.wait_with_output().map_err(Error::CouldntAwaitCmd)?;
         let out_utf8 = String::from_utf8(strip_ansi_escapes::strip(out.stderr.clone()))
             .expect("Error turning command output to String")
             .into();
@@ -332,23 +339,25 @@ impl State {
         term.backend().enable_raw_mode()?;
 
         // Prevents cursor flash when exiting editor
-        term.hide_cursor()?;
+        term.hide_cursor().map_err(Error::Term)?;
 
         // In case the command left the alternate screen (editors would)
         term.backend_mut().enter_alternate_screen()?;
 
-        term.clear()?;
+        term.clear().map_err(Error::Term)?;
         self.screen_mut().update()?;
 
         if !out.status.success() {
-            return Err(format!(
-                "exited with code: {}",
-                out.status
-                    .code()
-                    .map(|c| c.to_string())
-                    .unwrap_or("".to_string())
-            )
-            .into());
+            return Err(Error::CmdBadExit(
+                format!(
+                    "{} {}",
+                    cmd.get_program().to_string_lossy(),
+                    cmd.get_args()
+                        .map(|arg| arg.to_string_lossy())
+                        .collect::<String>()
+                ),
+                out.status.code(),
+            ));
         }
 
         Ok(())
@@ -379,7 +388,7 @@ fn write_child_output_to_log(
     log_rwlock: &mut Arc<RwLock<CmdLogEntry>>,
     child: &mut Child,
     status: std::process::ExitStatus,
-) -> Result<(), Box<dyn Error>> {
+) -> Res<()> {
     let mut log = log_rwlock.write().unwrap();
 
     let CmdLogEntry::Cmd { args, out: out_log } = log.deref_mut() else {
@@ -396,28 +405,20 @@ fn write_child_output_to_log(
         .take()
         .unwrap()
         .read_to_end(&mut out_bytes)
-        .map_err(|e| format!("Couldn't read cmd output: {}", e))?;
+        .map_err(Error::CouldntReadCmdOutput)?;
 
     child
         .stdout
         .take()
         .unwrap()
         .read_to_end(&mut out_bytes)
-        .map_err(|e| format!("Couldn't read cmd output: {}", e))?;
+        .map_err(Error::CouldntReadCmdOutput)?;
 
-    let out_string = String::from_utf8(out_bytes.clone())?;
+    let out_string = String::from_utf8_lossy(&out_bytes).to_string();
     *out_log = Some(out_string.into());
 
     if !status.success() {
-        return Err(format!(
-            "'{}' exited with code: {}",
-            args,
-            status
-                .code()
-                .map(|c| c.to_string())
-                .unwrap_or("".to_string())
-        )
-        .into());
+        return Err(Error::CmdBadExit(args.to_string(), status.code()));
     }
 
     Ok(())

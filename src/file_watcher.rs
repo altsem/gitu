@@ -1,4 +1,4 @@
-use crate::Res;
+use crate::{error::Error, Res};
 use ignore::gitignore::GitignoreBuilder;
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
@@ -20,7 +20,8 @@ impl FileWatcher {
         let pending_updates_w = pending_updates.clone();
 
         let gitignore = GitignoreBuilder::new(path)
-            .add_line(None, super::LOG_FILE_NAME)?
+            .add_line(None, super::LOG_FILE_NAME)
+            .map_err(Error::FileWatcherGitignore)?
             .build()
             .unwrap();
 
@@ -38,9 +39,12 @@ impl FileWatcher {
                     }
                 }
             }
-        })?;
+        })
+        .map_err(Error::FileWatcher)?;
 
-        watcher.watch(path.as_ref(), RecursiveMode::Recursive)?;
+        watcher
+            .watch(path.as_ref(), RecursiveMode::Recursive)
+            .map_err(Error::FileWatcher)?;
 
         Ok(Self {
             _watcher: watcher,

@@ -2,6 +2,7 @@ mod bindings;
 pub mod cli;
 mod cmd_log;
 pub mod config;
+pub mod error;
 mod file_watcher;
 mod git;
 mod git2_opts;
@@ -20,11 +21,17 @@ mod tests;
 mod ui;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
+use error::Error;
 use file_watcher::FileWatcher;
 use git2::Repository;
 use items::Item;
 use ops::Action;
-use std::{error::Error, path::PathBuf, process::Command, rc::Rc, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+    rc::Rc,
+    time::Duration,
+};
 use term::Term;
 
 pub const LOG_FILE_NAME: &str = "gitu.log";
@@ -66,7 +73,7 @@ pub const LOG_FILE_NAME: &str = "gitu.log";
 //                 │                            z Stash                               │
 //                 └──────────────────────────────────────────────────────────────────┘
 
-pub type Res<T> = Result<T, Box<dyn Error>>;
+pub type Res<T> = Result<T, Error>;
 
 #[derive(Debug)]
 pub enum GituEvent {
@@ -75,26 +82,20 @@ pub enum GituEvent {
 }
 
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
-    log::debug!("Finding git dir");
-    let dir = PathBuf::from(
-        String::from_utf8(
-            Command::new("git")
-                .args(["rev-parse", "--show-toplevel"])
-                .output()?
-                .stdout,
-        )?
-        .trim_end(),
-    );
-
-    log::debug!("Opening repo");
-    let repo = open_repo_from_env()?;
-    repo.set_workdir(&dir, false)?;
+    let dir = find_git_dir()?;
+    let repo = open_repo(&dir)?;
 
     log::debug!("Initializing config");
     let config = Rc::new(config::init_config()?);
 
     log::debug!("Creating initial state");
-    let mut state = state::State::create(Rc::new(repo), term.size()?, args, config.clone(), true)?;
+    let mut state = state::State::create(
+        Rc::new(repo),
+        term.size().map_err(Error::Term)?,
+        args,
+        config.clone(),
+        true,
+    )?;
 
     log::debug!("Initial update");
     state.update(term, &[GituEvent::Term(Event::FocusGained)])?;
@@ -118,8 +119,8 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         .transpose()?;
 
     while !state.quit {
-        let mut events = if event::poll(Duration::from_millis(100))? {
-            vec![GituEvent::Term(event::read()?)]
+        let mut events = if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
+            vec![GituEvent::Term(event::read().map_err(Error::Term)?)]
         } else {
             vec![]
         };
@@ -133,13 +134,33 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     Ok(())
 }
 
+fn open_repo(dir: &Path) -> Res<Repository> {
+    log::debug!("Opening repo");
+    let repo = open_repo_from_env()?;
+    repo.set_workdir(dir, false).map_err(Error::OpenRepo)?;
+    Ok(repo)
+}
+
+fn find_git_dir() -> Res<PathBuf> {
+    log::debug!("Finding git dir");
+    let dir = PathBuf::from(
+        String::from_utf8(
+            Command::new("git")
+                .args(["rev-parse", "--show-toplevel"])
+                .output()
+                .map_err(Error::FindGitDir)?
+                .stdout,
+        )
+        .map_err(Error::GitDirUtf8)?
+        .trim_end(),
+    );
+    Ok(dir)
+}
+
 fn open_repo_from_env() -> Res<Repository> {
     match Repository::open_from_env() {
         Ok(repo) => Ok(repo),
-        Err(err) if err.code() == git2::ErrorCode::NotFound => {
-            Err("No .git found in the current directory".into())
-        }
-        Err(err) => Err(Box::new(err)),
+        Err(err) => Err(Error::OpenRepo(err)),
     }
 }
 
@@ -147,7 +168,7 @@ fn handle_initial_send_keys(
     keys: &[(KeyModifiers, KeyCode)],
     state: &mut state::State,
     term: &mut ratatui::prelude::Terminal<term::TermBackend>,
-) -> Result<(), Box<dyn Error>> {
+) -> Res<()> {
     let initial_events = keys
         .iter()
         .map(|(mods, key)| {

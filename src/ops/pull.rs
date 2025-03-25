@@ -1,5 +1,6 @@
 use super::{create_prompt, Action, OpTrait};
 use crate::{
+    error::Error,
     git::{
         self,
         remote::{self, get_push_remote, get_upstream_components, get_upstream_shortname},
@@ -10,7 +11,7 @@ use crate::{
     term::Term,
     Res,
 };
-use std::{process::Command, rc::Rc};
+use std::{process::Command, rc::Rc, str};
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![Arg::new_flag("--rebase", "Rebase local commits", false)]
@@ -27,7 +28,7 @@ impl OpTrait for PullFromPushRemote {
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some(push_remote) => {
-                    let refspec = git::get_head(&state.repo)?;
+                    let refspec = git::get_head_name(&state.repo)?;
                     pull(state, term, &[&push_remote, &refspec])
                 }
             },
@@ -47,12 +48,11 @@ fn set_push_remote_and_pull(state: &mut State, term: &mut Term, push_remote_name
     let repo = state.repo.clone();
     let push_remote = repo
         .find_remote(push_remote_name)
-        .map_err(|_| "Invalid pushRemote")?;
+        .map_err(Error::GetRemote)?;
 
-    remote::set_push_remote(&repo, Some(&push_remote))
-        .map_err(|_| "Could not set pushRemote config")?;
+    remote::set_push_remote(&repo, Some(&push_remote))?;
 
-    let refspec = git::get_head(&repo)?;
+    let refspec = git::get_head_name(&repo)?;
     pull(state, term, &[push_remote_name, &refspec])
 }
 

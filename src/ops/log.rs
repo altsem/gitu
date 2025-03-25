@@ -1,5 +1,6 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{
+    error::Error,
     items::TargetData,
     menu::arg::{any_regex, positive_number, Arg},
     screen,
@@ -57,7 +58,7 @@ impl OpTrait for LogOther {
 fn log_other(state: &mut State, _term: &mut Term, result: &str) -> Res<()> {
     let oid_result = match state.repo.revparse_single(result) {
         Ok(rev) => Ok(rev.id()),
-        Err(err) => Err(format!("Failed due to: {:?}", err.code())),
+        Err(err) => Err(Error::FindGitRev(err)),
     };
 
     if oid_result.is_err() {

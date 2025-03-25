@@ -1,5 +1,5 @@
 use super::OpTrait;
-use crate::{items::TargetData, screen, state::State, Action};
+use crate::{error::Error, items::TargetData, screen, state::State, Action};
 use core::str;
 use std::{path::Path, process::Command, rc::Rc};
 
@@ -41,7 +41,7 @@ fn goto_show_screen(r: String) -> Option<Action> {
             screen::show::create(
                 Rc::clone(&state.config),
                 Rc::clone(&state.repo),
-                term.size()?,
+                term.size().map_err(Error::Term)?,
                 r.clone(),
             )
             .expect("Couldn't create screen"),
@@ -50,29 +50,23 @@ fn goto_show_screen(r: String) -> Option<Action> {
     }))
 }
 
+pub(crate) const EDITOR_VARS: [&str; 3] = ["VISUAL", "EDITOR", "GIT_EDITOR"];
 fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Rc::new(move |state, term| {
-        const EDITOR_VARS: [&str; 3] = ["VISUAL", "EDITOR", "GIT_EDITOR"];
         let configured_editor = EDITOR_VARS
             .into_iter()
             .find_map(|var| std::env::var(var).ok());
 
         let Some(editor) = configured_editor else {
-            return Err(format!(
-                "No editor environment variable set ({})",
-                EDITOR_VARS.join(", ")
-            )
-            .into());
+            return Err(Error::NoEditorSet);
         };
 
         let cmd = parse_editor_command(&editor, &file, maybe_line);
 
         state.close_menu();
-        state
-            .run_cmd_interactive(term, cmd)
-            .map_err(|err| format!("Couldn't open editor {} due to: {}", editor, err))?;
+        state.run_cmd_interactive(term, cmd)?;
 
         state.screen_mut().update()
     }))

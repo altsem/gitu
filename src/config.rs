@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
-use crate::{menu::Menu, ops::Op, Res};
+use crate::{error::Error, menu::Menu, ops::Op, Res};
 use etcetera::{choose_base_strategy, BaseStrategy};
 use figment::{
     providers::{Format, Toml},
@@ -184,7 +184,8 @@ pub(crate) fn init_config() -> Res<Config> {
     let config = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .merge(Toml::file(config_path))
-        .extract()?;
+        .extract()
+        .map_err(Error::Config)?;
 
     Ok(config)
 }
@@ -200,7 +201,8 @@ pub fn config_path() -> PathBuf {
 pub(crate) fn init_test_config() -> Res<Config> {
     let mut config: Config = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
-        .extract()?;
+        .extract()
+        .map_err(Error::Config)?;
 
     config.general.always_show_help.enabled = false;
     Ok(config)

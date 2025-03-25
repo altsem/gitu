@@ -1,4 +1,4 @@
-use crate::Res;
+use crate::{error::Error, Res};
 use crossterm::{
     terminal::{
         disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
@@ -21,23 +21,27 @@ pub type Term = Terminal<TermBackend>;
 //      However left here for now.
 
 pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
-    stderr().execute(EnterAlternateScreen)?;
+    stderr()
+        .execute(EnterAlternateScreen)
+        .map_err(Error::Term)?;
     let result = fun();
-    stderr().execute(LeaveAlternateScreen)?;
+    stderr()
+        .execute(LeaveAlternateScreen)
+        .map_err(Error::Term)?;
     result
 }
 
 pub fn raw_mode<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
-    let was_raw_mode_enabled = is_raw_mode_enabled()?;
+    let was_raw_mode_enabled = is_raw_mode_enabled().map_err(Error::Term)?;
 
     if !was_raw_mode_enabled {
-        enable_raw_mode()?;
+        enable_raw_mode().map_err(Error::Term)?;
     }
 
     let result = fun();
 
     if !was_raw_mode_enabled {
-        disable_raw_mode()?;
+        disable_raw_mode().map_err(Error::Term)?;
     }
 
     result
@@ -137,23 +141,26 @@ impl Backend for TermBackend {
 }
 
 impl TermBackend {
-    pub fn enter_alternate_screen(&mut self) -> io::Result<()> {
+    pub fn enter_alternate_screen(&mut self) -> Res<()> {
         match self {
-            TermBackend::Crossterm(c) => c.execute(EnterAlternateScreen).map(|_| ()),
+            TermBackend::Crossterm(c) => c
+                .execute(EnterAlternateScreen)
+                .map_err(Error::Term)
+                .map(|_| ()),
             TermBackend::Test(_) => Ok(()),
         }
     }
 
-    pub fn enable_raw_mode(&self) -> io::Result<()> {
+    pub fn enable_raw_mode(&self) -> Res<()> {
         match self {
-            TermBackend::Crossterm(_) => enable_raw_mode(),
+            TermBackend::Crossterm(_) => enable_raw_mode().map_err(Error::Term),
             TermBackend::Test(_) => Ok(()),
         }
     }
 
-    pub fn disable_raw_mode(&self) -> io::Result<()> {
+    pub fn disable_raw_mode(&self) -> Res<()> {
         match self {
-            TermBackend::Crossterm(_) => disable_raw_mode(),
+            TermBackend::Crossterm(_) => disable_raw_mode().map_err(Error::Term),
             TermBackend::Test(_) => Ok(()),
         }
     }

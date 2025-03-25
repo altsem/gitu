@@ -1,5 +1,5 @@
 use clap::Parser;
-use gitu::{cli::Args, term, Res};
+use gitu::{cli::Args, error::Error, term, Res};
 use log::LevelFilter;
 use ratatui::Terminal;
 use std::{backtrace::Backtrace, panic};
@@ -15,7 +15,8 @@ pub fn main() -> Res<()> {
     }
 
     if args.log {
-        simple_logging::log_to_file(gitu::LOG_FILE_NAME, LevelFilter::Debug)?;
+        simple_logging::log_to_file(gitu::LOG_FILE_NAME, LevelFilter::Debug)
+            .map_err(Error::OpenLogFile)?;
     }
 
     panic::set_hook(Box::new(|panic_info| {
@@ -37,11 +38,11 @@ pub fn main() -> Res<()> {
 
 fn setup_term_and_run(args: &Args) -> Res<()> {
     log::debug!("Initializing terminal backend");
-    let mut terminal = Terminal::new(term::backend())?;
+    let mut terminal = Terminal::new(term::backend()).map_err(Error::Term)?;
 
     // Prevents cursor flash when opening gitu
-    terminal.hide_cursor()?;
-    terminal.clear()?;
+    terminal.hide_cursor().map_err(Error::Term)?;
+    terminal.clear().map_err(Error::Term)?;
 
     log::debug!("Starting app");
     gitu::run(args, &mut terminal)
