@@ -65,7 +65,7 @@ fn unstaged_changes() {
 #[test]
 fn binary_file() {
     let ctx = TestContext::setup_init();
-    fs::write(ctx.dir.child("binary-file"), [255]).expect("error writing to file");
+    fs::write(ctx.dir.child("binary-file"), [0, 255]).expect("error writing to file");
     run(ctx.dir.path(), &["git", "add", "."]);
     snapshot!(ctx, "jj<tab>");
 }
