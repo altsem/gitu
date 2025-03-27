@@ -4,14 +4,11 @@ expression: ctx.redact_buffer()
 ---
 ▌Reverting 57409cb                                                              |
                                                                                 |
- Unmerged                                                                       |
- new-file                                                                       |
-                                                                                |
  Unstaged changes (1)                                                           |
- conflicted   new-file…                                                         |
+ unmerged   new-file…                                                           |
                                                                                 |
  Staged changes (1)                                                             |
- conflicted   new-file…                                                         |
+ unmerged   new-file…                                                           |
                                                                                 |
  Recent commits                                                                 |
  7294ba4 main modify new-file                                                   |
@@ -22,4 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: ff63c173e9d7a827
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 14c8af588de8e27f

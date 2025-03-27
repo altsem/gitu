@@ -1,3 +1,17 @@
+//! This module contains integration tests for Gitu.
+//! Each test:
+//! - sets up a temporary git repository in a temporary directory
+//! - runs some commands
+//! - asserts the output (`cargo insta` is used a lot https://insta.rs)
+//! - cleans up the temporary directory
+//!
+//! It is useful when debugging to sometimes manually inspect a test-case.
+//! ```rust`
+//! dbg!(&ctx.dir.path());
+//! ctx.dir.leak();
+//! ````
+//!
+
 use std::fs;
 
 #[macro_use]
@@ -123,12 +137,15 @@ fn rebase_conflict() {
 fn merge_conflict() {
     let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");
+    commit(ctx.dir.path(), "new-file-2", "hello");
 
     run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
     commit(ctx.dir.path(), "new-file", "hey");
+    commit(ctx.dir.path(), "new-file-2", "hey");
 
     run(ctx.dir.path(), &["git", "checkout", "main"]);
     commit(ctx.dir.path(), "new-file", "hi");
+    commit(ctx.dir.path(), "new-file-2", "hi");
 
     run(ctx.dir.path(), &["git", "merge", "other-branch"]);
 

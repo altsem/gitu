@@ -27,14 +27,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 .map(|status| PathBuf::from(status.path().unwrap()))
                 .collect::<Vec<_>>();
 
-            let unmerged_files = statuses
-                .iter()
-                .filter(|status| status.status().is_conflicted())
-                .map(|status| PathBuf::from(status.path().unwrap()))
-                .collect::<Vec<_>>();
-
             let untracked = items_list(&config, untracked_files.clone());
-            let unmerged = items_list(&config, unmerged_files);
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
@@ -85,21 +78,6 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 ]
             })
             .chain(untracked)
-            .chain(if unmerged.is_empty() {
-                vec![]
-            } else {
-                vec![
-                    items::blank_line(),
-                    Item {
-                        id: "unmerged".into(),
-                        display: Line::styled("Unmerged", &style.section_header),
-                        section: true,
-                        depth: 0,
-                        ..Default::default()
-                    },
-                ]
-            })
-            .chain(unmerged)
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "unstaged_changes",
