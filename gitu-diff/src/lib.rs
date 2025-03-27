@@ -27,6 +27,7 @@ pub enum Status {
     Modified,
     Renamed,
     Copied,
+    Unmerged,
 }
 
 #[derive(Debug, Clone)]
@@ -87,9 +88,8 @@ impl fmt::Debug for ParseError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Expected {:?}, {:?}<HERE>{:?}",
+            "Expected {:?} at {:?}",
             self.expected,
-            &self.input[..self.pos],
             &self.input[self.pos..]
         )
     }
@@ -138,6 +138,14 @@ impl<'a> Parser<'a> {
             return Ok(vec![]);
         }
 
+        while let Ok(unmerged) = self.parse_unmerged_file() {
+            diffs.push(unmerged);
+        }
+
+        if !diffs.is_empty() {
+            return Ok(diffs);
+        }
+
         while self.is_at_diff_header() {
             diffs.push(self.parse_file_diff()?);
         }
@@ -155,9 +163,7 @@ impl<'a> Parser<'a> {
         self.read("commit ")?;
         let hash = self.read_rest_of_line();
 
-        while self.pos < self.input.len() && !self.is_at_diff_header() {
-            self.read_rest_of_line();
-        }
+        self.skip_until_diff_header();
 
         Ok(CommitHeader {
             range: start..self.pos,
@@ -165,17 +171,28 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn skip_until_diff_header(&mut self) {
+        while self.pos < self.input.len() && !self.is_at_diff_header() {
+            self.read_rest_of_line();
+        }
+    }
+
     fn is_at_diff_header(&mut self) -> bool {
-        self.peek("diff --git ")
+        self.peek("diff")
     }
 
     fn parse_file_diff(&mut self) -> Result<FileDiff, ParseError<'a>> {
         let diff_start = self.pos;
         let header = self.parse_diff_header()?;
+
         let mut hunks = vec![];
 
-        while self.peek("@@") {
-            hunks.push(self.parse_hunk()?);
+        if header.status == Status::Unmerged {
+            self.skip_until_diff_header();
+        } else {
+            while self.peek("@@") {
+                hunks.push(self.parse_hunk()?);
+            }
         }
 
         Ok(FileDiff {
@@ -189,9 +206,13 @@ impl<'a> Parser<'a> {
         let diff_header_start = self.pos;
         let mut diff_type = Status::Modified;
 
-        self.read("diff --git a/")?;
-        let old_file = self.read_until(" b/")?;
-        let new_file = self.read_to_before_newline();
+        let (old_file, new_file, is_conflicted) = self
+            .parse_conflicted_file()
+            .or_else(|_| self.parse_old_new_file_header())?;
+
+        if is_conflicted {
+            diff_type = Status::Unmerged;
+        }
 
         if self.peek("new file") {
             diff_type = Status::Added;
@@ -251,6 +272,38 @@ impl<'a> Parser<'a> {
             new_file,
             status: diff_type,
         })
+    }
+
+    fn parse_unmerged_file(&mut self) -> Result<FileDiff, ParseError<'a>> {
+        let unmerged_path_prefix = self.read("* Unmerged path ")?;
+        let file = self.read_to_before_newline();
+
+        Ok(FileDiff {
+            range: unmerged_path_prefix.start..self.pos,
+            header: DiffHeader {
+                range: unmerged_path_prefix.start..self.pos,
+                old_file: file.clone(),
+                new_file: file,
+                status: Status::Unmerged,
+            },
+            hunks: vec![],
+        })
+    }
+    fn parse_old_new_file_header(
+        &mut self,
+    ) -> Result<(Range<usize>, Range<usize>, bool), ParseError<'a>> {
+        self.read("diff --git a/")?;
+        let old_file = self.read_until(" b/")?;
+        let new_file = self.read_to_before_newline();
+        Ok((old_file, new_file, false))
+    }
+
+    fn parse_conflicted_file(
+        &mut self,
+    ) -> Result<(Range<usize>, Range<usize>, bool), ParseError<'a>> {
+        self.read("diff --cc ")?;
+        let file = self.read_to_before_newline();
+        Ok((file.clone(), file, true))
     }
 
     fn parse_hunk(&mut self) -> Result<Hunk, ParseError<'a>> {
@@ -693,5 +746,32 @@ mod tests {
 
         let mut parser = Parser::new(input);
         let commit = parser.parse_commit().unwrap();
+        // TODO assert
+    }
+
+    #[test]
+    fn conflicted_file() {
+        let input = "diff --cc new-file\nindex 32f95c0,2b31011..0000000\n--- a/new-file\n+++ b/new-file\n@@@ -1,1 -1,1 +1,5 @@@\n- hi\n -hey\n++<<<<<<< HEAD\n++hi\n++=======\n++hey\n++>>>>>>> other-branch\n";
+
+        let mut parser = Parser::new(input);
+        let commit = parser.parse_diff().unwrap();
+        // TODO assert
+    }
+
+    #[test]
+    fn unmerged_path() {
+        let input = "* Unmerged path new-file\n* Unmerged path new-file-2\n";
+        let mut parser = Parser::new(input);
+        let diff = parser.parse_diff().unwrap();
+
+        assert_eq!(diff.len(), 2);
+        assert_eq!(diff[0].header.status, Status::Unmerged);
+        assert_eq!(&input[diff[0].header.old_file.clone()], "new-file");
+        assert_eq!(&input[diff[0].header.new_file.clone()], "new-file");
+        assert!(diff[0].hunks.is_empty());
+        assert_eq!(diff[1].header.status, Status::Unmerged);
+        assert_eq!(&input[diff[1].header.old_file.clone()], "new-file-2");
+        assert_eq!(&input[diff[1].header.new_file.clone()], "new-file-2");
+        assert!(diff[1].hunks.is_empty());
     }
 }
