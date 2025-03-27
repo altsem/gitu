@@ -40,38 +40,38 @@ impl Diff {
         line_range: Range<usize>,
         mode: PatchMode,
     ) -> String {
-        // let modified_content = self
-        //     .content
-        //     .lines
-        //     .iter()
-        //     .enumerate()
-        //     .filter_map(|(i, line)| {
-        //         let add = match mode {
-        //             PatchMode::Normal => '+',
-        //             PatchMode::Reverse => '-',
-        //         };
+        let hunk = &self.file_diffs[file_i].hunks[hunk_i];
+        let file_header = &self.text[self.file_diffs[file_i].header.range.clone()];
+        let hunk_header = &self.text[hunk.header.range.clone()];
+        let hunk_content = &self.text[hunk.content.range.clone()];
 
-        //         let remove = match mode {
-        //             PatchMode::Normal => '-',
-        //             PatchMode::Reverse => '+',
-        //         };
+        let modified_content = hunk_content
+            .split_inclusive('\n')
+            .enumerate()
+            .filter_map(|(i, line)| {
+                let add = match mode {
+                    PatchMode::Normal => '+',
+                    PatchMode::Reverse => '-',
+                };
 
-        //         let patch_line = format!("{line}");
+                let remove = match mode {
+                    PatchMode::Normal => '-',
+                    PatchMode::Reverse => '+',
+                };
 
-        //         if line_range.contains(&i) {
-        //             Some(patch_line)
-        //         } else if patch_line.starts_with(add) {
-        //             None
-        //         } else if let Some(stripped) = patch_line.strip_prefix(remove) {
-        //             Some(format!(" {}", stripped))
-        //         } else {
-        //             Some(patch_line)
-        //         }
-        //     })
-        //     .join("\n");
+                if line_range.contains(&i) {
+                    Some(line.to_string())
+                } else if line.starts_with(add) {
+                    None
+                } else if let Some(stripped) = line.strip_prefix(remove) {
+                    Some(format!(" {}", stripped))
+                } else {
+                    Some(line.to_string())
+                }
+            })
+            .collect::<String>();
 
-        // format!("{}{}{}\n", &self.file_header, self.header, modified_content)
-        todo!()
+        format!("{}{}{}", file_header, hunk_header, modified_content)
     }
 
     pub(crate) fn first_diff_line(&self, file_i: usize, hunk_i: usize) -> usize {
