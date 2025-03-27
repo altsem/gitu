@@ -1,16 +1,16 @@
 use crate::{error::Error, Res};
 use ignore::gitignore::GitignoreBuilder;
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 use std::{
     path::Path,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
+    thread,
 };
 
 pub struct FileWatcher {
-    _watcher: RecommendedWatcher,
     pending_updates: Arc<AtomicBool>,
 }
 
@@ -42,14 +42,17 @@ impl FileWatcher {
         })
         .map_err(Error::FileWatcher)?;
 
-        watcher
-            .watch(path.as_ref(), RecursiveMode::Recursive)
-            .map_err(Error::FileWatcher)?;
+        let path_buf = path.to_owned();
+        thread::spawn(move || {
+            if let Err(err) = watcher
+                .watch(path_buf.as_ref(), RecursiveMode::Recursive)
+                .map_err(Error::FileWatcher)
+            {
+                log::error!("Couldn't start file-watcher due to: {}", err);
+            }
+        });
 
-        Ok(Self {
-            _watcher: watcher,
-            pending_updates,
-        })
+        Ok(Self { pending_updates })
     }
 
     pub fn pending_updates(&self) -> bool {
