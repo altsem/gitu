@@ -50,7 +50,7 @@ fn goto_show_screen(r: String) -> Option<Action> {
     }))
 }
 
-pub(crate) const EDITOR_VARS: [&str; 3] = ["VISUAL", "EDITOR", "GIT_EDITOR"];
+pub(crate) const EDITOR_VARS: [&str; 4] = ["GITU_SHOW_EDITOR", "VISUAL", "EDITOR", "GIT_EDITOR"];
 fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
