@@ -15,6 +15,7 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 pub(crate) struct Config {
     pub general: GeneralConfig,
     pub style: StyleConfig,
+    pub editor: EditorConfig,
     pub bindings: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>,
 }
 
@@ -146,6 +147,13 @@ pub struct SymbolStyleConfigEntry {
     bg: Option<Color>,
     #[serde(default)]
     mods: Option<Modifier>,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct EditorConfig {
+    pub default: Option<String>,
+    pub show: Option<String>,
+    pub commit: Option<String>,
 }
 
 impl From<&StyleConfigEntry> for Style {

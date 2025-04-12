@@ -8,8 +8,9 @@ impl OpTrait for Show {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => goto_show_screen(r.clone()),
-            Some(TargetData::File(u)) => editor(u.as_path(), None),
+            Some(TargetData::File(u)) => editor(EditorKind::Show, u.as_path(), None),
             Some(TargetData::Delta { diff, file_i }) => editor(
+                EditorKind::Show,
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 None,
             ),
@@ -18,6 +19,7 @@ impl OpTrait for Show {
                 file_i,
                 hunk_i,
             }) => editor(
+                EditorKind::Show,
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 Some(diff.first_diff_line(*file_i, *hunk_i) as u32),
             ),
@@ -50,16 +52,31 @@ fn goto_show_screen(r: String) -> Option<Action> {
     }))
 }
 
+#[derive(Default, Clone, Copy)]
+pub enum EditorKind {
+    #[default]
+    Default,
+    Commit,
+    Show,
+}
+
 pub(crate) const EDITOR_VARS: [&str; 3] = ["VISUAL", "EDITOR", "GIT_EDITOR"];
-fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
+
+fn editor(kind: EditorKind, file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Rc::new(move |state, term| {
+        let editor = match kind {
+            EditorKind::Default => state.config.editor.default.as_ref(),
+            EditorKind::Commit => state.config.editor.commit.as_ref(),
+            EditorKind::Show => state.config.editor.show.as_ref(),
+        };
+
         let configured_editor = EDITOR_VARS
             .into_iter()
             .find_map(|var| std::env::var(var).ok());
 
-        let Some(editor) = configured_editor else {
+        let Some(ref editor) = editor.or(configured_editor.as_ref()) else {
             return Err(Error::NoEditorSet);
         };
 

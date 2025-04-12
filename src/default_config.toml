@@ -10,6 +10,10 @@ confirm_quit.enabled = false
 collapsed_sections = []
 refresh_on_file_change.enabled = true
 
+[editor]
+# show = "zed -a"
+# commit = "zile"
+
 [style]
 # fg / bg can be either of:
 # - a hex value: "#707070"
