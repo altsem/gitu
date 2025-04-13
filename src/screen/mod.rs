@@ -181,7 +181,7 @@ impl Screen {
                 .copied()
                 .enumerate()
                 .map(|(line, _)| (line + 1).saturating_sub(half_screen))
-                .last()
+                .next_back()
                 .unwrap_or(0),
         );
 
