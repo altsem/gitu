@@ -49,7 +49,6 @@ pub struct Hunk {
 pub struct HunkContent {
     pub range: Range<usize>,
     pub changes: Vec<Change>,
-    pub no_newline: Option<Range<usize>>,
 }
 
 #[derive(Debug, Clone)]
@@ -327,19 +326,18 @@ impl<'a> Parser<'a> {
         let mut changes = vec![];
 
         while self.pos < self.input.len()
-            && [" ", "-", "+"].into_iter().any(|prefix| self.peek(prefix))
+            && [" ", "-", "+", "\\"]
+                .into_iter()
+                .any(|prefix| self.peek(prefix))
         {
-            self.read_lines_while_prefixed(" ");
+            self.read_lines_while_prefixed(|parser| parser.peek(" ") || parser.peek("\\"));
             changes.push(self.parse_change());
-            self.read_lines_while_prefixed(" ");
+            self.read_lines_while_prefixed(|parser| parser.peek(" ") || parser.peek("\\"));
         }
-
-        let no_newline = self.read_lines_while_prefixed("\\");
 
         HunkContent {
             range: hunk_content_start..self.pos,
             changes: changes.into(),
-            no_newline: (!no_newline.is_empty()).then_some(no_newline),
         }
     }
 
@@ -376,8 +374,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_change(&mut self) -> Change {
-        let removed = self.read_lines_while_prefixed("-");
-        let added = self.read_lines_while_prefixed("+");
+        let removed = self.read_lines_while_prefixed(|parser| parser.peek("-"));
+        let added = self.read_lines_while_prefixed(|parser| parser.peek("+"));
 
         Change {
             old: removed,
@@ -385,9 +383,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn read_lines_while_prefixed(&mut self, prefix: &str) -> Range<usize> {
+    fn read_lines_while_prefixed(&mut self, pred: fn(&mut Parser) -> bool) -> Range<usize> {
         let start = self.pos;
-        while self.pos < self.input.len() && self.peek(prefix) {
+        while self.pos < self.input.len() && pred(self) {
             self.read_rest_of_line();
         }
 
@@ -757,7 +755,7 @@ mod tests {
         let input = "diff --cc new-file\nindex 32f95c0,2b31011..0000000\n--- a/new-file\n+++ b/new-file\n@@@ -1,1 -1,1 +1,5 @@@\n- hi\n -hey\n++<<<<<<< HEAD\n++hi\n++=======\n++hey\n++>>>>>>> other-branch\n";
 
         let mut parser = Parser::new(input);
-        let commit = parser.parse_diff().unwrap();
+        let diff = parser.parse_diff().unwrap();
         // TODO assert
     }
 
@@ -776,5 +774,13 @@ mod tests {
         assert_eq!(&input[diff[1].header.old_file.clone()], "new-file-2");
         assert_eq!(&input[diff[1].header.new_file.clone()], "new-file-2");
         assert!(diff[1].hunks.is_empty());
+    }
+
+    #[test]
+    fn missing_newline_before_final() {
+        let input = "diff --git a/vitest.config.ts b/vitest.config.ts\nindex 97b017f..bcd28a0 100644\n--- a/vitest.config.ts\n+++ b/vitest.config.ts\n@@ -14,4 +14,4 @@ export default defineConfig({\n     globals: true,\n     setupFiles: ['./src/test/setup.ts'],\n   },\n-})\n\\ No newline at end of file\n+});";
+
+        let mut parser = Parser::new(input);
+        let diff = parser.parse_diff().unwrap();
     }
 }
