@@ -77,6 +77,22 @@ pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
                 .map_err(Utf8Error::String)
                 .map_err(Error::ReadGitConfigUtf8)?,
         )),
+        Err(e) if e.class() == git2::ErrorClass::Config => get_default_push_remote(repo),
+        Err(e) => Err(Error::ReadGitConfig(e)),
+    };
+
+    result
+}
+
+pub(crate) fn get_default_push_remote(repo: &Repository) -> Res<Option<String>> {
+    let push_default_cfg = "remote.pushDefault";
+    let config = repo.config().map_err(Error::ReadGitConfig)?;
+    let result = match config.get_entry(push_default_cfg) {
+        Ok(entry) => Ok(Some(
+            String::from_utf8(entry.value_bytes().to_vec())
+                .map_err(Utf8Error::String)
+                .map_err(Error::ReadGitConfigUtf8)?,
+        )),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
         Err(e) => Err(Error::ReadGitConfig(e)),
     };
