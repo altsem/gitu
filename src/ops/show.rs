@@ -55,11 +55,13 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
     Some(Rc::new(move |state, term| {
-        let configured_editor = EDITOR_VARS
+        let configured_editor = state.config.editor.show.as_ref();
+
+        let editor_from_var = EDITOR_VARS
             .into_iter()
             .find_map(|var| std::env::var(var).ok());
 
-        let Some(editor) = configured_editor else {
+        let Some(ref editor) = configured_editor.or(editor_from_var.as_ref()) else {
             return Err(Error::NoEditorSet);
         };
 
