@@ -71,3 +71,20 @@ fn get_upstream_components_of_feature_branch() {
     assert_eq!(remote, ".");
     assert_eq!(branch, "main");
 }
+
+#[test]
+fn get_push_remote_with_default() {
+    let ctx = RepoTestContext::setup_clone();
+    let repo = ctx.local_repo;
+
+    let push_remote = get_push_remote(&repo).unwrap();
+    assert_eq!(push_remote, None);
+
+    run(
+        ctx.dir.path(),
+        &["git", "config", "remote.pushDefault", "origin"],
+    );
+
+    let push_remote = get_push_remote(&repo).unwrap();
+    assert_eq!(push_remote.unwrap(), "origin");
+}
