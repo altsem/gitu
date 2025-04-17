@@ -50,7 +50,12 @@ impl PendingMenu {
             is_hidden: false,
             args: match menu {
                 Menu::Root => vec![],
-                Menu::Branch => ops::checkout::init_args(),
+                Menu::Branch => {
+                    // Merge arguments from checkout and delete_branch
+                    let mut args = ops::delete_branch::init_args();
+                    args.extend(ops::checkout::init_args());
+                    args
+                }
                 Menu::Commit => ops::commit::init_args(),
                 Menu::Fetch => ops::fetch::init_args(),
                 Menu::Help => vec![],

@@ -101,6 +101,7 @@ help_menu.quit = ["q", "h", "?", "<esc>"]
 root.branch_menu = ["b"]
 branch_menu.checkout = ["b"]
 branch_menu.checkout_new_branch = ["c"]
+branch_menu.delete_branch = ["D"]
 branch_menu.quit = ["q", "<esc>"]
 
 root.commit_menu = ["c"]
