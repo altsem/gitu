@@ -1,4 +1,3 @@
-use crossterm::event::{KeyCode, KeyModifiers};
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -8,88 +7,84 @@ use nom::{
     sequence::{delimited, preceded},
     IResult,
 };
+use termwiz::input::{KeyCode, Modifiers};
 
 // TODO Improve error messages
 
-pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, KeyCode)>> {
+pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(Modifiers, KeyCode)>> {
     all_consuming(many0(parse_key))(input)
 }
 
-fn parse_key(input: &str) -> IResult<&str, (KeyModifiers, KeyCode)> {
+fn parse_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
     alt((parse_quoted, parse_char_key))(input)
 }
 
-fn parse_quoted(input: &str) -> IResult<&str, (KeyModifiers, KeyCode)> {
+fn parse_quoted(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
     delimited(char('<'), parse_modifiers_and_key, char('>'))(input)
 }
 
-fn parse_modifiers_and_key(input: &str) -> IResult<&str, (KeyModifiers, KeyCode)> {
+fn parse_modifiers_and_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
     let (input, mods_vec) = separated_list0(tag("+"), parse_modifier)(input)?;
     let mods = mods_vec
         .into_iter()
-        .reduce(KeyModifiers::union)
-        .unwrap_or(KeyModifiers::NONE);
+        .reduce(Modifiers::union)
+        .unwrap_or(Modifiers::NONE);
 
     preceded(opt(tag("+")), alt((parse_special_key, parse_char_key)))(input)
         .map(|(rem, (m, key))| (rem, (m.union(mods), key)))
 }
 
-fn parse_special_key(input: &str) -> IResult<&str, (KeyModifiers, KeyCode)> {
+fn parse_special_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
     alt((
         value(KeyCode::Backspace, tag("backspace")),
         value(KeyCode::Enter, tag("enter")),
-        value(KeyCode::Left, tag("left")),
-        value(KeyCode::Right, tag("right")),
-        value(KeyCode::Up, tag("up")),
-        value(KeyCode::Down, tag("down")),
+        value(KeyCode::LeftArrow, tag("left")),
+        value(KeyCode::RightArrow, tag("right")),
+        value(KeyCode::UpArrow, tag("up")),
+        value(KeyCode::DownArrow, tag("down")),
         value(KeyCode::Home, tag("home")),
         value(KeyCode::End, tag("end")),
         value(KeyCode::PageUp, tag("pageup")),
         value(KeyCode::PageDown, tag("pagedown")),
         value(KeyCode::Tab, tag("tab")),
-        value(KeyCode::BackTab, tag("backtab")),
+        // FIXME Drop this and mention in changelog
+        // value(KeyCode::BackTab, tag("backtab")),
         value(KeyCode::Delete, tag("delete")),
         value(KeyCode::Insert, tag("insert")),
-        value(KeyCode::Esc, tag("esc")),
+        value(KeyCode::Escape, tag("esc")),
         value(KeyCode::CapsLock, tag("capslock")),
     ))(input)
-    .map(|(rem, key)| (rem, (KeyModifiers::NONE, key)))
+    .map(|(rem, key)| (rem, (Modifiers::NONE, key)))
 }
 
-fn parse_modifier(input: &str) -> IResult<&str, KeyModifiers> {
+fn parse_modifier(input: &str) -> IResult<&str, Modifiers> {
     alt((
-        value(KeyModifiers::SHIFT, tag("shift")),
-        value(KeyModifiers::CONTROL, tag("ctrl")),
-        value(KeyModifiers::ALT, tag("alt")),
-        value(KeyModifiers::SUPER, tag("super")),
-        value(KeyModifiers::HYPER, tag("hyper")),
-        value(KeyModifiers::META, tag("meta")),
+        value(Modifiers::SHIFT, tag("shift")),
+        value(Modifiers::CTRL, tag("ctrl")),
+        value(Modifiers::ALT, tag("alt")),
+        value(Modifiers::SUPER, tag("super")),
+        // FIXME Drop these and mention in changelog
+        // value(Modifiers::HYPER, tag("hyper")),
+        // value(Modifiers::META, tag("meta")),
     ))(input)
 }
 
-fn parse_char_key(input: &str) -> IResult<&str, (KeyModifiers, KeyCode)> {
+fn parse_char_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
     none_of("<>")(input)?;
-    map(anychar, |c| {
-        let modifiers = if c.is_uppercase() {
-            KeyModifiers::SHIFT
-        } else {
-            KeyModifiers::NONE
-        };
-
-        (modifiers, KeyCode::Char(c))
-    })(input)
+    map(anychar, |c| (Modifiers::NONE, KeyCode::Char(c)))(input)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use termwiz::input::Modifiers;
     use KeyCode::*;
 
     #[test]
     fn single_char() {
         assert_eq!(
             parse_keys("a"),
-            Ok(("", vec![(KeyModifiers::NONE, Char('a'))]))
+            Ok(("", vec![(Modifiers::NONE, Char('a'))]))
         );
     }
 
@@ -97,7 +92,7 @@ mod tests {
     fn upper_char() {
         assert_eq!(
             parse_keys("A"),
-            Ok(("", vec![(KeyModifiers::SHIFT, Char('A'))]))
+            Ok(("", vec![(Modifiers::NONE, Char('A'))]))
         );
     }
 
@@ -105,7 +100,7 @@ mod tests {
     fn special_key() {
         assert_eq!(
             parse_keys("<backspace>"),
-            Ok(("", vec![(KeyModifiers::NONE, KeyCode::Backspace)]))
+            Ok(("", vec![(Modifiers::NONE, KeyCode::Backspace)]))
         );
     }
 
@@ -113,7 +108,7 @@ mod tests {
     fn modifier() {
         assert_eq!(
             parse_keys("<ctrl+j>"),
-            Ok(("", vec![(KeyModifiers::CONTROL, KeyCode::Char('j'))]))
+            Ok(("", vec![(Modifiers::CTRL, KeyCode::Char('j'))]))
         );
     }
 
@@ -124,9 +119,9 @@ mod tests {
             Ok((
                 "",
                 vec![(
-                    KeyModifiers::SHIFT
-                        .union(KeyModifiers::CONTROL)
-                        .union(KeyModifiers::ALT),
+                    Modifiers::SHIFT
+                        .union(Modifiers::CTRL)
+                        .union(Modifiers::ALT),
                     KeyCode::Char('k')
                 )]
             ))
@@ -140,9 +135,9 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    (KeyModifiers::NONE, Char('1')),
-                    (KeyModifiers::ALT, End),
-                    (KeyModifiers::SHIFT, Char('A')),
+                    (Modifiers::NONE, Char('1')),
+                    (Modifiers::ALT, End),
+                    (Modifiers::NONE, Char('A')),
                 ]
             ))
         );
