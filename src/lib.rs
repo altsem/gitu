@@ -20,7 +20,6 @@ pub mod term;
 mod tests;
 mod ui;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use error::Error;
 use file_watcher::FileWatcher;
 use git2::Repository;
@@ -33,6 +32,7 @@ use std::{
     time::Duration,
 };
 use term::Term;
+use termwiz::input::{InputEvent, KeyCode, KeyEvent, Modifiers};
 
 pub const LOG_FILE_NAME: &str = "gitu.log";
 
@@ -77,7 +77,7 @@ pub type Res<T> = Result<T, Error>;
 
 #[derive(Debug)]
 pub enum GituEvent {
-    Term(Event),
+    Term(InputEvent),
     FileUpdate,
     Refresh,
 }
@@ -120,8 +120,11 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         .transpose()?;
 
     while !state.quit {
-        let mut events = if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
-            vec![GituEvent::Term(event::read().map_err(Error::Term)?)]
+        let mut events = if let Some(event) = term
+            .backend_mut()
+            .poll_input(Some(Duration::from_millis(100)))?
+        {
+            vec![GituEvent::Term(event)]
         } else {
             vec![]
         };
@@ -166,18 +169,16 @@ fn open_repo_from_env() -> Res<Repository> {
 }
 
 fn handle_initial_send_keys(
-    keys: &[(KeyModifiers, KeyCode)],
+    keys: &[(Modifiers, KeyCode)],
     state: &mut state::State,
     term: &mut ratatui::prelude::Terminal<term::TermBackend>,
 ) -> Res<()> {
     let initial_events = keys
         .iter()
         .map(|(mods, key)| {
-            GituEvent::Term(Event::Key(KeyEvent {
-                code: *key,
+            GituEvent::Term(InputEvent::Key(KeyEvent {
+                key: *key,
                 modifiers: *mods,
-                kind: event::KeyEventKind::Press,
-                state: KeyEventState::NONE,
             }))
         })
         .collect::<Vec<_>>();

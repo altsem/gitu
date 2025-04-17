@@ -9,13 +9,12 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 use arboard::Clipboard;
-use crossterm::event;
-use crossterm::event::Event;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyEventKind;
-use crossterm::event::KeyModifiers;
 use git2::Repository;
 use ratatui::layout::Size;
+use termwiz::input::InputEvent;
+use termwiz::input::KeyCode;
+use termwiz::input::KeyEvent;
+use termwiz::input::Modifiers;
 use tui_prompts::State as _;
 use tui_prompts::Status;
 
@@ -41,7 +40,7 @@ pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
     pub bindings: Bindings,
-    pending_keys: Vec<(KeyModifiers, KeyCode)>,
+    pending_keys: Vec<(Modifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
@@ -103,21 +102,23 @@ impl State {
         for event in events {
             log::debug!("{:?}", event);
 
-            match *event {
-                GituEvent::Term(Event::Resize(w, h)) => {
+            match event {
+                GituEvent::Term(InputEvent::Resized { cols, rows }) => {
                     for screen in self.screens.iter_mut() {
-                        screen.size = Size::new(w, h);
+                        screen.size =
+                            Size::new({ *cols }.try_into().unwrap(), { *rows }.try_into().unwrap());
                     }
                 }
-                GituEvent::Term(Event::Key(key)) => {
+                GituEvent::Term(InputEvent::Key(key)) => {
                     if self.prompt.state.is_focused() {
-                        self.prompt.state.handle_key_event(key)
-                    } else if key.kind == KeyEventKind::Press {
+                        todo!();
+                        // FIXME self.prompt.state.handle_key_event(key)
+                    } else {
                         if self.pending_cmd.is_none() {
                             self.current_cmd_log.clear();
                         }
 
-                        self.handle_key_input(term, key)?;
+                        self.handle_key_input(term, key.clone())?;
                     }
                 }
                 GituEvent::FileUpdate => {
@@ -166,14 +167,14 @@ impl State {
         Ok(())
     }
 
-    fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
+    fn handle_key_input(&mut self, term: &mut Term, key: KeyEvent) -> Res<()> {
         let menu = match &self.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
             Some(menu) => menu.menu,
         };
 
-        self.pending_keys.push((key.modifiers, key.code));
+        self.pending_keys.push((key.modifiers, key.key));
         let matching_bindings = self
             .bindings
             .match_bindings(&menu, &self.pending_keys)
@@ -326,7 +327,7 @@ impl State {
 
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
-        term.backend().disable_raw_mode()?;
+        term.backend_mut().disable_raw_mode()?;
 
         // If we don't show the cursor prior spawning (thus restore the default
         // state), the cursor may be missing in $EDITOR.
@@ -356,7 +357,7 @@ impl State {
         self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
 
         // restore the raw mode
-        term.backend().enable_raw_mode()?;
+        term.backend_mut().enable_raw_mode()?;
 
         // Prevents cursor flash when exiting editor
         term.hide_cursor().map_err(Error::Term)?;
