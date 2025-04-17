@@ -372,11 +372,13 @@ impl<'a> Parser<'a> {
 
     fn parse_change(&mut self) -> Change {
         let removed = self.read_lines_while_prefixed(|parser| parser.peek("-"));
+        let removed_meta = self.read_lines_while_prefixed(|parser| parser.peek("\\"));
         let added = self.read_lines_while_prefixed(|parser| parser.peek("+"));
+        let added_meta = self.read_lines_while_prefixed(|parser| parser.peek("\\"));
 
         Change {
-            old: removed,
-            new: added,
+            old: removed.start..removed_meta.end,
+            new: added.start..added_meta.end,
         }
     }
 
@@ -460,7 +462,10 @@ impl<'a> Parser<'a> {
             self.pos += 1;
         }
 
-        self.pos += 1;
+        if self.pos < self.input.len() {
+            self.pos += 1;
+        }
+
         start..self.pos
     }
 
@@ -744,7 +749,7 @@ mod tests {
 
         let mut parser = Parser::new(input);
         let commit = parser.parse_commit().unwrap();
-        // TODO assert
+        assert_eq!(commit.diff.len(), 3);
     }
 
     #[test]
@@ -752,8 +757,11 @@ mod tests {
         let input = "diff --cc new-file\nindex 32f95c0,2b31011..0000000\n--- a/new-file\n+++ b/new-file\n@@@ -1,1 -1,1 +1,5 @@@\n- hi\n -hey\n++<<<<<<< HEAD\n++hi\n++=======\n++hey\n++>>>>>>> other-branch\n";
 
         let mut parser = Parser::new(input);
-        let diff = parser.parse_diff().unwrap();
-        // TODO assert
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 1);
+        assert_eq!(diffs[0].header.status, Status::Unmerged);
+        assert_eq!(&input[diffs[0].header.old_file.clone()], "new-file");
+        assert_eq!(&input[diffs[0].header.new_file.clone()], "new-file");
     }
 
     #[test]
@@ -778,7 +786,17 @@ mod tests {
         let input = "diff --git a/vitest.config.ts b/vitest.config.ts\nindex 97b017f..bcd28a0 100644\n--- a/vitest.config.ts\n+++ b/vitest.config.ts\n@@ -14,4 +14,4 @@ export default defineConfig({\n     globals: true,\n     setupFiles: ['./src/test/setup.ts'],\n   },\n-})\n\\ No newline at end of file\n+});";
 
         let mut parser = Parser::new(input);
-        let diff = parser.parse_diff().unwrap();
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 1);
+        assert_eq!(diffs[0].header.status, Status::Modified);
+        assert_eq!(diffs[0].hunks.len(), 1);
+        let changes = &diffs[0].hunks[0].content.changes;
+        assert_eq!(changes.len(), 1);
+        assert_eq!(
+            &input[changes[0].old.clone()],
+            "-})\n\\ No newline at end of file\n"
+        );
+        assert_eq!(&input[changes[0].new.clone()], "+});");
     }
 
     #[test]
