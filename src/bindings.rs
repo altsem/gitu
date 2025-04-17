@@ -1,11 +1,12 @@
 use std::collections::BTreeMap;
 
+use termwiz::input::{KeyCode, Modifiers};
+
 use crate::{
     key_parser,
     menu::{Menu, PendingMenu},
     ops::Op,
 };
-use crossterm::event::{KeyCode, KeyModifiers};
 
 pub(crate) struct Bindings {
     vec: Vec<Binding>,
@@ -32,7 +33,7 @@ impl Bindings {
     pub(crate) fn match_bindings<'a>(
         &'a self,
         pending: &'a Menu,
-        events: &'a [(KeyModifiers, KeyCode)],
+        events: &'a [(Modifiers, KeyCode)],
     ) -> impl Iterator<Item = &'a Binding> + 'a {
         self.vec
             .iter()
@@ -79,7 +80,7 @@ impl Bindings {
 pub(crate) struct Binding {
     pub menu: Menu,
     pub raw: String,
-    pub keys: Vec<(KeyModifiers, KeyCode)>,
+    pub keys: Vec<(Modifiers, KeyCode)>,
     pub op: Op,
 }
 
