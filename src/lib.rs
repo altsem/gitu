@@ -21,7 +21,6 @@ pub mod term;
 mod tests;
 mod ui;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use error::Error;
 use git2::Repository;
 use items::Item;
@@ -33,6 +32,7 @@ use std::{
     time::Duration,
 };
 use term::Term;
+use termwiz::input::{InputEvent, KeyCode, KeyEvent, Modifiers};
 
 pub const LOG_FILE_NAME: &str = "gitu.log";
 
@@ -139,14 +139,12 @@ fn open_repo_from_env() -> Res<Repository> {
     }
 }
 
-fn keys_to_events(keys: &[(KeyModifiers, KeyCode)]) -> Vec<Event> {
+fn keys_to_events(keys: &[(Modifiers, KeyCode)]) -> Vec<InputEvent> {
     keys.iter()
         .map(|(mods, key)| {
-            Event::Key(KeyEvent {
-                code: *key,
+            InputEvent::Key(KeyEvent {
+                key: *key,
                 modifiers: *mods,
-                kind: event::KeyEventKind::Press,
-                state: KeyEventState::NONE,
             })
         })
         .collect::<Vec<_>>()

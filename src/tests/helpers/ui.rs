@@ -7,11 +7,11 @@ use crate::{
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
 };
-use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
 use std::{path::PathBuf, rc::Rc, time::Duration};
 use temp_dir::TempDir;
+use termwiz::input::{InputEvent, KeyEvent};
 
 use self::buffer::TestBuffer;
 
@@ -93,7 +93,7 @@ impl TestContext {
         state
     }
 
-    pub fn update(&mut self, state: &mut State, new_events: Vec<Event>) {
+    pub fn update(&mut self, state: &mut State, new_events: Vec<InputEvent>) {
         let TermBackend::Test { events, .. } = self.term.backend_mut() else {
             unreachable!();
         };
@@ -122,12 +122,12 @@ fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
     *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
 }
 
-pub fn keys(input: &str) -> Vec<Event> {
+pub fn keys(input: &str) -> Vec<InputEvent> {
     let ("", keys) = parse_keys(input).unwrap() else {
         unreachable!();
     };
 
     keys.into_iter()
-        .map(|(mods, key)| Event::Key(KeyEvent::new(key, mods)))
+        .map(|(modifiers, key)| InputEvent::Key(KeyEvent { key, modifiers }))
         .collect()
 }
