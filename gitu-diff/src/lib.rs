@@ -1,3 +1,10 @@
+/// A git diff parser.
+///
+/// The aim of this module is to produce ranges that refer to the original input bytes.
+/// This approach can be preferable where one would want to:
+/// - Use the ranges to highlight changes in a user interface.
+/// - Be sure that the original input is intact.
+///
 use core::ops::Range;
 use std::fmt::{self, Debug};
 
