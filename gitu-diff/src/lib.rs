@@ -107,6 +107,13 @@ impl<'a> Parser<'a> {
         Self { input, pos: 0 }
     }
 
+    pub fn parse_commit(&mut self) -> Result<Commit, ParseError> {
+        let header = self.parse_commit_header()?;
+        let diff = self.parse_diff()?;
+
+        Ok(Commit { header, diff })
+    }
+
     /// Parses a diff file and returns a vector of Diff structures.
     ///
     /// The returned ranges refer to the original input bytes.
@@ -125,13 +132,6 @@ impl<'a> Parser<'a> {
     /// let diff = gitu_diff::Parser::new(input).parse_diff().unwrap();
     /// assert_eq!(diff[0].header.new_file, 25..34); // "file2.txt"
     /// ```
-
-    pub fn parse_commit(&mut self) -> Result<Commit, ParseError> {
-        let header = self.parse_commit_header()?;
-        let diff = self.parse_diff()?;
-
-        Ok(Commit { header, diff })
-    }
 
     pub fn parse_diff(&mut self) -> Result<Vec<FileDiff>, ParseError> {
         let mut diffs = vec![];
