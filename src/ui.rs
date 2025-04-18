@@ -1,10 +1,9 @@
+use crate::prompt::TextPrompt;
 use crate::state::State;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use ratatui::widgets::*;
 use ratatui::Frame;
-use tui_prompts::State as _;
-use tui_prompts::TextPrompt;
 
 mod menu;
 
@@ -76,7 +75,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
     if let Some(prompt) = maybe_prompt {
         frame.render_stateful_widget(prompt, layout[1], &mut state.prompt.state);
-        let (cx, cy) = state.prompt.state.cursor();
+        let (cx, cy) = state.prompt.state.cursor;
         frame.set_cursor_position((cx, cy));
     }
 

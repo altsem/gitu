@@ -1,7 +1,6 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 use crate::{items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, Res};
 use std::{process::Command, rc::Rc};
-use tui_prompts::State as _;
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![]
@@ -53,8 +52,8 @@ impl OpTrait for CheckoutNewBranch {
 }
 
 fn checkout_new_branch_prompt_update(state: &mut State) -> Res<()> {
-    if state.prompt.state.status().is_done() {
-        let name = state.prompt.state.value().to_string();
+    if state.prompt.state.status.is_done() {
+        let name = state.prompt.state.value.to_string();
         state.prompt.reset();
 
         let mut cmd = Command::new("git");
