@@ -71,15 +71,7 @@ fn parse_modifier(input: &str) -> IResult<&str, Modifiers> {
 
 fn parse_char_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
     none_of("<>")(input)?;
-    map(anychar, |c| {
-        let modifiers = if c.is_uppercase() {
-            Modifiers::SHIFT
-        } else {
-            Modifiers::NONE
-        };
-
-        (modifiers, KeyCode::Char(c))
-    })(input)
+    map(anychar, |c| (Modifiers::NONE, KeyCode::Char(c)))(input)
 }
 
 #[cfg(test)]
@@ -100,7 +92,7 @@ mod tests {
     fn upper_char() {
         assert_eq!(
             parse_keys("A"),
-            Ok(("", vec![(Modifiers::SHIFT, Char('A'))]))
+            Ok(("", vec![(Modifiers::NONE, Char('A'))]))
         );
     }
 
@@ -145,7 +137,7 @@ mod tests {
                 vec![
                     (Modifiers::NONE, Char('1')),
                     (Modifiers::ALT, End),
-                    (Modifiers::SHIFT, Char('A')),
+                    (Modifiers::NONE, Char('A')),
                 ]
             ))
         );
