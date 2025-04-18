@@ -79,6 +79,7 @@ pub type Res<T> = Result<T, Error>;
 pub enum GituEvent {
     Term(Event),
     FileUpdate,
+    Refresh,
 }
 
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
@@ -98,7 +99,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     )?;
 
     log::debug!("Initial update");
-    state.update(term, &[GituEvent::Term(Event::FocusGained)])?;
+    state.update(term, &[GituEvent::Refresh])?;
 
     if args.print {
         return Ok(());
