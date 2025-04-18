@@ -83,10 +83,7 @@ impl TestContext {
         )
         .unwrap();
 
-        // hack: Pass in an event just to force re-rendering
-        state
-            .update(&mut self.term, &[GituEvent::Term(Event::FocusGained)])
-            .unwrap();
+        state.update(&mut self.term, &[GituEvent::Refresh]).unwrap();
         state
     }
 
