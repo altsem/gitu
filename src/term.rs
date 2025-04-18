@@ -5,8 +5,7 @@ use ratatui::{
     prelude::{backend::WindowSize, buffer::Cell, Position, TermwizBackend},
     Terminal,
 };
-use std::io::{self};
-use std::{fmt::Display, time::Duration};
+use std::{io, time::Duration};
 use termwiz::{
     caps::Capabilities,
     input::InputEvent,
@@ -15,13 +14,6 @@ use termwiz::{
 };
 
 pub type Term = Terminal<TermBackend>;
-
-fn print_err<T, E: Display>(result: Result<T, E>) {
-    match result {
-        Ok(_) => (),
-        Err(error) => eprintln!("Error: {}", error),
-    };
-}
 
 pub fn create_backend() -> Res<TermBackend> {
     let buffered_terminal = BufferedTerminal::new(
