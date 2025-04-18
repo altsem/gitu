@@ -18,19 +18,20 @@ pub fn main() -> Res<()> {
             .map_err(Error::OpenLogFile)?;
     }
 
-    setup_term_and_run(&args)?;
+    let mut terminal = Terminal::new(term::create_backend()?).map_err(Error::Term)?;
 
-    Ok(())
-}
+    if args.print {
+        return gitu::run(&args, &mut terminal);
+    }
 
-fn setup_term_and_run(args: &Args) -> Res<()> {
-    log::debug!("Initializing terminal backend");
-    let mut terminal = Terminal::new(term::backend()).map_err(Error::Term)?;
+    terminal.backend_mut().enter_alternate_screen()?;
+    terminal.backend_mut().enable_raw_mode()?;
 
     // Prevents cursor flash when opening gitu
     terminal.hide_cursor().map_err(Error::Term)?;
     terminal.clear().map_err(Error::Term)?;
 
-    log::debug!("Starting app");
-    gitu::run(args, &mut terminal)
+    gitu::run(&args, &mut terminal)?;
+
+    Ok(())
 }

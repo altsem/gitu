@@ -7,13 +7,24 @@ use ratatui::{
 };
 use std::io::{self};
 use std::time::Duration;
-use termwiz::{input::InputEvent, terminal::Terminal as _};
+use termwiz::{
+    caps::Capabilities,
+    input::InputEvent,
+    terminal::{buffered::BufferedTerminal, SystemTerminal, Terminal as _},
+};
 
 pub type Term = Terminal<TermBackend>;
 
-pub fn backend() -> TermBackend {
-    // TODO Remove unwrap
-    TermBackend::Termwiz(TermwizBackend::new().unwrap())
+pub fn create_backend() -> Res<TermBackend> {
+    let buffered_terminal = BufferedTerminal::new(
+        SystemTerminal::new(Capabilities::new_from_env().map_err(Error::Termwiz)?)
+            .map_err(Error::Termwiz)?,
+    )
+    .map_err(Error::Termwiz)?;
+
+    Ok(TermBackend::Termwiz(
+        TermwizBackend::with_buffered_terminal(buffered_terminal),
+    ))
 }
 
 pub enum TermBackend {
