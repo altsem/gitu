@@ -15,8 +15,6 @@ use termwiz::input::InputEvent;
 use termwiz::input::KeyCode;
 use termwiz::input::KeyEvent;
 use termwiz::input::Modifiers;
-use tui_prompts::State as _;
-use tui_prompts::Status;
 
 use crate::bindings::Bindings;
 use crate::cli;
@@ -28,6 +26,7 @@ use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt;
+use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
@@ -111,8 +110,7 @@ impl State {
                 }
                 GituEvent::Term(InputEvent::Key(key)) => {
                     if self.prompt.state.is_focused() {
-                        todo!();
-                        // FIXME self.prompt.state.handle_key_event(key)
+                        self.prompt.state.handle_key_event(key);
                     } else {
                         if self.pending_cmd.is_none() {
                             self.current_cmd_log.clear();
@@ -146,7 +144,7 @@ impl State {
     }
 
     fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
-        if self.prompt.state.status() == Status::Aborted {
+        if self.prompt.state.status == Status::Aborted {
             self.unhide_menu();
             self.prompt.reset(term)?;
         } else if let Some(mut prompt_data) = self.prompt.data.take() {

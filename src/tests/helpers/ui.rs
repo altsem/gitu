@@ -111,6 +111,6 @@ pub fn keys(input: &str) -> Vec<GituEvent> {
     };
 
     keys.into_iter()
-        .map(|(mods, key)| GituEvent::Term(InputEvent::Key(KeyEvent::new(key, mods))))
+        .map(|(modifiers, key)| GituEvent::Term(InputEvent::Key(KeyEvent { key, modifiers })))
         .collect()
 }

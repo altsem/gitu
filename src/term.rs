@@ -6,17 +6,10 @@ use ratatui::{
     Terminal,
 };
 use std::io::{self};
-use std::{fmt::Display, time::Duration};
+use std::time::Duration;
 use termwiz::{input::InputEvent, terminal::Terminal as _};
 
 pub type Term = Terminal<TermBackend>;
-
-fn print_err<T, E: Display>(result: Result<T, E>) {
-    match result {
-        Ok(_) => (),
-        Err(error) => eprintln!("Error: {}", error),
-    };
-}
 
 pub fn backend() -> TermBackend {
     // TODO Remove unwrap
@@ -138,7 +131,7 @@ impl TermBackend {
                 .terminal()
                 .poll_input(wait)
                 .map_err(Error::Termwiz),
-            TermBackend::Test(test_backend) => todo!(),
+            TermBackend::Test(_test_backend) => unimplemented!(),
         }
     }
 }
