@@ -7,11 +7,11 @@ use crate::{
     tests::helpers::RepoTestContext,
     GituEvent,
 };
-use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
 use std::{path::PathBuf, rc::Rc};
 use temp_dir::TempDir;
+use termwiz::input::{InputEvent, KeyEvent};
 
 use self::buffer::TestBuffer;
 
@@ -111,6 +111,6 @@ pub fn keys(input: &str) -> Vec<GituEvent> {
     };
 
     keys.into_iter()
-        .map(|(mods, key)| GituEvent::Term(Event::Key(KeyEvent::new(key, mods))))
+        .map(|(modifiers, key)| GituEvent::Term(InputEvent::Key(KeyEvent { key, modifiers })))
         .collect()
 }
