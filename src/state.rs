@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::io::Write;
 use std::ops::DerefMut;
 use std::process::Child;
 use std::process::Command;
@@ -315,6 +316,11 @@ impl State {
 
         cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
+        self.current_cmd_log.push_cmd_with_output(&cmd, "\n".into());
+        self.update(term, &[GituEvent::Refresh])?;
+
+        eprint!("\r");
+
         // Redirect stderr so we can capture it via `Child::wait_with_output()`
         cmd.stderr(Stdio::piped());
 
@@ -326,13 +332,27 @@ impl State {
         // state), the cursor may be missing in $EDITOR.
         term.show_cursor().map_err(Error::Term)?;
 
-        let child = cmd.spawn().map_err(Error::SpawnCmd)?;
+        let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
-        let out = child.wait_with_output().map_err(Error::CouldntAwaitCmd)?;
-        let out_utf8 = String::from_utf8(strip_ansi_escapes::strip(out.stderr.clone()))
+        // Drop stdin as `Child::wait_with_output` would
+        drop(child.stdin.take());
+
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+
+        tee(child.stdout.as_mut(), &mut [&mut stdout]).map_err(Error::Term)?;
+
+        tee(
+            child.stderr.as_mut(),
+            &mut [&mut std::io::stderr(), &mut stderr],
+        )
+        .map_err(Error::Term)?;
+
+        let status = child.wait().map_err(Error::CouldntAwaitCmd)?;
+        let out_utf8 = String::from_utf8(strip_ansi_escapes::strip(stderr.clone()))
             .expect("Error turning command output to String")
             .into();
 
+        self.current_cmd_log.clear();
         self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
 
         // restore the raw mode
@@ -347,7 +367,7 @@ impl State {
         term.clear().map_err(Error::Term)?;
         self.screen_mut().update()?;
 
-        if !out.status.success() {
+        if !status.success() {
             return Err(Error::CmdBadExit(
                 format!(
                     "{} {}",
@@ -356,7 +376,7 @@ impl State {
                         .map(|arg| arg.to_string_lossy())
                         .collect::<String>()
                 ),
-                out.status.code(),
+                status.code(),
             ));
         }
 
@@ -374,6 +394,28 @@ impl State {
             menu.is_hidden = false;
         }
     }
+}
+
+fn tee(maybe_input: Option<&mut impl Read>, outputs: &mut [&mut dyn Write]) -> std::io::Result<()> {
+    let Some(input) = maybe_input else {
+        return Ok(());
+    };
+
+    let mut buf = [0u8; 1024];
+
+    loop {
+        let num_read = input.read(&mut buf)?;
+        if num_read == 0 {
+            break;
+        }
+
+        let buf = &buf[..num_read];
+        for output in &mut *outputs {
+            output.write_all(buf)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub(crate) fn root_menu(config: &Config) -> Option<Menu> {
