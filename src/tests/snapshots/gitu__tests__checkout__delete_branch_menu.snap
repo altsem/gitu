@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ Branches                                                                       |
+▌* main                                                                         |
+                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Branch                                                                          |
+b Checkout branch/revision                                                      |
+c Checkout new branch                                                           |
+x/D Delete branch                                                               |
+q/<esc> Quit/Close                                                              |
+────────────────────────────────────────────────────────────────────────────────|
+$ git branch -d branch-to-delete                                                |
+Deleted branch branch-to-delete (was b66a0bf).                                  |
+styles_hash: 8e756f80b8de85ab
