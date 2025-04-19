@@ -1,5 +1,5 @@
 use super::OpTrait;
-use crate::{git::diff::PatchMode, items::TargetData, state::State, term::Term, Action};
+use crate::{git::diff::PatchMode, items::TargetData, state::State, Action};
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
@@ -39,42 +39,42 @@ impl OpTrait for Unstage {
 }
 
 fn unstage_staged() -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         let mut cmd = Command::new("git");
         cmd.args(["reset", "HEAD", "--"]);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn unstage_file(file: OsString) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         let mut cmd = Command::new("git");
         cmd.args(["restore", "--staged"]);
         cmd.arg(&file);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn unstage_patch(input: Vec<u8>) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse"]);
 
         state.close_menu();
-        state.run_cmd(term, &input, cmd)
+        state.run_cmd(&input, cmd)
     })
 }
 
 fn unstage_line(input: Vec<u8>) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse", "--recount"]);
 
         state.close_menu();
-        state.run_cmd(term, &input, cmd)
+        state.run_cmd(&input, cmd)
     })
 }

@@ -1,5 +1,5 @@
 use super::{create_prompt_with_default, selected_rev, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Action, Res};
+use crate::{items::TargetData, menu::arg::Arg, state::State, Action, Res};
 use std::process::Command;
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -22,14 +22,14 @@ impl OpTrait for ResetSoft {
     }
 }
 
-fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_soft(state: &mut State, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--soft"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
     state.close_menu();
-    state.run_cmd(term, &[], cmd)
+    state.run_cmd(&[], cmd)
 }
 
 pub(crate) struct ResetMixed;
@@ -48,14 +48,14 @@ impl OpTrait for ResetMixed {
     }
 }
 
-fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_mixed(state: &mut State, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--mixed"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
     state.close_menu();
-    state.run_cmd(term, &[], cmd)
+    state.run_cmd(&[], cmd)
 }
 
 pub(crate) struct ResetHard;
@@ -74,12 +74,12 @@ impl OpTrait for ResetHard {
     }
 }
 
-fn reset_hard(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_hard(state: &mut State, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--hard"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
     state.close_menu();
-    state.run_cmd(term, &[], cmd)
+    state.run_cmd(&[], cmd)
 }

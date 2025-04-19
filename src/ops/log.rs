@@ -5,7 +5,6 @@ use crate::{
     menu::arg::{any_regex, positive_number, Arg},
     screen,
     state::State,
-    term::Term,
     Res,
 };
 use git2::Oid;
@@ -28,7 +27,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, _term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             goto_log_screen(state, None);
             Ok(())
         }))
@@ -55,7 +54,7 @@ impl OpTrait for LogOther {
     }
 }
 
-fn log_other(state: &mut State, _term: &mut Term, result: &str) -> Res<()> {
+fn log_other(state: &mut State, result: &str) -> Res<()> {
     let oid_result = match state.repo.revparse_single(result) {
         Ok(rev) => Ok(rev.id()),
         Err(err) => Err(Error::FindGitRev(err)),

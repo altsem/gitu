@@ -1,11 +1,11 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, screen, state::State, term::Term};
+use crate::{items::TargetData, screen, state::State};
 use std::rc::Rc;
 
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, _term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             goto_refs_screen(state);
             Ok(())
         }))

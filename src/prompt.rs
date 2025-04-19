@@ -1,6 +1,4 @@
-use super::Res;
-use crate::{error::Error, ops::Action};
-use ratatui::{backend::Backend, Terminal};
+use crate::ops::Action;
 use std::borrow::Cow;
 use tui_prompts::{State as _, TextState};
 
@@ -27,10 +25,8 @@ impl Prompt {
         self.state.focus();
     }
 
-    pub(crate) fn reset<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Res<()> {
+    pub(crate) fn reset(&mut self) {
         self.data = None;
         self.state = TextState::new();
-        terminal.hide_cursor().map_err(Error::Term)?;
-        Ok(())
     }
 }

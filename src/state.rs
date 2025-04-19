@@ -1,8 +1,8 @@
 use std::io::Read;
 use std::io::Write;
-use std::ops::DerefMut;
 use std::process::Child;
 use std::process::Command;
+use std::process::ExitStatus;
 use std::process::Stdio;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -45,11 +45,17 @@ pub(crate) struct State {
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
-    pub pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
+    pub current_cmd: CommandState,
     enable_async_cmds: bool,
     pub current_cmd_log: CmdLog,
     pub prompt: prompt::Prompt,
     pub clipboard: Option<Clipboard>,
+}
+
+pub(crate) enum CommandState {
+    Idle,
+    QueuedInteractive(Command),
+    RunningAsync(Child, Arc<RwLock<CmdLogEntry>>),
 }
 
 impl State {
@@ -91,7 +97,7 @@ impl State {
             enable_async_cmds,
             quit: false,
             screens,
-            pending_cmd: None,
+            current_cmd: CommandState::Idle,
             pending_menu,
             current_cmd_log: CmdLog::new(),
             prompt: prompt::Prompt::new(),
@@ -113,11 +119,11 @@ impl State {
                     if self.prompt.state.is_focused() {
                         self.prompt.state.handle_key_event(key)
                     } else if key.kind == KeyEventKind::Press {
-                        if self.pending_cmd.is_none() {
+                        if matches!(self.current_cmd, CommandState::Idle) {
                             self.current_cmd_log.clear();
                         }
 
-                        self.handle_key_input(term, key)?;
+                        self.handle_key_input(key)?;
                     }
                 }
                 GituEvent::FileUpdate => {
@@ -126,17 +132,20 @@ impl State {
                 _ => (),
             }
 
-            self.update_prompt(term)?;
+            self.update_prompt();
+            if self.prompt.state.is_focused() {
+                term.show_cursor().map_err(Error::Term)?;
+            } else {
+                term.hide_cursor().map_err(Error::Term)?;
+            }
         }
 
-        let handle_pending_cmd_result = self.handle_pending_cmd();
-        let pending_cmd_done = self
-            .handle_result(handle_pending_cmd_result)
-            .unwrap_or(true);
+        let handle_cmd_result = self.handle_current_cmd(term);
+        let pending_cmd_done = self.handle_result(handle_cmd_result).unwrap_or(true);
 
         let needs_redraw = !events.is_empty() || pending_cmd_done;
 
-        if needs_redraw && self.screens.last_mut().is_some() {
+        if needs_redraw {
             term.draw(|frame| ui::ui(frame, self))
                 .map_err(Error::Term)?;
         }
@@ -144,12 +153,12 @@ impl State {
         Ok(())
     }
 
-    fn update_prompt(&mut self, term: &mut Term) -> Res<()> {
+    fn update_prompt(&mut self) {
         if self.prompt.state.status() == Status::Aborted {
             self.unhide_menu();
-            self.prompt.reset(term)?;
+            self.prompt.reset();
         } else if let Some(mut prompt_data) = self.prompt.data.take() {
-            let result = (Rc::get_mut(&mut prompt_data.update_fn).unwrap())(self, term);
+            let result = (Rc::get_mut(&mut prompt_data.update_fn).unwrap())(self);
 
             match result {
                 Ok(()) => {
@@ -162,11 +171,9 @@ impl State {
                     .push(CmdLogEntry::Error(error.to_string())),
             }
         }
-
-        Ok(())
     }
 
-    fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
+    fn handle_key_input(&mut self, key: event::KeyEvent) -> Res<()> {
         let menu = match &self.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
@@ -182,7 +189,7 @@ impl State {
         match matching_bindings[..] {
             [binding] => {
                 if binding.keys == self.pending_keys {
-                    self.handle_op(binding.op.clone(), term)?;
+                    self.handle_op(binding.op.clone())?;
                     self.pending_keys.clear();
                 }
             }
@@ -193,10 +200,10 @@ impl State {
         Ok(())
     }
 
-    pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
+    pub(crate) fn handle_op(&mut self, op: Op) -> Res<()> {
         let target = self.screen().get_selected_item().target_data.as_ref();
         if let Some(mut action) = op.clone().implementation().get_action(target) {
-            let result = Rc::get_mut(&mut action).unwrap()(self, term);
+            let result = Rc::get_mut(&mut action).unwrap()(self);
             self.handle_result(result);
         }
 
@@ -239,17 +246,24 @@ impl State {
 
     /// Runs a `Command` and handles its output.
     /// Will block awaiting its completion.
-    pub fn run_cmd(&mut self, term: &mut Term, input: &[u8], cmd: Command) -> Res<()> {
-        self.run_cmd_async(term, input, cmd)?;
-        self.await_pending_cmd()?;
-        self.handle_pending_cmd()?;
+    pub fn run_cmd(&mut self, input: &[u8], cmd: Command) -> Res<()> {
+        self.run_cmd_async(input, cmd)?;
+        self.await_running_cmd()?;
+
+        let CommandState::RunningAsync(child, log_entry) =
+            std::mem::replace(&mut self.current_cmd, CommandState::Idle)
+        else {
+            unreachable!();
+        };
+
+        self.handle_finished_cmd(child, log_entry)?;
+
         Ok(())
     }
 
     /// Runs a `Command` and handles its output asynchronously (if async commands are enabled).
-    /// Will return `Ok(())` if one is already running.
-    pub fn run_cmd_async(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
-        if self.pending_cmd.is_some() {
+    pub fn run_cmd_async(&mut self, input: &[u8], mut cmd: Command) -> Res<()> {
+        if !matches!(self.current_cmd, CommandState::Idle) {
             return Err(Error::CmdAlreadyRunning);
         }
 
@@ -260,8 +274,6 @@ impl State {
         cmd.stderr(Stdio::piped());
 
         let log_entry = self.current_cmd_log.push_cmd(&cmd);
-        term.draw(|frame| ui::ui(frame, self))
-            .map_err(Error::Term)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
@@ -273,74 +285,79 @@ impl State {
             .write_all(input)
             .map_err(Error::Term)?;
 
-        self.pending_cmd = Some((child, log_entry));
+        self.current_cmd = CommandState::RunningAsync(child, log_entry);
 
         if !self.enable_async_cmds {
-            self.await_pending_cmd()?;
+            self.await_running_cmd()?;
         }
 
         Ok(())
     }
 
-    fn await_pending_cmd(&mut self) -> Res<()> {
-        if let Some((child, _)) = &mut self.pending_cmd {
+    fn await_running_cmd(&mut self) -> Res<()> {
+        if let CommandState::RunningAsync(child, _) = &mut self.current_cmd {
             child.wait().map_err(Error::CouldntAwaitCmd)?;
         }
         Ok(())
     }
 
-    /// Handles any pending_cmd in State without blocking. Returns `true` if a cmd was handled.
-    pub fn handle_pending_cmd(&mut self) -> Res<bool> {
-        let Some((ref mut child, ref mut log_rwlock)) = self.pending_cmd else {
-            return Ok(false);
-        };
-
-        let Some(status) = child.try_wait().map_err(Error::CouldntAwaitCmd)? else {
-            return Ok(false);
-        };
-
-        log::debug!("pending cmd finished with {:?}", status);
-
-        let result = write_child_output_to_log(log_rwlock, child, status);
-        self.pending_cmd = None;
-        self.screen_mut().update()?;
-        result?;
-
-        Ok(true)
-    }
-
-    pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
-        if self.pending_cmd.is_some() {
+    pub fn run_cmd_interactive(&mut self, mut cmd: Command) -> Res<()> {
+        if !matches!(self.current_cmd, CommandState::Idle) {
             return Err(Error::CmdAlreadyRunning);
         }
 
         cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
         self.current_cmd_log.push_cmd_with_output(&cmd, "\n".into());
-        self.update(term, &[GituEvent::Refresh])?;
+        self.current_cmd = CommandState::QueuedInteractive(cmd);
 
+        Ok(())
+    }
+
+    pub fn handle_current_cmd(&mut self, term: &mut Term) -> Res<bool> {
+        match std::mem::replace(&mut self.current_cmd, CommandState::Idle) {
+            CommandState::Idle => Ok(false),
+            CommandState::QueuedInteractive(cmd) => self.run_interactive_cmd(term, cmd),
+            CommandState::RunningAsync(child, log_entry) => {
+                self.handle_finished_cmd(child, log_entry)
+            }
+        }
+    }
+
+    fn handle_finished_cmd(
+        &mut self,
+        mut child: Child,
+        log_entry: Arc<RwLock<CmdLogEntry>>,
+    ) -> Res<bool> {
+        let Some(status) = child.try_wait().map_err(Error::CouldntAwaitCmd)? else {
+            self.current_cmd = CommandState::RunningAsync(child, log_entry);
+            return Ok(false);
+        };
+
+        log::debug!("cmd finished with {:?}", status);
+        let result = write_child_output_to_log(&mut log_entry.write().unwrap(), &mut child, status);
+        self.screen_mut().update()?;
+        result?;
+        Ok(true)
+    }
+
+    fn run_interactive_cmd(&mut self, term: &mut Term, mut cmd: Command) -> Res<bool> {
         eprint!("\r");
 
         // Redirect stderr so we can capture it via `Child::wait_with_output()`
         cmd.stderr(Stdio::piped());
-
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
         term.backend().disable_raw_mode()?;
-
         // If we don't show the cursor prior spawning (thus restore the default
         // state), the cursor may be missing in $EDITOR.
         term.show_cursor().map_err(Error::Term)?;
 
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
-
         // Drop stdin as `Child::wait_with_output` would
         drop(child.stdin.take());
-
-        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-
         tee(child.stdout.as_mut(), &mut [&mut stdout]).map_err(Error::Term)?;
-
         tee(
             child.stderr.as_mut(),
             &mut [&mut std::io::stderr(), &mut stderr],
@@ -357,13 +374,10 @@ impl State {
 
         // restore the raw mode
         term.backend().enable_raw_mode()?;
-
         // Prevents cursor flash when exiting editor
         term.hide_cursor().map_err(Error::Term)?;
-
         // In case the command left the alternate screen (editors would)
         term.backend_mut().enter_alternate_screen()?;
-
         term.clear().map_err(Error::Term)?;
         self.screen_mut().update()?;
 
@@ -380,7 +394,7 @@ impl State {
             ));
         }
 
-        Ok(())
+        Ok(true)
     }
 
     pub fn hide_menu(&mut self) {
@@ -427,13 +441,11 @@ pub(crate) fn root_menu(config: &Config) -> Option<Menu> {
 }
 
 fn write_child_output_to_log(
-    log_rwlock: &mut Arc<RwLock<CmdLogEntry>>,
+    log: &mut CmdLogEntry,
     child: &mut Child,
-    status: std::process::ExitStatus,
+    status: ExitStatus,
 ) -> Res<()> {
-    let mut log = log_rwlock.write().unwrap();
-
-    let CmdLogEntry::Cmd { args, out: out_log } = log.deref_mut() else {
+    let CmdLogEntry::Cmd { args, out: out_log } = log else {
         unreachable!("pending_cmd is always CmdLogEntry::Cmd variant");
     };
 

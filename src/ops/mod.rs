@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use tui_prompts::State as _;
 
 use crate::{
-    cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State,
-    term::Term, Res,
+    cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State, Res,
 };
 use std::{fmt::Display, rc::Rc};
 
@@ -25,7 +24,7 @@ pub(crate) mod stage;
 pub(crate) mod stash;
 pub(crate) mod unstage;
 
-pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
+pub(crate) type Action = Rc<dyn FnMut(&mut State) -> Res<()>>;
 
 pub(crate) trait OpTrait {
     /// Get the implementation (which may or may not exist) of the Op given some TargetData.
@@ -189,26 +188,26 @@ impl Display for Menu {
 }
 
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
-    let update_fn = Rc::new(move |state: &mut State, term: &mut Term| {
+    let update_fn = Rc::new(move |state: &mut State| {
         if state.prompt.state.status().is_pending() {
             match state.prompt.state.value() {
                 "y" => {
-                    Rc::get_mut(&mut action).unwrap()(state, term)?;
-                    state.prompt.reset(term)?;
+                    Rc::get_mut(&mut action).unwrap()(state)?;
+                    state.prompt.reset();
                 }
                 "" => (),
                 _ => {
                     state
                         .current_cmd_log
                         .push(CmdLogEntry::Error("Aborted".to_string()));
-                    state.prompt.reset(term)?;
+                    state.prompt.reset();
                 }
             }
         }
         Ok(())
     });
 
-    Rc::new(move |state: &mut State, _term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         state.prompt.set(PromptData {
             prompt_text: format!("{} (y or n)", prompt).into(),
             update_fn: update_fn.clone(),
@@ -220,7 +219,7 @@ pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Act
 
 pub(crate) fn create_prompt(
     prompt: &'static str,
-    on_success: fn(&mut State, &mut Term, &str) -> Res<()>,
+    on_success: fn(&mut State, &str) -> Res<()>,
     hide_menu: bool,
 ) -> Action {
     create_prompt_with_default(prompt, on_success, |_| None, hide_menu)
@@ -228,11 +227,11 @@ pub(crate) fn create_prompt(
 
 pub(crate) fn create_prompt_with_default(
     prompt: &'static str,
-    on_success: fn(&mut State, &mut Term, &str) -> Res<()>,
+    on_success: fn(&mut State, &str) -> Res<()>,
     create_default_value: fn(&State) -> Option<String>,
     hide_menu: bool,
 ) -> Action {
-    Rc::new(move |state: &mut State, _term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         set_prompt(
             state,
             prompt,
@@ -245,7 +244,7 @@ pub(crate) fn create_prompt_with_default(
 }
 
 type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
-type PromptAction = Box<dyn Fn(&mut State, &mut Term, &str) -> Res<()>>;
+type PromptAction = Box<dyn Fn(&mut State, &str) -> Res<()>>;
 
 pub(crate) fn set_prompt(
     state: &mut State,
@@ -266,10 +265,10 @@ pub(crate) fn set_prompt(
 
     state.prompt.set(PromptData {
         prompt_text,
-        update_fn: Rc::new(move |state, term| {
+        update_fn: Rc::new(move |state| {
             if state.prompt.state.status().is_done() {
                 let input = state.prompt.state.value().to_string();
-                state.prompt.reset(term)?;
+                state.prompt.reset();
 
                 let default_value = default_fn(state);
                 let value = match (input.as_str(), &default_value) {
@@ -278,7 +277,7 @@ pub(crate) fn set_prompt(
                     (value, _) => value,
                 };
 
-                on_success(state, term, value)?;
+                on_success(state, value)?;
 
                 if hide_menu {
                     state.unhide_menu();

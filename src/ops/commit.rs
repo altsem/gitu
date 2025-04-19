@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term};
+use crate::{items::TargetData, menu::arg::Arg, state::State};
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -26,13 +26,13 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct Commit;
 impl OpTrait for Commit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             let mut cmd = Command::new("git");
             cmd.args(["commit"]);
             cmd.args(state.pending_menu.as_ref().unwrap().args());
 
             state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            state.run_cmd_interactive(cmd)?;
             Ok(())
         }))
     }
@@ -45,13 +45,13 @@ impl OpTrait for Commit {
 pub(crate) struct CommitAmend;
 impl OpTrait for CommitAmend {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend"]);
             cmd.args(state.pending_menu.as_ref().unwrap().args());
 
             state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            state.run_cmd_interactive(cmd)?;
             Ok(())
         }))
     }
@@ -68,11 +68,11 @@ impl OpTrait for CommitFixup {
             Some(TargetData::Commit(r)) => {
                 let rev = OsString::from(r);
 
-                Some(Rc::new(move |state: &mut State, term: &mut Term| {
+                Some(Rc::new(move |state: &mut State| {
                     let args = state.pending_menu.as_ref().unwrap().args();
 
                     state.close_menu();
-                    state.run_cmd_interactive(term, commit_fixup_cmd(&args, &rev))
+                    state.run_cmd_interactive(commit_fixup_cmd(&args, &rev))
                 }))
             }
             _ => None,
@@ -103,13 +103,13 @@ impl OpTrait for CommitInstantFixup {
             Some(TargetData::Commit(r)) => {
                 let rev = OsString::from(r);
 
-                Some(Rc::new(move |state: &mut State, term: &mut Term| {
+                Some(Rc::new(move |state: &mut State| {
                     let args = state.pending_menu.as_ref().unwrap().args();
 
                     state.close_menu();
 
-                    state.run_cmd(term, &[], commit_fixup_cmd(&args, &rev))?;
-                    state.run_cmd(term, &[], rebase_autosquash_cmd(&rev))
+                    state.run_cmd(&[], commit_fixup_cmd(&args, &rev))?;
+                    state.run_cmd(&[], rebase_autosquash_cmd(&rev))
                 }))
             }
             _ => None,
