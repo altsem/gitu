@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
+x/D Delete branch                                                               |
 q/<esc> Quit/Close                                                              |
-styles_hash: 19462c048f4219c5
+styles_hash: 5c9012488c72ec31
