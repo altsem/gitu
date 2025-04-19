@@ -285,6 +285,28 @@ mod checkout {
     pub(crate) fn checkout_new_branch() {
         snapshot!(TestContext::setup_clone(), "bcf<esc>bcx<enter>");
     }
+
+    #[test]
+    pub(crate) fn delete_branch_menu() {
+        let ctx = TestContext::setup_clone();
+        run(ctx.dir.path(), &["git", "branch", "branch-to-delete"]);
+        snapshot!(ctx, "YjbDy");
+    }
+
+    #[test]
+    pub(crate) fn delete_current_branch_error() {
+        let ctx = TestContext::setup_clone();
+        snapshot!(ctx, "YjbDmain<enter>");
+    }
+
+    #[test]
+    pub(crate) fn delete_unmerged_branch() {
+        let ctx = TestContext::setup_clone();
+        run(ctx.dir.path(), &["git", "checkout", "-b", "unmergedbranch"]);
+        commit(ctx.dir.path(), "unmergedfile", "This is unmerged content");
+        run(ctx.dir.path(), &["git", "checkout", "main"]);
+        snapshot!(ctx, "YjjbDy<enter>");
+    }
 }
 
 #[test]

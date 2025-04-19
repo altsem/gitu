@@ -1,13 +1,13 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+ Branches                                                                       |
+▌* main                                                                         |
                                                                                 |
- Recent commits                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ b Checkout branch/revision                                                      
 c Checkout new branch                                                           |
 x/D Delete branch                                                               |
 q/<esc> Quit/Close                                                              |
-styles_hash: 5c9012488c72ec31
+styles_hash: 8355ffa06f6482d

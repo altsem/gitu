@@ -20,6 +20,7 @@ pub enum Error {
     GitShowUtf8(string::FromUtf8Error),
     GitShowMeta(git2::Error),
     NotOnBranch,
+    InvalidBranch,
     GetHead(git2::Error),
     CurrentBranchName(git2::Error),
     GetCurrentBranchUpstream(git2::Error),
@@ -47,6 +48,10 @@ pub enum Error {
     CouldntReadCmdOutput(io::Error),
     ListGitReferences(git2::Error),
     OpenLogFile(io::Error),
+    CantDeleteCurrentBranch,
+    CantGetBranchCommit(git2::Error),
+    CantGetBranchName,
+    CantGetBranch(git2::Error),
 }
 
 impl std::error::Error for Error {}
@@ -85,6 +90,7 @@ impl Display for Error {
             }
             Error::GitShowMeta(e) => f.write_fmt(format_args!("Git show metadata error: {}", e)),
             Error::NotOnBranch => f.write_str("Head is not a branch"),
+            Error::InvalidBranch => f.write_str("Invalid branch"),
             Error::GetHead(e) => f.write_fmt(format_args!("Couldn't get HEAD: {}", e)),
             Error::CurrentBranchName(e) => {
                 f.write_fmt(format_args!("Couldn't get current branch name: {}", e))
@@ -132,6 +138,12 @@ impl Display for Error {
                 f.write_fmt(format_args!("Couldn't list git references: {}", e))
             }
             Error::OpenLogFile(e) => f.write_fmt(format_args!("Couldn't open log file: {}", e)),
+            Error::CantDeleteCurrentBranch => f.write_str("Cannot delete the current branch"),
+            Error::CantGetBranchCommit(e) => {
+                f.write_fmt(format_args!("Couldn't get branch commit: {}", e))
+            }
+            Error::CantGetBranch(e) => f.write_fmt(format_args!("Couldn't get branch: {}", e)),
+            Error::CantGetBranchName => f.write_fmt(format_args!("No branch name found")),
         }
     }
 }

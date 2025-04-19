@@ -1,16 +1,13 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+ Branches                                                                       |
+▌* main                                                                         |
                                                                                 |
- Recent commits                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +19,7 @@ b Checkout branch/revision                                                      
 c Checkout new branch                                                           |
 x/D Delete branch                                                               |
 q/<esc> Quit/Close                                                              |
-styles_hash: 5c9012488c72ec31
+────────────────────────────────────────────────────────────────────────────────|
+$ git branch -d branch-to-delete                                                |
+Deleted branch branch-to-delete (was b66a0bf).                                  |
+styles_hash: 8e756f80b8de85ab
