@@ -227,6 +227,24 @@ pub(crate) fn get_current_branch_name(repo: &git2::Repository) -> Res<String> {
     .map_err(Error::BranchNameUtf8)
 }
 
+pub(crate) fn is_branch_unmerged(repo: &git2::Repository, branch: &Branch) -> Res<bool> {
+    let mut revwalk = repo.revwalk().map_err(Error::ReadLog)?;
+    revwalk.push_head().map_err(Error::ReadLog)?;
+
+    let branch_commit = branch
+        .get()
+        .peel_to_commit()
+        .map_err(Error::CantGetBranchCommit)?;
+
+    for oid in revwalk {
+        let oid = oid.map_err(Error::ReadLog)?;
+        if branch_commit.id() == oid {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 pub(crate) fn get_head_name(repo: &git2::Repository) -> Res<String> {
     String::from_utf8(repo.head().map_err(Error::GetHead)?.name_bytes().to_vec())
         .map_err(Utf8Error::String)
@@ -240,4 +258,11 @@ pub(crate) fn get_current_branch(repo: &git2::Repository) -> Res<Branch> {
     } else {
         Err(Error::NotOnBranch)
     }
+}
+
+pub(crate) fn get_branch<'a>(repo: &'a git2::Repository, branch: &str) -> Res<Branch<'a>> {
+    let branch = repo
+        .find_branch(branch, git2::BranchType::Local)
+        .map_err(Error::CantGetBranch)?;
+    Ok(branch)
 }

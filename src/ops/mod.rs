@@ -10,7 +10,7 @@ use std::{fmt::Display, rc::Rc};
 pub(crate) mod checkout;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
-pub(crate) mod delete_branch;
+
 pub(crate) mod discard;
 pub(crate) mod editor;
 pub(crate) mod fetch;
@@ -128,7 +128,7 @@ impl Op {
 
             Op::Checkout => Box::new(checkout::Checkout),
             Op::CheckoutNewBranch => Box::new(checkout::CheckoutNewBranch),
-            Op::DeleteBranch => Box::new(delete_branch::DeleteBranch),
+            Op::DeleteBranch => Box::new(checkout::DeleteBranch),
             Op::Commit => Box::new(commit::Commit),
             Op::CommitAmend => Box::new(commit::CommitAmend),
             Op::FetchAll => Box::new(fetch::FetchAll),
