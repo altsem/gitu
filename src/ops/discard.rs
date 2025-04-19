@@ -44,67 +44,67 @@ impl OpTrait for Discard {
 }
 
 fn discard_branch(branch: String) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["branch", "-d"]);
         cmd.arg(&branch);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn clean_file(file: PathBuf) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["clean", "--force"]);
         cmd.arg(&file);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["mv", "--force"]);
         cmd.arg(&src);
         cmd.arg(&dest);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn remove_file(file: PathBuf) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["rm", "--force"]);
         cmd.arg(&file);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn checkout_file(file: PathBuf) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["checkout", "HEAD", "--"]);
         cmd.arg(&file);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn discard_unstaged_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse"]);
 
         state.close_menu();
-        state.run_cmd(term, &diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
+        state.run_cmd(&diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
     })
 }

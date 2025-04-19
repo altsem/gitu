@@ -35,13 +35,13 @@ impl OpTrait for Show {
 }
 
 fn goto_show_screen(r: String) -> Option<Action> {
-    Some(Rc::new(move |state, term| {
+    Some(Rc::new(move |state| {
         state.close_menu();
         state.screens.push(
             screen::show::create(
                 Rc::clone(&state.config),
                 Rc::clone(&state.repo),
-                term.size().map_err(Error::Term)?,
+                state.screen().size,
                 r.clone(),
             )
             .expect("Couldn't create screen"),
@@ -54,7 +54,7 @@ pub(crate) const EDITOR_VARS: [&str; 4] = ["GITU_SHOW_EDITOR", "VISUAL", "EDITOR
 fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
-    Some(Rc::new(move |state, term| {
+    Some(Rc::new(move |state| {
         let configured_editor = EDITOR_VARS
             .into_iter()
             .find_map(|var| std::env::var(var).ok());
@@ -66,7 +66,7 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
         let cmd = parse_editor_command(&editor, &file, maybe_line);
 
         state.close_menu();
-        state.run_cmd_interactive(term, cmd)?;
+        state.run_cmd_interactive(cmd)?;
 
         state.screen_mut().update()
     }))

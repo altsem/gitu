@@ -1,6 +1,6 @@
 use std::{process::Command, rc::Rc};
 
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use crate::{items::TargetData, menu::arg::Arg, state::State, Res};
 
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
 
@@ -17,12 +17,12 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct RevertAbort;
 impl OpTrait for RevertAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--abort"]);
 
             state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            state.run_cmd_interactive(cmd)?;
             Ok(())
         }))
     }
@@ -35,12 +35,12 @@ impl OpTrait for RevertAbort {
 pub(crate) struct RevertContinue;
 impl OpTrait for RevertContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--continue"]);
 
             state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            state.run_cmd_interactive(cmd)?;
             Ok(())
         }))
     }
@@ -66,12 +66,12 @@ impl OpTrait for RevertCommit {
     }
 }
 
-fn revert_commit(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn revert_commit(state: &mut State, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["revert"]);
     cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
     state.close_menu();
-    state.run_cmd_interactive(term, cmd)
+    state.run_cmd_interactive(cmd)
 }

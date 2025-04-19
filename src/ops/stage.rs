@@ -3,7 +3,6 @@ use crate::{
     git::diff::{Diff, PatchMode},
     items::TargetData,
     state::State,
-    term::Term,
     Action,
 };
 use std::{ffi::OsString, process::Command, rc::Rc};
@@ -45,49 +44,49 @@ impl OpTrait for Stage {
 }
 
 fn stage_unstaged() -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         let mut cmd = Command::new("git");
         cmd.args(["add", "-u", "."]);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn stage_untracked(untracked: Vec<std::path::PathBuf>) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |state: &mut State| {
         let mut cmd = Command::new("git");
         cmd.arg("add");
         cmd.args(untracked.clone());
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn stage_file(file: OsString) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["add"]);
         cmd.arg(&file);
 
         state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        state.run_cmd(&[], cmd)
     })
 }
 
 fn stage_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached"]);
 
         state.close_menu();
-        state.run_cmd(term, &diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
+        state.run_cmd(&diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
     })
 }
 
 fn stage_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |state| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--recount"]);
 
@@ -96,6 +95,6 @@ fn stage_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Ac
             .into_bytes();
 
         state.close_menu();
-        state.run_cmd(term, &input, cmd)
+        state.run_cmd(&input, cmd)
     })
 }

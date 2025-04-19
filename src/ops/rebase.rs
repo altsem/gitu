@@ -1,5 +1,5 @@
 use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use crate::{items::TargetData, menu::arg::Arg, state::State, Res};
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -25,12 +25,12 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--continue"]);
 
             state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            state.run_cmd_interactive(cmd)?;
             Ok(())
         }))
     }
@@ -43,12 +43,12 @@ impl OpTrait for RebaseContinue {
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|state: &mut State| {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--abort"]);
 
             state.close_menu();
-            state.run_cmd(term, &[], cmd)?;
+            state.run_cmd(&[], cmd)?;
             Ok(())
         }))
     }
@@ -74,14 +74,14 @@ impl OpTrait for RebaseElsewhere {
     }
 }
 
-fn rebase_elsewhere(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
+fn rebase_elsewhere(state: &mut State, rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.arg("rebase");
     cmd.args(state.pending_menu.as_ref().unwrap().args());
     cmd.arg(rev);
 
     state.close_menu();
-    state.run_cmd_interactive(term, cmd)?;
+    state.run_cmd_interactive(cmd)?;
     Ok(())
 }
 
@@ -91,10 +91,10 @@ impl OpTrait for RebaseInteractive {
         let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 let rev = OsString::from(r);
-                Rc::new(move |state: &mut State, term: &mut Term| {
+                Rc::new(move |state: &mut State| {
                     let args = state.pending_menu.as_ref().unwrap().args();
                     state.close_menu();
-                    state.run_cmd_interactive(term, rebase_interactive_cmd(&args, &rev))
+                    state.run_cmd_interactive(rebase_interactive_cmd(&args, &rev))
                 })
             }
             _ => return None,
@@ -131,10 +131,10 @@ impl OpTrait for RebaseAutosquash {
         let action = match target {
             Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
                 let rev = OsString::from(r);
-                Rc::new(move |state: &mut State, term: &mut Term| {
+                Rc::new(move |state: &mut State| {
                     let args = state.pending_menu.as_ref().unwrap().args();
                     state.close_menu();
-                    state.run_cmd_interactive(term, rebase_autosquash_cmd(&args, &rev))
+                    state.run_cmd_interactive(rebase_autosquash_cmd(&args, &rev))
                 })
             }
             _ => return None,
