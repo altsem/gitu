@@ -290,22 +290,25 @@ mod checkout {
     pub(crate) fn delete_branch_menu() {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "branch", "branch-to-delete"]);
-        snapshot!(ctx, "YjbDy");
+        snapshot!(ctx, "YjbK<enter>");
     }
 
     #[test]
     pub(crate) fn delete_current_branch_error() {
         let ctx = TestContext::setup_clone();
-        snapshot!(ctx, "YjbDmain<enter>");
+        snapshot!(ctx, "YjbKmain<enter>");
     }
 
     #[test]
     pub(crate) fn delete_unmerged_branch() {
         let ctx = TestContext::setup_clone();
-        run(ctx.dir.path(), &["git", "checkout", "-b", "unmergedbranch"]);
-        commit(ctx.dir.path(), "unmergedfile", "This is unmerged content");
+        run(
+            ctx.dir.path(),
+            &["git", "checkout", "-b", "unmerged-branch"],
+        );
+        commit(ctx.dir.path(), "unmerged-file", "This is unmerged content");
         run(ctx.dir.path(), &["git", "checkout", "main"]);
-        snapshot!(ctx, "YjjbDy<enter>");
+        snapshot!(ctx, "YjjbK<enter>");
     }
 }
 

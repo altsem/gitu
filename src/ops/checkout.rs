@@ -1,8 +1,9 @@
 use super::{create_prompt_with_default, create_y_n_prompt, selected_rev, Action, OpTrait};
 use crate::{
-    error::Error, items::TargetData, menu::arg::Arg, prompt::PromptData, state::State, term::Term,
-    Res,
+    cmd_log::CmdLogEntry, error::Error, items::TargetData, menu::arg::Arg, prompt::PromptData,
+    state::State, term::Term, Res,
 };
+use nom::Err;
 use std::{process::Command, rc::Rc};
 use tui_prompts::State as _;
 
@@ -70,22 +71,13 @@ fn checkout_new_branch_prompt_update(state: &mut State, term: &mut Term) -> Res<
 
 pub(crate) struct DeleteBranch;
 impl OpTrait for DeleteBranch {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        match target {
-            Some(TargetData::Branch(branch)) => {
-                let branch = branch.clone();
-                Some(create_y_n_prompt(
-                    Rc::new(move |state, term| delete_branch(state, term, &branch)),
-                    "Delete this branch?",
-                ))
-            }
-            _ => Some(create_prompt_with_default(
-                "Delete branch",
-                delete_branch,
-                selected_rev,
-                true,
-            )),
-        }
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(create_prompt_with_default(
+            "Delete branch",
+            delete_branch,
+            selected_rev,
+            true,
+        ))
     }
 
     fn display(&self, _state: &State) -> String {
@@ -98,7 +90,7 @@ fn delete_branch(state: &mut State, term: &mut Term, branch: &str) -> Res<()> {
         return Err(Error::InvalidBranch);
     }
 
-    let delete_flag = {
+    let is_unmerged = {
         let current_branch = crate::git::get_current_branch(&state.repo)?;
         let current_branch_name = match current_branch.name() {
             Ok(Some(name)) => name,
@@ -111,16 +103,31 @@ fn delete_branch(state: &mut State, term: &mut Term, branch: &str) -> Res<()> {
         }
 
         let target_branch = crate::git::get_branch(&state.repo, branch)?;
-        if crate::git::is_branch_unmerged(&state.repo, &target_branch).unwrap_or(false) {
-            "-D"
-        } else {
-            "-d"
-        }
+
+        // Get if branch is unmerged
+        crate::git::is_branch_unmerged(&state.repo, &target_branch).unwrap_or(false)
     };
 
-    let mut cmd = Command::new("git");
-    cmd.args(["branch", delete_flag, branch]);
-    state.run_cmd(term, &[], cmd)?;
+    if is_unmerged {
+        let branch_to_delete = branch.to_string();
 
+        let action = Rc::new(move |state: &mut State, term: &mut Term| {
+            perform_branch_deletion(state, term, &branch_to_delete)
+        });
+
+        let prompt = create_y_n_prompt(action, "Branch is unmerged. Really delete?");
+        prompt(state, term)?;
+
+        Ok(())
+    } else {
+        perform_branch_deletion(state, term, branch)
+    }
+}
+
+fn perform_branch_deletion(state: &mut State, term: &mut Term, branch: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+
+    cmd.args(["branch", "-D", branch]);
+    state.run_cmd(term, &[], cmd)?;
     Ok(())
 }

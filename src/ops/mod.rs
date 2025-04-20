@@ -10,7 +10,6 @@ use std::{fmt::Display, rc::Rc};
 pub(crate) mod checkout;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
-
 pub(crate) mod discard;
 pub(crate) mod editor;
 pub(crate) mod fetch;
