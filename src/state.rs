@@ -9,15 +9,12 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 use arboard::Clipboard;
-use crossterm::event;
-use crossterm::event::Event;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyEventKind;
-use crossterm::event::KeyModifiers;
 use git2::Repository;
 use ratatui::layout::Size;
-use tui_prompts::State as _;
-use tui_prompts::Status;
+use termwiz::input::InputEvent;
+use termwiz::input::KeyCode;
+use termwiz::input::KeyEvent;
+use termwiz::input::Modifiers;
 
 use crate::bindings::Bindings;
 use crate::cli;
@@ -29,6 +26,7 @@ use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt;
+use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
@@ -41,7 +39,7 @@ pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
     pub bindings: Bindings,
-    pending_keys: Vec<(KeyModifiers, KeyCode)>,
+    pending_keys: Vec<(Modifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
@@ -109,21 +107,22 @@ impl State {
         for event in events {
             log::debug!("{:?}", event);
 
-            match *event {
-                GituEvent::Term(Event::Resize(w, h)) => {
+            match event {
+                GituEvent::Term(InputEvent::Resized { cols, rows }) => {
                     for screen in self.screens.iter_mut() {
-                        screen.size = Size::new(w, h);
+                        screen.size =
+                            Size::new({ *cols }.try_into().unwrap(), { *rows }.try_into().unwrap());
                     }
                 }
-                GituEvent::Term(Event::Key(key)) => {
+                GituEvent::Term(InputEvent::Key(key)) => {
                     if self.prompt.state.is_focused() {
-                        self.prompt.state.handle_key_event(key)
-                    } else if key.kind == KeyEventKind::Press {
+                        self.prompt.state.handle_key_event(key);
+                    } else {
                         if matches!(self.current_cmd, CommandState::Idle) {
                             self.current_cmd_log.clear();
                         }
 
-                        self.handle_key_input(key)?;
+                        self.handle_key_input(key.clone())?;
                     }
                 }
                 GituEvent::FileUpdate => {
@@ -154,7 +153,7 @@ impl State {
     }
 
     fn update_prompt(&mut self) {
-        if self.prompt.state.status() == Status::Aborted {
+        if self.prompt.state.status == Status::Aborted {
             self.unhide_menu();
             self.prompt.reset();
         } else if let Some(mut prompt_data) = self.prompt.data.take() {
@@ -173,14 +172,14 @@ impl State {
         }
     }
 
-    fn handle_key_input(&mut self, key: event::KeyEvent) -> Res<()> {
+    fn handle_key_input(&mut self, key: KeyEvent) -> Res<()> {
         let menu = match &self.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
             Some(menu) => menu.menu,
         };
 
-        self.pending_keys.push((key.modifiers, key.code));
+        self.pending_keys.push((key.modifiers, key.key));
         let matching_bindings = self
             .bindings
             .match_bindings(&menu, &self.pending_keys)
@@ -348,7 +347,7 @@ impl State {
         cmd.stderr(Stdio::piped());
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
-        term.backend().disable_raw_mode()?;
+        term.backend_mut().disable_raw_mode()?;
         // If we don't show the cursor prior spawning (thus restore the default
         // state), the cursor may be missing in $EDITOR.
         term.show_cursor().map_err(Error::Term)?;
@@ -373,7 +372,7 @@ impl State {
         self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
 
         // restore the raw mode
-        term.backend().enable_raw_mode()?;
+        term.backend_mut().enable_raw_mode()?;
         // Prevents cursor flash when exiting editor
         term.hide_cursor().map_err(Error::Term)?;
         // In case the command left the alternate screen (editors would)

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tui_prompts::State as _;
 
 use crate::{
     cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State, Res,
@@ -189,8 +188,8 @@ impl Display for Menu {
 
 pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
     let update_fn = Rc::new(move |state: &mut State| {
-        if state.prompt.state.status().is_pending() {
-            match state.prompt.state.value() {
+        if state.prompt.state.status.is_pending() {
+            match &*state.prompt.state.value {
                 "y" => {
                     Rc::get_mut(&mut action).unwrap()(state)?;
                     state.prompt.reset();
@@ -266,8 +265,8 @@ pub(crate) fn set_prompt(
     state.prompt.set(PromptData {
         prompt_text,
         update_fn: Rc::new(move |state| {
-            if state.prompt.state.status().is_done() {
-                let input = state.prompt.state.value().to_string();
+            if state.prompt.state.status.is_done() {
+                let input = state.prompt.state.value.to_string();
                 state.prompt.reset();
 
                 let default_value = default_fn(state);
