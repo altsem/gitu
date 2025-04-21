@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.3] - 2025-04-21
+
+### 🐛 Bug Fixes
+
+- *(crates-io-release)* Resolve issue with publishing to crates-io
+
 ## [0.30.2] - 2025-04-21
 
 ### 🐛 Bug Fixes
