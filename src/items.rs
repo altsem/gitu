@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
+use crate::gitu_diff;
 use crate::highlight;
 use crate::Res;
 use core::str;

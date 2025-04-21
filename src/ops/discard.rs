@@ -1,7 +1,7 @@
 use gitu_diff::Status;
 
 use super::{Action, OpTrait};
-use crate::{git::diff::Diff, items::TargetData, state::State};
+use crate::{git::diff::Diff, gitu_diff, items::TargetData, state::State};
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;

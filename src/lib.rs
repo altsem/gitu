@@ -6,6 +6,7 @@ pub mod error;
 mod file_watcher;
 mod git;
 mod git2_opts;
+pub mod gitu_diff;
 mod highlight;
 mod items;
 mod key_parser;

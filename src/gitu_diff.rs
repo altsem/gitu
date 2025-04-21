@@ -8,18 +8,21 @@
 use core::ops::Range;
 use std::fmt::{self, Debug};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Commit {
     pub header: CommitHeader,
     pub diff: Vec<FileDiff>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct CommitHeader {
     pub range: Range<usize>,
     pub hash: Range<usize>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct FileDiff {
     pub range: Range<usize>,
@@ -27,6 +30,7 @@ pub struct FileDiff {
     pub hunks: Vec<Hunk>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Status {
     Added,
@@ -37,6 +41,7 @@ pub enum Status {
     Unmerged,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct DiffHeader {
     pub range: Range<usize>,
@@ -45,6 +50,7 @@ pub struct DiffHeader {
     pub status: Status,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Hunk {
     pub range: Range<usize>,
@@ -52,12 +58,14 @@ pub struct Hunk {
     pub content: HunkContent,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct HunkContent {
     pub range: Range<usize>,
     pub changes: Vec<Change>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct HunkHeader {
     pub range: Range<usize>,
@@ -68,6 +76,7 @@ pub struct HunkHeader {
     pub fn_ctx: Range<usize>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Change {
     pub old: Range<usize>,
@@ -136,10 +145,9 @@ impl<'a> Parser<'a> {
     /// -foo\n\
     /// +bar\n";
     ///
-    /// let diff = gitu_diff::Parser::new(input).parse_diff().unwrap();
+    /// let diff = gitu::gitu_diff::Parser::new(input).parse_diff().unwrap();
     /// assert_eq!(diff[0].header.new_file, 25..34); // "file2.txt"
     /// ```
-
     pub fn parse_diff(&mut self) -> Result<Vec<FileDiff>, ParseError> {
         let mut diffs = vec![];
 
@@ -159,7 +167,7 @@ impl<'a> Parser<'a> {
             return Err(ParseError::new(self, "*EOF*"));
         }
 
-        Ok(diffs.into())
+        Ok(diffs)
     }
 
     fn parse_commit_header(&mut self) -> Result<CommitHeader, ParseError<'a>> {
@@ -203,7 +211,7 @@ impl<'a> Parser<'a> {
         Ok(FileDiff {
             range: diff_start..self.pos,
             header,
-            hunks: hunks.into(),
+            hunks,
         })
     }
 
@@ -341,7 +349,7 @@ impl<'a> Parser<'a> {
 
         HunkContent {
             range: hunk_content_start..self.pos,
-            changes: changes.into(),
+            changes,
         }
     }
 

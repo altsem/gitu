@@ -686,7 +686,6 @@ dependencies = [
  "figment",
  "git-version",
  "git2",
- "gitu-diff",
  "ignore",
  "insta",
  "itertools 0.14.0",
@@ -727,10 +726,6 @@ dependencies = [
  "unicode-segmentation",
  "unicode-width 0.2.0",
 ]
-
-[[package]]
-name = "gitu-diff"
-version = "0.1.0"
 
 [[package]]
 name = "glob"
