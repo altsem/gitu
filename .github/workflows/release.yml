@@ -69,8 +69,27 @@ jobs:
         name: ${{ env.BUILD_NAME }}
         path: ${{ env.BUILD_NAME }}
 
-  cargo-publish:
+  verify:
     needs: ['build-artifact']
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Cargo publish dry-run
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --dry-run
+
+  cargo-publish:
+    needs: ['build-artifact', 'verify']
     runs-on: ubuntu-latest
     environment: release
     steps:
@@ -89,7 +108,7 @@ jobs:
         cargo publish
 
   create-github-release:
-    needs: ['build-artifact']
+    needs: ['build-artifact', 'verify']
     runs-on: ubuntu-latest
     environment: release
     permissions:
