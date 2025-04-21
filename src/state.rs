@@ -25,10 +25,12 @@ use crate::cmd_log::CmdLog;
 use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::error::Error;
+use crate::items::TargetData;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt;
+use crate::prompt::PromptData;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
@@ -394,6 +396,50 @@ impl State {
             menu.is_hidden = false;
         }
     }
+
+    pub fn set_prompt(&mut self, params: PromptParams) {
+        let prompt_text = if let Some(default) = (params.create_default_value)(self) {
+            format!("{} (default {}):", params.prompt, default).into()
+        } else {
+            format!("{}:", params.prompt).into()
+        };
+
+        if params.hide_menu {
+            self.hide_menu();
+        }
+
+        self.prompt.set(PromptData {
+            prompt_text,
+            update_fn: Rc::new(move |state, term| {
+                if state.prompt.state.status().is_done() {
+                    let input = state.prompt.state.value().to_string();
+                    state.prompt.reset(term)?;
+
+                    let default_value = (params.create_default_value)(state);
+                    let value = match (input.as_str(), &default_value) {
+                        ("", None) => "",
+                        ("", Some(selected)) => selected,
+                        (value, _) => value,
+                    };
+
+                    (params.on_success)(state, term, value)?;
+
+                    if params.hide_menu {
+                        state.unhide_menu();
+                    }
+                }
+                Ok(())
+            }),
+        });
+    }
+
+    pub fn selected_rev(&self) -> Option<String> {
+        match &self.screen().get_selected_item().target_data {
+            Some(TargetData::Branch(branch)) => Some(branch.to_owned()),
+            Some(TargetData::Commit(commit)) => Some(commit.to_owned()),
+            _ => None,
+        }
+    }
 }
 
 fn tee(maybe_input: Option<&mut impl Read>, outputs: &mut [&mut dyn Write]) -> std::io::Result<()> {
@@ -464,4 +510,25 @@ fn write_child_output_to_log(
     }
 
     Ok(())
+}
+
+type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
+type PromptAction = Box<dyn Fn(&mut State, &mut Term, &str) -> Res<()>>;
+
+pub(crate) struct PromptParams {
+    pub prompt: &'static str,
+    pub on_success: PromptAction,
+    pub create_default_value: DefaultFn,
+    pub hide_menu: bool,
+}
+
+impl Default for PromptParams {
+    fn default() -> Self {
+        Self {
+            prompt: "",
+            on_success: Box::new(|_, _, _| Ok(())),
+            create_default_value: Box::new(|_| None),
+            hide_menu: true,
+        }
+    }
 }

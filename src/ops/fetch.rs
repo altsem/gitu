@@ -1,5 +1,11 @@
-use super::{create_prompt, Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use super::{Action, OpTrait};
+use crate::{
+    items::TargetData,
+    menu::arg::Arg,
+    state::{PromptParams, State},
+    term::Term,
+    Res,
+};
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -31,7 +37,15 @@ impl OpTrait for FetchAll {
 pub(crate) struct FetchElsewhere;
 impl OpTrait for FetchElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Select remote", push_elsewhere, true))
+        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
+            state.set_prompt(PromptParams {
+                prompt: "Select remote",
+                on_success: Box::new(push_elsewhere),
+                ..Default::default()
+            });
+
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

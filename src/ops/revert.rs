@@ -1,8 +1,14 @@
 use std::{process::Command, rc::Rc};
 
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use crate::{
+    items::TargetData,
+    menu::arg::Arg,
+    state::{PromptParams, State},
+    term::Term,
+    Res,
+};
 
-use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
+use super::{selected_rev, Action, OpTrait};
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![
@@ -53,12 +59,16 @@ impl OpTrait for RevertContinue {
 pub(crate) struct RevertCommit;
 impl OpTrait for RevertCommit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt_with_default(
-            "Revert commit",
-            revert_commit,
-            selected_rev,
-            true,
-        ))
+        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
+            state.set_prompt(PromptParams {
+                prompt: "Revert commit",
+                on_success: Box::new(revert_commit),
+                create_default_value: Box::new(selected_rev),
+                hide_menu: true,
+            });
+
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

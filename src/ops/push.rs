@@ -1,9 +1,10 @@
-use super::{create_prompt, Action, OpTrait};
+use super::{Action, OpTrait};
 use crate::error::Error;
 use crate::git;
 use crate::git::remote::{
     get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
 };
+use crate::state::PromptParams;
 use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
 use std::{process::Command, rc::Rc};
 
@@ -22,8 +23,15 @@ impl OpTrait for PushToPushRemote {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_push_remote(&state.repo)? {
                 None => {
-                    let mut prompt =
-                        create_prompt("Set pushRemote then push", set_push_remote_and_push, true);
+                    let mut prompt = Rc::new(move |state: &mut State, _term: &mut Term| {
+                        state.set_prompt(PromptParams {
+                            prompt: "Set pushRemote then push",
+                            on_success: Box::new(set_push_remote_and_push),
+                            ..Default::default()
+                        });
+
+                        Ok(())
+                    });
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some(push_remote) => {
@@ -64,8 +72,15 @@ impl OpTrait for PushToUpstream {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
                 None => {
-                    let mut prompt =
-                        create_prompt("Set upstream then push", set_upstream_and_push, true);
+                    let mut prompt = Rc::new(move |state: &mut State, _term: &mut Term| {
+                        state.set_prompt(PromptParams {
+                            prompt: "Set upstream then push",
+                            on_success: Box::new(set_upstream_and_push),
+                            ..Default::default()
+                        });
+
+                        Ok(())
+                    });
                     Rc::get_mut(&mut prompt).unwrap()(state, term)
                 }
                 Some((remote, branch)) => push_head_to(state, term, &remote, &branch),
@@ -97,7 +112,15 @@ fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str
 pub(crate) struct PushToElsewhere;
 impl OpTrait for PushToElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Select remote", push_elsewhere, true))
+        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
+            state.set_prompt(PromptParams {
+                prompt: "Select remote",
+                on_success: Box::new(push_elsewhere),
+                ..Default::default()
+            });
+
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

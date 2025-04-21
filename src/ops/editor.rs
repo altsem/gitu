@@ -1,9 +1,9 @@
-use super::{set_prompt, Action, OpTrait};
+use super::{Action, OpTrait};
 use crate::{
     items::TargetData,
     menu::PendingMenu,
     screen::NavMode,
-    state::{root_menu, State},
+    state::{root_menu, PromptParams, State},
     term::Term,
 };
 use std::rc::Rc;
@@ -120,13 +120,12 @@ impl OpTrait for ToggleArg {
                 });
 
             if let Some(display) = need_prompt {
-                set_prompt(
-                    state,
-                    display,
-                    parse_and_set_arg,
-                    Box::new(move |_| default.clone()),
-                    false,
-                );
+                state.set_prompt(PromptParams {
+                    prompt: display,
+                    on_success: parse_and_set_arg,
+                    create_default_value: Box::new(move |_| default.clone()),
+                    hide_menu: false,
+                });
             }
 
             Ok(())
