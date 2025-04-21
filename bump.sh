@@ -10,6 +10,9 @@ then
 fi
 
 cargo set-version "$(echo "$version" | sed s/^v//)"
+cargo update gitu # set-version used to change the lockfile, but no longer did?
+cargo build --release --locked
+
 git cliff --tag "$version" > CHANGELOG.md
 git cliff --unreleased --tag "$version" --strip header > .recent-changelog-entry
 
