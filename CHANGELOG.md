@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.2] - 2025-04-21
+
+### 🐛 Bug Fixes
+
+- *(crates-io-release)* Specify gitu-diff to not be published
+
 ## [0.30.1] - 2025-04-21
 
 ### 🐛 Bug Fixes

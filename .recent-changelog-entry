@@ -1,6 +1,6 @@
-## [0.30.1] - 2025-04-21
+## [0.30.2] - 2025-04-21
 
 ### 🐛 Bug Fixes
 
-- Issue with project lockfile/release
+- *(crates-io-release)* Specify gitu-diff to not be published
 
