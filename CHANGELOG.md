@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.1] - 2025-04-21
+
+### 🐛 Bug Fixes
+
+- Issue with project lockfile/release
+
 ## [0.30.0] - 2025-04-21
 
 ### 🚀 Features
