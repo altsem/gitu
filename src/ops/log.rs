@@ -28,7 +28,14 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, _term: &mut Term| {
+        Some(Rc::new(|state: &mut State, term: &mut Term| {
+            let answer = state.prompt(term, "Are you sure you want to view the log?")?;
+            log::debug!("Answer: {answer}");
+
+            let answer2 = state.prompt(term, "Are you really sure you want to view the log?")?;
+            log::debug!("Answer: {answer2}");
+
+            todo!("Remove this");
             goto_log_screen(state, None);
             Ok(())
         }))

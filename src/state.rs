@@ -12,7 +12,6 @@ use arboard::Clipboard;
 use crossterm::event;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
-use crossterm::event::KeyEventKind;
 use crossterm::event::KeyModifiers;
 use git2::Repository;
 use ratatui::layout::Size;
@@ -29,6 +28,7 @@ use crate::items::TargetData;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
+use crate::poll_term_event;
 use crate::prompt;
 use crate::prompt::PromptData;
 use crate::screen;
@@ -112,15 +112,11 @@ impl State {
                     }
                 }
                 GituEvent::Term(Event::Key(key)) => {
-                    if self.prompt.state.is_focused() {
-                        self.prompt.state.handle_key_event(key)
-                    } else if key.kind == KeyEventKind::Press {
-                        if self.pending_cmd.is_none() {
-                            self.current_cmd_log.clear();
-                        }
-
-                        self.handle_key_input(term, key)?;
+                    if self.pending_cmd.is_none() {
+                        self.current_cmd_log.clear();
                     }
+
+                    self.handle_key_input(term, key)?;
                 }
                 GituEvent::FileUpdate => {
                     self.screen_mut().update()?;
@@ -292,7 +288,7 @@ impl State {
     }
 
     /// Handles any pending_cmd in State without blocking. Returns `true` if a cmd was handled.
-    pub fn handle_pending_cmd(&mut self) -> Res<bool> {
+    fn handle_pending_cmd(&mut self) -> Res<bool> {
         let Some((ref mut child, ref mut log_rwlock)) = self.pending_cmd else {
             return Ok(false);
         };
@@ -412,21 +408,12 @@ impl State {
             prompt_text,
             update_fn: Rc::new(move |state, term| {
                 if state.prompt.state.status().is_done() {
-                    let input = state.prompt.state.value().to_string();
+                    let value = get_prompt_result(&params, state)?;
+
+                    state.unhide_menu();
                     state.prompt.reset(term)?;
 
-                    let default_value = (params.create_default_value)(state);
-                    let value = match (input.as_str(), &default_value) {
-                        ("", None) => "",
-                        ("", Some(selected)) => selected,
-                        (value, _) => value,
-                    };
-
-                    (params.on_success)(state, term, value)?;
-
-                    if params.hide_menu {
-                        state.unhide_menu();
-                    }
+                    (params.on_success)(state, term, &value)?;
                 }
                 Ok(())
             }),
@@ -440,6 +427,95 @@ impl State {
             _ => None,
         }
     }
+
+    // TODO quite a bit of code is duplicated from `state.update()`, may want to extract common parts
+    pub fn prompt(&mut self, term: &mut Term, prompt: &'static str) -> Res<String> {
+        let params = PromptParams {
+            prompt,
+            // on_success is kept for legacy reasons, but not used in this function
+            on_success: Box::new(|_, _, _| Ok(())),
+            create_default_value: Box::new(|_| None),
+            hide_menu: true,
+        };
+
+        let prompt_text = if let Some(default) = (params.create_default_value)(self) {
+            format!("{} (default {}):", params.prompt, default).into()
+        } else {
+            format!("{}:", params.prompt).into()
+        };
+
+        if params.hide_menu {
+            self.hide_menu();
+        }
+
+        self.prompt.set(PromptData {
+            prompt_text,
+            update_fn: Rc::new(move |_state, _term| {
+                // Old way of updating, do nothing
+                Ok(())
+            }),
+        });
+
+        term.draw(|frame| ui::ui(frame, self))
+            .map_err(Error::Term)?;
+
+        loop {
+            let Some(event) = poll_term_event()? else {
+                continue;
+            };
+
+            log::debug!("{:?}", event);
+
+            match event {
+                GituEvent::Term(Event::Resize(w, h)) => {
+                    for screen in self.screens.iter_mut() {
+                        screen.size = Size::new(w, h);
+                    }
+                }
+                GituEvent::Term(Event::Key(key)) => {
+                    self.prompt.state.handle_key_event(key);
+                }
+                GituEvent::FileUpdate => {
+                    self.screen_mut().update()?;
+                }
+                _ => (),
+            }
+
+            if self.prompt.state.status().is_done() {
+                let value = get_prompt_result(&params, self)?;
+
+                self.close_menu();
+                self.unhide_menu();
+                self.prompt.reset(term)?;
+
+                return Ok(value);
+            } else if self.prompt.state.status().is_aborted() {
+                self.close_menu();
+                self.unhide_menu();
+                self.prompt.reset(term)?;
+
+                return Err(Error::PromptAborted);
+            }
+
+            if self.screens.last_mut().is_some() {
+                term.draw(|frame| ui::ui(frame, self))
+                    .map_err(Error::Term)?;
+            }
+        }
+    }
+}
+
+fn get_prompt_result(params: &PromptParams, state: &mut State) -> Res<String> {
+    let input = state.prompt.state.value();
+    let default_value = (params.create_default_value)(state);
+
+    let value = match (input, &default_value) {
+        ("", None) => "",
+        ("", Some(selected)) => selected,
+        (value, _) => value,
+    };
+
+    Ok(value.to_string())
 }
 
 fn tee(maybe_input: Option<&mut impl Read>, outputs: &mut [&mut dyn Write]) -> std::io::Result<()> {

@@ -47,6 +47,7 @@ pub enum Error {
     CouldntReadCmdOutput(io::Error),
     ListGitReferences(git2::Error),
     OpenLogFile(io::Error),
+    PromptAborted,
 }
 
 impl std::error::Error for Error {}
@@ -132,6 +133,7 @@ impl Display for Error {
                 f.write_fmt(format_args!("Couldn't list git references: {}", e))
             }
             Error::OpenLogFile(e) => f.write_fmt(format_args!("Couldn't open log file: {}", e)),
+            Error::PromptAborted => f.write_str("Aborted"),
         }
     }
 }
