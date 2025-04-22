@@ -189,3 +189,13 @@ fn handle_initial_send_keys(
 
     Ok(())
 }
+
+pub(crate) fn poll_term_event() -> Res<Option<GituEvent>> {
+    let event = if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
+        Some(GituEvent::Term(event::read().map_err(Error::Term)?))
+    } else {
+        None
+    };
+
+    Ok(event)
+}
