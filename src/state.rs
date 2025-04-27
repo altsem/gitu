@@ -5,8 +5,10 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::rc::Rc;
+use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::sync::RwLock;
+use std::time::Duration;
 
 use arboard::Clipboard;
 use crossterm::event;
@@ -28,7 +30,6 @@ use crate::items::TargetData;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
-use crate::poll_term_event;
 use crate::prompt;
 use crate::prompt::PromptData;
 use crate::screen;
@@ -40,6 +41,7 @@ use super::GituEvent;
 use super::Res;
 
 pub(crate) struct State {
+    receiver: Receiver<GituEvent>,
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
     pub bindings: Bindings,
@@ -56,6 +58,7 @@ pub(crate) struct State {
 
 impl State {
     pub fn create(
+        receiver: Receiver<GituEvent>,
         repo: Rc<Repository>,
         size: Size,
         args: &cli::Args,
@@ -86,6 +89,7 @@ impl State {
             .ok();
 
         Ok(Self {
+            receiver,
             repo,
             config,
             bindings,
@@ -101,40 +105,49 @@ impl State {
         })
     }
 
-    pub fn update(&mut self, term: &mut Term, events: &[GituEvent]) -> Res<()> {
-        for event in events {
-            log::debug!("{:?}", event);
-
-            match *event {
-                GituEvent::Term(Event::Resize(w, h)) => {
-                    for screen in self.screens.iter_mut() {
-                        screen.size = Size::new(w, h);
-                    }
-                }
-                GituEvent::Term(Event::Key(key)) => {
-                    if self.pending_cmd.is_none() {
-                        self.current_cmd_log.clear();
-                    }
-
-                    self.handle_key_input(term, key)?;
-                }
-                GituEvent::FileUpdate => {
-                    self.screen_mut().update()?;
-                }
-                _ => (),
-            }
-
-            self.update_prompt(term)?;
+    /// Polls and handles all events. Might handle multiple events (e.g. in the event of a prompt).
+    /// Returns Ok(()) on timeout.
+    pub fn handle_events_timeout(&mut self, term: &mut Term, timeout: Duration) -> Res<()> {
+        while let Ok(event) = self.receiver.recv_timeout(timeout) {
+            self.handle_event(term, &event)?;
         }
 
+        Ok(())
+    }
+
+    fn handle_event(&mut self, term: &mut Term, event: &GituEvent) -> Res<()> {
+        log::debug!("{:?}", event);
+
+        match event {
+            GituEvent::Term(Event::Resize(w, h)) => {
+                for screen in self.screens.iter_mut() {
+                    screen.size = Size::new(*w, *h);
+                }
+            }
+            GituEvent::Term(Event::Key(key)) => {
+                if self.pending_cmd.is_none() {
+                    self.current_cmd_log.clear();
+                }
+
+                if self.prompt.state.is_focused() {
+                    self.prompt.state.handle_key_event(*key);
+                } else {
+                    self.handle_key_input(term, *key)?;
+                }
+            }
+            GituEvent::Term(_) => (),
+            GituEvent::FileUpdate => {
+                self.screen_mut().update()?;
+            }
+            GituEvent::Refresh => (),
+        }
+
+        self.update_prompt(term)?;
+
         let handle_pending_cmd_result = self.handle_pending_cmd();
-        let pending_cmd_done = self
-            .handle_result(handle_pending_cmd_result)
-            .unwrap_or(true);
+        self.handle_result(handle_pending_cmd_result);
 
-        let needs_redraw = !events.is_empty() || pending_cmd_done;
-
-        if needs_redraw && self.screens.last_mut().is_some() {
+        if self.screens.last_mut().is_some() {
             term.draw(|frame| ui::ui(frame, self))
                 .map_err(Error::Term)?;
         }
@@ -315,7 +328,7 @@ impl State {
         cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
         self.current_cmd_log.push_cmd_with_output(&cmd, "\n".into());
-        self.update(term, &[GituEvent::Refresh])?;
+        self.handle_event(term, &GituEvent::Refresh)?;
 
         eprint!("\r");
 
@@ -393,6 +406,7 @@ impl State {
         }
     }
 
+    #[deprecated = "Use `state.prompt(term, ...) instead`"]
     pub fn set_prompt(&mut self, params: PromptParams) {
         let prompt_text = if let Some(default) = (params.create_default_value)(self) {
             format!("{} (default {}):", params.prompt, default).into()
@@ -429,15 +443,7 @@ impl State {
     }
 
     // TODO quite a bit of code is duplicated from `state.update()`, may want to extract common parts
-    pub fn prompt(&mut self, term: &mut Term, prompt: &'static str) -> Res<String> {
-        let params = PromptParams {
-            prompt,
-            // on_success is kept for legacy reasons, but not used in this function
-            on_success: Box::new(|_, _, _| Ok(())),
-            create_default_value: Box::new(|_| None),
-            hide_menu: true,
-        };
-
+    pub fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
         let prompt_text = if let Some(default) = (params.create_default_value)(self) {
             format!("{} (default {}):", params.prompt, default).into()
         } else {
@@ -460,10 +466,7 @@ impl State {
             .map_err(Error::Term)?;
 
         loop {
-            let Some(event) = poll_term_event()? else {
-                continue;
-            };
-
+            let event = self.receiver.recv().map_err(Error::EventRecvError)?;
             log::debug!("{:?}", event);
 
             match event {
@@ -475,32 +478,29 @@ impl State {
                 GituEvent::Term(Event::Key(key)) => {
                     self.prompt.state.handle_key_event(key);
                 }
+                GituEvent::Term(_) => (),
                 GituEvent::FileUpdate => {
                     self.screen_mut().update()?;
                 }
-                _ => (),
+                GituEvent::Refresh => (),
             }
 
             if self.prompt.state.status().is_done() {
-                let value = get_prompt_result(&params, self)?;
+                let value = get_prompt_result(params, self)?;
 
-                self.close_menu();
                 self.unhide_menu();
                 self.prompt.reset(term)?;
 
                 return Ok(value);
             } else if self.prompt.state.status().is_aborted() {
-                self.close_menu();
                 self.unhide_menu();
                 self.prompt.reset(term)?;
 
                 return Err(Error::PromptAborted);
             }
 
-            if self.screens.last_mut().is_some() {
-                term.draw(|frame| ui::ui(frame, self))
-                    .map_err(Error::Term)?;
-            }
+            term.draw(|frame| ui::ui(frame, self))
+                .map_err(Error::Term)?;
         }
     }
 }
@@ -593,6 +593,7 @@ type PromptAction = Box<dyn Fn(&mut State, &mut Term, &str) -> Res<()>>;
 
 pub(crate) struct PromptParams {
     pub prompt: &'static str,
+    #[deprecated = "No longer needed with `state.prompt(term, ...)`"]
     pub on_success: PromptAction,
     pub create_default_value: DefaultFn,
     pub hide_menu: bool,

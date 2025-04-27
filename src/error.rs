@@ -1,4 +1,6 @@
-use std::{fmt::Display, io, string};
+use std::{fmt::Display, io, string, sync::mpsc};
+
+use crate::GituEvent;
 
 #[derive(Debug)]
 pub enum Error {
@@ -7,6 +9,8 @@ pub enum Error {
     OpenRepo(git2::Error),
     FindGitDir(io::Error),
     Term(io::Error),
+    EventSendError(mpsc::SendError<GituEvent>),
+    EventRecvError(mpsc::RecvError),
     GitDirUtf8(string::FromUtf8Error),
     Config(figment::Error),
     FileWatcherGitignore(ignore::Error),
@@ -63,6 +67,12 @@ impl Display for Error {
             },
             Error::FindGitDir(e) => f.write_fmt(format_args!("Couldn't find git directory: {}", e)),
             Error::Term(e) => f.write_fmt(format_args!("Terminal error: {}", e)),
+            Error::EventSendError(e) => {
+                f.write_fmt(format_args!("Error when handling events: {}", e))
+            }
+            Error::EventRecvError(e) => {
+                f.write_fmt(format_args!("Error when handling events: {}", e))
+            }
             Error::GitDirUtf8(_e) => f.write_str("Git directory not valid UTF-8"),
             Error::Config(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
             Error::FileWatcherGitignore(e) => {
