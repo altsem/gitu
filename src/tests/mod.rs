@@ -47,7 +47,7 @@ fn help_menu() {
     let mut ctx = TestContext::setup_init();
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("h")).unwrap();
+    ctx.update(&mut state, keys("h"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -213,7 +213,7 @@ fn hide_untracked() {
     let mut config = state.repo.config().unwrap();
     config.set_str("status.showUntrackedFiles", "off").unwrap();
 
-    state.update(&mut ctx.term, &keys("g")).unwrap();
+    ctx.update(&mut state, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -293,11 +293,11 @@ fn updated_externally() {
     fs::write(ctx.dir.child("b"), "test\n").unwrap();
 
     let mut state = ctx.init_state();
-    state.update(&mut ctx.term, &keys("jjsj")).unwrap();
+    ctx.update(&mut state, keys("jjsj"));
 
     fs::write(ctx.dir.child("a"), "test\n").unwrap();
 
-    state.update(&mut ctx.term, &keys("g")).unwrap();
+    ctx.update(&mut state, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -373,7 +373,7 @@ fn crlf_diff() {
 
     commit(ctx.dir.path(), "crlf.txt", "unchanged\r\nunchanged\r\n");
     fs::write(ctx.dir.child("crlf.txt"), "unchanged\r\nchanged\r\n").unwrap();
-    state.update(&mut ctx.term, &keys("g")).unwrap();
+    ctx.update(&mut state, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -385,7 +385,7 @@ fn tab_diff() {
 
     commit(ctx.dir.path(), "tab.txt", "this has no tab prefixed\n");
     fs::write(ctx.dir.child("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
-    state.update(&mut ctx.term, &keys("g")).unwrap();
+    ctx.update(&mut state, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }

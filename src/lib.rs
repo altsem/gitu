@@ -31,6 +31,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     rc::Rc,
+    sync::mpsc,
     time::Duration,
 };
 use term::Term;
@@ -87,11 +88,26 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
 
-    log::debug!("Initializing config");
     let config = Rc::new(config::init_config()?);
+    let (sender, receiver) = mpsc::channel();
 
-    log::debug!("Creating initial state");
+    let term_event_sender = sender.clone();
+    std::thread::spawn(move || -> Res<()> {
+        loop {
+            if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
+                term_event_sender
+                    .send(GituEvent::Term(event::read().map_err(Error::Term)?))
+                    .map_err(Error::EventSendError)?;
+            } else {
+                term_event_sender
+                    .send(GituEvent::Refresh)
+                    .map_err(Error::EventSendError)?;
+            };
+        }
+    });
+
     let mut state = state::State::create(
+        receiver,
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
         args,
@@ -99,8 +115,9 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         true,
     )?;
 
-    log::debug!("Initial update");
-    state.update(term, &[GituEvent::Refresh])?;
+    sender
+        .send(GituEvent::Refresh)
+        .map_err(Error::EventSendError)?;
 
     if args.print {
         return Ok(());
@@ -110,7 +127,10 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         let ("", keys) = key_parser::parse_keys(keys_string).expect("Couldn't parse keys") else {
             panic!("Couldn't parse keys");
         };
-        handle_initial_send_keys(&keys, &mut state, term)?;
+
+        for event in keys_to_events(&keys) {
+            sender.send(event).map_err(Error::EventSendError)?;
+        }
     }
 
     let watcher = config
@@ -121,16 +141,13 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         .transpose()?;
 
     while !state.quit {
-        let mut events = if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
-            vec![GituEvent::Term(event::read().map_err(Error::Term)?)]
-        } else {
-            vec![]
-        };
-
         if watcher.as_ref().is_some_and(|w| w.pending_updates()) {
-            events.push(GituEvent::FileUpdate);
+            sender
+                .send(GituEvent::FileUpdate)
+                .map_err(Error::EventSendError)?;
         }
-        state.update(term, &events)?;
+
+        state.handle_events_timeout(term, Duration::from_millis(100))?;
     }
 
     Ok(())
@@ -166,13 +183,8 @@ fn open_repo_from_env() -> Res<Repository> {
     }
 }
 
-fn handle_initial_send_keys(
-    keys: &[(KeyModifiers, KeyCode)],
-    state: &mut state::State,
-    term: &mut ratatui::prelude::Terminal<term::TermBackend>,
-) -> Res<()> {
-    let initial_events = keys
-        .iter()
+fn keys_to_events(keys: &[(KeyModifiers, KeyCode)]) -> Vec<GituEvent> {
+    keys.iter()
         .map(|(mods, key)| {
             GituEvent::Term(Event::Key(KeyEvent {
                 code: *key,
@@ -181,21 +193,5 @@ fn handle_initial_send_keys(
                 state: KeyEventState::NONE,
             }))
         })
-        .collect::<Vec<_>>();
-
-    if !initial_events.is_empty() {
-        state.update(term, &initial_events)?;
-    }
-
-    Ok(())
-}
-
-pub(crate) fn poll_term_event() -> Res<Option<GituEvent>> {
-    let event = if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
-        Some(GituEvent::Term(event::read().map_err(Error::Term)?))
-    } else {
-        None
-    };
-
-    Ok(event)
+        .collect::<Vec<_>>()
 }

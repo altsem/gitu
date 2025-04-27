@@ -17,54 +17,42 @@ fn setup_scroll() -> (TestContext, crate::state::State) {
     }
 
     let mut state = ctx.init_state();
-    state
-        .update(&mut ctx.term, &keys("jjjj<tab>k<tab>k<tab>"))
-        .unwrap();
+    ctx.update(&mut state, keys("jjjj<tab>k<tab>k<tab>"));
     (ctx, state)
 }
 
 #[test]
 fn scroll_down() {
     let (mut ctx, mut state) = setup_scroll();
-
-    state.update(&mut ctx.term, &keys("<ctrl+d>")).unwrap();
-
+    ctx.update(&mut state, keys("<ctrl+d>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn scroll_past_selection() {
     let (mut ctx, mut state) = setup_scroll();
-
-    state
-        .update(&mut ctx.term, &keys("<ctrl+d><ctrl+d><ctrl+d>"))
-        .unwrap();
-
+    ctx.update(&mut state, keys("<ctrl+d><ctrl+d><ctrl+d>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_prev_sibling() {
     let (mut ctx, mut state) = setup_scroll();
-    state
-        .update(&mut ctx.term, &keys("<alt+k><alt+k>"))
-        .unwrap();
+    ctx.update(&mut state, keys("<alt+k><alt+k>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_next_sibling() {
     let (mut ctx, mut state) = setup_scroll();
-    state.update(&mut ctx.term, &keys("<alt+j>")).unwrap();
+    ctx.update(&mut state, keys("<alt+j>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_next_then_parent_section() {
     let (mut ctx, mut state) = setup_scroll();
-    state
-        .update(&mut ctx.term, &keys("<alt+j><alt+h>"))
-        .unwrap();
+    ctx.update(&mut state, keys("<alt+j><alt+h>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 

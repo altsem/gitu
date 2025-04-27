@@ -10,7 +10,12 @@ use crate::{
 use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
-use std::{path::PathBuf, rc::Rc};
+use std::{
+    path::PathBuf,
+    rc::Rc,
+    sync::mpsc::{self, Sender},
+    time::Duration,
+};
 use temp_dir::TempDir;
 
 use self::buffer::TestBuffer;
@@ -22,13 +27,14 @@ macro_rules! snapshot {
     ($ctx:expr, $keys:expr) => {{
         let mut ctx = $ctx;
         let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys($keys)).unwrap();
+        ctx.update(&mut state, keys($keys));
         insta::assert_snapshot!(ctx.redact_buffer());
         state
     }};
 }
 
 pub struct TestContext {
+    sender: Option<Sender<GituEvent>>,
     pub term: Term,
     pub dir: TempDir,
     pub remote_dir: TempDir,
@@ -43,6 +49,7 @@ impl TestContext {
             Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
         let repo_ctx = RepoTestContext::setup_init();
         Self {
+            sender: None,
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
@@ -57,6 +64,7 @@ impl TestContext {
             Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
         let repo_ctx = RepoTestContext::setup_clone();
         Self {
+            sender: None,
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
@@ -74,7 +82,11 @@ impl TestContext {
     }
 
     pub fn init_state_at_path(&mut self, path: PathBuf) -> State {
+        let (sender, receiver) = mpsc::channel::<GituEvent>();
+        self.sender = Some(sender);
+
         let mut state = State::create(
+            receiver,
             Rc::new(Repository::open(path).unwrap()),
             self.size,
             &Args::default(),
@@ -83,8 +95,27 @@ impl TestContext {
         )
         .unwrap();
 
-        state.update(&mut self.term, &[GituEvent::Refresh]).unwrap();
+        self.sender
+            .as_mut()
+            .unwrap()
+            .send(GituEvent::Refresh)
+            .unwrap();
+
         state
+            .handle_events_timeout(&mut self.term, Duration::ZERO)
+            .unwrap();
+
+        state
+    }
+
+    pub fn update(&mut self, state: &mut State, events: Vec<GituEvent>) {
+        for event in events {
+            self.sender.as_mut().unwrap().send(event).unwrap();
+        }
+
+        state
+            .handle_events_timeout(&mut self.term, Duration::ZERO)
+            .unwrap();
     }
 
     pub fn redact_buffer(&self) -> String {

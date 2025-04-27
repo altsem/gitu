@@ -23,16 +23,16 @@ impl OpTrait for PullFromPushRemote {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_push_remote(&state.repo)? {
                 None => {
-                    let mut prompt = Rc::new(move |state: &mut State, _term: &mut Term| {
-                        state.set_prompt(PromptParams {
+                    let push_remote_name = state.prompt(
+                        term,
+                        &PromptParams {
                             prompt: "Set pushRemote then pull",
-                            on_success: Box::new(set_push_remote_and_pull),
                             ..Default::default()
-                        });
+                        },
+                    )?;
 
-                        Ok(())
-                    });
-                    Rc::get_mut(&mut prompt).unwrap()(state, term)
+                    set_push_remote_and_pull(state, term, &push_remote_name)?;
+                    Ok(())
                 }
                 Some(push_remote) => {
                     let refspec = git::get_head_name(&state.repo)?;
