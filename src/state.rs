@@ -140,6 +140,7 @@ impl State {
                 self.screen_mut().update()?;
             }
             GituEvent::Refresh => (),
+            GituEvent::NoMoreEvents => return Err(Error::NoMoreEvents),
         }
 
         self.update_prompt(term)?;
@@ -208,20 +209,21 @@ impl State {
         let target = self.screen().get_selected_item().target_data.as_ref();
         if let Some(mut action) = op.clone().implementation().get_action(target) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
-            self.handle_result(result);
+            self.handle_result(result)?;
         }
 
         Ok(())
     }
 
-    fn handle_result<T>(&mut self, result: Res<T>) -> Option<T> {
+    fn handle_result<T>(&mut self, result: Res<T>) -> Res<()> {
         match result {
-            Ok(value) => Some(value),
+            Ok(_) => Ok(()),
+            Err(Error::NoMoreEvents) => Err(Error::NoMoreEvents),
             Err(error) => {
                 self.current_cmd_log
                     .push(CmdLogEntry::Error(error.to_string()));
 
-                None
+                Ok(())
             }
         }
     }
@@ -483,6 +485,7 @@ impl State {
                     self.screen_mut().update()?;
                 }
                 GituEvent::Refresh => (),
+                GituEvent::NoMoreEvents => return Err(Error::NoMoreEvents),
             }
 
             if self.prompt.state.status().is_done() {

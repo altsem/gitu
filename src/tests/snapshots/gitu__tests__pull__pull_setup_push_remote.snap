@@ -11,15 +11,15 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Pull                    Arguments                                               |
 p from origin           -r Rebase local commits (--rebase)                      |
 u from origin/main                                                              |
 e from elsewhere                                                                |
 q/<esc> Quit/Close                                                              |
-────────────────────────────────────────────────────────────────────────────────|
-$ git pull origin refs/heads/main                                               |
-From                                                                            |
- * branch            main       -> FETCH_HEAD                                   |
-Already up to date.                                                             |
-styles_hash: 58b8068f5146eed2
+styles_hash: bfa894f169425746

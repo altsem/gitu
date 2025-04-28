@@ -52,6 +52,7 @@ pub enum Error {
     ListGitReferences(git2::Error),
     OpenLogFile(io::Error),
     PromptAborted,
+    NoMoreEvents,
 }
 
 impl std::error::Error for Error {}
@@ -144,6 +145,7 @@ impl Display for Error {
             }
             Error::OpenLogFile(e) => f.write_fmt(format_args!("Couldn't open log file: {}", e)),
             Error::PromptAborted => f.write_str("Aborted"),
+            Error::NoMoreEvents => unimplemented!(),
         }
     }
 }

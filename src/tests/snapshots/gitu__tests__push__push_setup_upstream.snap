@@ -10,16 +10,16 @@ expression: ctx.redact_buffer()
  b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Push                            Arguments                                       |
 p pushRemote, setting that      -n Dry run (--dry-run)                          |
 u to main                       -F Force (--force)                              |
 e to elsewhere                  -f Force with lease (--force-with-lease)        |
 q/<esc> Quit/Close              -h Disable hooks (--no-verify)                  |
-────────────────────────────────────────────────────────────────────────────────|
-$ git branch --set-upstream-to main                                             |
-branch 'new-branch' set up to track 'main'.                                     |
-$ git push . refs/heads/new-branch:refs/heads/main                              |
-To .                                                                            |
-   b66a0bf..e7eb2bd  new-branch -> main                                         |
-styles_hash: 26e2aff5c0eae868
+styles_hash: 4ca26e8a717c548e
