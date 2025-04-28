@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Push                    Arguments                                               |
 p to origin             -n Dry run (--dry-run)                                  |
 u to origin/main        -F Force (--force)                                      |
 e to elsewhere          -f Force with lease (--force-with-lease)                |
 q/<esc> Quit/Close      -h Disable hooks (--no-verify)                          |
-────────────────────────────────────────────────────────────────────────────────|
-$ git push origin refs/heads/main:refs/heads/main                               |
-Everything up-to-date                                                           |
-styles_hash: b4add50771a9adbe
+styles_hash: b0f9b30d052cdc2e

@@ -9,17 +9,17 @@ expression: ctx.redact_buffer()
  b66a0bf main new-branch origin/main add initial-file                           |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Pull                            Arguments                                       |
 p pushRemote, setting that      -r Rebase local commits (--rebase)              |
 u from main                                                                     |
 e from elsewhere                                                                |
 q/<esc> Quit/Close                                                              |
-────────────────────────────────────────────────────────────────────────────────|
-$ git branch --set-upstream-to main                                             |
-branch 'new-branch' set up to track 'main'.                                     |
-$ git pull . refs/heads/main                                                    |
-From .                                                                          |
- * branch            main       -> FETCH_HEAD                                   |
-Already up to date.                                                             |
-styles_hash: 9b65c93f218c4e5c
+styles_hash: 135771421537ce83

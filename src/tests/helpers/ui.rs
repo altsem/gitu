@@ -1,6 +1,7 @@
 use crate::{
     cli::Args,
     config::{self, Config},
+    error::Error,
     key_parser::parse_keys,
     state::State,
     term::{Term, TermBackend},
@@ -113,9 +114,14 @@ impl TestContext {
             self.sender.as_mut().unwrap().send(event).unwrap();
         }
 
-        state
-            .handle_events_timeout(&mut self.term, Duration::ZERO)
+        self.sender
+            .as_mut()
+            .unwrap()
+            .send(GituEvent::NoMoreEvents)
             .unwrap();
+
+        let result = state.handle_events_timeout(&mut self.term, Duration::ZERO);
+        assert!(matches!(result, Err(Error::NoMoreEvents)));
     }
 
     pub fn redact_buffer(&self) -> String {

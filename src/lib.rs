@@ -82,6 +82,7 @@ pub enum GituEvent {
     Term(Event),
     FileUpdate,
     Refresh,
+    NoMoreEvents,
 }
 
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
