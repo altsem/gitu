@@ -148,7 +148,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
                 .map_err(Error::EventSendError)?;
         }
 
-        state.handle_events_timeout(term, Duration::from_millis(100))?;
+        state.handle_events(term)?;
     }
 
     Ok(())

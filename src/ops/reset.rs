@@ -15,14 +15,17 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Soft reset to",
-                on_success: Box::new(reset_soft),
-                create_default_value: Box::new(selected_rev),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Soft reset to",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
 
+            reset_soft(state, term, &rev)?;
             Ok(())
         }))
     }
@@ -45,14 +48,17 @@ fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Mixed reset to",
-                on_success: Box::new(reset_mixed),
-                create_default_value: Box::new(selected_rev),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Mixed reset to",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
 
+            reset_mixed(state, term, &rev)?;
             Ok(())
         }))
     }
@@ -75,14 +81,17 @@ fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Hard reset to",
-                on_success: Box::new(reset_hard),
-                create_default_value: Box::new(selected_rev),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Hard reset to",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
 
+            reset_hard(state, term, &rev)?;
             Ok(())
         }))
     }

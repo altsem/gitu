@@ -20,6 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-! Aborted                                                                       |
-styles_hash: ee80f20b0cb8119a
+                                                                                |
+                                                                                |
+styles_hash: 8aeb733dddf67818

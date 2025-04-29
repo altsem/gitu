@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
-use tui_prompts::State as _;
 
-use crate::{
-    cmd_log::CmdLogEntry, items::TargetData, menu::Menu, prompt::PromptData, state::State,
-    term::Term, Res,
-};
+use crate::{items::TargetData, menu::Menu, state::State, term::Term, Res};
 use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod checkout;
@@ -188,34 +184,8 @@ impl Display for Menu {
     }
 }
 
-pub(crate) fn create_y_n_prompt(mut action: Action, prompt: &'static str) -> Action {
-    let update_fn = Rc::new(move |state: &mut State, term: &mut Term| {
-        if state.prompt.state.status().is_pending() {
-            match state.prompt.state.value() {
-                "y" => {
-                    Rc::get_mut(&mut action).unwrap()(state, term)?;
-                    state.prompt.reset(term)?;
-                }
-                "" => (),
-                _ => {
-                    state
-                        .current_cmd_log
-                        .push(CmdLogEntry::Error("Aborted".to_string()));
-                    state.prompt.reset(term)?;
-                }
-            }
-        }
-        Ok(())
-    });
-
-    Rc::new(move |state: &mut State, _term: &mut Term| {
-        state.prompt.set(PromptData {
-            prompt_text: format!("{} (y or n)", prompt).into(),
-            update_fn: update_fn.clone(),
-        });
-
-        Ok(())
-    })
+pub(crate) fn confirm(state: &mut State, term: &mut Term, prompt: &'static str) -> Res<()> {
+    state.confirm(term, prompt)
 }
 
 pub(crate) fn selected_rev(state: &State) -> Option<String> {

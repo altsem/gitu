@@ -37,13 +37,16 @@ impl OpTrait for FetchAll {
 pub(crate) struct FetchElsewhere;
 impl OpTrait for FetchElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Select remote",
-                on_success: Box::new(push_elsewhere),
-                ..Default::default()
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let remote = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Select remote",
+                    ..Default::default()
+                },
+            )?;
 
+            push_elsewhere(state, term, &remote)?;
             Ok(())
         }))
     }

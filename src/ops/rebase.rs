@@ -67,14 +67,17 @@ impl OpTrait for RebaseAbort {
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Rebase onto",
-                on_success: Box::new(rebase_elsewhere),
-                create_default_value: Box::new(selected_rev),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Rebase onto",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
 
+            rebase_elsewhere(state, term, &rev)?;
             Ok(())
         }))
     }

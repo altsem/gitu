@@ -42,14 +42,17 @@ impl OpTrait for LogCurrent {
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Log rev",
-                on_success: Box::new(log_other),
-                create_default_value: Box::new(selected_rev),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Log rev",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
 
+            log_other(state, term, &rev)?;
             Ok(())
         }))
     }
