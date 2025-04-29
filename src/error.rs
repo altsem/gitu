@@ -9,7 +9,6 @@ pub enum Error {
     Term(io::Error),
     GitDirUtf8(string::FromUtf8Error),
     Config(figment::Error),
-    FileWatcherGitignore(ignore::Error),
     FileWatcher(notify::Error),
     ReadRebaseStatusFile(io::Error),
     ReadBranchName(io::Error),
@@ -66,9 +65,6 @@ impl Display for Error {
             Error::Term(e) => f.write_fmt(format_args!("Terminal error: {}", e)),
             Error::GitDirUtf8(_e) => f.write_str("Git directory not valid UTF-8"),
             Error::Config(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
-            Error::FileWatcherGitignore(e) => {
-                f.write_fmt(format_args!("File watcher gitignore error: {}", e))
-            }
             Error::FileWatcher(e) => f.write_fmt(format_args!("File watcher error: {}", e)),
             Error::ReadRebaseStatusFile(e) => {
                 f.write_fmt(format_args!("Couldn't read rebase status file: {}", e))
