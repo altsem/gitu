@@ -69,17 +69,16 @@ impl OpTrait for PullFromUpstream {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
                 None => {
-                    let mut prompt = Rc::new(move |state: &mut State, _term: &mut Term| {
-                        state.set_prompt(PromptParams {
+                    let upstream_name = state.prompt(
+                        term,
+                        &PromptParams {
                             prompt: "Set upstream then pull",
-                            on_success: Box::new(set_upstream_and_pull),
                             ..Default::default()
-                        });
+                        },
+                    )?;
 
-                        Ok(())
-                    });
-
-                    Rc::get_mut(&mut prompt).unwrap()(state, term)
+                    set_upstream_and_pull(state, term, &upstream_name)?;
+                    Ok(())
                 }
                 Some((remote, branch)) => {
                     let refspec = format!("refs/heads/{}", branch);
@@ -114,13 +113,16 @@ fn set_upstream_and_pull(state: &mut State, term: &mut Term, upstream_name: &str
 pub(crate) struct PullFromElsewhere;
 impl OpTrait for PullFromElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Select remote",
-                on_success: Box::new(pull_elsewhere),
-                ..Default::default()
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let remote = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Select remote",
+                    ..Default::default()
+                },
+            )?;
 
+            pull_elsewhere(state, term, &remote)?;
             Ok(())
         }))
     }

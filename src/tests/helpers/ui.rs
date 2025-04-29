@@ -15,7 +15,6 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::mpsc::{self, Sender},
-    time::Duration,
 };
 use temp_dir::TempDir;
 
@@ -102,9 +101,7 @@ impl TestContext {
             .send(GituEvent::Refresh)
             .unwrap();
 
-        state
-            .handle_events_timeout(&mut self.term, Duration::ZERO)
-            .unwrap();
+        state.handle_events(&mut self.term).unwrap();
 
         state
     }
@@ -120,7 +117,7 @@ impl TestContext {
             .send(GituEvent::NoMoreEvents)
             .unwrap();
 
-        let result = state.handle_events_timeout(&mut self.term, Duration::ZERO);
+        let result = state.handle_events(&mut self.term);
         assert!(matches!(result, Err(Error::NoMoreEvents)));
     }
 

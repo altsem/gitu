@@ -1,6 +1,6 @@
 use gitu_diff::Status;
 
-use super::{Action, OpTrait};
+use super::{confirm, Action, OpTrait};
 use crate::{git::diff::Diff, gitu_diff, items::TargetData, state::State};
 use std::{path::PathBuf, process::Command, rc::Rc};
 
@@ -31,7 +31,7 @@ impl OpTrait for Discard {
             _ => return None,
         };
 
-        Some(super::create_y_n_prompt(action, "Really discard?"))
+        Some(action)
     }
 
     fn is_target_op(&self) -> bool {
@@ -45,6 +45,8 @@ impl OpTrait for Discard {
 
 fn discard_branch(branch: String) -> Action {
     Rc::new(move |state, term| {
+        confirm(state, term, "Really discard? (y or n)")?;
+
         let mut cmd = Command::new("git");
         cmd.args(["branch", "-d"]);
         cmd.arg(&branch);
@@ -56,6 +58,8 @@ fn discard_branch(branch: String) -> Action {
 
 fn clean_file(file: PathBuf) -> Action {
     Rc::new(move |state, term| {
+        confirm(state, term, "Really discard? (y or n)")?;
+
         let mut cmd = Command::new("git");
         cmd.args(["clean", "--force"]);
         cmd.arg(&file);
@@ -67,6 +71,8 @@ fn clean_file(file: PathBuf) -> Action {
 
 fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
     Rc::new(move |state, term| {
+        confirm(state, term, "Really discard? (y or n)")?;
+
         let mut cmd = Command::new("git");
         cmd.args(["mv", "--force"]);
         cmd.arg(&src);
@@ -79,6 +85,8 @@ fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
 
 fn remove_file(file: PathBuf) -> Action {
     Rc::new(move |state, term| {
+        confirm(state, term, "Really discard? (y or n)")?;
+
         let mut cmd = Command::new("git");
         cmd.args(["rm", "--force"]);
         cmd.arg(&file);
@@ -90,6 +98,8 @@ fn remove_file(file: PathBuf) -> Action {
 
 fn checkout_file(file: PathBuf) -> Action {
     Rc::new(move |state, term| {
+        confirm(state, term, "Really discard? (y or n)")?;
+
         let mut cmd = Command::new("git");
         cmd.args(["checkout", "HEAD", "--"]);
         cmd.arg(&file);
@@ -101,6 +111,8 @@ fn checkout_file(file: PathBuf) -> Action {
 
 fn discard_unstaged_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
     Rc::new(move |state, term| {
+        confirm(state, term, "Really discard? (y or n)")?;
+
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse"]);
 

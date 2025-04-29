@@ -20,13 +20,16 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Stash message",
-                on_success: Box::new(stash_push),
-                ..Default::default()
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let message = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Stash message",
+                    ..Default::default()
+                },
+            )?;
 
+            stash_push(state, term, &message)?;
             Ok(())
         }))
     }
@@ -52,13 +55,16 @@ fn stash_push(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Stash message",
-                on_success: Box::new(stash_push_index),
-                ..Default::default()
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let message = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Stash message",
+                    ..Default::default()
+                },
+            )?;
 
+            stash_push_index(state, term, &message)?;
             Ok(())
         }))
     }
@@ -90,16 +96,15 @@ impl OpTrait for StashWorktree {
                 return Err(Error::StashWorkTreeEmpty);
             }
 
-            let mut create_prompt = Rc::new(move |state: &mut State, _term: &mut Term| {
-                state.set_prompt(PromptParams {
+            let message = state.prompt(
+                term,
+                &PromptParams {
                     prompt: "Stash message",
-                    on_success: Box::new(stash_worktree),
                     ..Default::default()
-                });
+                },
+            )?;
 
-                Ok(())
-            });
-            Rc::get_mut(&mut create_prompt).unwrap()(state, term)?;
+            stash_worktree(state, term, &message)?;
             Ok(())
         }))
     }
@@ -183,13 +188,16 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Stash message",
-                on_success: Box::new(stash_push_keep_index),
-                ..Default::default()
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let message = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Stash message",
+                    ..Default::default()
+                },
+            )?;
 
+            stash_push_keep_index(state, term, &message)?;
             Ok(())
         }))
     }
@@ -215,14 +223,17 @@ fn stash_push_keep_index(state: &mut State, term: &mut Term, input: &str) -> Res
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Pop stash",
-                on_success: Box::new(stash_pop),
-                create_default_value: Box::new(selected_stash),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let input = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Pop stash",
+                    create_default_value: Box::new(selected_stash),
+                    ..Default::default()
+                },
+            )?;
 
+            stash_pop(state, term, &input)?;
             Ok(())
         }))
     }
@@ -245,14 +256,17 @@ fn stash_pop(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Apply stash",
-                on_success: Box::new(stash_apply),
-                create_default_value: Box::new(selected_stash),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let input = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Apply stash",
+                    create_default_value: Box::new(selected_stash),
+                    ..Default::default()
+                },
+            )?;
 
+            stash_apply(state, term, &input)?;
             Ok(())
         }))
     }
@@ -275,14 +289,17 @@ fn stash_apply(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Drop stash",
-                on_success: Box::new(stash_drop),
-                create_default_value: Box::new(selected_stash),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let input = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Drop stash",
+                    create_default_value: Box::new(selected_stash),
+                    ..Default::default()
+                },
+            )?;
 
+            stash_drop(state, term, &input)?;
             Ok(())
         }))
     }

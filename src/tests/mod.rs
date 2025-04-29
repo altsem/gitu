@@ -283,7 +283,7 @@ mod checkout {
 
     #[test]
     pub(crate) fn checkout_new_branch() {
-        snapshot!(TestContext::setup_clone(), "bcf<esc>bcx<enter>");
+        snapshot!(TestContext::setup_clone(), "bcf<esc>cx<enter>");
     }
 }
 

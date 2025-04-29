@@ -59,14 +59,17 @@ impl OpTrait for RevertContinue {
 pub(crate) struct RevertCommit;
 impl OpTrait for RevertCommit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, _term: &mut Term| {
-            state.set_prompt(PromptParams {
-                prompt: "Revert commit",
-                on_success: Box::new(revert_commit),
-                create_default_value: Box::new(selected_rev),
-                hide_menu: true,
-            });
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let commit = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Revert commit",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
 
+            revert_commit(state, term, &commit)?;
             Ok(())
         }))
     }
