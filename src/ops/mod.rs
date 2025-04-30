@@ -184,10 +184,6 @@ impl Display for Menu {
     }
 }
 
-pub(crate) fn confirm(state: &mut State, term: &mut Term, prompt: &'static str) -> Res<()> {
-    state.confirm(term, prompt)
-}
-
 pub(crate) fn selected_rev(state: &State) -> Option<String> {
     state.selected_rev()
 }

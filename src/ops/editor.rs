@@ -1,4 +1,4 @@
-use super::{confirm, Action, OpTrait};
+use super::{Action, OpTrait};
 use crate::{
     items::TargetData,
     menu::PendingMenu,
@@ -20,7 +20,7 @@ impl OpTrait for Quit {
             if menu == root_menu(&state.config) {
                 if state.screens.len() == 1 {
                     if state.config.general.confirm_quit.enabled {
-                        confirm(state, term, "Really quit? (y or n)")?;
+                        state.confirm(term, "Really quit? (y or n)")?;
                     };
 
                     state.quit = true;
