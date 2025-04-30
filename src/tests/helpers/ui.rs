@@ -95,7 +95,7 @@ impl TestContext {
         )
         .unwrap();
 
-        state.update(&mut self.term).unwrap();
+        state.redraw_now(&mut self.term).unwrap();
         state
     }
 

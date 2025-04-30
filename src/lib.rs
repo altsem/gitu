@@ -120,7 +120,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         }
     }
 
-    state.update(term)?;
+    state.redraw_now(term)?;
 
     if args.print {
         return Ok(());
