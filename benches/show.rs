@@ -4,7 +4,11 @@ use ratatui::{backend::TestBackend, Terminal};
 
 fn show(c: &mut Criterion) {
     c.bench_function("show", |b| {
-        let mut terminal = Terminal::new(TermBackend::Test(TestBackend::new(80, 1000))).unwrap();
+        let mut terminal = Terminal::new(TermBackend::Test {
+            backend: TestBackend::new(80, 1000),
+            events: vec![],
+        })
+        .unwrap();
         b.iter(|| {
             gitu::run(
                 &gitu::cli::Args {
