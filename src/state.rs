@@ -46,11 +46,12 @@ pub(crate) struct State {
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
-    pub pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
+    pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
     enable_async_cmds: bool,
     pub current_cmd_log: CmdLog,
     pub prompt: prompt::Prompt,
     pub clipboard: Option<Clipboard>,
+    needs_redraw: bool,
 }
 
 impl State {
@@ -99,6 +100,7 @@ impl State {
             current_cmd_log: CmdLog::new(),
             prompt: prompt::Prompt::new(),
             clipboard,
+            needs_redraw: true,
         })
     }
 
@@ -106,7 +108,13 @@ impl State {
         while !self.quit {
             let event = (self.get_next_event)()?;
             self.handle_event(term, event)?;
-            self.update(term)?;
+
+            let handle_pending_cmd_result = self.handle_pending_cmd();
+            self.handle_result(handle_pending_cmd_result)?;
+
+            if self.needs_redraw {
+                self.redraw_now(term)?;
+            }
         }
 
         Ok(())
@@ -120,6 +128,8 @@ impl State {
                 for screen in self.screens.iter_mut() {
                     screen.size = Size::new(w, h);
                 }
+
+                self.stage_redraw();
                 Ok(())
             }
             GituEvent::Term(Event::Key(key)) => {
@@ -132,26 +142,32 @@ impl State {
                 } else {
                     self.handle_key_input(term, key)?;
                 }
+
+                self.stage_redraw();
                 Ok(())
             }
             GituEvent::Term(_) => Ok(()),
             GituEvent::FileUpdate => {
                 self.screen_mut().update()?;
+                self.stage_redraw();
                 Ok(())
             }
         }
     }
 
-    pub fn update(&mut self, term: &mut Term) -> Res<()> {
-        let handle_pending_cmd_result = self.handle_pending_cmd();
-        self.handle_result(handle_pending_cmd_result)?;
-
+    pub fn redraw_now(&mut self, term: &mut Term) -> Res<()> {
         if self.screens.last_mut().is_some() {
             term.draw(|frame| ui::ui(frame, self))
                 .map_err(Error::Term)?;
-        }
+
+            self.needs_redraw = false;
+        };
 
         Ok(())
+    }
+
+    pub fn stage_redraw(&mut self) {
+        self.needs_redraw = true;
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
@@ -280,13 +296,13 @@ impl State {
     }
 
     /// Handles any pending_cmd in State without blocking. Returns `true` if a cmd was handled.
-    fn handle_pending_cmd(&mut self) -> Res<bool> {
+    fn handle_pending_cmd(&mut self) -> Res<()> {
         let Some((ref mut child, ref mut log_rwlock)) = self.pending_cmd else {
-            return Ok(false);
+            return Ok(());
         };
 
         let Some(status) = child.try_wait().map_err(Error::CouldntAwaitCmd)? else {
-            return Ok(false);
+            return Ok(());
         };
 
         log::debug!("pending cmd finished with {:?}", status);
@@ -294,9 +310,10 @@ impl State {
         let result = write_child_output_to_log(log_rwlock, child, status);
         self.pending_cmd = None;
         self.screen_mut().update()?;
+        self.stage_redraw();
         result?;
 
-        Ok(true)
+        Ok(())
     }
 
     pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
@@ -307,7 +324,7 @@ impl State {
         cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
         self.current_cmd_log.push_cmd_with_output(&cmd, "\n".into());
-        self.update(term)?;
+        self.redraw_now(term)?;
 
         eprint!("\r");
 
@@ -405,7 +422,7 @@ impl State {
         }
 
         self.prompt.set(PromptData { prompt_text });
-        self.update(term)?;
+        self.redraw_now(term)?;
 
         loop {
             let event = (self.get_next_event)()?;
@@ -425,7 +442,7 @@ impl State {
                 return Err(Error::PromptAborted);
             }
 
-            self.update(term)?;
+            self.redraw_now(term)?;
         }
     }
 
@@ -434,7 +451,7 @@ impl State {
         self.prompt.set(PromptData {
             prompt_text: prompt.into(),
         });
-        self.update(term)?;
+        self.redraw_now(term)?;
 
         loop {
             let event = (self.get_next_event)()?;
@@ -452,7 +469,7 @@ impl State {
                 }
             }
 
-            self.update(term)?;
+            self.redraw_now(term)?;
         }
     }
 }
