@@ -193,3 +193,7 @@ pub(crate) fn confirm(state: &mut State, term: &mut Term, prompt: &'static str) 
 pub(crate) fn selected_rev(state: &State) -> Option<String> {
     state.selected_rev()
 }
+
+pub(crate) fn selected_branch(state: &State) -> Option<String> {
+    state.selected_branch()
+}

@@ -1,4 +1,4 @@
-use super::{selected_rev, Action, OpTrait};
+use super::{selected_branch, selected_rev, Action, OpTrait};
 use crate::{
     error::Error,
     items::TargetData,
@@ -90,7 +90,7 @@ impl OpTrait for DeleteBranch {
                 term,
                 &PromptParams {
                     prompt: "Delete branch",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(selected_branch),
                     ..Default::default()
                 },
             )?;
@@ -124,27 +124,30 @@ fn delete_branch(state: &mut State, term: &mut Term, branch: &str) -> Res<()> {
 
         let target_branch = crate::git::get_branch(&state.repo, branch)?;
 
-        // Get if branch is unmerged
         crate::git::is_branch_unmerged(&state.repo, &target_branch).unwrap_or(false)
     };
 
     if is_unmerged {
         let branch_to_delete = branch.to_string();
 
-        let action = Rc::new(move |state: &mut State, term: &mut Term| {
-            perform_branch_deletion(state, term, &branch_to_delete)
-        });
-
-        let prompt = create_y_n_prompt(action, "Branch is unmerged. Really delete?");
-        prompt(state, term)?;
-
-        Ok(())
+        match state.confirm(term, "Branch is unmerged. Really delete?") {
+            Ok(()) => perform_force_branch_deletion(state, term, &branch_to_delete),
+            Err(error) => Err(error),
+        }
     } else {
         perform_branch_deletion(state, term, branch)
     }
 }
 
 fn perform_branch_deletion(state: &mut State, term: &mut Term, branch: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+
+    cmd.args(["branch", "-d", branch]);
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
+}
+
+fn perform_force_branch_deletion(state: &mut State, term: &mut Term, branch: &str) -> Res<()> {
     let mut cmd = Command::new("git");
 
     cmd.args(["branch", "-D", branch]);

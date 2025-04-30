@@ -429,6 +429,13 @@ impl State {
         }
     }
 
+    pub fn selected_branch(&self) -> Option<String> {
+        match &self.screen().get_selected_item().target_data {
+            Some(TargetData::Branch(branch)) => Some(branch.to_owned()),
+            _ => None,
+        }
+    }
+
     pub fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
         let prompt_text = if let Some(default) = (params.create_default_value)(self) {
             format!("{} (default {}):", params.prompt, default).into()
