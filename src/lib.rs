@@ -23,7 +23,6 @@ mod ui;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use error::Error;
-use file_watcher::FileWatcher;
 use git2::Repository;
 use items::Item;
 use ops::Action;
@@ -76,33 +75,12 @@ pub const LOG_FILE_NAME: &str = "gitu.log";
 
 pub type Res<T> = Result<T, Error>;
 
-#[derive(Debug)]
-pub enum GituEvent {
-    Term(Event),
-    FileUpdate,
-}
-
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
     let config = Rc::new(config::init_config()?);
 
-    let watcher = if config.general.refresh_on_file_change.enabled {
-        Some(Rc::new(FileWatcher::new(&dir)?))
-    } else {
-        None
-    };
-
-    let get_next_event = move || loop {
-        if let Some(event) = poll_term_event() {
-            return event;
-        } else if let Some(event) = poll_file_watcher(watcher.clone()) {
-            return event;
-        }
-    };
-
     let mut state = state::State::create(
-        Box::new(get_next_event),
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
         args,
@@ -126,29 +104,9 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         return Ok(());
     }
 
-    state.run(term)?;
+    state.run(term, Duration::from_millis(100))?;
 
     Ok(())
-}
-
-fn poll_term_event() -> Option<Res<GituEvent>> {
-    let is_event_found = match event::poll(Duration::from_millis(100)) {
-        Ok(found) => found,
-        Err(error) => return Some(Err(Error::Term(error))),
-    };
-
-    if is_event_found {
-        Some(event::read().map(GituEvent::Term).map_err(Error::Term))
-    } else {
-        None
-    }
-}
-
-fn poll_file_watcher(watcher: Option<Rc<FileWatcher>>) -> Option<Res<GituEvent>> {
-    watcher
-        .as_ref()
-        .is_some_and(|w| w.pending_updates())
-        .then(|| Ok(GituEvent::FileUpdate))
 }
 
 fn open_repo(dir: &Path) -> Res<Repository> {
@@ -181,15 +139,15 @@ fn open_repo_from_env() -> Res<Repository> {
     }
 }
 
-fn keys_to_events(keys: &[(KeyModifiers, KeyCode)]) -> Vec<GituEvent> {
+fn keys_to_events(keys: &[(KeyModifiers, KeyCode)]) -> Vec<Event> {
     keys.iter()
         .map(|(mods, key)| {
-            GituEvent::Term(Event::Key(KeyEvent {
+            Event::Key(KeyEvent {
                 code: *key,
                 modifiers: *mods,
                 kind: event::KeyEventKind::Press,
                 state: KeyEventState::NONE,
-            }))
+            })
         })
         .collect::<Vec<_>>()
 }

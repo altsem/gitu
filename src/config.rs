@@ -205,6 +205,8 @@ pub(crate) fn init_test_config() -> Res<Config> {
         .map_err(Error::Config)?;
 
     config.general.always_show_help.enabled = false;
+    config.general.refresh_on_file_change.enabled = false;
+
     Ok(config)
 }
 

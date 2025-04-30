@@ -7,6 +7,7 @@ use std::process::Stdio;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::RwLock;
+use std::time::Duration;
 
 use arboard::Clipboard;
 use crossterm::event;
@@ -23,6 +24,7 @@ use crate::cmd_log::CmdLog;
 use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::error::Error;
+use crate::file_watcher::FileWatcher;
 use crate::items::TargetData;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
@@ -34,11 +36,9 @@ use crate::screen::Screen;
 use crate::term::Term;
 use crate::ui;
 
-use super::GituEvent;
 use super::Res;
 
 pub(crate) struct State {
-    get_next_event: Box<dyn Fn() -> Res<GituEvent>>,
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
     pub bindings: Bindings,
@@ -52,11 +52,11 @@ pub(crate) struct State {
     pub prompt: prompt::Prompt,
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
+    file_watcher: Option<FileWatcher>,
 }
 
 impl State {
     pub fn create(
-        get_next_event: Box<dyn Fn() -> Res<GituEvent>>,
         repo: Rc<Repository>,
         size: Size,
         args: &cli::Args,
@@ -86,8 +86,15 @@ impl State {
             .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {}", e))
             .ok();
 
+        let file_watcher = if config.general.refresh_on_file_change.enabled {
+            Some(FileWatcher::new(
+                repo.workdir().expect("Bare repos unhandled"),
+            )?)
+        } else {
+            None
+        };
+
         Ok(Self {
-            get_next_event,
             repo,
             config,
             bindings,
@@ -100,31 +107,48 @@ impl State {
             current_cmd_log: CmdLog::new(),
             prompt: prompt::Prompt::new(),
             clipboard,
+            file_watcher,
             needs_redraw: true,
         })
     }
 
-    pub fn run(&mut self, term: &mut Term) -> Res<()> {
+    pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
         while !self.quit {
-            let event = (self.get_next_event)()?;
-            self.handle_event(term, event)?;
-
-            let handle_pending_cmd_result = self.handle_pending_cmd();
-            self.handle_result(handle_pending_cmd_result)?;
-
-            if self.needs_redraw {
-                self.redraw_now(term)?;
-            }
+            term.backend_mut().poll_event(max_tick_delay)?;
+            self.update(term)?;
         }
 
         Ok(())
     }
 
-    pub fn handle_event(&mut self, term: &mut Term, event: GituEvent) -> Res<()> {
+    pub fn update(&mut self, term: &mut Term) -> Res<()> {
+        if term.backend_mut().poll_event(Duration::ZERO)? {
+            let event = term.backend_mut().read_event()?;
+            self.handle_event(term, event)?;
+        }
+
+        if let Some(file_watcher) = &mut self.file_watcher {
+            if file_watcher.pending_updates() {
+                self.screen_mut().update()?;
+                self.stage_redraw();
+            }
+        }
+
+        let handle_pending_cmd_result = self.handle_pending_cmd();
+        self.handle_result(handle_pending_cmd_result)?;
+
+        if self.needs_redraw {
+            self.redraw_now(term)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn handle_event(&mut self, term: &mut Term, event: Event) -> Res<()> {
         log::debug!("{:?}", event);
 
         match event {
-            GituEvent::Term(Event::Resize(w, h)) => {
+            Event::Resize(w, h) => {
                 for screen in self.screens.iter_mut() {
                     screen.size = Size::new(w, h);
                 }
@@ -132,7 +156,7 @@ impl State {
                 self.stage_redraw();
                 Ok(())
             }
-            GituEvent::Term(Event::Key(key)) => {
+            Event::Key(key) => {
                 if self.pending_cmd.is_none() {
                     self.current_cmd_log.clear();
                 }
@@ -146,12 +170,7 @@ impl State {
                 self.stage_redraw();
                 Ok(())
             }
-            GituEvent::Term(_) => Ok(()),
-            GituEvent::FileUpdate => {
-                self.screen_mut().update()?;
-                self.stage_redraw();
-                Ok(())
-            }
+            _ => Ok(()),
         }
     }
 
@@ -425,7 +444,7 @@ impl State {
         self.redraw_now(term)?;
 
         loop {
-            let event = (self.get_next_event)()?;
+            let event = term.backend_mut().read_event()?;
             self.handle_event(term, event)?;
 
             if self.prompt.state.status().is_done() {
@@ -454,7 +473,7 @@ impl State {
         self.redraw_now(term)?;
 
         loop {
-            let event = (self.get_next_event)()?;
+            let event = term.backend_mut().read_event()?;
             self.handle_event(term, event)?;
 
             match self.prompt.state.value() {
