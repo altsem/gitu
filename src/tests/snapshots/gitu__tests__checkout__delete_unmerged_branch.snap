@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-x/D Delete branch                                                               |
-q/<esc> Quit/Close                                                              |
-styles_hash: 8355ffa06f6482d
+$ git branch -D unmerged-branch                                                 |
+Deleted branch unmerged-branch (was f91eb49).                                   |
+styles_hash: cc36604a6419da11

@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
-x/D Delete branch                                                               |
+K Delete branch                                                                 |
 q/<esc> Quit/Close                                                              |
-styles_hash: 8355ffa06f6482d
+────────────────────────────────────────────────────────────────────────────────|
+! Cannot delete the current branch                                              |
+styles_hash: e8a394cbb6cccb26

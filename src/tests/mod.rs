@@ -308,7 +308,7 @@ mod checkout {
         );
         commit(ctx.dir.path(), "unmerged-file", "This is unmerged content");
         run(ctx.dir.path(), &["git", "checkout", "main"]);
-        snapshot!(ctx, "YjjbK<enter>");
+        snapshot!(ctx, "YjjbK<enter>y");
     }
 }
 
