@@ -5,7 +5,6 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::rc::Rc;
-use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::sync::RwLock;
 
@@ -39,7 +38,7 @@ use super::GituEvent;
 use super::Res;
 
 pub(crate) struct State {
-    receiver: Receiver<GituEvent>,
+    get_next_event: Box<dyn Fn() -> Res<GituEvent>>,
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
     pub bindings: Bindings,
@@ -56,7 +55,7 @@ pub(crate) struct State {
 
 impl State {
     pub fn create(
-        receiver: Receiver<GituEvent>,
+        get_next_event: Box<dyn Fn() -> Res<GituEvent>>,
         repo: Rc<Repository>,
         size: Size,
         args: &cli::Args,
@@ -87,7 +86,7 @@ impl State {
             .ok();
 
         Ok(Self {
-            receiver,
+            get_next_event,
             repo,
             config,
             bindings,
@@ -103,41 +102,23 @@ impl State {
         })
     }
 
-    /// Handles any existing events. Might handle multiple events (e.g. in the event of a prompt).
-    /// Will block until at least one event is received.
-    pub fn handle_events(&mut self, term: &mut Term) -> Res<()> {
-        if let Ok(event) = self.receiver.recv() {
-            self.handle_event(term, &event)?;
-        }
-
-        while let Ok(event) = self.receiver.try_recv() {
-            self.handle_event(term, &event)?;
+    pub fn run(&mut self, term: &mut Term) -> Res<()> {
+        while !self.quit {
+            let event = (self.get_next_event)()?;
+            self.handle_event(term, event)?;
+            self.update(term)?;
         }
 
         Ok(())
     }
 
-    fn handle_event(&mut self, term: &mut Term, event: &GituEvent) -> Res<()> {
+    pub fn handle_event(&mut self, term: &mut Term, event: GituEvent) -> Res<()> {
         log::debug!("{:?}", event);
 
-        self.handle_event_specifics(term, event)?;
-
-        let handle_pending_cmd_result = self.handle_pending_cmd();
-        self.handle_result(handle_pending_cmd_result)?;
-
-        if self.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui(frame, self))
-                .map_err(Error::Term)?;
-        }
-
-        Ok(())
-    }
-
-    fn handle_event_specifics(&mut self, term: &mut Term, event: &GituEvent) -> Res<()> {
         match event {
             GituEvent::Term(Event::Resize(w, h)) => {
                 for screen in self.screens.iter_mut() {
-                    screen.size = Size::new(*w, *h);
+                    screen.size = Size::new(w, h);
                 }
                 Ok(())
             }
@@ -147,9 +128,9 @@ impl State {
                 }
 
                 if self.prompt.state.is_focused() {
-                    self.prompt.state.handle_key_event(*key);
+                    self.prompt.state.handle_key_event(key);
                 } else {
-                    self.handle_key_input(term, *key)?;
+                    self.handle_key_input(term, key)?;
                 }
                 Ok(())
             }
@@ -158,9 +139,19 @@ impl State {
                 self.screen_mut().update()?;
                 Ok(())
             }
-            GituEvent::Refresh => Ok(()),
-            GituEvent::NoMoreEvents => Err(Error::NoMoreEvents),
         }
+    }
+
+    pub fn update(&mut self, term: &mut Term) -> Res<()> {
+        let handle_pending_cmd_result = self.handle_pending_cmd();
+        self.handle_result(handle_pending_cmd_result)?;
+
+        if self.screens.last_mut().is_some() {
+            term.draw(|frame| ui::ui(frame, self))
+                .map_err(Error::Term)?;
+        }
+
+        Ok(())
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
@@ -316,7 +307,7 @@ impl State {
         cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
         self.current_cmd_log.push_cmd_with_output(&cmd, "\n".into());
-        self.handle_event(term, &GituEvent::Refresh)?;
+        self.update(term)?;
 
         eprint!("\r");
 
@@ -402,7 +393,6 @@ impl State {
         }
     }
 
-    // TODO quite a bit of code is duplicated from `state.update()`, may want to extract common parts
     pub fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
         let prompt_text = if let Some(default) = (params.create_default_value)(self) {
             format!("{} (default {}):", params.prompt, default).into()
@@ -415,15 +405,11 @@ impl State {
         }
 
         self.prompt.set(PromptData { prompt_text });
-
-        term.draw(|frame| ui::ui(frame, self))
-            .map_err(Error::Term)?;
+        self.update(term)?;
 
         loop {
-            let event = self.receiver.recv().map_err(Error::EventRecvError)?;
-            log::debug!("{:?}", event);
-
-            self.handle_event_specifics(term, &event)?;
+            let event = (self.get_next_event)()?;
+            self.handle_event(term, event)?;
 
             if self.prompt.state.status().is_done() {
                 let value = get_prompt_result(params, self)?;
@@ -439,8 +425,7 @@ impl State {
                 return Err(Error::PromptAborted);
             }
 
-            term.draw(|frame| ui::ui(frame, self))
-                .map_err(Error::Term)?;
+            self.update(term)?;
         }
     }
 
@@ -449,15 +434,11 @@ impl State {
         self.prompt.set(PromptData {
             prompt_text: prompt.into(),
         });
-
-        term.draw(|frame| ui::ui(frame, &mut *self))
-            .map_err(Error::Term)?;
+        self.update(term)?;
 
         loop {
-            let event = self.receiver.recv().map_err(Error::EventRecvError)?;
-            log::debug!("{:?}", event);
-
-            self.handle_event_specifics(term, &event)?;
+            let event = (self.get_next_event)()?;
+            self.handle_event(term, event)?;
 
             match self.prompt.state.value() {
                 "y" => {
@@ -471,8 +452,7 @@ impl State {
                 }
             }
 
-            term.draw(|frame| ui::ui(frame, &mut *self))
-                .map_err(Error::Term)?;
+            self.update(term)?;
         }
     }
 }
