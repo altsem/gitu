@@ -31,7 +31,6 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     rc::Rc,
-    sync::mpsc,
     time::Duration,
 };
 use term::Term;
@@ -81,34 +80,29 @@ pub type Res<T> = Result<T, Error>;
 pub enum GituEvent {
     Term(Event),
     FileUpdate,
-    Refresh,
-    NoMoreEvents,
 }
 
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
-
     let config = Rc::new(config::init_config()?);
-    let (sender, receiver) = mpsc::channel();
 
-    let term_event_sender = sender.clone();
-    std::thread::spawn(move || -> Res<()> {
-        loop {
-            if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
-                term_event_sender
-                    .send(GituEvent::Term(event::read().map_err(Error::Term)?))
-                    .map_err(Error::EventSendError)?;
-            } else {
-                term_event_sender
-                    .send(GituEvent::Refresh)
-                    .map_err(Error::EventSendError)?;
-            };
+    let watcher = if config.general.refresh_on_file_change.enabled {
+        Some(Rc::new(FileWatcher::new(&dir)?))
+    } else {
+        None
+    };
+
+    let get_next_event = move || loop {
+        if let Some(event) = poll_term_event() {
+            return event;
+        } else if let Some(event) = poll_file_watcher(watcher.clone()) {
+            return event;
         }
-    });
+    };
 
     let mut state = state::State::create(
-        receiver,
+        Box::new(get_next_event),
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
         args,
@@ -116,42 +110,45 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         true,
     )?;
 
-    sender
-        .send(GituEvent::Refresh)
-        .map_err(Error::EventSendError)?;
-
-    if args.print {
-        return Ok(());
-    }
-
     if let Some(keys_string) = &args.keys {
         let ("", keys) = key_parser::parse_keys(keys_string).expect("Couldn't parse keys") else {
             panic!("Couldn't parse keys");
         };
 
         for event in keys_to_events(&keys) {
-            sender.send(event).map_err(Error::EventSendError)?;
+            state.handle_event(term, event)?;
         }
     }
 
-    let watcher = config
-        .general
-        .refresh_on_file_change
-        .enabled
-        .then(|| FileWatcher::new(&dir))
-        .transpose()?;
+    state.update(term)?;
 
-    while !state.quit {
-        if watcher.as_ref().is_some_and(|w| w.pending_updates()) {
-            sender
-                .send(GituEvent::FileUpdate)
-                .map_err(Error::EventSendError)?;
-        }
-
-        state.handle_events(term)?;
+    if args.print {
+        return Ok(());
     }
+
+    state.run(term)?;
 
     Ok(())
+}
+
+fn poll_term_event() -> Option<Res<GituEvent>> {
+    let is_event_found = match event::poll(Duration::from_millis(100)) {
+        Ok(found) => found,
+        Err(error) => return Some(Err(Error::Term(error))),
+    };
+
+    if is_event_found {
+        Some(event::read().map(GituEvent::Term).map_err(Error::Term))
+    } else {
+        None
+    }
+}
+
+fn poll_file_watcher(watcher: Option<Rc<FileWatcher>>) -> Option<Res<GituEvent>> {
+    watcher
+        .as_ref()
+        .is_some_and(|w| w.pending_updates())
+        .then(|| Ok(GituEvent::FileUpdate))
 }
 
 fn open_repo(dir: &Path) -> Res<Repository> {

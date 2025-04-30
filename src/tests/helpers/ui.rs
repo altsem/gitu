@@ -6,16 +6,12 @@ use crate::{
     state::State,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
-    GituEvent,
+    GituEvent, Res,
 };
 use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
-use std::{
-    path::PathBuf,
-    rc::Rc,
-    sync::mpsc::{self, Sender},
-};
+use std::{cell::RefCell, path::PathBuf, rc::Rc};
 use temp_dir::TempDir;
 
 use self::buffer::TestBuffer;
@@ -34,7 +30,7 @@ macro_rules! snapshot {
 }
 
 pub struct TestContext {
-    sender: Option<Sender<GituEvent>>,
+    events: Rc<RefCell<Vec<Res<GituEvent>>>>,
     pub term: Term,
     pub dir: TempDir,
     pub remote_dir: TempDir,
@@ -49,7 +45,7 @@ impl TestContext {
             Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
         let repo_ctx = RepoTestContext::setup_init();
         Self {
-            sender: None,
+            events: Rc::new(RefCell::new(vec![])),
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
@@ -64,7 +60,7 @@ impl TestContext {
             Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
         let repo_ctx = RepoTestContext::setup_clone();
         Self {
-            sender: None,
+            events: Rc::new(RefCell::new(vec![])),
             term,
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
@@ -82,11 +78,15 @@ impl TestContext {
     }
 
     pub fn init_state_at_path(&mut self, path: PathBuf) -> State {
-        let (sender, receiver) = mpsc::channel::<GituEvent>();
-        self.sender = Some(sender);
+        let events_rc = self.events.clone();
 
         let mut state = State::create(
-            receiver,
+            Box::new(move || {
+                events_rc
+                    .borrow_mut()
+                    .pop()
+                    .unwrap_or(Err(Error::NoMoreEvents))
+            }),
             Rc::new(Repository::open(path).unwrap()),
             self.size,
             &Args::default(),
@@ -95,30 +95,17 @@ impl TestContext {
         )
         .unwrap();
 
-        self.sender
-            .as_mut()
-            .unwrap()
-            .send(GituEvent::Refresh)
-            .unwrap();
-
-        state.handle_events(&mut self.term).unwrap();
-
+        state.update(&mut self.term).unwrap();
         state
     }
 
     pub fn update(&mut self, state: &mut State, events: Vec<GituEvent>) {
-        for event in events {
-            self.sender.as_mut().unwrap().send(event).unwrap();
-        }
+        self.events
+            .borrow_mut()
+            .extend(events.into_iter().rev().map(Result::Ok));
 
-        self.sender
-            .as_mut()
-            .unwrap()
-            .send(GituEvent::NoMoreEvents)
-            .unwrap();
-
-        let result = state.handle_events(&mut self.term);
-        assert!(matches!(result, Err(Error::NoMoreEvents)));
+        let result = state.run(&mut self.term);
+        assert!(state.quit || matches!(result, Err(Error::NoMoreEvents)));
     }
 
     pub fn redact_buffer(&self) -> String {
