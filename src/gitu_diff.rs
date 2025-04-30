@@ -306,10 +306,18 @@ impl<'a> Parser<'a> {
     fn parse_old_new_file_header(
         &mut self,
     ) -> Result<(Range<usize>, Range<usize>, bool), ParseError<'a>> {
-        self.read("diff --git a/")?;
-        let old_file = self.read_until(" b/")?;
-        let new_file = self.read_to_before_newline();
-        Ok((old_file, new_file, false))
+        self.read("diff --git ")?;
+
+        if self.read_until("/").is_ok() {
+            let old_file = self.read_until(" ")?;
+
+            if self.read_until("/").is_ok() {
+                let new_file = self.read_to_before_newline();
+                return Ok((old_file, new_file, false));
+            }
+        }
+
+        Err(ParseError::new(self, "properly formatted git diff header"))
     }
 
     fn parse_conflicted_file(
@@ -833,5 +841,26 @@ mod tests {
         assert_eq!(diffs[2].header.status, Status::Unmerged);
         assert_eq!(&input[diffs[2].header.old_file.clone()], "src/ops/show.rs");
         assert_eq!(&input[diffs[2].header.new_file.clone()], "src/ops/show.rs");
+    }
+
+    #[test]
+    fn parse_custom_prefixes() {
+        let input = "diff --git i/file1.txt w/file2.txt\n\
+        index 0000000..1111111 100644\n\
+        --- i/file1.txt\n\
+        +++ w/file2.txt\n\
+        @@ -1,2 +1,2 @@ fn main() {\n\
+        -foo\n\
+        +bar\n";
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 1, "Expected one diff block");
+
+        let diff = &diffs[0];
+        let old_file_str = &input[diff.header.old_file.clone()];
+        assert_eq!(old_file_str, "file1.txt", "Old file does not match");
+
+        let new_file_str = &input[diff.header.new_file.clone()];
+        assert_eq!(new_file_str, "file2.txt", "New file does not match");
     }
 }
