@@ -1,5 +1,11 @@
-use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use super::{selected_rev, Action, OpTrait};
+use crate::{
+    items::TargetData,
+    menu::arg::Arg,
+    state::{PromptParams, State},
+    term::Term,
+    Res,
+};
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -61,12 +67,19 @@ impl OpTrait for RebaseAbort {
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt_with_default(
-            "Rebase onto",
-            rebase_elsewhere,
-            selected_rev,
-            true,
-        ))
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Rebase onto",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
+
+            rebase_elsewhere(state, term, &rev)?;
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

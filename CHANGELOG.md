@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.3] - 2025-04-21
+
+### 🐛 Bug Fixes
+
+- *(crates-io-release)* Resolve issue with publishing to crates-io
+
+## [0.30.2] - 2025-04-21
+
+### 🐛 Bug Fixes
+
+- *(crates-io-release)* Specify gitu-diff to not be published
+
+## [0.30.1] - 2025-04-21
+
+### 🐛 Bug Fixes
+
+- Issue with project lockfile/release
+
+## [0.30.0] - 2025-04-21
+
+### 🚀 Features
+
+- Print command stderr to screen as they run (e.g. git hooks)
+- Fall back to remote.pushDefault when branch pushRemote is not set
+- `GITU_SHOW_EDITOR` env var as an option above `EDITOR` etc.
+- Improve on error-handling. Errors should now provide more context.
+- Change "conflicted" file status to "unmerged", remove redundant "unmerged" section
+- New diff-parser, easier to maintain, integrates better
+
+### 🐛 Bug Fixes
+
+- *(file-watcher)* Freeze on startup, log error and stop on failure
+- Accurate --version in Github releases
+
 ## [0.29.0] - 2025-03-10
 
 ### 🚀 Features

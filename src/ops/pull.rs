@@ -1,4 +1,4 @@
-use super::{create_prompt, Action, OpTrait};
+use super::{Action, OpTrait};
 use crate::{
     error::Error,
     git::{
@@ -7,7 +7,7 @@ use crate::{
     },
     items::TargetData,
     menu::arg::Arg,
-    state::State,
+    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -23,9 +23,16 @@ impl OpTrait for PullFromPushRemote {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_push_remote(&state.repo)? {
                 None => {
-                    let mut prompt =
-                        create_prompt("Set pushRemote then pull", set_push_remote_and_pull, true);
-                    Rc::get_mut(&mut prompt).unwrap()(state, term)
+                    let push_remote_name = state.prompt(
+                        term,
+                        &PromptParams {
+                            prompt: "Set pushRemote then pull",
+                            ..Default::default()
+                        },
+                    )?;
+
+                    set_push_remote_and_pull(state, term, &push_remote_name)?;
+                    Ok(())
                 }
                 Some(push_remote) => {
                     let refspec = git::get_head_name(&state.repo)?;
@@ -62,9 +69,16 @@ impl OpTrait for PullFromUpstream {
         Some(Rc::new(
             |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
                 None => {
-                    let mut prompt =
-                        create_prompt("Set upstream then pull", set_upstream_and_pull, true);
-                    Rc::get_mut(&mut prompt).unwrap()(state, term)
+                    let upstream_name = state.prompt(
+                        term,
+                        &PromptParams {
+                            prompt: "Set upstream then pull",
+                            ..Default::default()
+                        },
+                    )?;
+
+                    set_upstream_and_pull(state, term, &upstream_name)?;
+                    Ok(())
                 }
                 Some((remote, branch)) => {
                     let refspec = format!("refs/heads/{}", branch);
@@ -99,7 +113,18 @@ fn set_upstream_and_pull(state: &mut State, term: &mut Term, upstream_name: &str
 pub(crate) struct PullFromElsewhere;
 impl OpTrait for PullFromElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt("Select remote", pull_elsewhere, true))
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let remote = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Select remote",
+                    ..Default::default()
+                },
+            )?;
+
+            pull_elsewhere(state, term, &remote)?;
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

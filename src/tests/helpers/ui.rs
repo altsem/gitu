@@ -1,16 +1,16 @@
 use crate::{
     cli::Args,
     config::{self, Config},
+    error::Error,
     key_parser::parse_keys,
     state::State,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
-    GituEvent,
 };
 use crossterm::event::{Event, KeyEvent};
 use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
-use std::{path::PathBuf, rc::Rc};
+use std::{path::PathBuf, rc::Rc, time::Duration};
 use temp_dir::TempDir;
 
 use self::buffer::TestBuffer;
@@ -22,7 +22,7 @@ macro_rules! snapshot {
     ($ctx:expr, $keys:expr) => {{
         let mut ctx = $ctx;
         let mut state = ctx.init_state();
-        state.update(&mut ctx.term, &keys($keys)).unwrap();
+        ctx.update(&mut state, keys($keys));
         insta::assert_snapshot!(ctx.redact_buffer());
         state
     }};
@@ -39,8 +39,11 @@ pub struct TestContext {
 impl TestContext {
     pub fn setup_init() -> Self {
         let size = Size::new(80, 20);
-        let term =
-            Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
+        let term = Terminal::new(TermBackend::Test {
+            backend: TestBackend::new(size.width, size.height),
+            events: vec![],
+        })
+        .unwrap();
         let repo_ctx = RepoTestContext::setup_init();
         Self {
             term,
@@ -53,8 +56,11 @@ impl TestContext {
 
     pub fn setup_clone() -> Self {
         let size = Size::new(80, 20);
-        let term =
-            Terminal::new(TermBackend::Test(TestBackend::new(size.width, size.height))).unwrap();
+        let term = Terminal::new(TermBackend::Test {
+            backend: TestBackend::new(size.width, size.height),
+            events: vec![],
+        })
+        .unwrap();
         let repo_ctx = RepoTestContext::setup_clone();
         Self {
             term,
@@ -83,18 +89,26 @@ impl TestContext {
         )
         .unwrap();
 
-        // hack: Pass in an event just to force re-rendering
-        state
-            .update(&mut self.term, &[GituEvent::Term(Event::FocusGained)])
-            .unwrap();
+        state.redraw_now(&mut self.term).unwrap();
         state
     }
 
-    pub fn redact_buffer(&self) -> String {
-        let TermBackend::Test(test_backend) = self.term.backend() else {
+    pub fn update(&mut self, state: &mut State, new_events: Vec<Event>) {
+        let TermBackend::Test { events, .. } = self.term.backend_mut() else {
             unreachable!();
         };
-        let mut debug_output = format!("{:?}", TestBuffer(test_backend.buffer()));
+
+        events.extend(new_events.into_iter().rev());
+
+        let result = state.run(&mut self.term, Duration::ZERO);
+        assert!(state.quit || matches!(result, Err(Error::NoMoreEvents)));
+    }
+
+    pub fn redact_buffer(&self) -> String {
+        let TermBackend::Test { backend, .. } = self.term.backend() else {
+            unreachable!();
+        };
+        let mut debug_output = format!("{:?}", TestBuffer(backend.buffer()));
 
         redact_temp_dir(&self.dir, &mut debug_output);
         redact_temp_dir(&self.remote_dir, &mut debug_output);
@@ -108,12 +122,12 @@ fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
     *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
 }
 
-pub fn keys(input: &str) -> Vec<GituEvent> {
+pub fn keys(input: &str) -> Vec<Event> {
     let ("", keys) = parse_keys(input).unwrap() else {
         unreachable!();
     };
 
     keys.into_iter()
-        .map(|(mods, key)| GituEvent::Term(Event::Key(KeyEvent::new(key, mods))))
+        .map(|(mods, key)| Event::Key(KeyEvent::new(key, mods)))
         .collect()
 }

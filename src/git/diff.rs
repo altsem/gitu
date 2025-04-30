@@ -1,4 +1,4 @@
-use gitu_diff::FileDiff;
+use crate::gitu_diff::FileDiff;
 use std::ops::Range;
 
 #[derive(Debug, Clone)]

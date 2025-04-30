@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::config::DiffHighlightConfig;
 use crate::config::SyntaxHighlightConfig;
 use crate::git::diff::Diff;
+use crate::gitu_diff;
 use crate::syntax_parser;
 use crate::syntax_parser::SyntaxTag;
 use itertools::Itertools;

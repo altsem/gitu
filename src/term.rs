@@ -1,5 +1,6 @@
 use crate::{error::Error, Res};
 use crossterm::{
+    event::Event,
     terminal::{
         disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
         LeaveAlternateScreen,
@@ -12,8 +13,8 @@ use ratatui::{
     prelude::{backend::WindowSize, buffer::Cell, Position},
     Terminal,
 };
-use std::fmt::Display;
 use std::io::{self, stderr, Stderr};
+use std::{fmt::Display, time::Duration};
 
 pub type Term = Terminal<TermBackend>;
 
@@ -69,7 +70,10 @@ pub fn backend() -> TermBackend {
 pub enum TermBackend {
     Crossterm(CrosstermBackend<Stderr>),
     #[allow(dead_code)]
-    Test(TestBackend),
+    Test {
+        backend: TestBackend,
+        events: Vec<Event>,
+    },
 }
 
 impl Backend for TermBackend {
@@ -79,63 +83,63 @@ impl Backend for TermBackend {
     {
         match self {
             TermBackend::Crossterm(t) => t.draw(content),
-            TermBackend::Test(t) => t.draw(content),
+            TermBackend::Test { backend, .. } => backend.draw(content),
         }
     }
 
     fn hide_cursor(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => t.hide_cursor(),
-            TermBackend::Test(t) => t.hide_cursor(),
+            TermBackend::Test { backend, .. } => backend.hide_cursor(),
         }
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => t.show_cursor(),
-            TermBackend::Test(t) => t.show_cursor(),
+            TermBackend::Test { backend, .. } => backend.show_cursor(),
         }
     }
 
     fn get_cursor_position(&mut self) -> io::Result<Position> {
         match self {
             TermBackend::Crossterm(t) => t.get_cursor_position(),
-            TermBackend::Test(t) => t.get_cursor_position(),
+            TermBackend::Test { backend, .. } => backend.get_cursor_position(),
         }
     }
 
     fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => t.set_cursor_position(position),
-            TermBackend::Test(t) => t.set_cursor_position(position),
+            TermBackend::Test { backend, .. } => backend.set_cursor_position(position),
         }
     }
 
     fn clear(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => t.clear(),
-            TermBackend::Test(t) => t.clear(),
+            TermBackend::Test { backend, .. } => backend.clear(),
         }
     }
 
     fn size(&self) -> io::Result<Size> {
         match self {
             TermBackend::Crossterm(t) => t.size(),
-            TermBackend::Test(t) => t.size(),
+            TermBackend::Test { backend, .. } => backend.size(),
         }
     }
 
     fn window_size(&mut self) -> io::Result<WindowSize> {
         match self {
             TermBackend::Crossterm(t) => t.window_size(),
-            TermBackend::Test(t) => t.window_size(),
+            TermBackend::Test { backend, .. } => backend.window_size(),
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => t.flush(),
-            TermBackend::Test(t) => t.flush(),
+            TermBackend::Test { backend, .. } => backend.flush(),
         }
     }
 }
@@ -147,21 +151,41 @@ impl TermBackend {
                 .execute(EnterAlternateScreen)
                 .map_err(Error::Term)
                 .map(|_| ()),
-            TermBackend::Test(_) => Ok(()),
+            TermBackend::Test { .. } => Ok(()),
         }
     }
 
     pub fn enable_raw_mode(&self) -> Res<()> {
         match self {
             TermBackend::Crossterm(_) => enable_raw_mode().map_err(Error::Term),
-            TermBackend::Test(_) => Ok(()),
+            TermBackend::Test { .. } => Ok(()),
         }
     }
 
     pub fn disable_raw_mode(&self) -> Res<()> {
         match self {
             TermBackend::Crossterm(_) => disable_raw_mode().map_err(Error::Term),
-            TermBackend::Test(_) => Ok(()),
+            TermBackend::Test { .. } => Ok(()),
+        }
+    }
+
+    pub fn poll_event(&self, timeout: Duration) -> Res<bool> {
+        match self {
+            TermBackend::Crossterm(_) => crossterm::event::poll(timeout).map_err(Error::Term),
+            TermBackend::Test { events, .. } => {
+                if events.is_empty() {
+                    Err(Error::NoMoreEvents)
+                } else {
+                    Ok(true)
+                }
+            }
+        }
+    }
+
+    pub fn read_event(&mut self) -> Res<Event> {
+        match self {
+            TermBackend::Crossterm(_) => crossterm::event::read().map_err(Error::Term),
+            TermBackend::Test { events, .. } => events.pop().ok_or(Error::NoMoreEvents),
         }
     }
 }

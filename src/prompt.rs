@@ -1,12 +1,11 @@
 use super::Res;
-use crate::{error::Error, ops::Action};
+use crate::error::Error;
 use ratatui::{backend::Backend, Terminal};
 use std::borrow::Cow;
 use tui_prompts::{State as _, TextState};
 
 pub(crate) struct PromptData {
     pub(crate) prompt_text: Cow<'static, str>,
-    pub(crate) update_fn: Action,
 }
 
 pub(crate) struct Prompt {

@@ -1,6 +1,6 @@
-## [0.29.0] - 2025-03-10
+## [0.30.3] - 2025-04-21
 
-### 🚀 Features
+### 🐛 Bug Fixes
 
-- Add support for `nvr` command with line number navigation
+- *(crates-io-release)* Resolve issue with publishing to crates-io
 

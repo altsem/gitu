@@ -1,11 +1,13 @@
-use super::{create_prompt_with_default, create_y_n_prompt, selected_rev, Action, OpTrait};
+use super::{selected_rev, Action, OpTrait};
 use crate::{
-    cmd_log::CmdLogEntry, error::Error, items::TargetData, menu::arg::Arg, prompt::PromptData,
-    state::State, term::Term, Res,
+    error::Error,
+    items::TargetData,
+    menu::arg::Arg,
+    state::{PromptParams, State},
+    term::Term,
+    Res,
 };
-use nom::Err;
 use std::{process::Command, rc::Rc};
-use tui_prompts::State as _;
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![]
@@ -14,12 +16,19 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt_with_default(
-            "Checkout",
-            checkout,
-            selected_rev,
-            true,
-        ))
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Checkout",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
+
+            checkout(state, term, &rev)?;
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {
@@ -41,12 +50,16 @@ fn checkout(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, _term: &mut Term| {
-            state.close_menu();
-            state.prompt.set(PromptData {
-                prompt_text: "Create and checkout branch:".into(),
-                update_fn: Rc::new(checkout_new_branch_prompt_update),
-            });
+        Some(Rc::new(|state: &mut State, term: &mut Term| {
+            let branch_name = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Create and checkout branch:",
+                    ..Default::default()
+                },
+            )?;
+
+            checkout_new_branch_prompt_update(state, term, &branch_name)?;
             Ok(())
         }))
     }
@@ -56,28 +69,35 @@ impl OpTrait for CheckoutNewBranch {
     }
 }
 
-fn checkout_new_branch_prompt_update(state: &mut State, term: &mut Term) -> Res<()> {
-    if state.prompt.state.status().is_done() {
-        let name = state.prompt.state.value().to_string();
-        state.prompt.reset(term)?;
+fn checkout_new_branch_prompt_update(
+    state: &mut State,
+    term: &mut Term,
+    branch_name: &str,
+) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["checkout", "-b", branch_name]);
 
-        let mut cmd = Command::new("git");
-        cmd.args(["checkout", "-b", &name]);
-
-        state.run_cmd(term, &[], cmd)?;
-    }
+    state.close_menu();
+    state.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct DeleteBranch;
 impl OpTrait for DeleteBranch {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt_with_default(
-            "Delete branch",
-            delete_branch,
-            selected_rev,
-            true,
-        ))
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Delete branch",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
+
+            delete_branch(state, term, &rev)?;
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

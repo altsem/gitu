@@ -1,10 +1,10 @@
-use super::{create_prompt_with_default, selected_rev, Action, OpTrait};
+use super::{selected_rev, Action, OpTrait};
 use crate::{
     error::Error,
     items::TargetData,
     menu::arg::{any_regex, positive_number, Arg},
     screen,
-    state::State,
+    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -42,12 +42,19 @@ impl OpTrait for LogCurrent {
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(create_prompt_with_default(
-            "Log rev",
-            log_other,
-            selected_rev,
-            true,
-        ))
+        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+            let rev = state.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Log rev",
+                    create_default_value: Box::new(selected_rev),
+                    ..Default::default()
+                },
+            )?;
+
+            log_other(state, term, &rev)?;
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {

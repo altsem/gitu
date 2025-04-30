@@ -6,6 +6,7 @@ pub mod error;
 mod file_watcher;
 mod git;
 mod git2_opts;
+pub mod gitu_diff;
 mod highlight;
 mod items;
 mod key_parser;
@@ -22,7 +23,6 @@ mod ui;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventState, KeyModifiers};
 use error::Error;
-use file_watcher::FileWatcher;
 use git2::Repository;
 use items::Item;
 use ops::Action;
@@ -75,20 +75,11 @@ pub const LOG_FILE_NAME: &str = "gitu.log";
 
 pub type Res<T> = Result<T, Error>;
 
-#[derive(Debug)]
-pub enum GituEvent {
-    Term(Event),
-    FileUpdate,
-}
-
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
-
-    log::debug!("Initializing config");
     let config = Rc::new(config::init_config()?);
 
-    log::debug!("Creating initial state");
     let mut state = state::State::create(
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
@@ -97,39 +88,23 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         true,
     )?;
 
-    log::debug!("Initial update");
-    state.update(term, &[GituEvent::Term(Event::FocusGained)])?;
+    if let Some(keys_string) = &args.keys {
+        let ("", keys) = key_parser::parse_keys(keys_string).expect("Couldn't parse keys") else {
+            panic!("Couldn't parse keys");
+        };
+
+        for event in keys_to_events(&keys) {
+            state.handle_event(term, event)?;
+        }
+    }
+
+    state.redraw_now(term)?;
 
     if args.print {
         return Ok(());
     }
 
-    if let Some(keys_string) = &args.keys {
-        let ("", keys) = key_parser::parse_keys(keys_string).expect("Couldn't parse keys") else {
-            panic!("Couldn't parse keys");
-        };
-        handle_initial_send_keys(&keys, &mut state, term)?;
-    }
-
-    let watcher = config
-        .general
-        .refresh_on_file_change
-        .enabled
-        .then(|| FileWatcher::new(&dir))
-        .transpose()?;
-
-    while !state.quit {
-        let mut events = if event::poll(Duration::from_millis(100)).map_err(Error::Term)? {
-            vec![GituEvent::Term(event::read().map_err(Error::Term)?)]
-        } else {
-            vec![]
-        };
-
-        if watcher.as_ref().is_some_and(|w| w.pending_updates()) {
-            events.push(GituEvent::FileUpdate);
-        }
-        state.update(term, &events)?;
-    }
+    state.run(term, Duration::from_millis(100))?;
 
     Ok(())
 }
@@ -164,26 +139,15 @@ fn open_repo_from_env() -> Res<Repository> {
     }
 }
 
-fn handle_initial_send_keys(
-    keys: &[(KeyModifiers, KeyCode)],
-    state: &mut state::State,
-    term: &mut ratatui::prelude::Terminal<term::TermBackend>,
-) -> Res<()> {
-    let initial_events = keys
-        .iter()
+fn keys_to_events(keys: &[(KeyModifiers, KeyCode)]) -> Vec<Event> {
+    keys.iter()
         .map(|(mods, key)| {
-            GituEvent::Term(Event::Key(KeyEvent {
+            Event::Key(KeyEvent {
                 code: *key,
                 modifiers: *mods,
                 kind: event::KeyEventKind::Press,
                 state: KeyEventState::NONE,
-            }))
+            })
         })
-        .collect::<Vec<_>>();
-
-    if !initial_events.is_empty() {
-        state.update(term, &initial_events)?;
-    }
-
-    Ok(())
+        .collect::<Vec<_>>()
 }

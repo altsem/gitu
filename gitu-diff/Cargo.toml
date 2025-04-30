@@ -1,7 +1,0 @@
-[package]
-name = "gitu-diff"
-version = "0.1.0"
-edition = "2021"
-description = "A library for parsing unified diffs and producing byte-range-annotations."
-
-[dependencies]

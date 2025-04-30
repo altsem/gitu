@@ -52,6 +52,8 @@ pub enum Error {
     CantGetBranchCommit(git2::Error),
     CantGetBranchName,
     CantGetBranch(git2::Error),
+    PromptAborted,
+    NoMoreEvents,
 }
 
 impl std::error::Error for Error {}
@@ -144,6 +146,8 @@ impl Display for Error {
             }
             Error::CantGetBranch(e) => f.write_fmt(format_args!("Couldn't get branch: {}", e)),
             Error::CantGetBranchName => f.write_fmt(format_args!("No branch name found")),
+            Error::PromptAborted => f.write_str("Aborted"),
+            Error::NoMoreEvents => unimplemented!(),
         }
     }
 }

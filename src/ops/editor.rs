@@ -1,9 +1,9 @@
-use super::{set_prompt, Action, OpTrait};
+use super::{confirm, Action, OpTrait};
 use crate::{
     items::TargetData,
     menu::PendingMenu,
     screen::NavMode,
-    state::{root_menu, State},
+    state::{root_menu, PromptParams, State},
     term::Term,
 };
 use std::rc::Rc;
@@ -19,18 +19,11 @@ impl OpTrait for Quit {
 
             if menu == root_menu(&state.config) {
                 if state.screens.len() == 1 {
-                    let quit = Rc::new(|state: &mut State, _term: &mut Term| {
-                        state.quit = true;
-                        Ok(())
-                    });
-
-                    let mut action = if state.config.general.confirm_quit.enabled {
-                        super::create_y_n_prompt(quit, "Really quit?")
-                    } else {
-                        quit
+                    if state.config.general.confirm_quit.enabled {
+                        confirm(state, term, "Really quit? (y or n)")?;
                     };
 
-                    Rc::get_mut(&mut action).unwrap()(state, term)?;
+                    state.quit = true;
                 } else {
                     state.screens.pop();
                     if let Some(screen) = state.screens.last_mut() {
@@ -84,7 +77,7 @@ pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         let arg_name = self.0.clone();
-        Some(Rc::new(move |state, _term| {
+        Some(Rc::new(move |state, term| {
             let mut need_prompt = None;
             let mut default = None;
 
@@ -120,13 +113,16 @@ impl OpTrait for ToggleArg {
                 });
 
             if let Some(display) = need_prompt {
-                set_prompt(
-                    state,
-                    display,
-                    parse_and_set_arg,
-                    Box::new(move |_| default.clone()),
-                    false,
-                );
+                let arg = state.prompt(
+                    term,
+                    &PromptParams {
+                        prompt: display,
+                        create_default_value: Box::new(move |_| default.clone()),
+                        hide_menu: false,
+                    },
+                )?;
+
+                parse_and_set_arg(state, term, &arg)?;
             }
 
             Ok(())

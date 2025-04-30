@@ -5,7 +5,7 @@ use itertools::Itertools;
 use self::{commit::Commit, merge_status::MergeStatus, rebase_status::RebaseStatus};
 use crate::{
     error::{Error, Utf8Error},
-    Res,
+    gitu_diff, Res,
 };
 use std::{
     fs,
