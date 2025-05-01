@@ -25,9 +25,9 @@ fn copy_hash(r: String) -> Option<Action> {
         match &mut state.clipboard {
             Some(cb) => {
                 cb.set_text(r.clone()).map_err(Error::Clipboard)?;
-                state.display_info("Commit hash copied to clipboard".to_owned());
+                state.display_info("Commit hash copied to clipboard");
             }
-            None => state.display_error("Clipboard not available".to_owned()),
+            None => state.display_error("Clipboard not available"),
         }
         Ok(())
     }))

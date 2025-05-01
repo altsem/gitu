@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::io::Read;
 use std::io::Write;
 use std::ops::DerefMut;
@@ -253,13 +254,15 @@ impl State {
     }
 
     /// Displays an `Info` message to the CmdLog.
-    pub fn display_info(&mut self, message: String) {
-        self.current_cmd_log.push(CmdLogEntry::Info(message));
+    pub fn display_info<S: Into<Cow<'static, str>>>(&mut self, message: S) {
+        self.current_cmd_log
+            .push(CmdLogEntry::Info(message.into().into_owned()));
     }
 
     /// Displays an `Error` message to the CmdLog.
-    pub fn display_error(&mut self, error: String) {
-        self.current_cmd_log.push(CmdLogEntry::Error(error));
+    pub fn display_error<S: Into<Cow<'static, str>>>(&mut self, message: S) {
+        self.current_cmd_log
+            .push(CmdLogEntry::Error(message.into().into_owned()));
     }
 
     /// Runs a `Command` and handles its output.
