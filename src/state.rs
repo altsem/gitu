@@ -113,6 +113,19 @@ impl State {
             return Ok(None);
         }
 
+        let hiding_untracked_files = !self
+            .repo
+            .config()
+            .map_err(Error::ReadGitConfig)?
+            .get_bool("status.showUntrackedFiles")
+            .unwrap_or(true);
+
+        if hiding_untracked_files {
+            self.display_info("File watcher disabled (status.showUntrackedFiles is off)");
+
+            return Ok(None);
+        }
+
         Ok(
             FileWatcher::new(self.repo.workdir().expect("Bare repos unhandled"))
                 .inspect_err(|err| {
