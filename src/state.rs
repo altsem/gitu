@@ -87,15 +87,7 @@ impl State {
             .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {}", e))
             .ok();
 
-        let file_watcher = if config.general.refresh_on_file_change.enabled {
-            Some(FileWatcher::new(
-                repo.workdir().expect("Bare repos unhandled"),
-            )?)
-        } else {
-            None
-        };
-
-        Ok(Self {
+        let mut state = Self {
             repo,
             config,
             bindings,
@@ -108,9 +100,27 @@ impl State {
             current_cmd_log: CmdLog::new(),
             prompt: prompt::Prompt::new(),
             clipboard,
-            file_watcher,
+            file_watcher: None,
             needs_redraw: true,
-        })
+        };
+
+        state.file_watcher = state.init_file_watcher()?;
+        Ok(state)
+    }
+
+    fn init_file_watcher(&mut self) -> Res<Option<FileWatcher>> {
+        if !self.config.general.refresh_on_file_change.enabled {
+            return Ok(None);
+        }
+
+        Ok(
+            FileWatcher::new(self.repo.workdir().expect("Bare repos unhandled"))
+                .inspect_err(|err| {
+                    self.display_error(err.to_string());
+                    self.display_info("File watcher disabled");
+                })
+                .ok(),
+        )
     }
 
     pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
