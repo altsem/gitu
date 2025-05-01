@@ -815,6 +815,15 @@ mod tests {
     }
 
     #[test]
+    fn filenames_with_spaces() {
+        let input = "diff --git a/file one.txt b/file two.txt\nindex 5626abf..f719efd 100644\n--- a/file one.txt	\n+++ b/file two.txt	\n@@ -1 +1 @@\n-one\n+two\n";
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(&input[diffs[0].header.old_file.clone()], "file one.txt");
+        assert_eq!(&input[diffs[0].header.new_file.clone()], "file two.txt");
+    }
+
+    #[test]
     fn partially_unmerged() {
         let input = "diff --git a/src/config.rs b/src/config.rs\nindex a22a438..095d9c7 100644\n--- a/src/config.rs\n+++ b/src/config.rs\n@@ -15,6 +15,7 @@ const DEFAULT_CONFIG: &str = include_str!(\"default_config.toml\");\n pub(crate) struct Config {\n     pub general: GeneralConfig,\n     pub style: StyleConfig,\n+    pub editor: EditorConfig,\n     pub bindings: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>,\n }\n \n@@ -148,6 +149,13 @@ pub struct SymbolStyleConfigEntry {\n     mods: Option<Modifier>,\n }\n \n+#[derive(Default, Debug, Deserialize)]\n+pub struct EditorConfig {\n+    pub default: Option<String>,\n+    pub show: Option<String>,\n+    pub commit: Option<String>,\n+}\n+\n impl From<&StyleConfigEntry> for Style {\n     fn from(val: &StyleConfigEntry) -> Self {\n         Style {\ndiff --git a/src/default_config.toml b/src/default_config.toml\nindex eaf97e7..b5a29fa 100644\n--- a/src/default_config.toml\n+++ b/src/default_config.toml\n@@ -10,6 +10,10 @@ confirm_quit.enabled = false\n collapsed_sections = []\n refresh_on_file_change.enabled = true\n \n+[editor]\n+# show = \"zed -a\"\n+# commit = \"zile\"\n+\n [style]\n # fg / bg can be either of:\n # - a hex value: \"#707070\"\n* Unmerged path src/ops/show.rs";
 
