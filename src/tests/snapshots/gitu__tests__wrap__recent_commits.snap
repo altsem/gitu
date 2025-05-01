@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+  On branch main                                                                |
+                                                                                |
+  Recent commits                                                                |
+▌ ebac8f4 main This is a long line that is longer than 80 columns, to ensure    |
+▌↪that it definitely wraps on to the line below it                              |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 556aa06940e8aa8

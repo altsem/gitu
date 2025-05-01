@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+  On branch main                                                                |
+                                                                                |
+  Unstaged changes (1)                                                          |
+  modified   testfile                                                           |
+  @@ -1,2 +1 @@                                                                 |
+  -testing                                                                      |
+  -testtest                                                                     |
+▌ +This is a long line that is longer than 80 columns, to ensure that it        |
+▌↪definitely wraps on to the line below it                                      |
+                                                                                |
+  Recent commits                                                                |
+  f431046 main add testfile                                                     |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 5ec29d64b309dd10

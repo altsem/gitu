@@ -32,7 +32,7 @@ mod stage;
 mod stash;
 mod unstage;
 
-use helpers::{clone_and_commit, commit, keys, run, TestContext};
+use helpers::{clone_and_commit, commit, commit_with_message, keys, run, TestContext};
 
 #[test]
 fn no_repo() {
@@ -231,6 +231,41 @@ fn fetch_all() {
     let ctx = TestContext::setup_clone();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
     snapshot!(ctx, "fa");
+}
+
+mod wrap {
+    use super::*;
+
+    const LONG_LINE: &str = "This is a long line that is longer than 80 columns, to ensure that it definitely wraps on to the line below it\n";
+
+    #[test]
+    fn unstaged_changes() {
+        let ctx = TestContext::setup_init();
+        commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+        fs::write(ctx.dir.child("testfile"), LONG_LINE).expect("error writing to file");
+        snapshot!(ctx, "jj<tab>j<ctrl+j><ctrl+j><ctrl+j>");
+    }
+
+    #[test]
+    fn staged_changes() {
+        let ctx = TestContext::setup_init();
+        fs::write(ctx.dir.child("testfile"), LONG_LINE).expect("error writing to file");
+        snapshot!(ctx, "jsjj");
+    }
+
+    #[test]
+    fn recent_commits() {
+        let ctx = TestContext::setup_init();
+        commit_with_message(ctx.dir.path(), LONG_LINE, "testfile", "testing\ntesttest\n");
+        snapshot!(ctx, "jj");
+    }
+
+    #[test]
+    fn show() {
+        let ctx = TestContext::setup_clone();
+        commit(ctx.dir.path(), "firstfile", LONG_LINE);
+        snapshot!(ctx, "ll<enter><ctrl+j>");
+    }
 }
 
 mod show_refs {

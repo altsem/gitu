@@ -4,6 +4,8 @@ use crate::{config::Config, items::TargetData, Res};
 
 use super::Item;
 use std::{borrow::Cow, collections::HashSet, rc::Rc};
+use ratatui::widgets::{Paragraph, Wrap};
+use unicode_width::UnicodeWidthStr;
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -321,46 +323,94 @@ struct LineView<'a> {
     highlighted: bool,
 }
 
+// Space for the cursor and the wrap indicator.
+const SCREEN_GUTTER_WIDTH: u16 = 2;
+const SCREEN_GUTTER_COLUMN_CURSOR: u16 = 0;
+const SCREEN_GUTTER_COLUMN_INDICATOR: u16 = 1;
+
 impl Widget for &Screen {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let style = &self.config.style;
+        let mut line_index = 0;
+        let wrap = Wrap { trim: false };
 
-        for (line_index, line) in self.line_views(area.as_size()).enumerate() {
+        for line in self.line_views(area.as_size()) {
+            let t = Text::from(line.display.clone());
+            let width = buf.area.width - SCREEN_GUTTER_WIDTH;
+            let remaining_y = area.height - line_index;
+            let height = measure_paragraph_height(&t, wrap, SCREEN_GUTTER_WIDTH, width).min(remaining_y);
             let line_area = Rect {
                 x: 0,
-                y: line_index as u16,
-                width: buf.area.width,
-                height: 1,
+                y: line_index,
+                width,
+                height,
             };
 
-            let indented_line_area = Rect { x: 1, ..line_area };
+            let indented_line_area = Rect { x: SCREEN_GUTTER_WIDTH, ..line_area }.intersection(area);
 
             if line.highlighted {
                 buf.set_style(line_area, &style.selection_area);
 
                 if self.line_index[self.cursor] == line.item_index {
-                    buf.set_style(line_area, &style.selection_line);
+                    buf.set_style(indented_line_area, &style.selection_line);
                 } else {
-                    buf[(0, line_index as u16)]
-                        .set_char(style.selection_bar.symbol)
-                        .set_style(&style.selection_bar);
+                    for i in 0..height {
+                        buf[(SCREEN_GUTTER_COLUMN_CURSOR, line_index + i)]
+                            .set_char(style.selection_bar.symbol)
+                            .set_style(&style.selection_bar);
+                    }
                 }
             }
 
-            line.display.render(indented_line_area, buf);
-            let overflow = line.display.width() > line_area.width as usize;
+            let p = Paragraph::new(t).wrap(wrap);
+            p.render(indented_line_area, buf);
 
-            if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
+            for i in 1..height {
+                buf[(SCREEN_GUTTER_COLUMN_INDICATOR, line_index + i)]
+                    .set_char(style.wrap_indicator.symbol)
+                    .set_style(&style.wrap_indicator);
+            }
+
+            if self.is_collapsed(line.item) && line.display.width() > 0 {
                 let line_end =
                     (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
-                buf[(line_end, line_index as u16)].set_char('…');
+                buf[(line_end, line_index)]
+                    .set_char(style.collapsed_indicator.symbol)
+                    .set_style(&style.collapsed_indicator);
             }
 
             if self.line_index[self.cursor] == line.item_index {
-                buf[(0, line_index as u16)]
-                    .set_char(style.cursor.symbol)
-                    .set_style(&style.cursor);
+                for i in 0..height {
+                    buf[(SCREEN_GUTTER_COLUMN_CURSOR, line_index + i as u16)]
+                        .set_char(style.cursor.symbol)
+                        .set_style(&style.cursor);
+                }
             }
+
+            line_index += height;
         }
     }
+}
+
+/// Measure each span in a `Text` and return the total height of the wrapped
+/// text.
+fn measure_paragraph_height(
+    text: &Text,
+    wrap: Wrap,
+    offset: u16,
+    max_width: u16,
+) -> u16 {
+    let max_width = max_width.max(1);
+    text.lines.iter().map(|line| {
+        let mut width = 0;
+        for span in &line.spans {
+            let mut span_text = span.content.as_ref();
+            if wrap.trim {
+                span_text = span_text.trim_end_matches(|c: char| c == ' ' || c == '\t');
+            }
+            width += UnicodeWidthStr::width(span_text) as u16;
+        }
+
+        ((width + max_width - offset) / max_width).max(1)
+    }).sum()
 }

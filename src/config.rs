@@ -48,6 +48,8 @@ pub struct StyleConfig {
     pub selection_line: StyleConfigEntry,
     pub selection_bar: SymbolStyleConfigEntry,
     pub selection_area: StyleConfigEntry,
+    pub wrap_indicator: SymbolStyleConfigEntry,
+    pub collapsed_indicator: SymbolStyleConfigEntry,
 
     pub hash: StyleConfigEntry,
     pub branch: StyleConfigEntry,

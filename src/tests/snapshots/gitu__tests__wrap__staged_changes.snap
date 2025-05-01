@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+  No branch                                                                     |
+                                                                                |
+  Staged changes (1)                                                            |
+  added      testfile                                                           |
+▌ @@ -0,0 +1 @@                                                                 |
+▌ +This is a long line that is longer than 80 columns, to ensure that it        |
+▌↪definitely wraps on to the line below it                                      |
+                                                                                |
+  Recent commits                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 2fce71be5221797c

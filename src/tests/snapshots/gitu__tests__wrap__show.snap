@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+  commit cb440e69a12513df5754d1a8683ccfefcb89c1dd                               |
+  Author: Author Name <author@email.com>                                        |
+  Date:   Fri, 16 Feb 2024 11:11:00 +0100                                       |
+                                                                                |
+      add firstfile                                                             |
+                                                                                |
+      Commit body goes here                                                     |
+                                                                                |
+  added      firstfile                                                          |
+  @@ -0,0 +1 @@                                                                 |
+▌ +This is a long line that is longer than 80 columns, to ensure that it        |
+▌↪definitely wraps on to the line below it                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 9ec7ed8a8eda4208

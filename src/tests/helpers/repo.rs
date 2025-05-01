@@ -107,6 +107,11 @@ pub fn commit(dir: &Path, file_name: &str, contents: &str) {
         Ok(true) => format!("modify {}\n\nCommit body goes here\n", file_name),
         _ => format!("add {}\n\nCommit body goes here\n", file_name),
     };
+    commit_with_message(dir, &message, file_name, contents);
+}
+
+pub fn commit_with_message(dir: &Path, message: &str, file_name: &str, contents: &str) {
+    let path = dir.to_path_buf().join(file_name);
     fs::write(path, contents).expect("error writing to file");
     run(dir, &["git", "add", file_name]);
     run(dir, &["git", "commit", "-m", &message]);
