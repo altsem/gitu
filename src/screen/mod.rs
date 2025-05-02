@@ -354,11 +354,9 @@ impl Widget for &Screen {
                 if self.line_index[self.cursor] == line.item_index {
                     buf.set_style(indented_line_area, &style.selection_line);
                 } else {
-                    for i in 0..height {
-                        buf[(SCREEN_GUTTER_COLUMN_CURSOR, line_index + i)]
-                            .set_char(style.selection_bar.symbol)
-                            .set_style(&style.selection_bar);
-                    }
+                    buf[(SCREEN_GUTTER_COLUMN_CURSOR, line_index)]
+                        .set_char(style.selection_bar.symbol)
+                        .set_style(&style.selection_bar);
                 }
             }
 
@@ -380,11 +378,9 @@ impl Widget for &Screen {
             }
 
             if self.line_index[self.cursor] == line.item_index {
-                for i in 0..height {
-                    buf[(SCREEN_GUTTER_COLUMN_CURSOR, line_index + i as u16)]
-                        .set_char(style.cursor.symbol)
-                        .set_style(&style.cursor);
-                }
+                buf[(SCREEN_GUTTER_COLUMN_CURSOR, line_index)]
+                    .set_char(style.cursor.symbol)
+                    .set_style(&style.cursor);
             }
 
             line_index += height;

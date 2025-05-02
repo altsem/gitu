@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
                                                                                 |
   Recent commits                                                                |
 ▌ ebac8f4 main This is a long line that is longer than 80 columns, to ensure    |
-▌↪that it definitely wraps on to the line below it                              |
+ ↪that it definitely wraps on to the line below it                              |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 556aa06940e8aa8
+styles_hash: 76a85750ae78d878

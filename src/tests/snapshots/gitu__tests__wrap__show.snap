@@ -13,7 +13,7 @@ expression: ctx.redact_buffer()
   added      firstfile                                                          |
   @@ -0,0 +1 @@                                                                 |
 ▌ +This is a long line that is longer than 80 columns, to ensure that it        |
-▌↪definitely wraps on to the line below it                                      |
+ ↪definitely wraps on to the line below it                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 9ec7ed8a8eda4208
+styles_hash: eb4b8705c9e937b9

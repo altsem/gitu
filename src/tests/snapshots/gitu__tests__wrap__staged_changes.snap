@@ -8,7 +8,7 @@ expression: ctx.redact_buffer()
   added      testfile                                                           |
 ▌ @@ -0,0 +1 @@                                                                 |
 ▌ +This is a long line that is longer than 80 columns, to ensure that it        |
-▌↪definitely wraps on to the line below it                                      |
+ ↪definitely wraps on to the line below it                                      |
                                                                                 |
   Recent commits                                                                |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 2fce71be5221797c
+styles_hash: 5336fe13ab979e46
