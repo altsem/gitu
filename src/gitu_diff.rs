@@ -306,18 +306,66 @@ impl<'a> Parser<'a> {
     fn parse_old_new_file_header(
         &mut self,
     ) -> Result<(Range<usize>, Range<usize>, bool), ParseError<'a>> {
-        self.read("diff --git ")?;
+        const DIFF_GIT_PREFIX: &str = "diff --git ";
 
-        if self.read_until("/").is_ok() {
-            let old_file = self.read_until(" ")?;
+        self.read(DIFF_GIT_PREFIX)?;
 
-            if self.read_until("/").is_ok() {
-                let new_file = self.read_to_before_newline();
-                return Ok((old_file, new_file, false));
-            }
+        let header_start = self.pos;
+
+        let line_end = header_start
+            + self.input[header_start..]
+                .find('\n')
+                .unwrap_or_else(|| self.input.len() - header_start);
+
+        const CR_BYTE_SIZE: usize = 1;
+        let header_end =
+            if line_end > header_start && self.input.as_bytes()[line_end - CR_BYTE_SIZE] == b'\r' {
+                line_end - CR_BYTE_SIZE
+            } else {
+                line_end
+            };
+
+        const SLASH_CHAR_IDX: usize = 1;
+        if self.pos + SLASH_CHAR_IDX >= self.input.len()
+            || !self
+                .input
+                .chars()
+                .nth(self.pos)
+                .unwrap()
+                .is_ascii_alphabetic()
+            || self.input.as_bytes()[self.pos + SLASH_CHAR_IDX] != b'/'
+        {
+            return Err(ParseError::new(self, "first path prefix"));
         }
 
-        Err(ParseError::new(self, "properly formatted git diff header"))
+        const SPACE_IDX: usize = 0; // Index of space in second prefix window
+        const LETTER_IDX: usize = 1; // Index of letter in second prefix window
+        const SLASH_IDX: usize = 2; // Index of slash in second prefix window
+        const PATH_PREFIX_LENGTH: usize = 2; // Length of "[a-z]/" prefix
+        const SECOND_PREFIX_WINDOW_SIZE: usize = 3; // Size for " [a-z]/" pattern detection
+        const SECOND_PREFIX_OFFSET: usize = 3; // Length of " [a-z]/" separator
+
+        let line = &self.input[header_start..header_end];
+        let second_prefix_pos = line
+            .as_bytes()
+            .windows(SECOND_PREFIX_WINDOW_SIZE)
+            .enumerate()
+            .skip(1)
+            .find(|(_, window)| {
+                window[SPACE_IDX] == b' '
+                    && window[LETTER_IDX].is_ascii_alphabetic()
+                    && window[SLASH_IDX] == b'/'
+            })
+            .map(|(i, _)| i)
+            .ok_or_else(|| ParseError::new(self, "second path prefix"))?;
+
+        let old_file = (header_start + PATH_PREFIX_LENGTH)..(header_start + second_prefix_pos);
+        let new_file = (header_start + second_prefix_pos + SECOND_PREFIX_OFFSET)..header_end;
+
+        const LF_BYTE_SIZE: usize = 1;
+        self.pos = line_end + LF_BYTE_SIZE;
+
+        Ok((old_file, new_file, false))
     }
 
     fn parse_conflicted_file(
@@ -423,23 +471,6 @@ impl<'a> Parser<'a> {
 
         self.pos += expected.len();
         Ok(start..self.pos)
-    }
-
-    fn read_until(&mut self, until: &'static str) -> Result<Range<usize>, ParseError<'a>> {
-        let start = self.pos;
-
-        while !self.peek(until) {
-            self.pos += 1;
-
-            if self.pos >= self.input.len() {
-                // TODO Explain "until" in another type of error message
-                return Err(ParseError::new(self, until));
-            }
-        }
-
-        let end = self.pos;
-        self.pos += until.len();
-        Ok(start..end)
     }
 
     fn read_to_before_newline(&mut self) -> Range<usize> {
