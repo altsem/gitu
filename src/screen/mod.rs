@@ -384,6 +384,9 @@ impl Widget for &Screen {
             }
 
             line_index += height;
+            if line_index >= area.height {
+                break;
+            }
         }
     }
 }
