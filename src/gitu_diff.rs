@@ -6,6 +6,7 @@
 /// - Be sure that the original input is intact.
 ///
 use core::ops::Range;
+use regex::Regex;
 use std::fmt::{self, Debug};
 
 #[allow(dead_code)]
@@ -306,66 +307,48 @@ impl<'a> Parser<'a> {
     fn parse_old_new_file_header(
         &mut self,
     ) -> Result<(Range<usize>, Range<usize>, bool), ParseError<'a>> {
-        const DIFF_GIT_PREFIX: &str = "diff --git ";
+        const CR_BYTE: u8 = b'\r';
+        const LF_SIZE: usize = 1;
+        const CARRIAGE_RETURN_SIZE: usize = 1;
 
-        self.read(DIFF_GIT_PREFIX)?;
+        self.read("diff --git ")?;
+        let start_pos = self.pos;
 
-        let header_start = self.pos;
+        let line_end = self.input[start_pos..]
+            .find('\n')
+            .map(|pos| start_pos + pos)
+            .unwrap_or_else(|| self.input.len());
 
-        let line_end = header_start
-            + self.input[header_start..]
-                .find('\n')
-                .unwrap_or_else(|| self.input.len() - header_start);
-
-        const CR_BYTE_SIZE: usize = 1;
         let header_end =
-            if line_end > header_start && self.input.as_bytes()[line_end - CR_BYTE_SIZE] == b'\r' {
-                line_end - CR_BYTE_SIZE
+            if line_end > 0 && self.input.as_bytes().get(line_end - 1) == Some(&CR_BYTE) {
+                line_end - CARRIAGE_RETURN_SIZE
             } else {
                 line_end
             };
 
-        const SLASH_CHAR_IDX: usize = 1;
-        if self.pos + SLASH_CHAR_IDX >= self.input.len()
-            || !self
-                .input
-                .chars()
-                .nth(self.pos)
-                .unwrap()
-                .is_ascii_alphabetic()
-            || self.input.as_bytes()[self.pos + SLASH_CHAR_IDX] != b'/'
-        {
-            return Err(ParseError::new(self, "first path prefix"));
+        let header_line = &self.input[start_pos..header_end];
+
+        let git_diff_regex = Regex::new(r"^([a-z]/)(.+?) ([a-z]/)(.+)$").unwrap();
+
+        if let Some(caps) = git_diff_regex.captures(header_line) {
+            let old_prefix_len = caps.get(1).unwrap().len();
+            let old_path_start = start_pos + old_prefix_len;
+            let old_path_end = old_path_start + caps.get(2).unwrap().len();
+
+            let new_prefix_pos = caps.get(3).unwrap().start();
+            let new_path_start = start_pos + new_prefix_pos + caps.get(3).unwrap().len();
+            let new_path_end = new_path_start + caps.get(4).unwrap().len();
+
+            self.pos = line_end + LF_SIZE;
+
+            return Ok((
+                old_path_start..old_path_end,
+                new_path_start..new_path_end,
+                false,
+            ));
         }
 
-        const SPACE_IDX: usize = 0; // Index of space in second prefix window
-        const LETTER_IDX: usize = 1; // Index of letter in second prefix window
-        const SLASH_IDX: usize = 2; // Index of slash in second prefix window
-        const PATH_PREFIX_LENGTH: usize = 2; // Length of "[a-z]/" prefix
-        const SECOND_PREFIX_WINDOW_SIZE: usize = 3; // Size for " [a-z]/" pattern detection
-        const SECOND_PREFIX_OFFSET: usize = 3; // Length of " [a-z]/" separator
-
-        let line = &self.input[header_start..header_end];
-        let second_prefix_pos = line
-            .as_bytes()
-            .windows(SECOND_PREFIX_WINDOW_SIZE)
-            .enumerate()
-            .skip(1)
-            .find(|(_, window)| {
-                window[SPACE_IDX] == b' '
-                    && window[LETTER_IDX].is_ascii_alphabetic()
-                    && window[SLASH_IDX] == b'/'
-            })
-            .map(|(i, _)| i)
-            .ok_or_else(|| ParseError::new(self, "second path prefix"))?;
-
-        let old_file = (header_start + PATH_PREFIX_LENGTH)..(header_start + second_prefix_pos);
-        let new_file = (header_start + second_prefix_pos + SECOND_PREFIX_OFFSET)..header_end;
-
-        const LF_BYTE_SIZE: usize = 1;
-        self.pos = line_end + LF_BYTE_SIZE;
-
-        Ok((old_file, new_file, false))
+        Err(ParseError::new(self, "properly formatted git diff header"))
     }
 
     fn parse_conflicted_file(
