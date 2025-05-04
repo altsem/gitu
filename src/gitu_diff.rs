@@ -6,6 +6,7 @@
 /// - Be sure that the original input is intact.
 ///
 use core::ops::Range;
+use regex::Regex;
 use std::fmt::{self, Debug};
 
 #[allow(dead_code)]
@@ -306,10 +307,48 @@ impl<'a> Parser<'a> {
     fn parse_old_new_file_header(
         &mut self,
     ) -> Result<(Range<usize>, Range<usize>, bool), ParseError<'a>> {
-        self.read("diff --git a/")?;
-        let old_file = self.read_until(" b/")?;
-        let new_file = self.read_to_before_newline();
-        Ok((old_file, new_file, false))
+        const CR_BYTE: u8 = b'\r';
+        const LF_SIZE: usize = 1;
+        const CARRIAGE_RETURN_SIZE: usize = 1;
+
+        self.read("diff --git ")?;
+        let start_pos = self.pos;
+
+        let line_end = self.input[start_pos..]
+            .find('\n')
+            .map(|pos| start_pos + pos)
+            .unwrap_or_else(|| self.input.len());
+
+        let header_end =
+            if line_end > 0 && self.input.as_bytes().get(line_end - 1) == Some(&CR_BYTE) {
+                line_end - CARRIAGE_RETURN_SIZE
+            } else {
+                line_end
+            };
+
+        let header_line = &self.input[start_pos..header_end];
+
+        let git_diff_regex = Regex::new(r"^([a-z]/)(.+?) ([a-z]/)(.+)$").unwrap();
+
+        if let Some(caps) = git_diff_regex.captures(header_line) {
+            let old_prefix_len = caps.get(1).unwrap().len();
+            let old_path_start = start_pos + old_prefix_len;
+            let old_path_end = old_path_start + caps.get(2).unwrap().len();
+
+            let new_prefix_pos = caps.get(3).unwrap().start();
+            let new_path_start = start_pos + new_prefix_pos + caps.get(3).unwrap().len();
+            let new_path_end = new_path_start + caps.get(4).unwrap().len();
+
+            self.pos = line_end + LF_SIZE;
+
+            return Ok((
+                old_path_start..old_path_end,
+                new_path_start..new_path_end,
+                false,
+            ));
+        }
+
+        Err(ParseError::new(self, "properly formatted git diff header"))
     }
 
     fn parse_conflicted_file(
@@ -415,23 +454,6 @@ impl<'a> Parser<'a> {
 
         self.pos += expected.len();
         Ok(start..self.pos)
-    }
-
-    fn read_until(&mut self, until: &'static str) -> Result<Range<usize>, ParseError<'a>> {
-        let start = self.pos;
-
-        while !self.peek(until) {
-            self.pos += 1;
-
-            if self.pos >= self.input.len() {
-                // TODO Explain "until" in another type of error message
-                return Err(ParseError::new(self, until));
-            }
-        }
-
-        let end = self.pos;
-        self.pos += until.len();
-        Ok(start..end)
     }
 
     fn read_to_before_newline(&mut self) -> Range<usize> {
@@ -833,5 +855,26 @@ mod tests {
         assert_eq!(diffs[2].header.status, Status::Unmerged);
         assert_eq!(&input[diffs[2].header.old_file.clone()], "src/ops/show.rs");
         assert_eq!(&input[diffs[2].header.new_file.clone()], "src/ops/show.rs");
+    }
+
+    #[test]
+    fn parse_custom_prefixes() {
+        let input = "diff --git i/file1.txt w/file2.txt\n\
+        index 0000000..1111111 100644\n\
+        --- i/file1.txt\n\
+        +++ w/file2.txt\n\
+        @@ -1,2 +1,2 @@ fn main() {\n\
+        -foo\n\
+        +bar\n";
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 1, "Expected one diff block");
+
+        let diff = &diffs[0];
+        let old_file_str = &input[diff.header.old_file.clone()];
+        assert_eq!(old_file_str, "file1.txt", "Old file does not match");
+
+        let new_file_str = &input[diff.header.new_file.clone()];
+        assert_eq!(new_file_str, "file2.txt", "New file does not match");
     }
 }
