@@ -7,7 +7,10 @@
 ///
 use core::ops::Range;
 use regex::Regex;
-use std::fmt::{self, Debug};
+use std::{
+    fmt::{self, Debug},
+    sync::LazyLock,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -328,9 +331,10 @@ impl<'a> Parser<'a> {
 
         let header_line = &self.input[start_pos..header_end];
 
-        let git_diff_regex = Regex::new(r"^([a-z]/)(.+?) ([a-z]/)(.+)$").unwrap();
+        static GIT_DIFF_REGEX: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"^([a-z]/)(.+?) ([a-z]/)(.+)$").unwrap());
 
-        if let Some(caps) = git_diff_regex.captures(header_line) {
+        if let Some(caps) = GIT_DIFF_REGEX.captures(header_line) {
             let old_prefix_len = caps.get(1).unwrap().len();
             let old_path_start = start_pos + old_prefix_len;
             let old_path_end = old_path_start + caps.get(2).unwrap().len();
