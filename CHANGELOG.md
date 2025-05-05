@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.31.0] - 2025-05-05
+
+### 🚀 Features
+
+- Disable filewatcher when `status.showUntrackedFiles` is off
+- Replace `ignore` lib with `libgit2` ignore functionality
+- FileWatcher now ignores changes from patterns in .gitignore
+
+### 🐛 Bug Fixes
+
+- Support custom path prefixes in Git diff parser (e.g. i/... w/...) (#361)
+- Disable filewatcher when it fails to initialize
+
 ## [0.30.3] - 2025-04-21
 
 ### 🐛 Bug Fixes

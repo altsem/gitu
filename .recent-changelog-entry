@@ -1,6 +1,13 @@
-## [0.30.3] - 2025-04-21
+## [0.31.0] - 2025-05-05
+
+### 🚀 Features
+
+- Disable filewatcher when `status.showUntrackedFiles` is off
+- Replace `ignore` lib with `libgit2` ignore functionality
+- FileWatcher now ignores changes from patterns in .gitignore
 
 ### 🐛 Bug Fixes
 
-- *(crates-io-release)* Resolve issue with publishing to crates-io
+- Support custom path prefixes in Git diff parser (e.g. i/... w/...) (#361)
+- Disable filewatcher when it fails to initialize
 
