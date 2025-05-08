@@ -4,12 +4,10 @@ expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
 ▌* main                                                                         |
-   other-branch                                                                 |
                                                                                 |
  Remote origin                                                                  |
    origin/HEAD                                                                  |
    origin/main                                                                  |
-                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +20,6 @@ b Checkout branch/revision                                                      
 c Checkout new branch                                                           |
 K Delete branch                                                                 |
 q/<esc> Quit/Close                                                              |
-styles_hash: d05cb29e19813b7b
+────────────────────────────────────────────────────────────────────────────────|
+! Cannot delete the current branch                                              |
+styles_hash: e8a394cbb6cccb26

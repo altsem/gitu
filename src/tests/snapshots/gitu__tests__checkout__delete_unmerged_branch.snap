@@ -4,7 +4,6 @@ expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
 ▌* main                                                                         |
-   other-branch                                                                 |
                                                                                 |
  Remote origin                                                                  |
    origin/HEAD                                                                  |
@@ -16,10 +15,11 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-K Delete branch                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: d05cb29e19813b7b
+$ git branch -D unmerged-branch                                                 |
+Deleted branch unmerged-branch (was f91eb49).                                   |
+styles_hash: cc36604a6419da11
