@@ -96,18 +96,24 @@ pub struct Change {
 pub type Result<T> = std::result::Result<T, ParseError>;
 
 pub enum ParseError {
-    Expected { pos: usize, expected: &'static str },
-    NotFound { pos: usize, expected: &'static str },
+    Expected {
+        cursor: usize,
+        expected: &'static str,
+    },
+    NotFound {
+        cursor: usize,
+        expected: &'static str,
+    },
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::Expected { pos, expected } => {
-                write!(f, "Expected {:?} at byte {:?}", expected, pos)
+            ParseError::Expected { cursor, expected } => {
+                write!(f, "Expected {:?} at byte {:?}", expected, cursor)
             }
-            ParseError::NotFound { pos, expected } => {
-                write!(f, "Couldn't find {:?} from byte {:?}", expected, pos)
+            ParseError::NotFound { cursor, expected } => {
+                write!(f, "Couldn't find {:?} from byte {:?}", expected, cursor)
             }
         }
     }
@@ -124,18 +130,18 @@ impl std::error::Error for ParseError {}
 #[derive(Clone, Debug)]
 pub struct Parser<'a> {
     input: &'a str,
-    pos: usize,
+    cursor: usize,
 }
 
 type ParseFn<'a, T> = fn(&mut Parser<'a>) -> Result<T>;
 
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str) -> Self {
-        Self { input, pos: 0 }
+        Self { input, cursor: 0 }
     }
 
     pub fn parse_commit(&mut self) -> Result<Commit> {
-        let header = self.parse_commit_header()?;
+        let header = self.commit_header()?;
         let diff = self.parse_diff()?;
 
         Ok(Commit { header, diff })
@@ -171,7 +177,7 @@ impl<'a> Parser<'a> {
         }
 
         while self.is_at_diff_header() {
-            diffs.push(self.parse_file_diff()?);
+            diffs.push(self.file_diff()?);
         }
 
         self.eof()?;
@@ -179,21 +185,21 @@ impl<'a> Parser<'a> {
         Ok(diffs)
     }
 
-    fn parse_commit_header(&mut self) -> Result<CommitHeader> {
-        let start = self.pos;
+    fn commit_header(&mut self) -> Result<CommitHeader> {
+        let start = self.cursor;
 
         self.consume("commit ")?;
         let (hash, _) = self.consume_until(Self::newline)?;
         self.skip_until_diff_header()?;
 
         Ok(CommitHeader {
-            range: start..self.pos,
+            range: start..self.cursor,
             hash,
         })
     }
 
     fn skip_until_diff_header(&mut self) -> Result<()> {
-        while self.pos < self.input.len() && !self.is_at_diff_header() {
+        while self.cursor < self.input.len() && !self.is_at_diff_header() {
             self.consume_until(Self::newline_or_eof)?;
         }
 
@@ -204,9 +210,9 @@ impl<'a> Parser<'a> {
         self.peek("diff") || self.peek("*")
     }
 
-    fn parse_file_diff(&mut self) -> Result<FileDiff> {
-        let diff_start = self.pos;
-        let header = self.parse_diff_header()?;
+    fn file_diff(&mut self) -> Result<FileDiff> {
+        let diff_start = self.cursor;
+        let header = self.diff_header()?;
 
         let mut hunks = vec![];
 
@@ -214,28 +220,28 @@ impl<'a> Parser<'a> {
             self.skip_until_diff_header()?;
         } else {
             while self.peek("@@") {
-                hunks.push(self.parse_hunk()?);
+                hunks.push(self.hunk()?);
             }
         }
 
         Ok(FileDiff {
-            range: diff_start..self.pos,
+            range: diff_start..self.cursor,
             header,
             hunks,
         })
     }
 
-    fn parse_diff_header(&mut self) -> Result<DiffHeader> {
-        let diff_header_start = self.pos;
+    fn diff_header(&mut self) -> Result<DiffHeader> {
+        let diff_header_start = self.cursor;
         let mut diff_type = Status::Modified;
 
-        if let Ok(unmerged) = self.parse_unmerged_file() {
+        if let Ok(unmerged) = self.unmerged_file() {
             return Ok(unmerged);
         }
 
         let (old_file, new_file, is_conflicted) = self
-            .parse_conflicted_file()
-            .or_else(|_| self.parse_old_new_file_header())?;
+            .conflicted_file()
+            .or_else(|_| self.old_new_file_header())?;
 
         if is_conflicted {
             diff_type = Status::Unmerged;
@@ -294,26 +300,26 @@ impl<'a> Parser<'a> {
         }
 
         Ok(DiffHeader {
-            range: diff_header_start..self.pos,
+            range: diff_header_start..self.cursor,
             old_file,
             new_file,
             status: diff_type,
         })
     }
 
-    fn parse_unmerged_file(&mut self) -> Result<DiffHeader> {
+    fn unmerged_file(&mut self) -> Result<DiffHeader> {
         let unmerged_path_prefix = self.consume("* Unmerged path ")?;
         let (file, _) = self.consume_until(Self::newline_or_eof)?;
 
         Ok(DiffHeader {
-            range: unmerged_path_prefix.start..self.pos,
+            range: unmerged_path_prefix.start..self.cursor,
             old_file: file.clone(),
             new_file: file,
             status: Status::Unmerged,
         })
     }
 
-    fn parse_old_new_file_header(&mut self) -> Result<(Range<usize>, Range<usize>, bool)> {
+    fn old_new_file_header(&mut self) -> Result<(Range<usize>, Range<usize>, bool)> {
         self.consume("diff --git")?;
         self.diff_header_path_prefix()?;
         let (old_path, _) = self.consume_until(Self::diff_header_path_prefix)?;
@@ -323,89 +329,89 @@ impl<'a> Parser<'a> {
     }
 
     fn diff_header_path_prefix(&mut self) -> Result<Range<usize>> {
-        let start = self.pos;
+        let start = self.cursor;
         self.consume(" ")
             .and_then(|_| self.ascii_lowercase())
             .and_then(|_| self.consume("/"))
             .map_err(|_| ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<diff header path prefix (' a/...' or ' b/...')>",
             })?;
 
-        Ok(start..self.pos)
+        Ok(start..self.cursor)
     }
 
     fn ascii_lowercase(&mut self) -> Result<Range<usize>> {
-        let start = self.pos;
+        let start = self.cursor;
         let is_ascii_lowercase = self
             .input
-            .get(self.pos..)
+            .get(self.cursor..)
             .and_then(|s| s.chars().next())
             .is_some_and(|c| c.is_ascii_lowercase());
 
         if is_ascii_lowercase {
-            self.pos += 1;
-            Ok(start..self.pos)
+            self.cursor += 1;
+            Ok(start..self.cursor)
         } else {
             Err(ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<ascii lowercase char>",
             })
         }
     }
 
-    fn parse_conflicted_file(&mut self) -> Result<(Range<usize>, Range<usize>, bool)> {
+    fn conflicted_file(&mut self) -> Result<(Range<usize>, Range<usize>, bool)> {
         self.consume("diff --cc ")?;
         let (file, _) = self.consume_until(Self::newline_or_eof)?;
         Ok((file.clone(), file, true))
     }
 
-    fn parse_hunk(&mut self) -> Result<Hunk> {
-        let hunk_start = self.pos;
-        let header = self.parse_hunk_header()?;
-        let content = self.parse_hunk_content()?;
+    fn hunk(&mut self) -> Result<Hunk> {
+        let hunk_start = self.cursor;
+        let header = self.hunk_header()?;
+        let content = self.hunk_content()?;
 
         Ok(Hunk {
-            range: hunk_start..self.pos,
+            range: hunk_start..self.cursor,
             header,
             content,
         })
     }
 
-    fn parse_hunk_content(&mut self) -> Result<HunkContent> {
-        let hunk_content_start = self.pos;
+    fn hunk_content(&mut self) -> Result<HunkContent> {
+        let hunk_content_start = self.cursor;
         let mut changes = vec![];
 
-        while self.pos < self.input.len()
+        while self.cursor < self.input.len()
             && [" ", "-", "+", "\\"]
                 .into_iter()
                 .any(|prefix| self.peek(prefix))
         {
-            self.read_lines_while_prefixed(|parser| parser.peek(" ") || parser.peek("\\"))?;
-            changes.push(self.parse_change()?);
-            self.read_lines_while_prefixed(|parser| parser.peek(" ") || parser.peek("\\"))?;
+            self.consume_lines_while_prefixed(|parser| parser.peek(" ") || parser.peek("\\"))?;
+            changes.push(self.change()?);
+            self.consume_lines_while_prefixed(|parser| parser.peek(" ") || parser.peek("\\"))?;
         }
 
         Ok(HunkContent {
-            range: hunk_content_start..self.pos,
+            range: hunk_content_start..self.cursor,
             changes,
         })
     }
 
-    fn parse_hunk_header(&mut self) -> Result<HunkHeader> {
-        let hunk_header_start = self.pos;
+    fn hunk_header(&mut self) -> Result<HunkHeader> {
+        let hunk_header_start = self.cursor;
 
         self.consume("@@ -")?;
-        let old_line_start = self.read_number()?;
+        let old_line_start = self.number()?;
         let old_line_count = if self.consume(",").is_ok() {
-            self.read_number()?
+            self.number()?
         } else {
             1
         };
         self.consume(" +")?;
-        let new_line_start = self.read_number()?;
+        let new_line_start = self.number()?;
         let new_line_count = if self.consume(",").is_ok() {
-            self.read_number()?
+            self.number()?
         } else {
             1
         };
@@ -415,7 +421,7 @@ impl<'a> Parser<'a> {
         let (fn_ctx, newline) = self.consume_until(Self::newline)?;
 
         Ok(HunkHeader {
-            range: hunk_header_start..self.pos,
+            range: hunk_header_start..self.cursor,
             old_line_start,
             old_line_count,
             new_line_start,
@@ -424,11 +430,11 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_change(&mut self) -> Result<Change> {
-        let removed = self.read_lines_while_prefixed(|parser| parser.peek("-"))?;
-        let removed_meta = self.read_lines_while_prefixed(|parser| parser.peek("\\"))?;
-        let added = self.read_lines_while_prefixed(|parser| parser.peek("+"))?;
-        let added_meta = self.read_lines_while_prefixed(|parser| parser.peek("\\"))?;
+    fn change(&mut self) -> Result<Change> {
+        let removed = self.consume_lines_while_prefixed(|parser| parser.peek("-"))?;
+        let removed_meta = self.consume_lines_while_prefixed(|parser| parser.peek("\\"))?;
+        let added = self.consume_lines_while_prefixed(|parser| parser.peek("+"))?;
+        let added_meta = self.consume_lines_while_prefixed(|parser| parser.peek("\\"))?;
 
         Ok(Change {
             old: removed.start..removed_meta.end,
@@ -436,35 +442,35 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn read_lines_while_prefixed(&mut self, pred: fn(&Parser) -> bool) -> Result<Range<usize>> {
-        let start = self.pos;
-        while self.pos < self.input.len() && pred(self) {
+    fn consume_lines_while_prefixed(&mut self, pred: fn(&Parser) -> bool) -> Result<Range<usize>> {
+        let start = self.cursor;
+        while self.cursor < self.input.len() && pred(self) {
             self.consume_until(Self::newline_or_eof)?;
         }
 
-        Ok(start..self.pos)
+        Ok(start..self.cursor)
     }
 
-    fn read_number(&mut self) -> Result<u32> {
+    fn number(&mut self) -> Result<u32> {
         let digit_count = &self
             .input
-            .get(self.pos..)
+            .get(self.cursor..)
             .map(|s| s.chars().take_while(|c| c.is_ascii_digit()).count())
             .unwrap_or(0);
 
         if digit_count == &0 {
             return Err(ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<number>",
             });
         }
 
-        self.pos += digit_count;
+        self.cursor += digit_count;
         Ok(self
             .input
-            .get(self.pos - digit_count..self.pos)
+            .get(self.cursor - digit_count..self.cursor)
             .ok_or(ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<number>",
             })?
             .parse()
@@ -475,7 +481,7 @@ impl<'a> Parser<'a> {
         self.newline()
             .or_else(|_| self.eof())
             .map_err(|_| ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<newline or eof>",
             })
     }
@@ -484,32 +490,32 @@ impl<'a> Parser<'a> {
         self.consume("\r\n")
             .or_else(|_| self.consume("\n"))
             .map_err(|_| ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<newline>",
             })
     }
 
     fn eof(&mut self) -> Result<Range<usize>> {
-        if self.pos == self.input.len() {
-            Ok(self.pos..self.pos)
+        if self.cursor == self.input.len() {
+            Ok(self.cursor..self.cursor)
         } else {
             Err(ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected: "<eof>",
             })
         }
     }
 
-    /// Scans through the input, moving the position byte-by-byte
+    /// Scans through the input, moving the cursor byte-by-byte
     /// until the provided parse_fn will succeed, or the input has been exhausted.
     /// Returns a tuple of the bytes scanned up until the match, and the match itself.
     fn consume_until<T: ParsedRange>(
         &mut self,
         parse_fn: fn(&mut Parser<'a>) -> Result<T>,
     ) -> Result<(Range<usize>, T)> {
-        let start = self.pos;
+        let start = self.cursor;
         let found = self.find(parse_fn)?;
-        self.pos = found.range().end;
+        self.cursor = found.range().end;
         Ok((start..found.range().start, found))
     }
 
@@ -520,8 +526,8 @@ impl<'a> Parser<'a> {
         let mut sub_parser = self.clone();
         let mut error = None;
 
-        for pos in self.pos..=self.input.len() {
-            sub_parser.pos = pos;
+        for pos in self.cursor..=self.input.len() {
+            sub_parser.cursor = pos;
             match parse_fn(&mut sub_parser) {
                 Ok(result) => return Ok(result),
                 Err(err) => {
@@ -534,31 +540,40 @@ impl<'a> Parser<'a> {
         }
 
         Err(ParseError::NotFound {
-            pos: self.pos,
+            cursor: self.cursor,
             expected: match error.unwrap() {
-                ParseError::Expected { pos: _, expected } => expected,
-                ParseError::NotFound { pos: _, expected } => expected,
+                ParseError::Expected {
+                    cursor: _,
+                    expected,
+                } => expected,
+                ParseError::NotFound {
+                    cursor: _,
+                    expected,
+                } => expected,
             },
         })
     }
 
+    /// Consumes `expected` from the input and moves the cursor past it.
+    /// Returns an error if `expected` was not found at the cursor.
     fn consume(&mut self, expected: &'static str) -> Result<Range<usize>> {
-        let start = self.pos;
+        let start = self.cursor;
 
         if !self.peek(expected) {
             return Err(ParseError::Expected {
-                pos: self.pos,
+                cursor: self.cursor,
                 expected,
             });
         }
 
-        self.pos += expected.len();
-        Ok(start..self.pos)
+        self.cursor += expected.len();
+        Ok(start..self.cursor)
     }
 
+    /// Returns true if `expected` is found at the cursor.
     fn peek(&self, pattern: &str) -> bool {
         self.input
-            .get(self.pos..)
+            .get(self.cursor..)
             .is_some_and(|s| s.starts_with(pattern))
     }
 }
