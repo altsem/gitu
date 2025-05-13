@@ -1,11 +1,14 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+ Branches                                                                       |
+ * main                                                                         |
+▌  unmerged                                                                     |
                                                                                 |
- Recent commits                                                                 |
-                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-d Delete branch                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 9ae8f56b30eeec76
+$ git branch -d merged                                                          |
+Deleted branch merged (was b66a0bf).                                            |
+styles_hash: 653adde7e95e076f

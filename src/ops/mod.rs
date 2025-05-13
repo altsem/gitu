@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{items::TargetData, menu::Menu, state::State, term::Term, Res};
 use std::{fmt::Display, rc::Rc};
 
-pub(crate) mod checkout;
+pub(crate) mod branch;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
 pub(crate) mod discard;
@@ -42,6 +42,7 @@ pub(crate) trait OpTrait {
 pub(crate) enum Op {
     Checkout,
     CheckoutNewBranch,
+    Delete,
     Commit,
     CommitAmend,
     FetchAll,
@@ -120,8 +121,9 @@ impl Op {
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
 
-            Op::Checkout => Box::new(checkout::Checkout),
-            Op::CheckoutNewBranch => Box::new(checkout::CheckoutNewBranch),
+            Op::Checkout => Box::new(branch::Checkout),
+            Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
+            Op::Delete => Box::new(branch::Delete),
             Op::Commit => Box::new(commit::Commit),
             Op::CommitAmend => Box::new(commit::CommitAmend),
             Op::FetchAll => Box::new(fetch::FetchAll),

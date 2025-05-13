@@ -1,14 +1,12 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ b66a0bf main merged origin/main add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +20,6 @@ b Checkout branch/revision                                                      
 c Checkout new branch                                                           |
 d Delete branch                                                                 |
 q/<esc> Quit/Close                                                              |
-styles_hash: 9ae8f56b30eeec76
+────────────────────────────────────────────────────────────────────────────────|
+! Branch name required                                                          |
+styles_hash: 343b1fffa75cf86c

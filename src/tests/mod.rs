@@ -17,6 +17,7 @@ use std::fs;
 #[macro_use]
 mod helpers;
 mod arg;
+mod branch;
 mod commit;
 mod discard;
 mod editor;
@@ -254,36 +255,6 @@ mod show_refs {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "tag", "v1.0"]);
         snapshot!(ctx, "Yjjjjjjbb<enter>Y");
-    }
-}
-
-mod checkout {
-    use super::*;
-
-    #[test]
-    pub(crate) fn checkout_menu() {
-        let ctx = TestContext::setup_clone();
-        run(ctx.dir.path(), &["git", "branch", "other-branch"]);
-        snapshot!(ctx, "Yjb");
-    }
-
-    #[test]
-    pub(crate) fn switch_branch_selected() {
-        let ctx = TestContext::setup_clone();
-        run(ctx.dir.path(), &["git", "branch", "other-branch"]);
-        snapshot!(ctx, "Yjjbb<enter>");
-    }
-
-    #[test]
-    pub(crate) fn switch_branch_input() {
-        let ctx = TestContext::setup_clone();
-        run(ctx.dir.path(), &["git", "branch", "hi"]);
-        snapshot!(ctx, "Yjjbbhi<enter>");
-    }
-
-    #[test]
-    pub(crate) fn checkout_new_branch() {
-        snapshot!(TestContext::setup_clone(), "bcf<esc>cx<enter>");
     }
 }
 
