@@ -1,6 +1,7 @@
 use diff::Diff;
 use git2::{Branch, Repository};
 use itertools::Itertools;
+use remote::get_branch_upstream;
 
 use self::{commit::Commit, merge_status::MergeStatus, rebase_status::RebaseStatus};
 use crate::{
@@ -240,4 +241,29 @@ pub(crate) fn get_current_branch(repo: &git2::Repository) -> Res<Branch> {
     } else {
         Err(Error::NotOnBranch)
     }
+}
+
+pub(crate) fn is_branch_merged(repo: &git2::Repository, name: &str) -> Res<bool> {
+    let branch = repo
+        .find_branch(name, git2::BranchType::Local)
+        .map_err(Error::IsBranchMerged)?;
+
+    let upstream = get_branch_upstream(&branch)?;
+
+    let reference = match upstream {
+        Some(u) => u.into_reference(),
+        None => repo.head().map_err(Error::GetHead)?,
+    };
+
+    let ref_commit = reference.peel_to_commit().map_err(Error::IsBranchMerged)?;
+
+    let commit = branch
+        .into_reference()
+        .peel_to_commit()
+        .map_err(Error::IsBranchMerged)?;
+
+    Ok(commit.id() == ref_commit.id()
+        || repo
+            .graph_descendant_of(ref_commit.id(), commit.id())
+            .map_err(Error::IsBranchMerged)?)
 }

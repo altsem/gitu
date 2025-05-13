@@ -7,7 +7,11 @@ use crate::{git, Res};
 use super::{Error, Utf8Error};
 
 pub(crate) fn get_upstream(repo: &Repository) -> Res<Option<Branch>> {
-    match git::get_current_branch(repo)?.upstream() {
+    get_branch_upstream(&git::get_current_branch(repo)?)
+}
+
+pub(crate) fn get_branch_upstream<'repo>(branch: &Branch<'repo>) -> Res<Option<Branch<'repo>>> {
+    match branch.upstream() {
         Ok(v) => Ok(Some(v)),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
         Err(e) => Err(Error::GetCurrentBranchUpstream(e)),

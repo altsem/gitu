@@ -1,10 +1,13 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+▌On branch new                                                                  |
                                                                                 |
  Recent commits                                                                 |
+ b66a0bf main merged new origin/main add initial-file                           |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-K Delete branch                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 9ae8f56b30eeec76
+$ git checkout -b new                                                           |
+Switched to a new branch 'new'                                                  |
+styles_hash: c7925dfc1f0f00cd

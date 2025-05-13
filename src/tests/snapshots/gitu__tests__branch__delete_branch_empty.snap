@@ -1,14 +1,12 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
- Branches                                                                       |
-▌* main                                                                         |
-   other-branch                                                                 |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Remote origin                                                                  |
-   origin/HEAD                                                                  |
-   origin/main                                                                  |
+ Recent commits                                                                 |
+ b66a0bf main merged origin/main add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +18,8 @@ expression: ctx.redact_buffer()
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
-d Delete branch                                                                 |
+K Delete branch                                                                 |
 q/<esc> Quit/Close                                                              |
-styles_hash: d05cb29e19813b7b
+────────────────────────────────────────────────────────────────────────────────|
+! Branch name required                                                          |
+styles_hash: 343b1fffa75cf86c
