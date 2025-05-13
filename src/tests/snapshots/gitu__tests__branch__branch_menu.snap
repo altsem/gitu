@@ -1,10 +1,11 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
  Branches                                                                       |
 ▌* main                                                                         |
-   other-branch                                                                 |
+   merged                                                                       |
+   unmerged                                                                     |
                                                                                 |
  Remote origin                                                                  |
    origin/HEAD                                                                  |
@@ -15,11 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
-d Delete branch                                                                 |
+K Delete branch                                                                 |
 q/<esc> Quit/Close                                                              |
-styles_hash: d05cb29e19813b7b
+styles_hash: c4812f62d5c8483d
