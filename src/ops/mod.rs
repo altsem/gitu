@@ -42,6 +42,7 @@ pub(crate) trait OpTrait {
 pub(crate) enum Op {
     Checkout,
     CheckoutNewBranch,
+    DeleteBranch,
     Commit,
     CommitAmend,
     FetchAll,
@@ -122,6 +123,7 @@ impl Op {
 
             Op::Checkout => Box::new(checkout::Checkout),
             Op::CheckoutNewBranch => Box::new(checkout::CheckoutNewBranch),
+            Op::DeleteBranch => Box::new(checkout::DeleteBranch),
             Op::Commit => Box::new(commit::Commit),
             Op::CommitAmend => Box::new(commit::CommitAmend),
             Op::FetchAll => Box::new(fetch::FetchAll),
@@ -190,4 +192,8 @@ pub(crate) fn confirm(state: &mut State, term: &mut Term, prompt: &'static str) 
 
 pub(crate) fn selected_rev(state: &State) -> Option<String> {
     state.selected_rev()
+}
+
+pub(crate) fn selected_branch(state: &State) -> Option<String> {
+    state.selected_branch()
 }
