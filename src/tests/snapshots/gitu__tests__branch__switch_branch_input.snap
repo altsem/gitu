@@ -1,12 +1,15 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+▌Branches                                                                       |
+▌  main                                                                         |
+▌* merged                                                                       |
+▌  unmerged                                                                     |
                                                                                 |
- Recent commits                                                                 |
-                                                                                |
-                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-d Delete branch                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 9ae8f56b30eeec76
+$ git checkout merged                                                           |
+Switched to branch 'merged'                                                     |
+styles_hash: a0f9f5f991757004

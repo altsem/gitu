@@ -1,10 +1,13 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+ Branches                                                                       |
+▌* main                                                                         |
                                                                                 |
- Recent commits                                                                 |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-d Delete branch                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 9ae8f56b30eeec76
+$ git branch -d --force hi                                                      |
+Deleted branch hi (was b66a0bf).                                                |
+styles_hash: 5a3690c1fa3b2467

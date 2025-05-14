@@ -1,0 +1,50 @@
+use super::*;
+
+fn setup() -> TestContext {
+    let ctx = TestContext::setup_clone();
+    run(ctx.dir.path(), &["git", "checkout", "-b", "merged"]);
+    run(ctx.dir.path(), &["git", "checkout", "-b", "unmerged"]);
+    commit(ctx.dir.path(), "first commit", "");
+    run(ctx.dir.path(), &["git", "checkout", "main"]);
+    ctx
+}
+
+#[test]
+fn branch_menu() {
+    snapshot!(setup(), "Yjb");
+}
+
+#[test]
+fn switch_branch_selected() {
+    snapshot!(setup(), "Yjjbb<enter>");
+}
+
+#[test]
+fn switch_branch_input() {
+    snapshot!(setup(), "Ybbmerged<enter>");
+}
+
+#[test]
+fn checkout_new_branch() {
+    snapshot!(setup(), "bcnew<enter>");
+}
+
+#[test]
+fn delete_branch_selected() {
+    snapshot!(setup(), "Yjjbd<enter>");
+}
+
+#[test]
+fn delete_branch_input() {
+    snapshot!(setup(), "bcmergedll");
+}
+
+#[test]
+fn delete_branch_empty() {
+    snapshot!(setup(), "bd<enter>");
+}
+
+#[test]
+fn delete_unmerged_branch() {
+    snapshot!(setup(), "Yjjjbd<enter>nbd<enter>y");
+}

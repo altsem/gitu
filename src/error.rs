@@ -24,6 +24,9 @@ pub enum Error {
     GetCurrentBranchUpstream(git2::Error),
     GetCurrentBranchUpstreamUtf8(Utf8Error),
     RemoteNameUtf8(Utf8Error),
+    CannotDeleteCurrentBranch,
+    BranchNameRequired,
+    IsBranchMerged(git2::Error),
     GetRemote(git2::Error),
     ReadGitConfig(git2::Error),
     ReadGitConfigUtf8(Utf8Error),
@@ -94,6 +97,11 @@ impl Display for Error {
                 f.write_str("Current branch upstream is not valid UTF-8")
             }
             Error::RemoteNameUtf8(_e) => f.write_str("Remote name is not valid UTF-8"),
+            Error::CannotDeleteCurrentBranch => f.write_str("Cannot delete current branch"),
+            Error::BranchNameRequired => f.write_str("Branch name required"),
+            Error::IsBranchMerged(e) => {
+                f.write_fmt(format_args!("Couldn't check if branch is merged: {}", e))
+            }
             Error::GetRemote(e) => f.write_fmt(format_args!("Couldn't get remote: {}", e)),
             Error::ReadGitConfig(e) => f.write_fmt(format_args!("Couldn't read git config: {}", e)),
             Error::ReadGitConfigUtf8(_e) => f.write_str("Git config is not valid UTF-8"),
