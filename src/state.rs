@@ -300,6 +300,8 @@ impl State {
     /// Runs a `Command` and handles its output asynchronously (if async commands are enabled).
     /// Will return `Ok(())` if one is already running.
     pub fn run_cmd_async(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
+        cmd.env("CLICOLOR_FORCE", "1"); // No guarantee, but modern tools seem to implement this
+
         if self.pending_cmd.is_some() {
             return Err(Error::CmdAlreadyRunning);
         }
@@ -362,6 +364,8 @@ impl State {
     }
 
     pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
+        cmd.env("CLICOLOR_FORCE", "1"); // No guarantee, but modern tools seem to implement this
+
         if self.pending_cmd.is_some() {
             return Err(Error::CmdAlreadyRunning);
         }
