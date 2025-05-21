@@ -522,4 +522,3 @@ All notable changes to this project will be documented in this file.
 ### 🎨 Styling
 
 - Selection_line & selection_area now extend fully to left
-
