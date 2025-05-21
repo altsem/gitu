@@ -21,7 +21,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
             positive_number,
         ),
         Arg::new_arg("--grep", "Search messages", None, any_regex),
-        // Arg::new_str("-S", "Search occurences"), // TOOD: Implement search
+        // Arg::new_str("-S", "Search occurrences"), // TODO: Implement search
     ]
 }
 

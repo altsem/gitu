@@ -272,7 +272,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🎨 Styling
 
-- Update stash promps to be more like in Magit
+- Update stash prompts to be more like in Magit
 
 ## [0.15.0] - 2024-04-10
 
