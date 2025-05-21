@@ -13,7 +13,7 @@ Here's a list of so-far supported features:
 - **Staging/Unstaging** _(file, hunk, line)_ 
 - **Showing** _(view commits / open EDITOR at line)_
 - **Branching** _(checkout, checkout new)_
-- **Commiting** _(commit, amend, fixup)_
+- **Committing** _(commit, amend, fixup)_
 - **Fetching**
 - **Logging** _(current, other)_
 - **Pulling / Pushing** _to/from configured upstream/pushDefault_
