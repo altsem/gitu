@@ -360,3 +360,21 @@ fn tab_diff() {
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn ext_diff() {
+    let mut ctx = TestContext::setup_init();
+    let mut state = ctx.init_state();
+
+    fs::write(ctx.dir.child("unstaged.txt"), "unstaged\n").unwrap();
+    fs::write(ctx.dir.child("staged.txt"), "staged\n").unwrap();
+    run(ctx.dir.path(), &["git", "add", "-N", "unstaged.txt"]);
+    run(ctx.dir.path(), &["git", "add", "staged.txt"]);
+    run(
+        ctx.dir.path(),
+        &["git", "config", "diff.external", "/dev/null"],
+    );
+    ctx.update(&mut state, keys("g"));
+
+    insta::assert_snapshot!(ctx.redact_buffer());
+}

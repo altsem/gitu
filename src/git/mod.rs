@@ -127,7 +127,7 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
         Command::new("git")
             // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff"])
+            .args(["diff", "--no-ext-diff"])
             .output()
             .map_err(Error::GitDiff)?
             .stdout,
@@ -145,7 +145,7 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
         Command::new("git")
             // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--staged"])
+            .args(["diff", "--no-ext-diff", "--staged"])
             .output()
             .map_err(Error::GitDiff)?
             .stdout,
