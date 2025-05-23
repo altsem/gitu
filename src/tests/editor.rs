@@ -57,11 +57,11 @@ fn move_next_then_parent_section() {
 }
 
 #[test]
-fn exit_from_prompt_shows_menu() {
+fn exit_from_prompt_exits_menu() {
     snapshot!(TestContext::setup_init(), "bb<esc>");
 }
 
 #[test]
 fn re_enter_prompt_from_menu() {
-    snapshot!(TestContext::setup_init(), "bb<esc>b");
+    snapshot!(TestContext::setup_init(), "bb<esc>bb");
 }
