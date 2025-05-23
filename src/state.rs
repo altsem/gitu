@@ -445,7 +445,7 @@ impl State {
         }
     }
 
-    pub fn unhide_menu(&mut self) {
+    fn unhide_menu(&mut self) {
         if let Some(ref mut menu) = self.pending_menu {
             menu.is_hidden = false;
         }
@@ -471,6 +471,18 @@ impl State {
         }
 
         self.prompt.set(PromptData { prompt_text });
+        let result = self.handle_prompt(term, params);
+
+        self.unhide_menu();
+        if result.is_err() {
+            self.close_menu();
+        }
+        self.prompt.reset(term)?;
+
+        result
+    }
+
+    fn handle_prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
         self.redraw_now(term)?;
 
         loop {
@@ -478,16 +490,8 @@ impl State {
             self.handle_event(term, event)?;
 
             if self.prompt.state.status().is_done() {
-                let value = get_prompt_result(params, self)?;
-
-                self.unhide_menu();
-                self.prompt.reset(term)?;
-
-                return Ok(value);
+                return get_prompt_result(params, self);
             } else if self.prompt.state.status().is_aborted() {
-                self.unhide_menu();
-                self.prompt.reset(term)?;
-
                 return Err(Error::PromptAborted);
             }
 
@@ -500,20 +504,30 @@ impl State {
         self.prompt.set(PromptData {
             prompt_text: prompt.into(),
         });
-        self.redraw_now(term)?;
 
+        let result = self.handle_confirm(term);
+
+        self.unhide_menu();
+        if result.is_err() {
+            self.close_menu();
+        }
+        self.prompt.reset(term)?;
+
+        result
+    }
+
+    fn handle_confirm(&mut self, term: &mut Term) -> Res<()> {
+        self.redraw_now(term)?;
         loop {
             let event = term.backend_mut().read_event()?;
             self.handle_event(term, event)?;
 
             match self.prompt.state.value() {
                 "y" => {
-                    self.prompt.reset(term)?;
                     return Ok(());
                 }
                 "" => (),
                 _ => {
-                    self.prompt.reset(term)?;
                     return Err(Error::PromptAborted);
                 }
             }

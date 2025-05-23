@@ -46,6 +46,5 @@ fn delete_branch_empty() {
 
 #[test]
 fn delete_unmerged_branch() {
-    // TODO: Remove <esc> once #368 is fixed
-    snapshot!(setup(), "bKunmerged<enter>n<esc>bKunmerged<enter>y");
+    snapshot!(setup(), "bKunmerged<enter>nbKunmerged<enter>y");
 }
