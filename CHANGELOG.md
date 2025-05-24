@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.32.0] - 2025-05-24
+
+### 🚀 Features
+
+- Hint external commands to output colors
+- Add delete option to branch menu
+
+### 🐛 Bug Fixes
+
+- Ignore diff.external, in case its set to an unsupported tool #369
+- *(prompt)* Freeze when a command would fail after a prompt occurred
+
 ## [0.31.0] - 2025-05-05
 
 ### 🚀 Features

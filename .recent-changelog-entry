@@ -1,13 +1,12 @@
-## [0.31.0] - 2025-05-05
+## [0.32.0] - 2025-05-24
 
 ### 🚀 Features
 
-- Disable filewatcher when `status.showUntrackedFiles` is off
-- Replace `ignore` lib with `libgit2` ignore functionality
-- FileWatcher now ignores changes from patterns in .gitignore
+- Hint external commands to output colors
+- Add delete option to branch menu
 
 ### 🐛 Bug Fixes
 
-- Support custom path prefixes in Git diff parser (e.g. i/... w/...) (#361)
-- Disable filewatcher when it fails to initialize
+- Ignore diff.external, in case its set to an unsupported tool #369
+- *(prompt)* Freeze when a command would fail after a prompt occurred
 
