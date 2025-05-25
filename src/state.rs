@@ -167,8 +167,6 @@ impl State {
     }
 
     pub fn handle_event(&mut self, term: &mut Term, event: InputEvent) -> Res<()> {
-        log::debug!("{:?}", event);
-
         match event {
             InputEvent::Resized { cols, rows } => {
                 for screen in self.screens.iter_mut() {
