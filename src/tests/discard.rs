@@ -1,5 +1,14 @@
 use super::*;
 
+fn setup() -> TestContext {
+    let ctx = TestContext::setup_clone();
+    run(ctx.dir.path(), &["git", "checkout", "-b", "merged"]);
+    run(ctx.dir.path(), &["git", "checkout", "-b", "unmerged"]);
+    commit(ctx.dir.path(), "first commit", "");
+    run(ctx.dir.path(), &["git", "checkout", "main"]);
+    ctx
+}
+
 #[test]
 pub(crate) fn discard_branch_confirm_prompt() {
     let ctx = TestContext::setup_clone();
@@ -70,13 +79,22 @@ pub(crate) fn discard_staged_file() {
     snapshot!(ctx, "jjKy");
 }
 
-// FIXME Deleting branches doesn't work with the test-setup
-// #[test]
-// fn discard_branch() {
-//     let mut ctx = TestContext::setup_clone();
-//     let mut state = ctx.init_state();
-//     state
-//         .update(&mut ctx.term, &keys("YjKy"))
-//         .unwrap();
-//     insta::assert_snapshot!(ctx.redact_buffer());
-// }
+#[test]
+fn branch_selected_confirm() {
+    snapshot!(setup(), "YjjK");
+}
+
+#[test]
+fn branch_selected() {
+    snapshot!(setup(), "YjjKy");
+}
+
+#[test]
+fn unmerged_branch_selected_unmerged_confirm() {
+    snapshot!(setup(), "YjjjKy");
+}
+
+#[test]
+fn unmerged_branch_selected() {
+    snapshot!(setup(), "YjjjKyy");
+}

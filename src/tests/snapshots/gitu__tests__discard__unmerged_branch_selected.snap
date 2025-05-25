@@ -1,0 +1,25 @@
+---
+source: src/tests/discard.rs
+expression: ctx.redact_buffer()
+---
+ Branches                                                                       |
+ * main                                                                         |
+▌  merged                                                                       |
+                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git branch -d -f unmerged                                                     |
+Deleted branch unmerged (was c84f226).                                          |
+styles_hash: b48d6931973c1aad

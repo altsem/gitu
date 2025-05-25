@@ -46,13 +46,7 @@ impl OpTrait for Discard {
 fn discard_branch(branch: String) -> Action {
     Rc::new(move |state, term| {
         confirm(state, term, "Really discard? (y or n)")?;
-
-        let mut cmd = Command::new("git");
-        cmd.args(["branch", "-d"]);
-        cmd.arg(&branch);
-
-        state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        super::branch::delete(state, term, &branch)
     })
 }
 

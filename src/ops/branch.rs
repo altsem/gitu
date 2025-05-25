@@ -111,7 +111,7 @@ impl OpTrait for Delete {
     }
 }
 
-fn delete(state: &mut State, term: &mut Term, branch_name: &str) -> Res<()> {
+pub fn delete(state: &mut State, term: &mut Term, branch_name: &str) -> Res<()> {
     if branch_name.is_empty() {
         return Err(Error::BranchNameRequired);
     }
