@@ -23,6 +23,8 @@ pub(crate) enum Menu {
     Help,
     #[serde(rename = "log_menu")]
     Log,
+    #[serde(rename = "remote_menu")]
+    Remote,
     #[serde(rename = "pull_menu")]
     Pull,
     #[serde(rename = "push_menu")]
@@ -58,6 +60,7 @@ impl PendingMenu {
                 Menu::Pull => ops::pull::init_args(),
                 Menu::Push => ops::push::init_args(),
                 Menu::Rebase => ops::rebase::init_args(),
+                Menu::Remote => vec![],
                 Menu::Reset => ops::reset::init_args(),
                 Menu::Revert => ops::revert::init_args(),
                 Menu::Stash => ops::stash::init_args(),

@@ -163,6 +163,10 @@ rebase_menu.rebase_elsewhere = ["e"]
 rebase_menu.rebase_autosquash = ["f"]
 rebase_menu.quit = ["q", "<esc>"]
 
+root.remote_menu=["M"]
+remote_menu.add_remote=["a"]
+remote_menu.quit = ["q", "<esc>"]
+
 root.reset_menu = ["X"]
 reset_menu.reset_soft = ["s"]
 reset_menu.reset_mixed = ["m"]

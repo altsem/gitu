@@ -13,6 +13,7 @@ pub(crate) mod log;
 pub(crate) mod pull;
 pub(crate) mod push;
 pub(crate) mod rebase;
+pub(crate) mod remote;
 pub(crate) mod reset;
 pub(crate) mod revert;
 pub(crate) mod show;
@@ -40,6 +41,7 @@ pub(crate) trait OpTrait {
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum Op {
+    AddRemote,
     Checkout,
     CheckoutNewBranch,
     Delete,
@@ -163,6 +165,8 @@ impl Op {
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
             Op::CopyHash => Box::new(copy_hash::CopyHash),
+
+            Op::AddRemote => Box::new(remote::AddRemote),
         }
     }
 }
@@ -176,6 +180,7 @@ impl Display for Menu {
             Menu::Fetch => "Fetch",
             Menu::Help => "Help",
             Menu::Log => "Log",
+            Menu::Remote => "Remote",
             Menu::Pull => "Pull",
             Menu::Push => "Push",
             Menu::Rebase => "Rebase",
