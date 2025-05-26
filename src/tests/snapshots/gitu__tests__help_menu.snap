@@ -14,12 +14,12 @@ Y Show Refs                         b Branch                                    
 k/<up> Up                           f Fetch                                     |
 j/<down> Down                       h/? Help                                    |
 <ctrl+k>/<ctrl+up> Up line          l Log                                       |
-<ctrl+j>/<ctrl+down> Down line      F Pull                                      |
-<alt+k>/<alt+up> Prev section       P Push                                      |
-<alt+j>/<alt+down> Next section     r Rebase                                    |
-<alt+h>/<alt+left> Parent section   X Reset                                     |
-<ctrl+u> Half page up               V Revert                                    |
-<ctrl+d> Half page down             z Stash                                     |
-g Refresh                                                                       |
+<ctrl+j>/<ctrl+down> Down line      M Remote                                    |
+<alt+k>/<alt+up> Prev section       F Pull                                      |
+<alt+j>/<alt+down> Next section     P Push                                      |
+<alt+h>/<alt+left> Parent section   r Rebase                                    |
+<ctrl+u> Half page up               X Reset                                     |
+<ctrl+d> Half page down             V Revert                                    |
+g Refresh                           z Stash                                     |
 q/<esc> Quit/Close                                                              |
-styles_hash: 1eae0d246821e31
+styles_hash: 9121f6ae27760193
