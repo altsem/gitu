@@ -19,7 +19,7 @@ impl OpTrait for Show {
                 hunk_i,
             }) => editor(
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
-                Some(diff.first_diff_line(*file_i, *hunk_i) as u32),
+                Some(diff.file_line_of_first_diff(*file_i, *hunk_i) as u32),
             ),
             Some(TargetData::Stash { id: _, commit }) => goto_show_screen(commit.clone()),
             _ => None,
