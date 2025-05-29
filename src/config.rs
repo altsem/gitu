@@ -23,6 +23,7 @@ pub struct GeneralConfig {
     pub always_show_help: BoolConfigEntry,
     pub confirm_quit: BoolConfigEntry,
     pub refresh_on_file_change: BoolConfigEntry,
+    pub confirm_discard: ConfirmDiscardOption,
     pub collapsed_sections: Vec<String>,
 }
 
@@ -30,6 +31,16 @@ pub struct GeneralConfig {
 pub struct BoolConfigEntry {
     #[serde(default)]
     pub enabled: bool,
+}
+
+#[derive(Default, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
+pub enum ConfirmDiscardOption {
+    #[default]
+    Line,
+    Hunk,
+    File,
+    Never,
 }
 
 #[derive(Default, Debug, Deserialize)]

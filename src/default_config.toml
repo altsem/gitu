@@ -10,6 +10,13 @@ confirm_quit.enabled = false
 collapsed_sections = []
 refresh_on_file_change.enabled = true
 
+# When to prompt for discard confirmation. Options:
+# "line"  - always prompt even for individual lines (default),
+# "hunk"  - prompt for files and hunks,
+# "file"  - only prompt when discarding whole files,
+# "never" - never prompt when discarding.
+confirm_discard = "line"
+
 [style]
 # fg / bg can be either of:
 # - a hex value: "#707070"
