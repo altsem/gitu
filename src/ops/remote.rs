@@ -18,7 +18,7 @@ impl OpTrait for AddRemote {
                 let remote_name = state.prompt(
                     term,
                     &PromptParams {
-                        prompt: "Remote name:",
+                        prompt: "Remote name",
                         ..Default::default()
                     },
                 )?;
@@ -26,7 +26,7 @@ impl OpTrait for AddRemote {
                 let remote_url = state.prompt(
                     term,
                     &PromptParams {
-                        prompt: "Remote url:",
+                        prompt: "Remote url",
                         ..Default::default()
                     },
                 )?;
