@@ -1,7 +1,29 @@
 use git2::{Buf, Error, Repository};
 
-use crate::git::remote::*;
-use crate::tests::helpers::{run, RepoTestContext};
+use crate::{git::remote::*, tests::helpers::RepoTestContext};
+
+use super::*;
+
+#[test]
+fn remote_menu() {
+    snapshot!(TestContext::setup_clone(), "M");
+}
+
+#[test]
+fn add_remote_name_prompt() {
+    snapshot!(TestContext::setup_clone(), "Ma");
+}
+
+#[test]
+fn add_remote_url_prompt() {
+    snapshot!(TestContext::setup_clone(), "Matest<enter>");
+}
+
+#[test]
+fn add_remote() {
+    snapshot!(TestContext::setup_clone(), "Matest<enter>localhost<enter>");
+    // TODO Assert the remote is visible somewhere too
+}
 
 fn get_head_name(repo: &Repository) -> String {
     repo.head().unwrap().name().unwrap().into()
