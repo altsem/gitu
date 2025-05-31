@@ -20,20 +20,6 @@ impl ParsedRange for Range<usize> {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct Commit {
-    pub header: CommitHeader,
-    pub diff: Vec<FileDiff>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub struct CommitHeader {
-    pub range: Range<usize>,
-    pub hash: Range<usize>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
 pub struct FileDiff {
     pub range: Range<usize>,
     pub header: DiffHeader,
@@ -140,13 +126,6 @@ impl<'a> Parser<'a> {
         Self { input, cursor: 0 }
     }
 
-    pub fn parse_commit(&mut self) -> Result<Commit> {
-        let header = self.commit_header()?;
-        let diff = self.parse_diff()?;
-
-        Ok(Commit { header, diff })
-    }
-
     /// Parses a diff file and returns a vector of Diff structures.
     ///
     /// The returned ranges refer to the original input bytes.
@@ -176,6 +155,8 @@ impl<'a> Parser<'a> {
             return Ok(diffs);
         }
 
+        self.skip_until_diff_header()?;
+
         while self.is_at_diff_header() {
             diffs.push(self.file_diff()?);
         }
@@ -183,19 +164,6 @@ impl<'a> Parser<'a> {
         self.eof()?;
 
         Ok(diffs)
-    }
-
-    fn commit_header(&mut self) -> Result<CommitHeader> {
-        let start = self.cursor;
-
-        self.consume("commit ")?;
-        let (hash, _) = self.consume_until(Self::newline)?;
-        self.skip_until_diff_header()?;
-
-        Ok(CommitHeader {
-            range: start..self.cursor,
-            hash,
-        })
     }
 
     fn skip_until_diff_header(&mut self) -> Result<()> {
@@ -685,7 +653,7 @@ mod tests {
     fn parse_malformed_input_missing_diff_header() {
         let input = "--- a/file.txt\n+++ b/file.txt\n";
         let mut parser = Parser::new(input);
-        assert!(parser.parse_diff().is_err());
+        assert_eq!(parser.parse_diff().unwrap().len(), 0);
     }
 
     #[test]
@@ -829,12 +797,19 @@ mod tests {
             -- Don't refresh on `gitu.log` writes (gitu --log)\n\
             +- Rebase menu opening after closing Neovim\n";
         let mut parser = Parser::new(input);
-        let commit = parser.parse_commit().unwrap();
-        assert!(input[commit.header.range.clone()].starts_with("commit 931"));
-        assert!(input[commit.header.range.clone()].ends_with("28.2\n\n"));
+        let diffs = parser.parse_diff().unwrap();
         assert_eq!(
-            &input[commit.header.hash.clone()],
-            "9318f4040de9e6cf60033f21f6ae91a0f2239d38"
+            &input[diffs[0].header.old_file.clone()],
+            ".recent-changelog-entry"
+        );
+        assert_eq!(
+            &input[diffs[0].header.new_file.clone()],
+            ".recent-changelog-entry"
+        );
+        assert_eq!(diffs[0].header.status, Status::Modified);
+        assert_eq!(
+            &input[diffs[0].hunks[0].header.range.clone()],
+            "@@ -1,7 +1,6 @@\n"
         );
     }
 
@@ -843,8 +818,8 @@ mod tests {
         let input = "commit 6c9991b0006b38b439605eb68baff05f0c0ebf95\nAuthor: altsem <alltidsemester@pm.me>\nDate:   Sun Jun 16 19:01:00 2024 +0200\n\n    feat: -n argument to limit log\n            \n        ";
 
         let mut parser = Parser::new(input);
-        let commit = parser.parse_commit().unwrap();
-        assert_eq!(commit.diff.len(), 0);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 0);
     }
 
     #[test]
@@ -852,8 +827,8 @@ mod tests {
         let input = "commit 664b2f5a3223f48d3cf38c7b517014ea98b9cb55\nAuthor: altsem <alltidsemester@pm.me>\nDate:   Sat Apr 20 13:43:23 2024 +0200\n\n    update vhs/rec\n\ndiff --git a/vhs/help.png b/vhs/help.png\nindex 876e6a1..8c46810 100644\nBinary files a/vhs/help.png and b/vhs/help.png differ\ndiff --git a/vhs/rec.gif b/vhs/rec.gif\nindex 746d957..333bc94 100644\nBinary files a/vhs/rec.gif and b/vhs/rec.gif differ\ndiff --git a/vhs/rec.tape b/vhs/rec.tape\nindex bd36591..fd56c37 100644\n--- a/vhs/rec.tape\n+++ b/vhs/rec.tape\n@@ -4,7 +4,7 @@ Set Height 800\n Set Padding 5\n \n Hide\n-Type \"git checkout 3259529\"\n+Type \"git checkout f613098b14ed99fab61bd0b78a4a41e192d90ea2\"\n Enter\n Type \"git checkout -b demo-branch\"\n Enter\n";
 
         let mut parser = Parser::new(input);
-        let commit = parser.parse_commit().unwrap();
-        assert_eq!(commit.diff.len(), 3);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 3);
     }
 
     #[test]
