@@ -74,16 +74,17 @@ impl Diff {
         format!("{}{}{}", file_header, hunk_header, modified_content)
     }
 
-    pub(crate) fn first_diff_line(&self, file_i: usize, hunk_i: usize) -> usize {
-        if let Some(change) = self.file_diffs[file_i].hunks[hunk_i]
-            .content
-            .changes
-            .first()
-        {
-            self.text[..change.old.start].lines().count()
-        } else {
-            0
+    pub(crate) fn file_line_of_first_diff(&self, file_i: usize, hunk_i: usize) -> usize {
+        let hunk = &self.file_diffs[file_i].hunks[hunk_i];
+        let line = hunk.header.new_line_start as usize;
+
+        let hunk_content = &self.text[hunk.content.range.clone()];
+        for (i, content_line) in hunk_content.lines().enumerate() {
+            if content_line.starts_with('+') || content_line.starts_with('-') {
+                return line + i;
+            }
         }
+        line
     }
 }
 

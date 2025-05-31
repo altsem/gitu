@@ -71,6 +71,14 @@ pub(crate) fn discard_unstaged_hunk() {
 }
 
 #[test]
+pub(crate) fn discard_unstaged_line() {
+    let ctx = TestContext::setup_clone();
+    commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");
+    fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
+    snapshot!(ctx, "jj<tab>j<ctrl+j>Ky<ctrl+j><ctrl+j>Ky");
+}
+
+#[test]
 pub(crate) fn discard_staged_file() {
     let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "file-one", "FOO\nBAR\n");

@@ -1,7 +1,13 @@
 use gitu_diff::Status;
 
 use super::{confirm, Action, OpTrait};
-use crate::{git::diff::Diff, gitu_diff, items::TargetData, state::State};
+use crate::{
+    config::ConfirmDiscardOption,
+    git::diff::{Diff, PatchMode},
+    gitu_diff,
+    items::TargetData,
+    state::State,
+};
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;
@@ -28,6 +34,12 @@ impl OpTrait for Discard {
                 file_i,
                 hunk_i,
             }) => discard_unstaged_patch(diff, file_i, hunk_i),
+            Some(TargetData::HunkLine {
+                diff,
+                file_i,
+                hunk_i,
+                line_i,
+            }) => discard_unstaged_line(diff, file_i, hunk_i, line_i),
             _ => return None,
         };
 
@@ -52,7 +64,9 @@ fn discard_branch(branch: String) -> Action {
 
 fn clean_file(file: PathBuf) -> Action {
     Rc::new(move |state, term| {
-        confirm(state, term, "Really discard? (y or n)")?;
+        if state.config.general.confirm_discard <= ConfirmDiscardOption::File {
+            confirm(state, term, "Really discard? (y or n)")?;
+        }
 
         let mut cmd = Command::new("git");
         cmd.args(["clean", "--force"]);
@@ -65,7 +79,9 @@ fn clean_file(file: PathBuf) -> Action {
 
 fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
     Rc::new(move |state, term| {
-        confirm(state, term, "Really discard? (y or n)")?;
+        if state.config.general.confirm_discard <= ConfirmDiscardOption::File {
+            confirm(state, term, "Really discard? (y or n)")?;
+        }
 
         let mut cmd = Command::new("git");
         cmd.args(["mv", "--force"]);
@@ -79,7 +95,9 @@ fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
 
 fn remove_file(file: PathBuf) -> Action {
     Rc::new(move |state, term| {
-        confirm(state, term, "Really discard? (y or n)")?;
+        if state.config.general.confirm_discard <= ConfirmDiscardOption::File {
+            confirm(state, term, "Really discard? (y or n)")?;
+        }
 
         let mut cmd = Command::new("git");
         cmd.args(["rm", "--force"]);
@@ -92,7 +110,9 @@ fn remove_file(file: PathBuf) -> Action {
 
 fn checkout_file(file: PathBuf) -> Action {
     Rc::new(move |state, term| {
-        confirm(state, term, "Really discard? (y or n)")?;
+        if state.config.general.confirm_discard <= ConfirmDiscardOption::File {
+            confirm(state, term, "Really discard? (y or n)")?;
+        }
 
         let mut cmd = Command::new("git");
         cmd.args(["checkout", "HEAD", "--"]);
@@ -105,12 +125,32 @@ fn checkout_file(file: PathBuf) -> Action {
 
 fn discard_unstaged_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
     Rc::new(move |state, term| {
-        confirm(state, term, "Really discard? (y or n)")?;
+        if state.config.general.confirm_discard <= ConfirmDiscardOption::Hunk {
+            confirm(state, term, "Really discard? (y or n)")?;
+        }
 
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse"]);
 
         state.close_menu();
         state.run_cmd(term, &diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
+    })
+}
+
+fn discard_unstaged_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Action {
+    Rc::new(move |state, term| {
+        if state.config.general.confirm_discard <= ConfirmDiscardOption::Line {
+            confirm(state, term, "Really discard? (y or n)")?;
+        }
+
+        let mut cmd = Command::new("git");
+        cmd.args(["apply", "--reverse", "--recount"]);
+
+        let input = diff
+            .format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Reverse)
+            .into_bytes();
+
+        state.close_menu();
+        state.run_cmd(term, &input, cmd)
     })
 }
