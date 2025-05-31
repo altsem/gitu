@@ -50,7 +50,7 @@ impl OpTrait for RenameRemote {
                 let remote_name = state.prompt(
                     term,
                     &PromptParams {
-                        prompt: "Remote name",
+                        prompt: "Rename remote",
                         ..Default::default()
                     },
                 )?;
@@ -58,7 +58,7 @@ impl OpTrait for RenameRemote {
                 let new_remote_name = state.prompt(
                     term,
                     &PromptParams {
-                        prompt: "New name for remote",
+                        prompt: "Rename to",
                         ..Default::default()
                     },
                 )?;
