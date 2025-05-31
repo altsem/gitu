@@ -3,10 +3,13 @@ source: src/tests/remote.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌Your branch is up to date with 'origin2/main'.                                 |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin2/main add initial-file                                     |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -18,8 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Remote                                                                          |
-a add remote                                                                    |
-r rename remote                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 47b1b18ac84a75e1
+$ git remote rename origin origin2                                              |
+styles_hash: b8f048b49ddbac3f

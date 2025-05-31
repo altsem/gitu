@@ -17,9 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-Remote                                                                          |
-a add remote                                                                    |
-r rename remote                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 47b1b18ac84a75e1
+? New name for remote: ›                                                        |
+styles_hash: 447028084925e569
