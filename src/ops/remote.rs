@@ -10,7 +10,6 @@ use crate::{
 use super::{Action, OpTrait};
 
 pub(crate) struct AddRemote;
-
 impl OpTrait for AddRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(
@@ -41,6 +40,52 @@ impl OpTrait for AddRemote {
     fn display(&self, _state: &State) -> String {
         "add remote".to_string()
     }
+}
+
+pub(crate) struct RenameRemote;
+impl OpTrait for RenameRemote {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(
+            |state: &mut crate::state::State, term: &mut Term| {
+                let remote_name = state.prompt(
+                    term,
+                    &PromptParams {
+                        prompt: "Remote name",
+                        ..Default::default()
+                    },
+                )?;
+
+                let new_remote_name = state.prompt(
+                    term,
+                    &PromptParams {
+                        prompt: "New name for remote",
+                        ..Default::default()
+                    },
+                )?;
+
+                rename_remote(state, term, &remote_name, &new_remote_name)?;
+                Ok(())
+            },
+        ))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "rename remote".to_string()
+    }
+}
+
+fn rename_remote(
+    state: &mut State,
+    term: &mut ratatui::Terminal<crate::term::TermBackend>,
+    remote_name: &str,
+    new_remote_name: &str,
+) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["remote", "rename", remote_name, new_remote_name]);
+
+    state.close_menu();
+    state.run_cmd(term, &[], cmd)?;
+    Ok(())
 }
 
 fn add_remote_with_name(
