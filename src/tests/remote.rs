@@ -25,6 +25,21 @@ fn add_remote() {
     // TODO Assert the remote is visible somewhere too
 }
 
+#[test]
+fn rename_remote_name_prompt() {
+    snapshot!(TestContext::setup_clone(), "Mr");
+}
+
+#[test]
+fn rename_remote_new_name_prompt() {
+    snapshot!(TestContext::setup_clone(), "Mrorigin<enter>");
+}
+
+#[test]
+fn rename_remote() {
+    snapshot!(TestContext::setup_clone(), "Mrorigin<enter>origin2<enter>");
+}
+
 fn get_head_name(repo: &Repository) -> String {
     repo.head().unwrap().name().unwrap().into()
 }

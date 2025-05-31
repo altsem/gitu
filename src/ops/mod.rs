@@ -59,6 +59,7 @@ pub(crate) enum Op {
     RebaseAbort,
     RebaseContinue,
     RebaseElsewhere,
+    RenameRemote,
     ShowRefs,
     Stash,
     StashApply,
@@ -167,6 +168,7 @@ impl Op {
             Op::CopyHash => Box::new(copy_hash::CopyHash),
 
             Op::AddRemote => Box::new(remote::AddRemote),
+            Op::RenameRemote => Box::new(remote::RenameRemote),
         }
     }
 }
