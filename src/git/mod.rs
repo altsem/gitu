@@ -171,7 +171,7 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     .map_err(Error::GitShowUtf8)?;
 
     Ok(Diff {
-        file_diffs: gitu_diff::Parser::new(&text).parse_commit().unwrap().diff,
+        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         text,
     })
 }
