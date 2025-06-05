@@ -14,7 +14,6 @@ pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
 insta = "1.42.2"
-unicode-width = "0.2.0"
 
 [profile.release]
 strip = true
@@ -64,3 +63,4 @@ tree-sitter-elixir = "=0.1.1"
 regex = "1.11.1"
 strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
+unicode-width = "0.2.0"
