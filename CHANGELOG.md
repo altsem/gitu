@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.33.0] - 2025-06-07
+
+### 🚀 Features
+
+- Discard line by line (+ configure when to confirm discard)
+- Ability to add a remote
+
+### 🐛 Bug Fixes
+
+- *(highlighting)* Update tree-sitter, replace dated toml lib with toml-ng
+- *(show)* Crash when sometimes attempting to show a commit
+- Opening hunk in EDITOR used wrong line number
+- Unmerged branches could not be deleted via discard action
+
 ## [0.32.0] - 2025-05-24
 
 ### 🚀 Features
@@ -522,3 +536,4 @@ All notable changes to this project will be documented in this file.
 ### 🎨 Styling
 
 - Selection_line & selection_area now extend fully to left
+
