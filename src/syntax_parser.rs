@@ -84,124 +84,190 @@ fn tags_by_highlight_index() -> [SyntaxTag; 22] {
     ]
 }
 
+#[derive(PartialEq, Eq, Hash, Debug)]
+enum Lang {
+    Rust,
+    Toml,
+    Javascript,
+    C,
+    Json,
+    Cpp,
+    Ruby,
+    Haskell,
+    Go,
+    CSharp,
+    Python,
+    Typescript,
+    Tsx,
+    Bash,
+    Php,
+    Java,
+    Scala,
+    Ocaml,
+    OcamlInterface,
+    Html,
+    Elixir,
+}
+
 /// The defaults for these seem to exist in the `package.json` of each repo:
 /// `curl https://raw.githubusercontent.com/tree-sitter/tree-sitter-html/master/package.json | jq -r '."tree-sitter"'`
-fn determine_lang(path: &Path) -> Option<Language> {
+fn determine_lang(path: &Path) -> Option<Lang> {
     let extension = path.extension().and_then(|s| s.to_str())?;
 
     match extension {
-        "rs" => Some(tree_sitter_rust::language()),
-        "toml" => Some(tree_sitter_toml::language()),
-        "js" => Some(tree_sitter_javascript::language()),
-        "c" | "h" => Some(tree_sitter_c::language()),
-        "json" => Some(tree_sitter_json::language()),
-        "cc" => Some(tree_sitter_cpp::language()),
-        "rb" => Some(tree_sitter_ruby::language()),
-        "hs" => Some(tree_sitter_haskell::language()),
-        "go" => Some(tree_sitter_go::language()),
-        "cs" => Some(tree_sitter_c_sharp::language()),
-        "py" => Some(tree_sitter_python::language()),
-        "ts" => Some(tree_sitter_typescript::language_typescript()),
-        "tsx" => Some(tree_sitter_typescript::language_tsx()),
-        "sh" | "bash" | ".bashrc" | ".bash_profile" | "ebuild" | "eclass" => {
-            Some(tree_sitter_bash::language())
-        }
-        "php" => Some(tree_sitter_php::language()),
-        "java" => Some(tree_sitter_java::language()),
-        "scala" | "sbt" => Some(tree_sitter_scala::language()),
-        "ml" => Some(tree_sitter_ocaml::language_ocaml()),
-        "mli" => Some(tree_sitter_ocaml::language_ocaml_interface()),
-        "html" => Some(tree_sitter_html::language()),
-        "ex" | "exs" => Some(tree_sitter_elixir::language()),
+        "rs" => Some(Lang::Rust),
+        "toml" => Some(Lang::Toml),
+        "js" => Some(Lang::Javascript),
+        "c" | "h" => Some(Lang::C),
+        "json" => Some(Lang::Json),
+        "cc" => Some(Lang::Cpp),
+        "rb" => Some(Lang::Ruby),
+        "hs" => Some(Lang::Haskell),
+        "go" => Some(Lang::Go),
+        "cs" => Some(Lang::CSharp),
+        "py" => Some(Lang::Python),
+        "ts" => Some(Lang::Typescript),
+        "tsx" => Some(Lang::Tsx),
+        "sh" | "bash" | ".bashrc" | ".bash_profile" | "ebuild" | "eclass" => Some(Lang::Bash),
+        "php" => Some(Lang::Php),
+        "java" => Some(Lang::Java),
+        "scala" | "sbt" => Some(Lang::Scala),
+        "ml" => Some(Lang::Ocaml),
+        "mli" => Some(Lang::OcamlInterface),
+        "html" => Some(Lang::Html),
+        "ex" | "exs" => Some(Lang::Elixir),
         _ => None,
     }
 }
 
-fn create_highlight_config(lang: &Language) -> HighlightConfiguration {
-    let (highlights_query, injections_query, locals_query) =
-        if lang == &tree_sitter_rust::language() {
-            (
-                tree_sitter_rust::HIGHLIGHT_QUERY,
-                tree_sitter_rust::INJECTIONS_QUERY,
-                "",
-            )
-        } else if lang == &tree_sitter_toml::language() {
-            (tree_sitter_toml::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_javascript::language() {
-            (
-                tree_sitter_javascript::HIGHLIGHT_QUERY,
-                tree_sitter_javascript::INJECTION_QUERY,
-                tree_sitter_javascript::LOCALS_QUERY,
-            )
-        } else if lang == &tree_sitter_c::language() {
-            (tree_sitter_c::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_json::language() {
-            (tree_sitter_json::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_cpp::language() {
-            (tree_sitter_cpp::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_ruby::language() {
-            (
-                tree_sitter_ruby::HIGHLIGHT_QUERY,
-                "",
-                tree_sitter_ruby::LOCALS_QUERY,
-            )
-        } else if lang == &tree_sitter_haskell::language() {
-            (
-                tree_sitter_haskell::HIGHLIGHTS_QUERY,
-                "",
-                tree_sitter_haskell::LOCALS_QUERY,
-            )
-        } else if lang == &tree_sitter_go::language() {
-            (tree_sitter_go::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_c_sharp::language() {
-            (tree_sitter_c_sharp::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_python::language() {
-            (tree_sitter_python::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_typescript::language_typescript()
-            || lang == &tree_sitter_typescript::language_tsx()
-        {
-            (
-                tree_sitter_typescript::HIGHLIGHT_QUERY,
-                "",
-                tree_sitter_typescript::LOCALS_QUERY,
-            )
-        } else if lang == &tree_sitter_bash::language() {
-            (tree_sitter_bash::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_php::language() {
-            (
-                tree_sitter_php::HIGHLIGHT_QUERY,
-                tree_sitter_php::INJECTIONS_QUERY,
-                "",
-            )
-        } else if lang == &tree_sitter_java::language() {
-            (tree_sitter_java::HIGHLIGHT_QUERY, "", "")
-        } else if lang == &tree_sitter_scala::language() {
-            (
-                tree_sitter_scala::HIGHLIGHTS_QUERY,
-                "",
-                tree_sitter_scala::LOCALS_QUERY,
-            )
-        } else if lang == &tree_sitter_ocaml::language_ocaml() {
-            (
-                tree_sitter_ocaml::HIGHLIGHTS_QUERY,
-                "",
-                tree_sitter_ocaml::LOCALS_QUERY,
-            )
-        } else if lang == &tree_sitter_html::language() {
-            (
-                tree_sitter_html::HIGHLIGHTS_QUERY,
-                tree_sitter_html::INJECTIONS_QUERY,
-                "",
-            )
-        } else if lang == &tree_sitter_elixir::language() {
-            (tree_sitter_elixir::HIGHLIGHTS_QUERY, "", "")
-        } else {
-            panic!("Undefined language");
-        };
+fn create_highlight_config(lang: &Lang) -> HighlightConfiguration {
+    let (lang_fn, hquery, iquery, lquery) = match lang {
+        Lang::Rust => (
+            tree_sitter_rust::LANGUAGE,
+            tree_sitter_rust::HIGHLIGHTS_QUERY,
+            tree_sitter_rust::INJECTIONS_QUERY,
+            "",
+        ),
+        Lang::Toml => (
+            tree_sitter_toml_ng::LANGUAGE,
+            tree_sitter_toml_ng::HIGHLIGHTS_QUERY,
+            "",
+            "",
+        ),
+        Lang::Javascript => (
+            tree_sitter_javascript::LANGUAGE,
+            tree_sitter_javascript::HIGHLIGHT_QUERY,
+            tree_sitter_javascript::INJECTIONS_QUERY,
+            tree_sitter_javascript::LOCALS_QUERY,
+        ),
+        Lang::C => (
+            tree_sitter_c::LANGUAGE,
+            tree_sitter_c::HIGHLIGHT_QUERY,
+            "",
+            "",
+        ),
+        Lang::Json => (
+            tree_sitter_json::LANGUAGE,
+            tree_sitter_json::HIGHLIGHTS_QUERY,
+            "",
+            "",
+        ),
+        Lang::Cpp => (
+            tree_sitter_cpp::LANGUAGE,
+            tree_sitter_cpp::HIGHLIGHT_QUERY,
+            "",
+            "",
+        ),
+        Lang::Ruby => (
+            tree_sitter_ruby::LANGUAGE,
+            tree_sitter_ruby::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_ruby::LOCALS_QUERY,
+        ),
+        Lang::Haskell => (
+            tree_sitter_haskell::LANGUAGE,
+            tree_sitter_haskell::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_haskell::LOCALS_QUERY,
+        ),
+        Lang::Go => (
+            tree_sitter_go::LANGUAGE,
+            tree_sitter_go::HIGHLIGHTS_QUERY,
+            "",
+            "",
+        ),
+        Lang::CSharp => (tree_sitter_c_sharp::LANGUAGE, "", "", ""),
+        Lang::Python => (
+            tree_sitter_python::LANGUAGE,
+            tree_sitter_python::HIGHLIGHTS_QUERY,
+            "",
+            "",
+        ),
+        Lang::Typescript => (
+            tree_sitter_typescript::LANGUAGE_TYPESCRIPT,
+            tree_sitter_typescript::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_typescript::LOCALS_QUERY,
+        ),
+        Lang::Tsx => (
+            tree_sitter_typescript::LANGUAGE_TSX,
+            tree_sitter_typescript::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_typescript::LOCALS_QUERY,
+        ),
+        Lang::Bash => (
+            tree_sitter_bash::LANGUAGE,
+            tree_sitter_bash::HIGHLIGHT_QUERY,
+            "",
+            "",
+        ),
+        Lang::Php => todo!(),
+        Lang::Java => (
+            tree_sitter_java::LANGUAGE,
+            tree_sitter_java::HIGHLIGHTS_QUERY,
+            "",
+            "",
+        ),
+        Lang::Scala => (
+            tree_sitter_scala::LANGUAGE,
+            tree_sitter_scala::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_scala::LOCALS_QUERY,
+        ),
+        Lang::Ocaml => (
+            tree_sitter_ocaml::LANGUAGE_OCAML,
+            tree_sitter_ocaml::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_ocaml::LOCALS_QUERY,
+        ),
+        Lang::OcamlInterface => (
+            tree_sitter_ocaml::LANGUAGE_OCAML_INTERFACE,
+            tree_sitter_ocaml::HIGHLIGHTS_QUERY,
+            "",
+            tree_sitter_ocaml::LOCALS_QUERY,
+        ),
+        Lang::Html => (
+            tree_sitter_html::LANGUAGE,
+            tree_sitter_html::HIGHLIGHTS_QUERY,
+            tree_sitter_html::INJECTIONS_QUERY,
+            "",
+        ),
+        Lang::Elixir => (
+            tree_sitter_elixir::LANGUAGE,
+            tree_sitter_elixir::HIGHLIGHTS_QUERY,
+            "",
+            "",
+        ),
+    };
 
-    let mut highlight_config =
-        HighlightConfiguration::new(*lang, highlights_query, injections_query, locals_query)
-            .unwrap();
+    let mut highlight_config = HighlightConfiguration::new(
+        Language::new(lang_fn),
+        format!("{:?}", lang),
+        hquery,
+        iquery,
+        lquery,
+    )
+    .unwrap();
 
     highlight_config.configure(&tags_by_highlight_index());
     highlight_config
@@ -209,7 +275,7 @@ fn create_highlight_config(lang: &Language) -> HighlightConfiguration {
 
 thread_local! {
     pub static HIGHLIGHTER: RefCell<Highlighter> = RefCell::new(Highlighter::new());
-    pub static LANG_CONFIGS: RefCell<HashMap<Language, HighlightConfiguration>> = RefCell::new(HashMap::new());
+    pub static LANG_CONFIGS: RefCell<HashMap<Lang, HighlightConfiguration>> = RefCell::new(HashMap::new());
 }
 
 pub(crate) fn parse<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usize>, SyntaxTag)> {
