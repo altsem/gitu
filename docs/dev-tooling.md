@@ -39,3 +39,10 @@ In order to create a release (by a maintainer).
 Run the [bump.sh](bump.sh) script. This will create a commit with appropriate changes
 to prepare for a release and tag it with a version.
 Push this commit (and tag) to **master** in order to kick off the release Github Actions.
+
+### Development
+#### Profiling
+This project comes with pprof as a dev-dependency. You can run it with:
+`cargo bench --bench show -- --profile-time 5`
+
+A flamegraph would then be output to `target/criterion/show/profile/flamegraph.svg`

@@ -9,15 +9,20 @@ license = "MIT"
 name = "show"
 harness = false
 
+[profile.release]
+strip = true
+
+[profile.bench]
+debug = true
+strip = false
+
 [dev-dependencies]
 pretty_assertions = "1.4.0"
 temp-dir = "0.1.13"
 criterion = "0.5.1"
 insta = "1.42.2"
 unicode-width = "0.2.0"
-
-[profile.release]
-strip = true
+pprof = { version = "0.15.0", features = ["flamegraph", "criterion"] }
 
 [dependencies]
 arboard = { version = "3.4.0", default-features = false, features = [
