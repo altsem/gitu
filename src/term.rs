@@ -148,4 +148,14 @@ impl TermBackend {
             TermBackend::Test { events, .. } => events.pop().map(Some).ok_or(Error::NoMoreEvents),
         }
     }
+
+    pub fn resize(&mut self, cols: usize, rows: usize) -> Res<()> {
+        match self {
+            TermBackend::Termwiz(t) => {
+                t.buffered_terminal_mut().resize(cols, rows);
+                Ok(())
+            }
+            TermBackend::Test { .. } => Ok(()),
+        }
+    }
 }
