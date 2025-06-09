@@ -173,6 +173,7 @@ impl State {
                     screen.size = Size::new(cols as u16, rows as u16);
                 }
 
+                term.backend_mut().resize(cols, rows)?;
                 self.stage_redraw();
                 Ok(())
             }
