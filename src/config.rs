@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
-use crate::{error::Error, menu::Menu, ops::Op, Res};
+use crate::{error::Error, menu::Menu, ops::Op, Bindings, Res};
 use etcetera::{choose_base_strategy, BaseStrategy};
 use figment::{
     providers::{Format, Toml},
@@ -11,8 +11,16 @@ use serde::Deserialize;
 
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
-#[derive(Default, Debug, Deserialize)]
 pub(crate) struct Config {
+    pub general: GeneralConfig,
+    pub style: StyleConfig,
+    pub bindings: Bindings,
+}
+
+#[derive(Default, Debug, Deserialize)]
+/// Only used to deserialise configurations with `figment`. This should be
+/// parsed to be turned into a useful [`Config`].
+pub(crate) struct FigmentConfig {
     pub general: GeneralConfig,
     pub style: StyleConfig,
     pub bindings: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>,
@@ -192,13 +200,22 @@ pub(crate) fn init_config() -> Res<Config> {
         log::info!("No config file at {:?}", config_path);
     }
 
-    let config = Figment::new()
+    let FigmentConfig {
+        general,
+        style,
+        bindings: raw_bindings,
+    } = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .merge(Toml::file(config_path))
         .extract()
         .map_err(Error::Config)?;
+    let bindings = Bindings::try_from(raw_bindings)?;
 
-    Ok(config)
+    Ok(Config {
+        general,
+        style,
+        bindings,
+    })
 }
 
 pub fn config_path() -> PathBuf {
@@ -210,15 +227,23 @@ pub fn config_path() -> PathBuf {
 
 #[cfg(test)]
 pub(crate) fn init_test_config() -> Res<Config> {
-    let mut config: Config = Figment::new()
+    let FigmentConfig {
+        mut general,
+        style,
+        bindings: raw_bindings,
+    } = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .extract()
         .map_err(Error::Config)?;
 
-    config.general.always_show_help.enabled = false;
-    config.general.refresh_on_file_change.enabled = false;
+    general.always_show_help.enabled = false;
+    general.refresh_on_file_change.enabled = false;
 
-    Ok(config)
+    Ok(Config {
+        general,
+        style,
+        bindings: Bindings::try_from(raw_bindings).unwrap(),
+    })
 }
 
 #[cfg(test)]
@@ -229,11 +254,11 @@ mod tests {
     };
     use ratatui::style::Color;
 
-    use super::{Config, DEFAULT_CONFIG};
+    use super::{FigmentConfig, DEFAULT_CONFIG};
 
     #[test]
     fn config_merges() {
-        let config: Config = Figment::new()
+        let config: FigmentConfig = Figment::new()
             .merge(Toml::string(DEFAULT_CONFIG))
             .merge(Toml::string(
                 r#"

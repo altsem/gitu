@@ -21,7 +21,10 @@ pub fn main() -> Res<()> {
     let mut terminal = Terminal::new(term::create_backend()?).map_err(Error::Term)?;
 
     if args.print {
-        return gitu::run(&args, &mut terminal);
+        if let Err(e) = gitu::run(&args, &mut terminal) {
+            eprintln!("{e}");
+            std::process::exit(1);
+        };
     }
 
     terminal.backend_mut().enter_alternate_screen()?;
@@ -31,7 +34,10 @@ pub fn main() -> Res<()> {
     terminal.hide_cursor().map_err(Error::Term)?;
     terminal.clear().map_err(Error::Term)?;
 
-    gitu::run(&args, &mut terminal)?;
+    if let Err(e) = gitu::run(&args, &mut terminal) {
+        eprintln!("{e}");
+        std::process::exit(1);
+    }
 
     Ok(())
 }

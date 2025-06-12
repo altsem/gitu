@@ -18,7 +18,6 @@ use termwiz::input::KeyCode;
 use termwiz::input::KeyEvent;
 use termwiz::input::Modifiers;
 
-use crate::bindings::Bindings;
 use crate::cli;
 use crate::cmd_log::CmdLog;
 use crate::cmd_log::CmdLogEntry;
@@ -42,7 +41,6 @@ use super::Res;
 pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
-    pub bindings: Bindings,
     pending_keys: Vec<(Modifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
@@ -80,7 +78,6 @@ impl State {
             )?],
         };
 
-        let bindings = Bindings::from(&config.bindings);
         let pending_menu = root_menu(&config).map(PendingMenu::init);
 
         let clipboard = Clipboard::new()
@@ -90,7 +87,6 @@ impl State {
         let mut state = Self {
             repo,
             config,
-            bindings,
             pending_keys: vec![],
             enable_async_cmds,
             quit: false,
@@ -219,6 +215,7 @@ impl State {
 
         self.pending_keys.push((key.modifiers, key.key));
         let matching_bindings = self
+            .config
             .bindings
             .match_bindings(&menu, &self.pending_keys)
             .collect::<Vec<_>>();

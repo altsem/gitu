@@ -796,6 +796,7 @@ dependencies = [
  "similar",
  "simple-logging",
  "strip-ansi-escapes",
+ "strum",
  "temp-dir",
  "termwiz",
  "toml",

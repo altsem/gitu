@@ -49,7 +49,6 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         } else {
             Some(menu::MenuWidget::new(
                 &state.config,
-                &state.bindings,
                 menu,
                 state.screens.last().unwrap().get_selected_item(),
                 state,

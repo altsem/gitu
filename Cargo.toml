@@ -63,3 +63,4 @@ strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
 termwiz = "0.22.0"
 ratatui = { version = "0.29.0", features = ["termwiz", "serde", "underline-color"], default-features = false }
+strum = { version = "0.26.3", features = ["strum_macros"] }
