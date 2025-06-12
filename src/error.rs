@@ -10,6 +10,10 @@ pub enum Error {
     Termwiz(ratatui::termwiz::Error),
     GitDirUtf8(string::FromUtf8Error),
     Config(figment::Error),
+    Bindings {
+        bad_key_bindings: Vec<String>,
+        special_key_included: bool,
+    },
     FileWatcher(notify::Error),
     ReadRebaseStatusFile(io::Error),
     ReadBranchName(io::Error),
@@ -70,6 +74,19 @@ impl Display for Error {
             Error::Termwiz(e) => f.write_fmt(format_args!("Terminal error: {}", e)),
             Error::GitDirUtf8(_e) => f.write_str("Git directory not valid UTF-8"),
             Error::Config(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
+            Error::Bindings {
+                bad_key_bindings,
+                special_key_included,
+            } => {
+                let mut error_string = String::from("Errors while parsing key bindings:");
+                for item in bad_key_bindings {
+                    error_string.push_str(&format!("\n{item}"));
+                }
+                if *special_key_included {
+                    error_string.push_str("\n\nSpecial keys like \"ctrl\" require key bindings to be surrounded, e.g. \"<ctrl+g>\"");
+                }
+                f.write_fmt(format_args!("{}", error_string))
+            }
             Error::FileWatcher(e) => f.write_fmt(format_args!("File watcher error: {}", e)),
             Error::ReadRebaseStatusFile(e) => {
                 f.write_fmt(format_args!("Couldn't read rebase status file: {}", e))

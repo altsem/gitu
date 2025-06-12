@@ -3,29 +3,86 @@ use std::collections::BTreeMap;
 use termwiz::input::{KeyCode, Modifiers};
 
 use crate::{
+    error::Error,
     key_parser,
     menu::{Menu, PendingMenu},
     ops::Op,
 };
 
+// TODO: Make the nom parsing code return an error instead.
+const SPECIAL_KEYS: [&str; 19] = [
+    "backspace",
+    "enter",
+    "left",
+    "right",
+    "up",
+    "down",
+    "home",
+    "end",
+    "pageup",
+    "pagedown",
+    "tab",
+    "delete",
+    "insert",
+    "esc",
+    "capslock",
+    "shift",
+    "ctrl",
+    "alt",
+    "super",
+];
+
 pub(crate) struct Bindings {
     vec: Vec<Binding>,
 }
 
-impl From<&BTreeMap<Menu, BTreeMap<Op, Vec<String>>>> for Bindings {
-    fn from(value: &BTreeMap<Menu, BTreeMap<Op, Vec<String>>>) -> Self {
-        Self {
-            vec: value
-                .iter()
-                .flat_map(|(menu, ops)| {
-                    ops.iter().flat_map(|(op, binds)| {
-                        binds
-                            .iter()
-                            .map(|keys| Binding::new(*menu, keys, op.clone()))
-                    })
-                })
-                .collect(),
+// Used to parse the bindings coming out of `figment`. If there are any issues,
+// these are collected so the user can be informed.
+impl TryFrom<BTreeMap<Menu, BTreeMap<Op, Vec<String>>>> for Bindings {
+    type Error = crate::error::Error;
+
+    fn try_from(value: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>) -> Result<Self, Self::Error> {
+        let mut bindings = Vec::new();
+        let mut bad_bindings = Vec::new();
+        let mut special_key_found = false;
+        for (menu, ops) in value {
+            for (op, binds) in ops {
+                for keys in binds {
+                    // TODO: Make the nom parsing code return an error instead.
+                    if keys.split(&['+', ' ']).any(|k| SPECIAL_KEYS.contains(&k)) {
+                        special_key_found = true;
+                        bad_bindings.push(format!(
+                            "- {}.{} = {}",
+                            menu.as_ref(),
+                            op.as_ref(),
+                            keys
+                        ));
+                    }
+
+                    if let Some(binding) = Binding::parse(menu, &keys, op.clone()) {
+                        bindings.push(binding);
+                    } else {
+                        // Format bad key bindings like " - {menu}.{op} = {keys}"
+                        bad_bindings.push(format!(
+                            "- {}.{} = {}",
+                            menu.as_ref(),
+                            op.as_ref(),
+                            keys
+                        ));
+                    }
+                }
+            }
         }
+
+        // If any bindings are bad, present them all to the user as an error.
+        if !bad_bindings.is_empty() {
+            return Err(Error::Bindings {
+                bad_key_bindings: bad_bindings,
+                special_key_included: special_key_found,
+            });
+        }
+
+        Ok(Self { vec: bindings })
     }
 }
 
@@ -85,18 +142,18 @@ pub(crate) struct Binding {
 }
 
 impl Binding {
-    pub fn new(menu: Menu, raw_keys: &str, op: Op) -> Self {
-        let ("", keys) = key_parser::parse_keys(raw_keys)
-            .unwrap_or_else(|_| panic!("Couldn't parse keys: {}", raw_keys))
-        else {
-            unreachable!();
-        };
-
-        Self {
-            menu,
-            raw: raw_keys.to_string(),
-            keys,
-            op,
+    /// Attempt to parse the key combination passed in. If it fails, `None` is
+    /// returned; the caller should report this to the user.
+    pub fn parse(menu: Menu, raw_keys: &str, op: Op) -> Option<Self> {
+        if let Ok(("", keys)) = key_parser::parse_keys(raw_keys) {
+            Some(Self {
+                menu,
+                raw: raw_keys.to_string(),
+                keys,
+                op,
+            })
+        } else {
+            None
         }
     }
 }

@@ -1,7 +1,5 @@
 use super::SizedWidget;
-use crate::{
-    bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op, state::State,
-};
+use crate::{config::Config, items::Item, menu::PendingMenu, ops::Op, state::State};
 use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
@@ -17,17 +15,17 @@ pub(crate) struct MenuWidget<'a> {
 
 impl<'a> MenuWidget<'a> {
     pub fn new(
-        config: &Config,
-        bindings: &'a Bindings,
+        config: &'a Config,
         pending: &'a PendingMenu,
         item: &'a Item,
         state: &'a State,
     ) -> SizedWidget<Self> {
         let style = &config.style;
 
-        let arg_binds = bindings.arg_list(pending).collect::<Vec<_>>();
+        let arg_binds = config.bindings.arg_list(pending).collect::<Vec<_>>();
 
-        let non_target_binds = bindings
+        let non_target_binds = config
+            .bindings
             .list(&pending.menu)
             .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
             .collect::<Vec<_>>();
@@ -77,7 +75,8 @@ impl<'a> MenuWidget<'a> {
 
         let mut right_column = vec![];
         if let Some(target_data) = &item.target_data {
-            let target_binds = bindings
+            let target_binds = config
+                .bindings
                 .list(&pending.menu)
                 .filter(|keybind| keybind.op.clone().implementation().is_target_op())
                 .filter(|keybind| {
