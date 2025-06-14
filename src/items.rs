@@ -4,7 +4,6 @@ use crate::git::diff::Diff;
 use crate::gitu_diff;
 use crate::highlight;
 use crate::Res;
-use core::str;
 use git2::Commit;
 use git2::Oid;
 use git2::Repository;
@@ -13,14 +12,18 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
 use regex::Regex;
-use std::borrow::Cow;
+use std::hash::DefaultHasher;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::iter;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+pub type ItemId = u64;
+
 #[derive(Default, Clone, Debug)]
 pub(crate) struct Item {
-    pub(crate) id: Cow<'static, str>,
+    pub(crate) id: ItemId,
     pub(crate) display: Line<'static>,
     pub(crate) section: bool,
     pub(crate) default_collapsed: bool,
@@ -75,9 +78,7 @@ pub(crate) fn create_diff_items(
             let config = Rc::clone(&config);
 
             iter::once(Item {
-                id: Rc::clone(diff).text[file_diff.header.range.clone()]
-                    .to_string()
-                    .into(),
+                id: hash(diff.file_diff_header(file_i)),
                 display: Line::styled(
                     format!(
                         "{:8}   {}",
@@ -123,7 +124,7 @@ fn create_hunk_items(
 ) -> impl Iterator<Item = Item> {
     iter::once(Item {
         // TODO Don't do this
-        id: diff.format_hunk_patch(file_i, hunk_i).into(),
+        id: hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]),
         display: Line::styled(
             diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string(),
             &config.style.hunk_header,
@@ -207,7 +208,7 @@ pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Re
             .collect::<Vec<_>>();
 
             Ok(Item {
-                id: stash.id_new().to_string().into(),
+                id: hash(stash.id_new()),
                 display: Line::from(spans),
                 depth: 1,
                 target_data: Some(TargetData::Stash {
@@ -220,7 +221,7 @@ pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Re
         .map(|result| match result {
             Ok(item) => item,
             Err(err) => Item {
-                id: err.to_string().into(),
+                id: hash(err.to_string()),
                 display: err.to_string().into(),
                 ..Default::default()
             },
@@ -299,7 +300,7 @@ pub(crate) fn log(
             }
 
             Ok(Some(Item {
-                id: oid.to_string().into(),
+                id: hash(oid),
                 display: Line::from(spans),
                 depth: 1,
                 target_data: Some(TargetData::Commit(oid.to_string())),
@@ -309,7 +310,7 @@ pub(crate) fn log(
         .filter_map(|result| match result {
             Ok(item) => item,
             Err(err) => Some(Item {
-                id: err.to_string().into(),
+                id: hash(err.to_string()),
                 display: err.to_string().into(),
                 ..Default::default()
             }),
@@ -334,4 +335,10 @@ pub(crate) fn blank_line() -> Item {
         unselectable: true,
         ..Default::default()
     }
+}
+
+pub(crate) fn hash<T: Hash>(x: T) -> ItemId {
+    let mut hasher = DefaultHasher::new();
+    x.hash(&mut hasher);
+    hasher.finish()
 }

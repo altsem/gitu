@@ -8,7 +8,7 @@ use super::Screen;
 use crate::{
     config::{Config, StyleConfigEntry},
     error::Error,
-    items::{self, Item, TargetData},
+    items::{self, hash, Item, TargetData},
     Res,
 };
 use git2::{Reference, Repository};
@@ -25,17 +25,16 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             let style = &config.style;
 
             Ok(iter::once(Item {
-                id: "local_branches".into(),
+                id: hash("local_branches"),
                 display: Line::styled("Branches".to_string(), &style.section_header),
                 section: true,
                 depth: 0,
                 ..Default::default()
             })
-            .chain(create_references_section(
-                &repo,
-                Reference::is_branch,
-                &style.branch,
-            )?)
+            .chain(
+                create_reference_items(&repo, Reference::is_branch, &style.branch)?
+                    .map(|(_, item)| item),
+            )
             .chain(create_remotes_sections(
                 &repo,
                 &style.section_header,
@@ -56,15 +55,12 @@ fn create_remotes_sections<'a>(
     header_style: &'a StyleConfigEntry,
     item_style: &'a StyleConfigEntry,
 ) -> Res<impl Iterator<Item = Item> + 'a> {
-    let all_remotes = create_references_section(repo, Reference::is_remote, item_style)?;
+    let all_remotes = create_reference_items(repo, Reference::is_remote, item_style)?;
     let mut remotes = BTreeMap::new();
-    for remote in all_remotes {
-        let name = String::from_utf8_lossy(
-            &repo
-                .branch_remote_name(&remote.id)
-                .map_err(Error::GetRemote)?,
-        )
-        .to_string();
+    for (name, remote) in all_remotes {
+        let name =
+            String::from_utf8_lossy(&repo.branch_remote_name(&name).map_err(Error::GetRemote)?)
+                .to_string();
 
         match remotes.entry(name) {
             Entry::Vacant(entry) => {
@@ -81,7 +77,7 @@ fn create_remotes_sections<'a>(
         vec![
             items::blank_line(),
             Item {
-                id: name.into(),
+                id: hash(&name),
                 display: Line::styled(header, header_style),
                 section: true,
                 depth: 0,
@@ -98,12 +94,12 @@ fn create_tags_section<'a>(
     header_style: &'a StyleConfigEntry,
     item_style: &'a StyleConfigEntry,
 ) -> Res<impl Iterator<Item = Item> + 'a> {
-    let mut tags = create_references_section(repo, Reference::is_tag, item_style)?;
+    let mut tags = create_reference_items(repo, Reference::is_tag, item_style)?;
     Ok(match tags.next() {
-        Some(item) => vec![
+        Some((_name, item)) => vec![
             items::blank_line(),
             Item {
-                id: "tags".into(),
+                id: hash("tags"),
                 display: Line::styled("Tags".to_string(), header_style),
                 section: true,
                 depth: 0,
@@ -114,14 +110,14 @@ fn create_tags_section<'a>(
         None => vec![],
     }
     .into_iter()
-    .chain(tags))
+    .chain(tags.map(|(_name, item)| item)))
 }
 
-fn create_references_section<'a, F>(
+fn create_reference_items<'a, F>(
     repo: &'a Repository,
     filter: F,
     style: &'a StyleConfigEntry,
-) -> Res<impl Iterator<Item = Item> + 'a>
+) -> Res<impl Iterator<Item = (String, Item)> + 'a>
 where
     F: FnMut(&Reference<'a>) -> bool + 'a,
 {
@@ -131,10 +127,10 @@ where
         .filter_map(Result::ok)
         .filter(filter)
         .map(move |reference| {
+            let name = reference.name().unwrap().to_owned();
             let shorthand = reference.shorthand().unwrap().to_owned();
-
-            Item {
-                id: reference.name().unwrap().to_owned().into(),
+            let item = Item {
+                id: hash(&name),
                 display: Line::from(vec![
                     create_prefix(repo, &reference),
                     Span::styled(shorthand.clone(), style),
@@ -142,7 +138,8 @@ where
                 depth: 1,
                 target_data: Some(TargetData::Branch(shorthand)),
                 ..Default::default()
-            }
+            };
+            (name, item)
         }))
 }
 

@@ -3,7 +3,7 @@ use std::{iter, rc::Rc};
 use crate::{
     config::Config,
     git,
-    items::{self, Item},
+    items::{self, hash, Item},
     Res,
 };
 use git2::Repository;
@@ -30,14 +30,14 @@ pub(crate) fn create(
             let details = Text::from(commit.details).lines;
 
             Ok(iter::once(Item {
-                id: format!("commit_section_{}", commit.hash).into(),
+                id: hash(["commit_section", &commit.hash]),
                 display: Line::styled(format!("commit {}", commit.hash), &style.section_header),
                 section: true,
                 depth: 0,
                 ..Default::default()
             })
             .chain(details.into_iter().map(|line| Item {
-                id: format!("commit_{}", commit.hash).into(),
+                id: hash(["commit", &commit.hash]),
                 display: line,
                 depth: 1,
                 unselectable: true,
