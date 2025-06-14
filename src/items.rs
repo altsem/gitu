@@ -123,7 +123,6 @@ fn create_hunk_items(
     depth: usize,
 ) -> impl Iterator<Item = Item> {
     iter::once(Item {
-        // TODO Don't do this
         id: hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]),
         display: Line::styled(
             diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string(),
