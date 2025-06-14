@@ -14,7 +14,7 @@ impl OpTrait for Unstage {
                 diff,
                 file_i,
                 hunk_i,
-            }) => unstage_patch(diff.format_patch(file_i, hunk_i).into_bytes()),
+            }) => unstage_patch(diff.format_hunk_patch(file_i, hunk_i).into_bytes()),
             Some(TargetData::HunkLine {
                 diff,
                 file_i,

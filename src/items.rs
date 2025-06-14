@@ -123,7 +123,7 @@ fn create_hunk_items(
 ) -> impl Iterator<Item = Item> {
     iter::once(Item {
         // TODO Don't do this
-        id: diff.format_patch(file_i, hunk_i).into(),
+        id: diff.format_hunk_patch(file_i, hunk_i).into(),
         display: Line::styled(
             diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string(),
             &config.style.hunk_header,

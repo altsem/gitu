@@ -24,13 +24,20 @@ impl Diff {
         mask_hunk_content(content, '+', '-')
     }
 
-    pub(crate) fn format_patch(&self, file_i: usize, hunk_i: usize) -> String {
-        let file_diff = &self.file_diffs[file_i];
+    pub(crate) fn format_hunk_patch(&self, file_i: usize, hunk_i: usize) -> String {
         format!(
             "{}{}",
-            &self.text[file_diff.header.range.clone()],
-            &self.text[file_diff.hunks[hunk_i].range.clone()]
+            self.file_diff_header(file_i),
+            self.hunk(file_i, hunk_i)
         )
+    }
+
+    pub(crate) fn file_diff_header(&self, file_i: usize) -> &str {
+        &self.text[self.file_diffs[file_i].header.range.clone()]
+    }
+
+    pub(crate) fn hunk(&self, file_i: usize, hunk_i: usize) -> &str {
+        &self.text[self.file_diffs[file_i].hunks[hunk_i].range.clone()]
     }
 
     pub(crate) fn format_line_patch(
