@@ -9,7 +9,7 @@ pub enum Error {
     Term(io::Error),
     Termwiz(ratatui::termwiz::Error),
     GitDirUtf8(string::FromUtf8Error),
-    Config(figment::Error),
+    Config(Box<figment::Error>),
     FileWatcher(notify::Error),
     ReadRebaseStatusFile(io::Error),
     ReadBranchName(io::Error),

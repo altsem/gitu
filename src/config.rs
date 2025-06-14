@@ -196,6 +196,7 @@ pub(crate) fn init_config() -> Res<Config> {
         .merge(Toml::string(DEFAULT_CONFIG))
         .merge(Toml::file(config_path))
         .extract()
+        .map_err(Box::new)
         .map_err(Error::Config)?;
 
     Ok(config)
@@ -213,6 +214,7 @@ pub(crate) fn init_test_config() -> Res<Config> {
     let mut config: Config = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .extract()
+        .map_err(Box::new)
         .map_err(Error::Config)?;
 
     config.general.always_show_help.enabled = false;
