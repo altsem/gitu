@@ -4,7 +4,7 @@ use crate::{
     error::Error,
     git::{self, diff::Diff},
     git2_opts,
-    items::{self, Item, TargetData},
+    items::{self, hash, Item, TargetData},
     Res,
 };
 use git2::Repository;
@@ -34,7 +34,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
-                    id: "rebase_status".into(),
+                    id: hash("rebase_status"),
                     display: Line::styled(
                         format!("Rebasing {} onto {}", rebase.head_name, &rebase.onto),
                         &style.section_header,
@@ -44,7 +44,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 .into_iter()
             } else if let Some(merge) = git::merge_status(&repo)? {
                 vec![Item {
-                    id: "merge_status".into(),
+                    id: hash("merge_status"),
                     display: Line::styled(
                         format!("Merging {}", &merge.head),
                         &style.section_header,
@@ -54,7 +54,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 .into_iter()
             } else if let Some(revert) = git::revert_status(&repo)? {
                 vec![Item {
-                    id: "revert_status".into(),
+                    id: hash("revert_status"),
                     display: Line::styled(
                         format!("Reverting {}", &revert.head),
                         &style.section_header,
@@ -71,7 +71,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 vec![
                     items::blank_line(),
                     Item {
-                        id: "untracked".into(),
+                        id: hash("untracked"),
                         display: Line::styled("Untracked files", &style.section_header),
                         section: true,
                         depth: 0,
@@ -115,7 +115,7 @@ fn items_list(config: &Config, files: Vec<PathBuf>) -> Vec<Item> {
     files
         .into_iter()
         .map(|path| Item {
-            id: path.to_string_lossy().to_string().into(),
+            id: hash(&path),
             display: Line::styled(path.to_string_lossy().to_string(), &style.file_header),
             depth: 1,
             target_data: Some(items::TargetData::File(path)),
@@ -128,7 +128,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
     let style = &config.style;
     let Ok(head) = repo.head() else {
         return Ok(vec![Item {
-            id: "branch_status".into(),
+            id: hash("branch_status"),
             display: Line::styled("No branch", &style.section_header),
             section: true,
             depth: 0,
@@ -137,7 +137,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
     };
 
     let mut items = vec![Item {
-        id: "branch_status".into(),
+        id: hash("branch_status"),
         display: Line::styled(
             format!("On branch {}", head.shorthand().unwrap()),
             &style.section_header,
@@ -158,7 +158,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
 
     let Ok(upstream_id) = repo.refname_to_id(&upstream_name) else {
         items.push(Item {
-            id: "branch_status".into(),
+            id: hash("branch_status"),
             display: format!(
                 "Your branch is based on '{}', but the upstream is gone.",
                 upstream_shortname
@@ -176,7 +176,7 @@ fn branch_status_items(config: &Config, repo: &Repository) -> Res<Vec<Item>> {
         .map_err(Error::GitStatus)?;
 
     items.push(Item {
-        id: "branch_status".into(),
+        id: hash("branch_status"),
         display: if ahead == 0 && behind == 0 {
             Line::raw(format!("Your branch is up to date with '{}'.", upstream_shortname))
         } else if ahead > 0 && behind == 0 {
@@ -218,7 +218,7 @@ fn create_status_section_items<'a>(
                 ..Default::default()
             },
             Item {
-                id: snake_case_header.to_string().into(),
+                id: hash(snake_case_header),
                 display: Line::from(vec![
                     Span::styled(
                         capitalize(&snake_case_header.replace("_", " ")),
@@ -256,7 +256,7 @@ fn create_stash_list_section_items<'a>(
         vec![
             items::blank_line(),
             Item {
-                id: snake_case_header.to_string().into(),
+                id: hash(snake_case_header),
                 display: Line::styled(
                     capitalize(&snake_case_header.replace("_", " ")),
                     &style.section_header,
@@ -285,7 +285,7 @@ fn create_log_section_items<'a>(
             ..Default::default()
         },
         Item {
-            id: snake_case_header.to_string().into(),
+            id: hash(snake_case_header),
             display: Line::styled(
                 capitalize(&snake_case_header.replace("_", " ")),
                 &style.section_header,
