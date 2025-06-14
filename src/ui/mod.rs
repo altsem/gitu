@@ -1,105 +1,78 @@
-use crate::prompt::TextPrompt;
-use crate::state::State;
-use ratatui::prelude::*;
-use ratatui::style::Stylize;
-use ratatui::widgets::*;
-use ratatui::Frame;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-mod menu;
+use termwiz::color::ColorAttribute;
+use termwiz::surface::Change;
+use termwiz::widgets::layout::{
+    ChildOrientation, Constraints, Dimension, DimensionSpec, VerticalAlignment,
+};
+use termwiz::widgets::{RenderArgs, UpdateArgs, Widget, WidgetEvent};
 
-pub(crate) struct SizedWidget<W> {
-    height: u16,
-    widget: W,
-}
+use crate::screen::Screen;
 
-impl<W: Widget> Widget for SizedWidget<W> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.widget.render(area, buf);
-    }
-}
+pub(crate) struct Root {}
 
-impl<W: StatefulWidget> StatefulWidget for SizedWidget<W> {
-    type State = W::State;
+impl Widget for Root {
+    fn render(&mut self, _args: &mut RenderArgs) {}
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        self.widget.render(area, buf, state);
-    }
-}
-
-pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let maybe_log = if !state.current_cmd_log.is_empty() {
-        let text: Text = state.current_cmd_log.format_log(&state.config);
-
-        Some(SizedWidget {
-            widget: Paragraph::new(text.clone()).block(popup_block()),
-            height: 1 + text.lines.len() as u16,
-        })
-    } else {
-        None
-    };
-
-    let maybe_prompt = state.prompt.data.as_ref().map(|prompt_data| SizedWidget {
-        height: 2,
-        widget: TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block()),
-    });
-
-    let maybe_menu = state.pending_menu.as_ref().and_then(|menu| {
-        if menu.is_hidden {
-            None
-        } else {
-            Some(menu::MenuWidget::new(
-                &state.config,
-                &state.bindings,
-                menu,
-                state.screens.last().unwrap().get_selected_item(),
-                state,
-            ))
+    fn get_size_constraints(&self) -> Constraints {
+        Constraints {
+            valign: VerticalAlignment::Bottom,
+            child_orientation: ChildOrientation::Vertical,
+            ..Default::default()
         }
-    });
+    }
+}
 
-    let layout = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Min(1),
-            widget_height(&maybe_prompt),
-            widget_height(&maybe_menu),
-            widget_height(&maybe_log),
-        ],
-    )
-    .split(frame.area());
+pub(crate) struct ScreenWindow(pub Rc<RefCell<Vec<Screen>>>);
 
-    frame.render_widget(state.screens.last().unwrap(), layout[0]);
+impl Widget for ScreenWindow {
+    fn render(&mut self, args: &mut RenderArgs) {
+        let mut screens = self.0.borrow_mut();
+        let Some(screen) = screens.last_mut() else {
+            return;
+        };
 
-    maybe_render(maybe_menu, frame, layout[2]);
-    maybe_render(maybe_log, frame, layout[3]);
-
-    if let Some(prompt) = maybe_prompt {
-        frame.render_stateful_widget(prompt, layout[1], &mut state.prompt.state);
-        let (cx, cy) = state.prompt.state.cursor;
-        frame.set_cursor_position((cx, cy));
+        screen.render(args);
     }
 
-    state.screens.last_mut().unwrap().size = layout[0].as_size();
+    fn get_size_constraints(&self) -> Constraints {
+        let mut screens = self.0.borrow_mut();
+        let Some(screen) = screens.last_mut() else {
+            return Constraints::default();
+        };
+
+        screen.get_size_constraints()
+    }
+
+    fn process_event(&mut self, event: &WidgetEvent, args: &mut UpdateArgs) -> bool {
+        let mut screens = self.0.borrow_mut();
+        let Some(screen) = screens.last_mut() else {
+            return false;
+        };
+
+        screen.process_event(event, args)
+    }
 }
 
-fn popup_block() -> Block<'static> {
-    Block::new()
-        .borders(Borders::TOP)
-        .border_style(Style::new().dim())
-        .border_type(ratatui::widgets::BorderType::Plain)
-}
+pub(crate) struct Menu {}
 
-fn widget_height<W>(maybe_prompt: &Option<SizedWidget<W>>) -> Constraint {
-    Constraint::Length(
-        maybe_prompt
-            .as_ref()
-            .map(|widget| widget.height)
-            .unwrap_or(0),
-    )
-}
+impl Widget for Menu {
+    fn render(&mut self, args: &mut RenderArgs) {
+        args.surface
+            .add_change(Change::ClearScreen(ColorAttribute::PaletteIndex(8)));
+        // TODO
+    }
 
-fn maybe_render<W: Widget>(maybe_menu: Option<SizedWidget<W>>, frame: &mut Frame, area: Rect) {
-    if let Some(menu) = maybe_menu {
-        frame.render_widget(menu, area);
+    fn get_size_constraints(&self) -> Constraints {
+        // TODO auto-size depending on amount of lines in the menu
+        Constraints {
+            height: Dimension {
+                spec: DimensionSpec::Fixed(10),
+                maximum: Some(10),
+                minimum: Some(10),
+            },
+            ..Default::default()
+        }
     }
 }

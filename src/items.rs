@@ -24,6 +24,9 @@ pub type ItemId = u64;
 #[derive(Default, Clone, Debug)]
 pub(crate) struct Item {
     pub(crate) id: ItemId,
+    // TODO We'll want to move away from this `Line` struct
+    // preferably we can store text and styling separately like in highlight.rs: `(Range<usize>, Style)`
+    // and only apply them when rendering
     pub(crate) display: Line<'static>,
     pub(crate) section: bool,
     pub(crate) default_collapsed: bool,
@@ -153,6 +156,10 @@ fn format_diff_hunk_items(
     hunk_i: usize,
     depth: usize,
 ) -> Vec<Item> {
+    // TODO This could be deferred and only done to hunks that are actually visible on screen.
+    // We do need to know the dimensions of text in order to navigate properly though.
+    // Some ideas are to:
+    // - Store text unhighlighted
     highlight::highlight_hunk_lines(config, &diff, file_i, hunk_i)
         .enumerate()
         .map(|(line_i, (line, spans))| {
@@ -162,6 +169,8 @@ fn format_diff_hunk_items(
                     .map(|(range, style)| {
                         Span::styled(
                             line[range.clone()]
+                                // TODO These things could probably be done way sooner
+                                // especially if we can avoid allocating new Strings here
                                 .trim_end_matches("\r\n")
                                 .replace('\t', "    "),
                             style,

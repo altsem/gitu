@@ -17,10 +17,10 @@ impl OpTrait for ShowRefs {
 }
 
 fn goto_refs_screen(state: &mut State) {
-    state.screens.drain(1..);
-    let size = state.screens.last().unwrap().size;
+    state.screens.borrow_mut().drain(1..);
+    let size = state.screens.borrow().last().unwrap().size;
     state.close_menu();
-    state.screens.push(
+    state.screens.borrow_mut().push(
         screen::show_refs::create(Rc::clone(&state.config), Rc::clone(&state.repo), size)
             .expect("Couldn't create screen"),
     );
