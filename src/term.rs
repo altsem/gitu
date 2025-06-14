@@ -22,13 +22,13 @@ pub fn create_backend() -> Res<TermBackend> {
     )
     .map_err(Error::Termwiz)?;
 
-    Ok(TermBackend::Termwiz(
+    Ok(TermBackend::Termwiz(Box::new(
         TermwizBackend::with_buffered_terminal(buffered_terminal),
-    ))
+    )))
 }
 
 pub enum TermBackend {
-    Termwiz(TermwizBackend),
+    Termwiz(Box<TermwizBackend>),
     #[allow(dead_code)]
     Test {
         backend: TestBackend,
