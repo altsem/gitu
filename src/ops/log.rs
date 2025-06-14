@@ -79,8 +79,8 @@ fn log_other(state: &mut State, _term: &mut Term, result: &str) -> Res<()> {
 }
 
 fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
-    state.screens.drain(1..);
-    let size = state.screens.last().unwrap().size;
+    state.screens.borrow_mut().drain(1..);
+    let size = state.screens.borrow().last().unwrap().size;
     let limit = *state
         .pending_menu
         .as_ref()
@@ -97,7 +97,7 @@ fn goto_log_screen(state: &mut State, rev: Option<Oid>) {
 
     state.close_menu();
 
-    state.screens.push(
+    state.screens.borrow_mut().push(
         screen::log::create(
             Rc::clone(&state.config),
             Rc::clone(&state.repo),

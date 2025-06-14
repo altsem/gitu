@@ -1,4 +1,9 @@
-use ratatui::prelude::*;
+use ratatui::{layout::Size, text::Line};
+use termwiz::{
+    color::ColorAttribute,
+    surface::Change,
+    widgets::{RenderArgs, Widget},
+};
 
 use crate::{
     config::Config,
@@ -260,7 +265,9 @@ impl Screen {
     }
 
     fn is_cursor_off_screen(&self) -> bool {
-        !self.line_views(self.size).any(|line| line.highlighted)
+        !self
+            .line_views((self.size.width as usize, self.size.height as usize))
+            .any(|line| line.highlighted)
     }
 
     fn move_cursor_to_screen_center(&mut self) {
@@ -291,9 +298,9 @@ impl Screen {
         &self.items[self.line_index[self.cursor]]
     }
 
-    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView> {
+    fn line_views(&self, (_, height): (usize, usize)) -> impl Iterator<Item = LineView> {
         let scan_start = self.scroll.min(self.cursor);
-        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
+        let scan_end = (self.scroll + height).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);
         let context_lines = self.scroll - scan_start;
 
@@ -325,46 +332,18 @@ struct LineView<'a> {
     highlighted: bool,
 }
 
-impl Widget for &Screen {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let style = &self.config.style;
+impl Widget for Screen {
+    fn render(&mut self, args: &mut RenderArgs) {
+        args.surface
+            .add_change(Change::ClearScreen(ColorAttribute::Default));
 
-        for (line_index, line) in self.line_views(area.as_size()).enumerate() {
-            let line_area = Rect {
-                x: 0,
-                y: line_index as u16,
-                width: buf.area.width,
-                height: 1,
-            };
-
-            let indented_line_area = Rect { x: 1, ..line_area };
-
-            if line.highlighted {
-                buf.set_style(line_area, &style.selection_area);
-
-                if self.line_index[self.cursor] == line.item_index {
-                    buf.set_style(line_area, &style.selection_line);
-                } else {
-                    buf[(0, line_index as u16)]
-                        .set_char(style.selection_bar.symbol)
-                        .set_style(&style.selection_bar);
-                }
-            }
-
-            line.display.render(indented_line_area, buf);
-            let overflow = line.display.width() > line_area.width as usize;
-
-            if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
-                let line_end =
-                    (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
-                buf[(line_end, line_index as u16)].set_char('…');
-            }
-
-            if self.line_index[self.cursor] == line.item_index {
-                buf[(0, line_index as u16)]
-                    .set_char(style.cursor.symbol)
-                    .set_style(&style.cursor);
-            }
+        for (line_index, line) in self.line_views(args.surface.dimensions()).enumerate() {
+            // TODO Render the screen(buffer) like before.
+            // - apply colors from configuration
+            // - lines will now naturally wrap (unlike with Ratatui's `Line`)
+            // - Hopefully styles could be applied here from the output of highlight.rs: `(Range<usize>, Style)`
+            //   That might simplify things from working with Text/Line/Span of Ratatui
+            args.surface.add_change(format!("{}\r\n", line.display));
         }
     }
 }

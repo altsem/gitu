@@ -37,7 +37,7 @@ impl OpTrait for Show {
 fn goto_show_screen(r: String) -> Option<Action> {
     Some(Rc::new(move |state, term| {
         state.close_menu();
-        state.screens.push(
+        state.screens.borrow_mut().push(
             screen::show::create(
                 Rc::clone(&state.config),
                 Rc::clone(&state.repo),
