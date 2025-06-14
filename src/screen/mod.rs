@@ -1,9 +1,13 @@
 use ratatui::prelude::*;
 
-use crate::{config::Config, items::TargetData, Res};
+use crate::{
+    config::Config,
+    items::{hash, TargetData},
+    Res,
+};
 
 use super::Item;
-use std::{borrow::Cow, collections::HashSet, rc::Rc};
+use std::{collections::HashSet, rc::Rc};
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -27,7 +31,7 @@ pub(crate) struct Screen {
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
     line_index: Vec<usize>,
-    collapsed: HashSet<Cow<'static, str>>,
+    collapsed: HashSet<u64>,
 }
 
 impl Screen {
@@ -41,7 +45,7 @@ impl Screen {
             .collapsed_sections
             .clone()
             .into_iter()
-            .map(Cow::Owned)
+            .map(hash)
             .collect();
 
         let mut screen = Self {
@@ -63,7 +67,7 @@ impl Screen {
             .iter()
             .filter(|item| item.default_collapsed)
             .for_each(|item| {
-                screen.collapsed.insert(item.id.clone());
+                screen.collapsed.insert(item.id);
             });
         screen.update_line_index();
 
@@ -196,7 +200,7 @@ impl Screen {
             if self.collapsed.contains(&selected.id) {
                 self.collapsed.remove(&selected.id);
             } else {
-                self.collapsed.insert(selected.id.clone());
+                self.collapsed.insert(selected.id);
             }
         }
 

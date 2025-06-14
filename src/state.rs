@@ -11,13 +11,12 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 use arboard::Clipboard;
-use crossterm::event;
-use crossterm::event::Event;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyModifiers;
 use git2::Repository;
 use ratatui::layout::Size;
-use tui_prompts::State as _;
+use termwiz::input::InputEvent;
+use termwiz::input::KeyCode;
+use termwiz::input::KeyEvent;
+use termwiz::input::Modifiers;
 
 use crate::bindings::Bindings;
 use crate::cli;
@@ -32,6 +31,7 @@ use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt;
 use crate::prompt::PromptData;
+use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
@@ -43,7 +43,7 @@ pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
     pub bindings: Bindings,
-    pending_keys: Vec<(KeyModifiers, KeyCode)>,
+    pending_keys: Vec<(Modifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
@@ -138,16 +138,14 @@ impl State {
 
     pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
         while !self.quit {
-            term.backend_mut().poll_event(max_tick_delay)?;
-            self.update(term)?;
+            self.update(term, Some(max_tick_delay))?;
         }
 
         Ok(())
     }
 
-    pub fn update(&mut self, term: &mut Term) -> Res<()> {
-        if term.backend_mut().poll_event(Duration::ZERO)? {
-            let event = term.backend_mut().read_event()?;
+    pub fn update(&mut self, term: &mut Term, wait: Option<Duration>) -> Res<()> {
+        if let Some(event) = term.backend_mut().poll_input(wait)? {
             self.handle_event(term, event)?;
         }
 
@@ -168,25 +166,24 @@ impl State {
         Ok(())
     }
 
-    pub fn handle_event(&mut self, term: &mut Term, event: Event) -> Res<()> {
-        log::debug!("{:?}", event);
-
+    pub fn handle_event(&mut self, term: &mut Term, event: InputEvent) -> Res<()> {
         match event {
-            Event::Resize(w, h) => {
+            InputEvent::Resized { cols, rows } => {
                 for screen in self.screens.iter_mut() {
-                    screen.size = Size::new(w, h);
+                    screen.size = Size::new(cols as u16, rows as u16);
                 }
 
+                term.backend_mut().resize(cols, rows)?;
                 self.stage_redraw();
                 Ok(())
             }
-            Event::Key(key) => {
+            InputEvent::Key(key) => {
                 if self.pending_cmd.is_none() {
                     self.current_cmd_log.clear();
                 }
 
                 if self.prompt.state.is_focused() {
-                    self.prompt.state.handle_key_event(key);
+                    self.prompt.state.handle_key_event(&key);
                 } else {
                     self.handle_key_input(term, key)?;
                 }
@@ -213,14 +210,14 @@ impl State {
         self.needs_redraw = true;
     }
 
-    fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
+    fn handle_key_input(&mut self, term: &mut Term, key: KeyEvent) -> Res<()> {
         let menu = match &self.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
             Some(menu) => menu.menu,
         };
 
-        self.pending_keys.push((key.modifiers, key.code));
+        self.pending_keys.push((key.modifiers, key.key));
         let matching_bindings = self
             .bindings
             .match_bindings(&menu, &self.pending_keys)
@@ -382,7 +379,7 @@ impl State {
 
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
-        term.backend().disable_raw_mode()?;
+        term.backend_mut().disable_raw_mode()?;
 
         // If we don't show the cursor prior spawning (thus restore the default
         // state), the cursor may be missing in $EDITOR.
@@ -412,7 +409,7 @@ impl State {
         self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
 
         // restore the raw mode
-        term.backend().enable_raw_mode()?;
+        term.backend_mut().enable_raw_mode()?;
 
         // Prevents cursor flash when exiting editor
         term.hide_cursor().map_err(Error::Term)?;
@@ -486,12 +483,13 @@ impl State {
         self.redraw_now(term)?;
 
         loop {
-            let event = term.backend_mut().read_event()?;
-            self.handle_event(term, event)?;
+            if let Some(event) = term.backend_mut().poll_input(None)? {
+                self.handle_event(term, event)?;
+            }
 
-            if self.prompt.state.status().is_done() {
+            if self.prompt.state.status == Status::Done {
                 return get_prompt_result(params, self);
-            } else if self.prompt.state.status().is_aborted() {
+            } else if self.prompt.state.status == Status::Aborted {
                 return Err(Error::PromptAborted);
             }
 
@@ -519,10 +517,11 @@ impl State {
     fn handle_confirm(&mut self, term: &mut Term) -> Res<()> {
         self.redraw_now(term)?;
         loop {
-            let event = term.backend_mut().read_event()?;
-            self.handle_event(term, event)?;
+            if let Some(event) = term.backend_mut().poll_input(None)? {
+                self.handle_event(term, event)?;
+            }
 
-            match self.prompt.state.value() {
+            match self.prompt.state.value.as_ref() {
                 "y" => {
                     return Ok(());
                 }
@@ -538,7 +537,7 @@ impl State {
 }
 
 fn get_prompt_result(params: &PromptParams, state: &mut State) -> Res<String> {
-    let input = state.prompt.state.value();
+    let input = state.prompt.state.value.as_ref();
     let default_value = (params.create_default_value)(state);
 
     let value = match (input, &default_value) {

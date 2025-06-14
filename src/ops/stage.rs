@@ -82,7 +82,11 @@ fn stage_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
         cmd.args(["apply", "--cached"]);
 
         state.close_menu();
-        state.run_cmd(term, &diff.format_patch(file_i, hunk_i).into_bytes(), cmd)
+        state.run_cmd(
+            term,
+            &diff.format_hunk_patch(file_i, hunk_i).into_bytes(),
+            cmd,
+        )
     })
 }
 

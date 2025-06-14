@@ -1,12 +1,14 @@
-## [0.32.0] - 2025-05-24
+## [0.33.0] - 2025-06-07
 
 ### 🚀 Features
 
-- Hint external commands to output colors
-- Add delete option to branch menu
+- Discard line by line (+ configure when to confirm discard)
+- Ability to add a remote
 
 ### 🐛 Bug Fixes
 
-- Ignore diff.external, in case its set to an unsupported tool #369
-- *(prompt)* Freeze when a command would fail after a prompt occurred
+- *(highlighting)* Update tree-sitter, replace dated toml lib with toml-ng
+- *(show)* Crash when sometimes attempting to show a commit
+- Opening hunk in EDITOR used wrong line number
+- Unmerged branches could not be deleted via discard action
 
