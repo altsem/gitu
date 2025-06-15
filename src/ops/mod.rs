@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{items::TargetData, menu::Menu, state::State, term::Term, Res};
+use crate::{
+    app::{App, State},
+    items::TargetData,
+    menu::Menu,
+    term::Term,
+    Res,
+};
 use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod branch;
@@ -22,7 +28,7 @@ pub(crate) mod stage;
 pub(crate) mod stash;
 pub(crate) mod unstage;
 
-pub(crate) type Action = Rc<dyn FnMut(&mut State, &mut Term) -> Res<()>>;
+pub(crate) type Action = Rc<dyn FnMut(&mut App, &mut Term) -> Res<()>>;
 
 pub(crate) trait OpTrait {
     /// Get the implementation (which may or may not exist) of the Op given some TargetData.
@@ -193,10 +199,10 @@ impl Display for Menu {
     }
 }
 
-pub(crate) fn confirm(state: &mut State, term: &mut Term, prompt: &'static str) -> Res<()> {
-    state.confirm(term, prompt)
+pub(crate) fn confirm(app: &mut App, term: &mut Term, prompt: &'static str) -> Res<()> {
+    app.confirm(term, prompt)
 }
 
-pub(crate) fn selected_rev(state: &State) -> Option<String> {
+pub(crate) fn selected_rev(state: &App) -> Option<String> {
     state.selected_rev()
 }

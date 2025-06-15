@@ -1,9 +1,9 @@
 use std::{process::Command, rc::Rc};
 
 use crate::{
+    app::{App, PromptParams, State},
     items::TargetData,
     menu::arg::Arg,
-    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -23,12 +23,12 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct RevertAbort;
 impl OpTrait for RevertAbort {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--abort"]);
 
-            state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            app.close_menu();
+            app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
     }
@@ -41,12 +41,12 @@ impl OpTrait for RevertAbort {
 pub(crate) struct RevertContinue;
 impl OpTrait for RevertContinue {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--continue"]);
 
-            state.close_menu();
-            state.run_cmd_interactive(term, cmd)?;
+            app.close_menu();
+            app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
     }
@@ -59,8 +59,8 @@ impl OpTrait for RevertContinue {
 pub(crate) struct RevertCommit;
 impl OpTrait for RevertCommit {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let commit = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let commit = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Revert commit",
@@ -69,7 +69,7 @@ impl OpTrait for RevertCommit {
                 },
             )?;
 
-            revert_commit(state, term, &commit)?;
+            revert_commit(app, term, &commit)?;
             Ok(())
         }))
     }
@@ -79,12 +79,12 @@ impl OpTrait for RevertCommit {
     }
 }
 
-fn revert_commit(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn revert_commit(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["revert"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd_interactive(term, cmd)
+    app.close_menu();
+    app.run_cmd_interactive(term, cmd)
 }

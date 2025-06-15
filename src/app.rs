@@ -56,7 +56,11 @@ pub(crate) struct State {
     file_watcher: Option<FileWatcher>,
 }
 
-impl State {
+pub(crate) struct App {
+    pub state: State,
+}
+
+impl App {
     pub fn create(
         repo: Rc<Repository>,
         size: Size,
@@ -87,33 +91,36 @@ impl State {
             .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {}", e))
             .ok();
 
-        let mut state = Self {
-            repo,
-            config,
-            bindings,
-            pending_keys: vec![],
-            enable_async_cmds,
-            quit: false,
-            screens,
-            pending_cmd: None,
-            pending_menu,
-            current_cmd_log: CmdLog::new(),
-            prompt: prompt::Prompt::new(),
-            clipboard,
-            file_watcher: None,
-            needs_redraw: true,
+        let mut app = Self {
+            state: State {
+                repo,
+                config,
+                bindings,
+                pending_keys: vec![],
+                enable_async_cmds,
+                quit: false,
+                screens,
+                pending_cmd: None,
+                pending_menu,
+                current_cmd_log: CmdLog::new(),
+                prompt: prompt::Prompt::new(),
+                clipboard,
+                file_watcher: None,
+                needs_redraw: true,
+            },
         };
 
-        state.file_watcher = state.init_file_watcher()?;
-        Ok(state)
+        app.state.file_watcher = app.init_file_watcher()?;
+        Ok(app)
     }
 
     fn init_file_watcher(&mut self) -> Res<Option<FileWatcher>> {
-        if !self.config.general.refresh_on_file_change.enabled {
+        if !self.state.config.general.refresh_on_file_change.enabled {
             return Ok(None);
         }
 
         let hiding_untracked_files = !self
+            .state
             .repo
             .config()
             .map_err(Error::ReadGitConfig)?
@@ -127,7 +134,7 @@ impl State {
         }
 
         Ok(
-            FileWatcher::new(self.repo.workdir().expect("Bare repos unhandled"))
+            FileWatcher::new(self.state.repo.workdir().expect("Bare repos unhandled"))
                 .inspect_err(|err| {
                     self.display_error(err.to_string());
                     self.display_info("File watcher disabled");
@@ -137,7 +144,7 @@ impl State {
     }
 
     pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
-        while !self.quit {
+        while !self.state.quit {
             self.update(term, Some(max_tick_delay))?;
         }
 
@@ -149,7 +156,7 @@ impl State {
             self.handle_event(term, event)?;
         }
 
-        if let Some(file_watcher) = &mut self.file_watcher {
+        if let Some(file_watcher) = &mut self.state.file_watcher {
             if file_watcher.pending_updates() {
                 self.screen_mut().update()?;
                 self.stage_redraw();
@@ -159,7 +166,7 @@ impl State {
         let handle_pending_cmd_result = self.handle_pending_cmd();
         self.handle_result(handle_pending_cmd_result)?;
 
-        if self.needs_redraw {
+        if self.state.needs_redraw {
             self.redraw_now(term)?;
         }
 
@@ -169,7 +176,7 @@ impl State {
     pub fn handle_event(&mut self, term: &mut Term, event: InputEvent) -> Res<()> {
         match event {
             InputEvent::Resized { cols, rows } => {
-                for screen in self.screens.iter_mut() {
+                for screen in self.state.screens.iter_mut() {
                     screen.size = Size::new(cols as u16, rows as u16);
                 }
 
@@ -178,12 +185,12 @@ impl State {
                 Ok(())
             }
             InputEvent::Key(key) => {
-                if self.pending_cmd.is_none() {
-                    self.current_cmd_log.clear();
+                if self.state.pending_cmd.is_none() {
+                    self.state.current_cmd_log.clear();
                 }
 
-                if self.prompt.state.is_focused() {
-                    self.prompt.state.handle_key_event(&key);
+                if self.state.prompt.state.is_focused() {
+                    self.state.prompt.state.handle_key_event(&key);
                 } else {
                     self.handle_key_input(term, key)?;
                 }
@@ -196,41 +203,42 @@ impl State {
     }
 
     pub fn redraw_now(&mut self, term: &mut Term) -> Res<()> {
-        if self.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui(frame, self))
+        if self.state.screens.last_mut().is_some() {
+            term.draw(|frame| ui::ui(frame, &mut self.state))
                 .map_err(Error::Term)?;
 
-            self.needs_redraw = false;
+            self.state.needs_redraw = false;
         };
 
         Ok(())
     }
 
     pub fn stage_redraw(&mut self) {
-        self.needs_redraw = true;
+        self.state.needs_redraw = true;
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: KeyEvent) -> Res<()> {
-        let menu = match &self.pending_menu {
+        let menu = match &self.state.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
             Some(menu) => menu.menu,
         };
 
-        self.pending_keys.push((key.modifiers, key.key));
+        self.state.pending_keys.push((key.modifiers, key.key));
         let matching_bindings = self
+            .state
             .bindings
-            .match_bindings(&menu, &self.pending_keys)
+            .match_bindings(&menu, &self.state.pending_keys)
             .collect::<Vec<_>>();
 
         match matching_bindings[..] {
             [binding] => {
-                if binding.keys == self.pending_keys {
+                if binding.keys == self.state.pending_keys {
                     self.handle_op(binding.op.clone(), term)?;
-                    self.pending_keys.clear();
+                    self.state.pending_keys.clear();
                 }
             }
-            [] => self.pending_keys.clear(),
+            [] => self.state.pending_keys.clear(),
             [_, ..] => (),
         }
 
@@ -253,7 +261,8 @@ impl State {
             Err(Error::NoMoreEvents) => Err(Error::NoMoreEvents),
             Err(Error::PromptAborted) => Ok(()),
             Err(error) => {
-                self.current_cmd_log
+                self.state
+                    .current_cmd_log
                     .push(CmdLogEntry::Error(error.to_string()));
 
                 Ok(())
@@ -262,26 +271,28 @@ impl State {
     }
 
     pub fn close_menu(&mut self) {
-        self.pending_menu = root_menu(&self.config).map(PendingMenu::init)
+        self.state.pending_menu = root_menu(&self.state.config).map(PendingMenu::init)
     }
 
     pub fn screen_mut(&mut self) -> &mut Screen {
-        self.screens.last_mut().expect("No screen")
+        self.state.screens.last_mut().expect("No screen")
     }
 
     pub fn screen(&self) -> &Screen {
-        self.screens.last().expect("No screen")
+        self.state.screens.last().expect("No screen")
     }
 
     /// Displays an `Info` message to the CmdLog.
     pub fn display_info<S: Into<Cow<'static, str>>>(&mut self, message: S) {
-        self.current_cmd_log
+        self.state
+            .current_cmd_log
             .push(CmdLogEntry::Info(message.into().into_owned()));
     }
 
     /// Displays an `Error` message to the CmdLog.
     pub fn display_error<S: Into<Cow<'static, str>>>(&mut self, message: S) {
-        self.current_cmd_log
+        self.state
+            .current_cmd_log
             .push(CmdLogEntry::Error(message.into().into_owned()));
     }
 
@@ -299,18 +310,18 @@ impl State {
     pub fn run_cmd_async(&mut self, term: &mut Term, input: &[u8], mut cmd: Command) -> Res<()> {
         cmd.env("CLICOLOR_FORCE", "1"); // No guarantee, but modern tools seem to implement this
 
-        if self.pending_cmd.is_some() {
+        if self.state.pending_cmd.is_some() {
             return Err(Error::CmdAlreadyRunning);
         }
 
-        cmd.current_dir(self.repo.workdir().expect("No workdir"));
+        cmd.current_dir(self.state.repo.workdir().expect("No workdir"));
 
         cmd.stdin(Stdio::piped());
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
-        let log_entry = self.current_cmd_log.push_cmd(&cmd);
-        term.draw(|frame| ui::ui(frame, self))
+        let log_entry = self.state.current_cmd_log.push_cmd(&cmd);
+        term.draw(|frame| ui::ui(frame, &mut self.state))
             .map_err(Error::Term)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
@@ -323,9 +334,9 @@ impl State {
             .write_all(input)
             .map_err(Error::Term)?;
 
-        self.pending_cmd = Some((child, log_entry));
+        self.state.pending_cmd = Some((child, log_entry));
 
-        if !self.enable_async_cmds {
+        if !self.state.enable_async_cmds {
             self.await_pending_cmd()?;
         }
 
@@ -333,7 +344,7 @@ impl State {
     }
 
     fn await_pending_cmd(&mut self) -> Res<()> {
-        if let Some((child, _)) = &mut self.pending_cmd {
+        if let Some((child, _)) = &mut self.state.pending_cmd {
             child.wait().map_err(Error::CouldntAwaitCmd)?;
         }
         Ok(())
@@ -341,7 +352,7 @@ impl State {
 
     /// Handles any pending_cmd in State without blocking. Returns `true` if a cmd was handled.
     fn handle_pending_cmd(&mut self) -> Res<()> {
-        let Some((ref mut child, ref mut log_rwlock)) = self.pending_cmd else {
+        let Some((ref mut child, ref mut log_rwlock)) = self.state.pending_cmd else {
             return Ok(());
         };
 
@@ -352,7 +363,7 @@ impl State {
         log::debug!("pending cmd finished with {:?}", status);
 
         let result = write_child_output_to_log(log_rwlock, child, status);
-        self.pending_cmd = None;
+        self.state.pending_cmd = None;
         self.screen_mut().update()?;
         self.stage_redraw();
         result?;
@@ -363,13 +374,15 @@ impl State {
     pub fn run_cmd_interactive(&mut self, term: &mut Term, mut cmd: Command) -> Res<()> {
         cmd.env("CLICOLOR_FORCE", "1"); // No guarantee, but modern tools seem to implement this
 
-        if self.pending_cmd.is_some() {
+        if self.state.pending_cmd.is_some() {
             return Err(Error::CmdAlreadyRunning);
         }
 
-        cmd.current_dir(self.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
+        cmd.current_dir(self.state.repo.workdir().ok_or(Error::NoRepoWorkdir)?);
 
-        self.current_cmd_log.push_cmd_with_output(&cmd, "\n".into());
+        self.state
+            .current_cmd_log
+            .push_cmd_with_output(&cmd, "\n".into());
         self.redraw_now(term)?;
 
         eprint!("\r");
@@ -405,8 +418,10 @@ impl State {
             .expect("Error turning command output to String")
             .into();
 
-        self.current_cmd_log.clear();
-        self.current_cmd_log.push_cmd_with_output(&cmd, out_utf8);
+        self.state.current_cmd_log.clear();
+        self.state
+            .current_cmd_log
+            .push_cmd_with_output(&cmd, out_utf8);
 
         // restore the raw mode
         term.backend_mut().enable_raw_mode()?;
@@ -437,13 +452,13 @@ impl State {
     }
 
     pub fn hide_menu(&mut self) {
-        if let Some(ref mut menu) = self.pending_menu {
+        if let Some(ref mut menu) = self.state.pending_menu {
             menu.is_hidden = true;
         }
     }
 
     fn unhide_menu(&mut self) {
-        if let Some(ref mut menu) = self.pending_menu {
+        if let Some(ref mut menu) = self.state.pending_menu {
             menu.is_hidden = false;
         }
     }
@@ -467,14 +482,14 @@ impl State {
             self.hide_menu();
         }
 
-        self.prompt.set(PromptData { prompt_text });
+        self.state.prompt.set(PromptData { prompt_text });
         let result = self.handle_prompt(term, params);
 
         self.unhide_menu();
         if result.is_err() {
             self.close_menu();
         }
-        self.prompt.reset(term)?;
+        self.state.prompt.reset(term)?;
 
         result
     }
@@ -487,9 +502,9 @@ impl State {
                 self.handle_event(term, event)?;
             }
 
-            if self.prompt.state.status == Status::Done {
+            if self.state.prompt.state.status == Status::Done {
                 return get_prompt_result(params, self);
-            } else if self.prompt.state.status == Status::Aborted {
+            } else if self.state.prompt.state.status == Status::Aborted {
                 return Err(Error::PromptAborted);
             }
 
@@ -499,7 +514,7 @@ impl State {
 
     pub fn confirm(&mut self, term: &mut Term, prompt: &'static str) -> Res<()> {
         self.hide_menu();
-        self.prompt.set(PromptData {
+        self.state.prompt.set(PromptData {
             prompt_text: prompt.into(),
         });
 
@@ -509,7 +524,7 @@ impl State {
         if result.is_err() {
             self.close_menu();
         }
-        self.prompt.reset(term)?;
+        self.state.prompt.reset(term)?;
 
         result
     }
@@ -521,7 +536,7 @@ impl State {
                 self.handle_event(term, event)?;
             }
 
-            match self.prompt.state.value.as_ref() {
+            match self.state.prompt.state.value.as_ref() {
                 "y" => {
                     return Ok(());
                 }
@@ -536,9 +551,9 @@ impl State {
     }
 }
 
-fn get_prompt_result(params: &PromptParams, state: &mut State) -> Res<String> {
-    let input = state.prompt.state.value.as_ref();
-    let default_value = (params.create_default_value)(state);
+fn get_prompt_result(params: &PromptParams, app: &mut App) -> Res<String> {
+    let input = app.state.prompt.state.value.as_ref();
+    let default_value = (params.create_default_value)(app);
 
     let value = match (input, &default_value) {
         ("", None) => "",
@@ -619,7 +634,7 @@ fn write_child_output_to_log(
     Ok(())
 }
 
-type DefaultFn = Box<dyn Fn(&State) -> Option<String>>;
+type DefaultFn = Box<dyn Fn(&App) -> Option<String>>;
 
 pub(crate) struct PromptParams {
     pub prompt: &'static str,

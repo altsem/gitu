@@ -1,5 +1,5 @@
+use crate::app::State;
 use crate::prompt::TextPrompt;
-use crate::state::State;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use ratatui::widgets::*;

@@ -39,7 +39,7 @@ use helpers::{clone_and_commit, commit, keys, run, TestContext};
 fn no_repo() {
     let mut ctx = TestContext::setup_init();
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -47,8 +47,8 @@ fn no_repo() {
 fn help_menu() {
     let mut ctx = TestContext::setup_init();
 
-    let mut state = ctx.init_state();
-    ctx.update(&mut state, keys("h"));
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("h"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -56,7 +56,7 @@ fn help_menu() {
 fn fresh_init() {
     let mut ctx = TestContext::setup_init();
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -65,7 +65,7 @@ fn new_file() {
     let mut ctx = TestContext::setup_init();
     run(ctx.dir.path(), &["touch", "new-file"]);
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -130,7 +130,7 @@ fn rebase_conflict() {
     run(ctx.dir.path(), &["git", "checkout", "other-branch"]);
     run(ctx.dir.path(), &["git", "rebase", "main"]);
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -150,7 +150,7 @@ fn merge_conflict() {
 
     run(ctx.dir.path(), &["git", "merge", "other-branch"]);
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -162,7 +162,7 @@ fn revert_conflict() {
 
     run(ctx.dir.path(), &["git", "revert", "HEAD~1"]);
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -201,7 +201,7 @@ fn moved_file() {
     commit(ctx.dir.path(), "new-file", "hello");
     run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -210,11 +210,11 @@ fn hide_untracked() {
     let mut ctx = TestContext::setup_clone();
     run(ctx.dir.path(), &["touch", "i-am-untracked"]);
 
-    let mut state = ctx.init_state();
-    let mut config = state.repo.config().unwrap();
+    let mut app = ctx.init_app();
+    let mut config = app.state.repo.config().unwrap();
     config.set_str("status.showUntrackedFiles", "off").unwrap();
 
-    ctx.update(&mut state, keys("g"));
+    ctx.update(&mut app, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -223,7 +223,7 @@ fn new_commit() {
     let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "");
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -263,12 +263,12 @@ fn updated_externally() {
     let mut ctx = TestContext::setup_init();
     fs::write(ctx.dir.child("b"), "test\n").unwrap();
 
-    let mut state = ctx.init_state();
-    ctx.update(&mut state, keys("jjsj"));
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("jjsj"));
 
     fs::write(ctx.dir.child("a"), "test\n").unwrap();
 
-    ctx.update(&mut state, keys("g"));
+    ctx.update(&mut app, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -310,7 +310,7 @@ fn inside_submodule() {
         ],
     );
 
-    let _state = ctx.init_state_at_path(ctx.dir.child("test-submodule"));
+    let _app = ctx.init_app_at_path(ctx.dir.child("test-submodule"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -334,8 +334,8 @@ fn syntax_highlighted() {
 #[test]
 fn crlf_diff() {
     let mut ctx = TestContext::setup_init();
-    let mut state = ctx.init_state();
-    state
+    let mut app = ctx.init_app();
+    app.state
         .repo
         .config()
         .unwrap()
@@ -344,7 +344,7 @@ fn crlf_diff() {
 
     commit(ctx.dir.path(), "crlf.txt", "unchanged\r\nunchanged\r\n");
     fs::write(ctx.dir.child("crlf.txt"), "unchanged\r\nchanged\r\n").unwrap();
-    ctx.update(&mut state, keys("g"));
+    ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -352,11 +352,11 @@ fn crlf_diff() {
 #[test]
 fn tab_diff() {
     let mut ctx = TestContext::setup_init();
-    let mut state = ctx.init_state();
+    let mut app = ctx.init_app();
 
     commit(ctx.dir.path(), "tab.txt", "this has no tab prefixed\n");
     fs::write(ctx.dir.child("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
-    ctx.update(&mut state, keys("g"));
+    ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -364,7 +364,7 @@ fn tab_diff() {
 #[test]
 fn ext_diff() {
     let mut ctx = TestContext::setup_init();
-    let mut state = ctx.init_state();
+    let mut app = ctx.init_app();
 
     fs::write(ctx.dir.child("unstaged.txt"), "unstaged\n").unwrap();
     fs::write(ctx.dir.child("staged.txt"), "staged\n").unwrap();
@@ -374,7 +374,7 @@ fn ext_diff() {
         ctx.dir.path(),
         &["git", "config", "diff.external", "/dev/null"],
     );
-    ctx.update(&mut state, keys("g"));
+    ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }

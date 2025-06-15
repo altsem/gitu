@@ -1,11 +1,13 @@
 use super::{Action, OpTrait};
+use crate::app::App;
+use crate::app::PromptParams;
+use crate::app::State;
 use crate::error::Error;
 use crate::git;
 use crate::git::remote::{
     get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
 };
-use crate::state::PromptParams;
-use crate::{items::TargetData, menu::arg::Arg, state::State, term::Term, Res};
+use crate::{items::TargetData, menu::arg::Arg, term::Term, Res};
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -21,9 +23,9 @@ pub(crate) struct PushToPushRemote;
 impl OpTrait for PushToPushRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(
-            |state: &mut State, term: &mut Term| match get_push_remote(&state.repo)? {
+            |app: &mut App, term: &mut Term| match get_push_remote(&app.state.repo)? {
                 None => {
-                    let push_remote_name = state.prompt(
+                    let push_remote_name = app.prompt(
                         term,
                         &PromptParams {
                             prompt: "Set pushRemote then push",
@@ -31,13 +33,13 @@ impl OpTrait for PushToPushRemote {
                         },
                     )?;
 
-                    set_push_remote_and_push(state, term, &push_remote_name)?;
+                    set_push_remote_and_push(app, term, &push_remote_name)?;
                     Ok(())
                 }
                 Some(push_remote) => {
-                    let head_ref = git::get_head_name(&state.repo)?;
+                    let head_ref = git::get_head_name(&app.state.repo)?;
                     let refspec = format!("{0}:{0}", head_ref);
-                    push(state, term, &[&push_remote, &refspec])
+                    push(app, term, &[&push_remote, &refspec])
                 }
             },
         ))
@@ -52,8 +54,8 @@ impl OpTrait for PushToPushRemote {
     }
 }
 
-fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name: &str) -> Res<()> {
-    let repo = state.repo.clone();
+fn set_push_remote_and_push(app: &mut App, term: &mut Term, push_remote_name: &str) -> Res<()> {
+    let repo = app.state.repo.clone();
     let push_remote = repo
         .find_remote(push_remote_name)
         .map_err(Error::GetRemote)?;
@@ -61,19 +63,19 @@ fn set_push_remote_and_push(state: &mut State, term: &mut Term, push_remote_name
     // TODO Would be nice to have the command visible in the log. Resort to `git config`?
     set_push_remote(&repo, Some(&push_remote))?;
 
-    let head_ref = git::get_head_name(&state.repo)?;
+    let head_ref = git::get_head_name(&app.state.repo)?;
     let refspec = format!("{0}:{0}", head_ref);
-    push(state, term, &[push_remote_name, &refspec])
+    push(app, term, &[push_remote_name, &refspec])
 }
 
 pub(crate) struct PushToUpstream;
 impl OpTrait for PushToUpstream {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(
-            |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
+            |app: &mut App, term: &mut Term| match get_upstream_components(&app.state.repo)? {
                 None => {
-                    let mut prompt = Rc::new(move |state: &mut State, term: &mut Term| {
-                        let upstream_name = state.prompt(
+                    let mut prompt = Rc::new(move |app: &mut App, term: &mut Term| {
+                        let upstream_name = app.prompt(
                             term,
                             &PromptParams {
                                 prompt: "Set upstream then push",
@@ -81,12 +83,12 @@ impl OpTrait for PushToUpstream {
                             },
                         )?;
 
-                        set_upstream_and_push(state, term, &upstream_name)?;
+                        set_upstream_and_push(app, term, &upstream_name)?;
                         Ok(())
                     });
-                    Rc::get_mut(&mut prompt).unwrap()(state, term)
+                    Rc::get_mut(&mut prompt).unwrap()(app, term)
                 }
-                Some((remote, branch)) => push_head_to(state, term, &remote, &branch),
+                Some((remote, branch)) => push_head_to(app, term, &remote, &branch),
             },
         ))
     }
@@ -100,23 +102,23 @@ impl OpTrait for PushToUpstream {
     }
 }
 
-fn set_upstream_and_push(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
+fn set_upstream_and_push(app: &mut App, term: &mut Term, upstream_name: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["branch", "--set-upstream-to", upstream_name]);
-    state.run_cmd(term, &[], cmd)?;
+    app.run_cmd(term, &[], cmd)?;
 
-    let Some((remote, branch)) = get_upstream_components(&state.repo)? else {
+    let Some((remote, branch)) = get_upstream_components(&app.state.repo)? else {
         return Ok(());
     };
 
-    push_head_to(state, term, &remote, &branch)
+    push_head_to(app, term, &remote, &branch)
 }
 
 pub(crate) struct PushToElsewhere;
 impl OpTrait for PushToElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let remote = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let remote = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Select remote",
@@ -124,7 +126,7 @@ impl OpTrait for PushToElsewhere {
                 },
             )?;
 
-            push_elsewhere(state, term, &remote)?;
+            push_elsewhere(app, term, &remote)?;
             Ok(())
         }))
     }
@@ -134,23 +136,23 @@ impl OpTrait for PushToElsewhere {
     }
 }
 
-fn push_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
-    push(state, term, &[remote])
+fn push_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
+    push(app, term, &[remote])
 }
 
-fn push_head_to(state: &mut State, term: &mut Term, remote: &str, branch: &str) -> Res<()> {
-    let head_ref = git::get_head_name(&state.repo)?;
+fn push_head_to(app: &mut App, term: &mut Term, remote: &str, branch: &str) -> Res<()> {
+    let head_ref = git::get_head_name(&app.state.repo)?;
     let refspec = format!("{}:refs/heads/{}", head_ref, branch);
-    push(state, term, &[remote, &refspec])
+    push(app, term, &[remote, &refspec])
 }
 
-fn push(state: &mut State, term: &mut Term, extra_args: &[&str]) -> Res<()> {
+fn push(app: &mut App, term: &mut Term, extra_args: &[&str]) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["push"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.args(extra_args);
 
-    state.close_menu();
-    state.run_cmd_async(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd_async(term, &[], cmd)?;
     Ok(())
 }

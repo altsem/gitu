@@ -1,9 +1,9 @@
 use super::{Action, OpTrait};
 use crate::{
+    app::{App, PromptParams, State},
     error::Error,
     items::TargetData,
     menu::arg::Arg,
-    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -20,8 +20,8 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct Stash;
 impl OpTrait for Stash {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let message = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let message = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Stash message",
@@ -29,7 +29,7 @@ impl OpTrait for Stash {
                 },
             )?;
 
-            stash_push(state, term, &message)?;
+            stash_push(app, term, &message)?;
             Ok(())
         }))
     }
@@ -39,24 +39,24 @@ impl OpTrait for Stash {
     }
 }
 
-fn stash_push(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn stash_push(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["stash", "push"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     if !input.is_empty() {
         cmd.args(["--message", input]);
     }
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let message = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let message = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Stash message",
@@ -64,7 +64,7 @@ impl OpTrait for StashIndex {
                 },
             )?;
 
-            stash_push_index(state, term, &message)?;
+            stash_push_index(app, term, &message)?;
             Ok(())
         }))
     }
@@ -74,7 +74,7 @@ impl OpTrait for StashIndex {
     }
 }
 
-fn stash_push_index(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn stash_push_index(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     // --all / --unclude-untracked are not allowed together with --staged
     cmd.args(["stash", "push", "--staged"]);
@@ -82,21 +82,21 @@ fn stash_push_index(state: &mut State, term: &mut Term, input: &str) -> Res<()> 
         cmd.args(["--message", input]);
     }
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| -> Res<()> {
-            if is_working_tree_empty(&state.repo)? {
-                state.close_menu();
+        Some(Rc::new(|app: &mut App, term: &mut Term| -> Res<()> {
+            if is_working_tree_empty(&app.state.repo)? {
+                app.close_menu();
                 return Err(Error::StashWorkTreeEmpty);
             }
 
-            let message = state.prompt(
+            let message = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Stash message",
@@ -104,7 +104,7 @@ impl OpTrait for StashWorktree {
                 },
             )?;
 
-            stash_worktree(state, term, &message)?;
+            stash_worktree(app, term, &message)?;
             Ok(())
         }))
     }
@@ -136,30 +136,30 @@ fn is_working_tree_empty(repo: &Repository) -> Res<bool> {
     Ok(!is_working_tree_not_empty)
 }
 
-fn stash_worktree(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
-    let need_to_stash_index = is_something_staged(&state.repo)?;
+fn stash_worktree(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
+    let need_to_stash_index = is_something_staged(&app.state.repo)?;
 
     let mut cmd = Command::new("git");
     cmd.args(["stash", "push"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
 
-    state.close_menu();
+    app.close_menu();
 
     if need_to_stash_index {
         let mut cmd = Command::new("git");
         cmd.args(["stash", "push", "--staged"]);
-        state.run_cmd(term, &[], cmd)?;
+        app.run_cmd(term, &[], cmd)?;
     }
 
     if !input.is_empty() {
         cmd.args(["--message", input]);
     }
-    state.run_cmd(term, &[], cmd)?;
+    app.run_cmd(term, &[], cmd)?;
 
     if need_to_stash_index {
         let mut cmd = Command::new("git");
         cmd.args(["stash", "pop", "-q", "1"]);
-        state.run_cmd(term, &[], cmd)?;
+        app.run_cmd(term, &[], cmd)?;
     }
 
     Ok(())
@@ -188,8 +188,8 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let message = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let message = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Stash message",
@@ -197,7 +197,7 @@ impl OpTrait for StashKeepIndex {
                 },
             )?;
 
-            stash_push_keep_index(state, term, &message)?;
+            stash_push_keep_index(app, term, &message)?;
             Ok(())
         }))
     }
@@ -207,24 +207,24 @@ impl OpTrait for StashKeepIndex {
     }
 }
 
-fn stash_push_keep_index(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn stash_push_keep_index(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["stash", "push", "--keep-index"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     if !input.is_empty() {
         cmd.args(["--message", input]);
     }
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let input = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let input = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Pop stash",
@@ -233,7 +233,7 @@ impl OpTrait for StashPop {
                 },
             )?;
 
-            stash_pop(state, term, &input)?;
+            stash_pop(app, term, &input)?;
             Ok(())
         }))
     }
@@ -243,21 +243,21 @@ impl OpTrait for StashPop {
     }
 }
 
-fn stash_pop(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn stash_pop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["stash", "pop", "-q"]);
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let input = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let input = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Apply stash",
@@ -266,7 +266,7 @@ impl OpTrait for StashApply {
                 },
             )?;
 
-            stash_apply(state, term, &input)?;
+            stash_apply(app, term, &input)?;
             Ok(())
         }))
     }
@@ -276,21 +276,21 @@ impl OpTrait for StashApply {
     }
 }
 
-fn stash_apply(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn stash_apply(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["stash", "apply", "-q"]);
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let input = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let input = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Drop stash",
@@ -299,7 +299,7 @@ impl OpTrait for StashDrop {
                 },
             )?;
 
-            stash_drop(state, term, &input)?;
+            stash_drop(app, term, &input)?;
             Ok(())
         }))
     }
@@ -309,18 +309,18 @@ impl OpTrait for StashDrop {
     }
 }
 
-fn stash_drop(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn stash_drop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["stash", "drop"]);
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
-fn selected_stash(state: &State) -> Option<String> {
-    match state.screen().get_selected_item().target_data {
+fn selected_stash(app: &App) -> Option<String> {
+    match app.screen().get_selected_item().target_data {
         Some(TargetData::Stash { id, commit: _ }) => Some(id.to_string()),
         _ => Some("0".to_string()),
     }

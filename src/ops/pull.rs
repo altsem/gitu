@@ -1,5 +1,7 @@
 use super::{Action, OpTrait};
 use crate::{
+    app::App,
+    app::{PromptParams, State},
     error::Error,
     git::{
         self,
@@ -7,7 +9,6 @@ use crate::{
     },
     items::TargetData,
     menu::arg::Arg,
-    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -21,9 +22,9 @@ pub(crate) struct PullFromPushRemote;
 impl OpTrait for PullFromPushRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(
-            |state: &mut State, term: &mut Term| match get_push_remote(&state.repo)? {
+            |app: &mut App, term: &mut Term| match get_push_remote(&app.state.repo)? {
                 None => {
-                    let push_remote_name = state.prompt(
+                    let push_remote_name = app.prompt(
                         term,
                         &PromptParams {
                             prompt: "Set pushRemote then pull",
@@ -31,12 +32,12 @@ impl OpTrait for PullFromPushRemote {
                         },
                     )?;
 
-                    set_push_remote_and_pull(state, term, &push_remote_name)?;
+                    set_push_remote_and_pull(app, term, &push_remote_name)?;
                     Ok(())
                 }
                 Some(push_remote) => {
-                    let refspec = git::get_head_name(&state.repo)?;
-                    pull(state, term, &[&push_remote, &refspec])
+                    let refspec = git::get_head_name(&app.state.repo)?;
+                    pull(app, term, &[&push_remote, &refspec])
                 }
             },
         ))
@@ -51,8 +52,8 @@ impl OpTrait for PullFromPushRemote {
     }
 }
 
-fn set_push_remote_and_pull(state: &mut State, term: &mut Term, push_remote_name: &str) -> Res<()> {
-    let repo = state.repo.clone();
+fn set_push_remote_and_pull(app: &mut App, term: &mut Term, push_remote_name: &str) -> Res<()> {
+    let repo = app.state.repo.clone();
     let push_remote = repo
         .find_remote(push_remote_name)
         .map_err(Error::GetRemote)?;
@@ -60,16 +61,16 @@ fn set_push_remote_and_pull(state: &mut State, term: &mut Term, push_remote_name
     remote::set_push_remote(&repo, Some(&push_remote))?;
 
     let refspec = git::get_head_name(&repo)?;
-    pull(state, term, &[push_remote_name, &refspec])
+    pull(app, term, &[push_remote_name, &refspec])
 }
 
 pub(crate) struct PullFromUpstream;
 impl OpTrait for PullFromUpstream {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
         Some(Rc::new(
-            |state: &mut State, term: &mut Term| match get_upstream_components(&state.repo)? {
+            |app: &mut App, term: &mut Term| match get_upstream_components(&app.state.repo)? {
                 None => {
-                    let upstream_name = state.prompt(
+                    let upstream_name = app.prompt(
                         term,
                         &PromptParams {
                             prompt: "Set upstream then pull",
@@ -77,12 +78,12 @@ impl OpTrait for PullFromUpstream {
                         },
                     )?;
 
-                    set_upstream_and_pull(state, term, &upstream_name)?;
+                    set_upstream_and_pull(app, term, &upstream_name)?;
                     Ok(())
                 }
                 Some((remote, branch)) => {
                     let refspec = format!("refs/heads/{}", branch);
-                    pull(state, term, &[&remote, &refspec])
+                    pull(app, term, &[&remote, &refspec])
                 }
             },
         ))
@@ -97,24 +98,24 @@ impl OpTrait for PullFromUpstream {
     }
 }
 
-fn set_upstream_and_pull(state: &mut State, term: &mut Term, upstream_name: &str) -> Res<()> {
+fn set_upstream_and_pull(app: &mut App, term: &mut Term, upstream_name: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["branch", "--set-upstream-to", upstream_name]);
-    state.run_cmd(term, &[], cmd)?;
+    app.run_cmd(term, &[], cmd)?;
 
-    let Some((remote, branch)) = get_upstream_components(&state.repo)? else {
+    let Some((remote, branch)) = get_upstream_components(&app.state.repo)? else {
         return Ok(());
     };
 
     let refspec = format!("refs/heads/{}", branch);
-    pull(state, term, &[&remote, &refspec])
+    pull(app, term, &[&remote, &refspec])
 }
 
 pub(crate) struct PullFromElsewhere;
 impl OpTrait for PullFromElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let remote = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let remote = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Select remote",
@@ -122,7 +123,7 @@ impl OpTrait for PullFromElsewhere {
                 },
             )?;
 
-            pull_elsewhere(state, term, &remote)?;
+            pull_elsewhere(app, term, &remote)?;
             Ok(())
         }))
     }
@@ -132,17 +133,17 @@ impl OpTrait for PullFromElsewhere {
     }
 }
 
-fn pull_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
-    pull(state, term, &[remote])
+fn pull_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
+    pull(app, term, &[remote])
 }
 
-fn pull(state: &mut State, term: &mut Term, extra_args: &[&str]) -> Res<()> {
+fn pull(app: &mut App, term: &mut Term, extra_args: &[&str]) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["pull"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.args(extra_args);
 
-    state.close_menu();
-    state.run_cmd_async(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd_async(term, &[], cmd)?;
     Ok(())
 }

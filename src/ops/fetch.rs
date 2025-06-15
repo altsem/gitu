@@ -1,8 +1,9 @@
 use super::{Action, OpTrait};
 use crate::{
+    app::App,
+    app::{PromptParams, State},
     items::TargetData,
     menu::arg::Arg,
-    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -18,13 +19,13 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct FetchAll;
 impl OpTrait for FetchAll {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state, term| {
+        Some(Rc::new(|app, term| {
             let mut cmd = Command::new("git");
             cmd.args(["fetch", "--all", "--jobs", "10"]);
-            cmd.args(state.pending_menu.as_ref().unwrap().args());
+            cmd.args(app.state.pending_menu.as_ref().unwrap().args());
 
-            state.close_menu();
-            state.run_cmd_async(term, &[], cmd)?;
+            app.close_menu();
+            app.run_cmd_async(term, &[], cmd)?;
             Ok(())
         }))
     }
@@ -37,8 +38,8 @@ impl OpTrait for FetchAll {
 pub(crate) struct FetchElsewhere;
 impl OpTrait for FetchElsewhere {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let remote = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let remote = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Select remote",
@@ -46,7 +47,7 @@ impl OpTrait for FetchElsewhere {
                 },
             )?;
 
-            push_elsewhere(state, term, &remote)?;
+            push_elsewhere(app, term, &remote)?;
             Ok(())
         }))
     }
@@ -56,13 +57,13 @@ impl OpTrait for FetchElsewhere {
     }
 }
 
-fn push_elsewhere(state: &mut State, term: &mut Term, remote: &str) -> Res<()> {
+fn push_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["fetch"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(remote);
 
-    state.close_menu();
-    state.run_cmd_async(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd_async(term, &[], cmd)?;
     Ok(())
 }

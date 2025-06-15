@@ -1,10 +1,10 @@
 use super::{selected_rev, Action, OpTrait};
 use crate::{
+    app::{App, PromptParams, State},
     error::Error,
     git::{get_current_branch_name, is_branch_merged},
     items::TargetData,
     menu::arg::Arg,
-    state::{PromptParams, State},
     term::Term,
     Res,
 };
@@ -17,8 +17,8 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let rev = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let rev = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Checkout",
@@ -27,7 +27,7 @@ impl OpTrait for Checkout {
                 },
             )?;
 
-            checkout(state, term, &rev)?;
+            checkout(app, term, &rev)?;
             Ok(())
         }))
     }
@@ -37,20 +37,20 @@ impl OpTrait for Checkout {
     }
 }
 
-fn checkout(state: &mut State, term: &mut Term, rev: &str) -> Res<()> {
+fn checkout(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", rev]);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(|state: &mut State, term: &mut Term| {
-            let branch_name = state.prompt(
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let branch_name = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Create and checkout branch:",
@@ -58,7 +58,7 @@ impl OpTrait for CheckoutNewBranch {
                 },
             )?;
 
-            checkout_new_branch_prompt_update(state, term, &branch_name)?;
+            checkout_new_branch_prompt_update(app, term, &branch_name)?;
             Ok(())
         }))
     }
@@ -68,16 +68,12 @@ impl OpTrait for CheckoutNewBranch {
     }
 }
 
-fn checkout_new_branch_prompt_update(
-    state: &mut State,
-    term: &mut Term,
-    branch_name: &str,
-) -> Res<()> {
+fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", "-b", branch_name]);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
@@ -89,10 +85,10 @@ impl OpTrait for Delete {
             _ => None,
         };
 
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let default = default.clone();
 
-            let branch_name = state.prompt(
+            let branch_name = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Delete",
@@ -101,7 +97,7 @@ impl OpTrait for Delete {
                 },
             )?;
 
-            delete(state, term, &branch_name)?;
+            delete(app, term, &branch_name)?;
             Ok(())
         }))
     }
@@ -111,26 +107,26 @@ impl OpTrait for Delete {
     }
 }
 
-pub fn delete(state: &mut State, term: &mut Term, branch_name: &str) -> Res<()> {
+pub fn delete(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
     if branch_name.is_empty() {
         return Err(Error::BranchNameRequired);
     }
 
-    if get_current_branch_name(&state.repo).unwrap() == branch_name {
+    if get_current_branch_name(&app.state.repo).unwrap() == branch_name {
         return Err(Error::CannotDeleteCurrentBranch);
     }
 
     let mut cmd = Command::new("git");
     cmd.args(["branch", "-d"]);
 
-    if !is_branch_merged(&state.repo, branch_name).unwrap_or(false) {
-        state.confirm(term, "Branch is not fully merged. Really delete? (y or n)")?;
+    if !is_branch_merged(&app.state.repo, branch_name).unwrap_or(false) {
+        app.confirm(term, "Branch is not fully merged. Really delete? (y or n)")?;
         cmd.arg("-f");
     }
 
     cmd.arg(branch_name);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }

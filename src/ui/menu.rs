@@ -1,6 +1,6 @@
 use super::SizedWidget;
 use crate::{
-    bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op, state::State,
+    app::State, bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op,
 };
 use itertools::Itertools;
 use ratatui::{
