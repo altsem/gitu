@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn commit_instant_fixup() {
     let mut ctx = TestContext::setup_init();
-    let mut state = ctx.init_state();
+    let mut state = ctx.init_app();
 
     commit(ctx.dir.path(), "instant_fixup.txt", "initial\n");
     commit(ctx.dir.path(), "instant_fixup.txt", "mistake\n");
@@ -17,7 +17,7 @@ fn commit_instant_fixup() {
 #[test]
 fn commit_instant_fixup_stashes_changes_and_keeps_empty() {
     let mut ctx = TestContext::setup_init();
-    let mut state = ctx.init_state();
+    let mut state = ctx.init_app();
 
     commit(ctx.dir.path(), "instant_fixup.txt", "initial\n");
     commit(ctx.dir.path(), "instant_fixup.txt", "mistake\n");

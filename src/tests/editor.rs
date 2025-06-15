@@ -1,6 +1,6 @@
 use super::*;
 
-fn setup_scroll() -> (TestContext, crate::state::State) {
+fn setup_scroll() -> (TestContext, crate::app::App) {
     let mut ctx = TestContext::setup_init();
     for file in ["file-1", "file-2", "file-3"] {
         commit(ctx.dir.path(), file, "");
@@ -16,43 +16,43 @@ fn setup_scroll() -> (TestContext, crate::state::State) {
         .unwrap();
     }
 
-    let mut state = ctx.init_state();
-    ctx.update(&mut state, keys("jjjj<tab>k<tab>k<tab>"));
-    (ctx, state)
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("jjjj<tab>k<tab>k<tab>"));
+    (ctx, app)
 }
 
 #[test]
 fn scroll_down() {
-    let (mut ctx, mut state) = setup_scroll();
-    ctx.update(&mut state, keys("<ctrl+d>"));
+    let (mut ctx, mut app) = setup_scroll();
+    ctx.update(&mut app, keys("<ctrl+d>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn scroll_past_selection() {
-    let (mut ctx, mut state) = setup_scroll();
-    ctx.update(&mut state, keys("<ctrl+d><ctrl+d><ctrl+d>"));
+    let (mut ctx, mut app) = setup_scroll();
+    ctx.update(&mut app, keys("<ctrl+d><ctrl+d><ctrl+d>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_prev_sibling() {
-    let (mut ctx, mut state) = setup_scroll();
-    ctx.update(&mut state, keys("<alt+k><alt+k>"));
+    let (mut ctx, mut app) = setup_scroll();
+    ctx.update(&mut app, keys("<alt+k><alt+k>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_next_sibling() {
-    let (mut ctx, mut state) = setup_scroll();
-    ctx.update(&mut state, keys("<alt+j>"));
+    let (mut ctx, mut app) = setup_scroll();
+    ctx.update(&mut app, keys("<alt+j>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_next_then_parent_section() {
-    let (mut ctx, mut state) = setup_scroll();
-    ctx.update(&mut state, keys("<alt+j><alt+h>"));
+    let (mut ctx, mut app) = setup_scroll();
+    ctx.update(&mut app, keys("<alt+j><alt+h>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 

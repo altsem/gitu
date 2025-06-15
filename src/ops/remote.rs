@@ -1,43 +1,36 @@
 use std::{process::Command, rc::Rc};
 
-use crate::{
-    items::TargetData,
-    state::{PromptParams, State},
-    term::Term,
-    Res,
-};
+use crate::{app::App, app::PromptParams, items::TargetData, term::Term, Res};
 
 use super::{Action, OpTrait};
 
 pub(crate) struct AddRemote;
 impl OpTrait for AddRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(
-            |state: &mut crate::state::State, term: &mut Term| {
-                let remote_name = state.prompt(
-                    term,
-                    &PromptParams {
-                        prompt: "Remote name",
-                        ..Default::default()
-                    },
-                )?;
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let remote_name = app.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Remote name",
+                    ..Default::default()
+                },
+            )?;
 
-                let remote_url = state.prompt(
-                    term,
-                    &PromptParams {
-                        prompt: "Remote url",
-                        ..Default::default()
-                    },
-                )?;
+            let remote_url = app.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Remote url",
+                    ..Default::default()
+                },
+            )?;
 
-                add_remote_with_name(state, term, &remote_name, &remote_url)?;
+            add_remote_with_name(app, term, &remote_name, &remote_url)?;
 
-                Ok(())
-            },
-        ))
+            Ok(())
+        }))
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "add remote".to_string()
     }
 }
@@ -45,37 +38,35 @@ impl OpTrait for AddRemote {
 pub(crate) struct RenameRemote;
 impl OpTrait for RenameRemote {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(
-            |state: &mut crate::state::State, term: &mut Term| {
-                let remote_name = state.prompt(
-                    term,
-                    &PromptParams {
-                        prompt: "Rename remote",
-                        ..Default::default()
-                    },
-                )?;
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let remote_name = app.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Rename remote",
+                    ..Default::default()
+                },
+            )?;
 
-                let new_remote_name = state.prompt(
-                    term,
-                    &PromptParams {
-                        prompt: "Rename to",
-                        ..Default::default()
-                    },
-                )?;
+            let new_remote_name = app.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Rename to",
+                    ..Default::default()
+                },
+            )?;
 
-                rename_remote(state, term, &remote_name, &new_remote_name)?;
-                Ok(())
-            },
-        ))
+            rename_remote(app, term, &remote_name, &new_remote_name)?;
+            Ok(())
+        }))
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "rename remote".to_string()
     }
 }
 
 fn rename_remote(
-    state: &mut State,
+    app: &mut App,
     term: &mut ratatui::Terminal<crate::term::TermBackend>,
     remote_name: &str,
     new_remote_name: &str,
@@ -83,13 +74,13 @@ fn rename_remote(
     let mut cmd = Command::new("git");
     cmd.args(["remote", "rename", remote_name, new_remote_name]);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
 fn add_remote_with_name(
-    state: &mut State,
+    app: &mut App,
     term: &mut Term,
     remote_name: &str,
     remote_url: &str,
@@ -97,7 +88,7 @@ fn add_remote_with_name(
     let mut cmd = Command::new("git");
     cmd.args(["remote", "add", remote_name, remote_url]);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }

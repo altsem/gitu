@@ -777,11 +777,13 @@ name = "gitu"
 version = "0.33.0"
 dependencies = [
  "arboard",
+ "cassowary",
  "chrono",
  "clap",
  "criterion",
  "etcetera",
  "figment",
+ "fnv",
  "git-version",
  "git2",
  "insta",

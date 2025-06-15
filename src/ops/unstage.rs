@@ -1,5 +1,5 @@
 use super::OpTrait;
-use crate::{git::diff::PatchMode, items::TargetData, state::State, term::Term, Action};
+use crate::{app::App, git::diff::PatchMode, items::TargetData, term::Term, Action};
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
@@ -33,48 +33,48 @@ impl OpTrait for Unstage {
         true
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "Unstage".into()
     }
 }
 
 fn unstage_staged() -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["reset", "HEAD", "--"]);
 
-        state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        app.close_menu();
+        app.run_cmd(term, &[], cmd)
     })
 }
 
 fn unstage_file(file: OsString) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["restore", "--staged"]);
         cmd.arg(&file);
 
-        state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        app.close_menu();
+        app.run_cmd(term, &[], cmd)
     })
 }
 
 fn unstage_patch(input: Vec<u8>) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse"]);
 
-        state.close_menu();
-        state.run_cmd(term, &input, cmd)
+        app.close_menu();
+        app.run_cmd(term, &input, cmd)
     })
 }
 
 fn unstage_line(input: Vec<u8>) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse", "--recount"]);
 
-        state.close_menu();
-        state.run_cmd(term, &input, cmd)
+        app.close_menu();
+        app.run_cmd(term, &input, cmd)
     })
 }

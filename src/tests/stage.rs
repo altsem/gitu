@@ -6,7 +6,7 @@ fn staged_file() {
     run(ctx.dir.path(), &["touch", "new-file"]);
     run(ctx.dir.path(), &["git", "add", "new-file"]);
 
-    ctx.init_state();
+    ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
