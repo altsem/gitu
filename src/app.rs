@@ -20,7 +20,7 @@ use termwiz::input::InputEvent;
 use termwiz::input::KeyCode;
 use termwiz::input::KeyEvent;
 use termwiz::input::Modifiers;
-use termwiz::widgets::Ui;
+use ui::widgets::Ui;
 
 use crate::bindings::Bindings;
 use crate::cli;
