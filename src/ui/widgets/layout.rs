@@ -1,3 +1,7 @@
+// This file includes code adapted from termwiz, available at
+// https://github.com/wez/wezterm, licensed under the MIT License.
+// Copyright (c) Wez Furlong
+
 //! This module provides some automatic layout functionality for widgets.
 //! The parameters are similar to those that you may have encountered
 //! in HTML, but do not fully recreate the layout model.

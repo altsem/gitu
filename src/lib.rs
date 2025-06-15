@@ -1,3 +1,4 @@
+pub mod app;
 mod bindings;
 pub mod cli;
 mod cmd_log;
@@ -14,7 +15,6 @@ mod menu;
 mod ops;
 mod prompt;
 mod screen;
-pub mod state;
 mod syntax_parser;
 pub mod term;
 #[cfg(test)]
@@ -80,7 +80,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let repo = open_repo(&dir)?;
     let config = Rc::new(config::init_config()?);
 
-    let mut state = state::State::create(
+    let mut app = app::App::create(
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
         args,
@@ -94,17 +94,17 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         };
 
         for event in keys_to_events(&keys) {
-            state.handle_event(term, event)?;
+            app.handle_event(term, event)?;
         }
     }
 
-    state.redraw_now(term)?;
+    app.redraw_now(term)?;
 
     if args.print {
         return Ok(());
     }
 
-    state.run(term, Duration::from_millis(100))?;
+    app.run(term, Duration::from_millis(100))?;
 
     Ok(())
 }

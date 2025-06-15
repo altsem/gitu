@@ -1,8 +1,8 @@
 use super::OpTrait;
 use crate::{
+    app::App,
     git::diff::{Diff, PatchMode},
     items::TargetData,
-    state::State,
     term::Term,
     Action,
 };
@@ -39,50 +39,50 @@ impl OpTrait for Stage {
         true
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "Stage".into()
     }
 }
 
 fn stage_unstaged() -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["add", "-u", "."]);
 
-        state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        app.close_menu();
+        app.run_cmd(term, &[], cmd)
     })
 }
 
 fn stage_untracked(untracked: Vec<std::path::PathBuf>) -> Action {
-    Rc::new(move |state: &mut State, term: &mut Term| {
+    Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.arg("add");
         cmd.args(untracked.clone());
 
-        state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        app.close_menu();
+        app.run_cmd(term, &[], cmd)
     })
 }
 
 fn stage_file(file: OsString) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |app, term| {
         let mut cmd = Command::new("git");
         cmd.args(["add"]);
         cmd.arg(&file);
 
-        state.close_menu();
-        state.run_cmd(term, &[], cmd)
+        app.close_menu();
+        app.run_cmd(term, &[], cmd)
     })
 }
 
 fn stage_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |app, term| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached"]);
 
-        state.close_menu();
-        state.run_cmd(
+        app.close_menu();
+        app.run_cmd(
             term,
             &diff.format_hunk_patch(file_i, hunk_i).into_bytes(),
             cmd,
@@ -91,7 +91,7 @@ fn stage_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
 }
 
 fn stage_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Action {
-    Rc::new(move |state, term| {
+    Rc::new(move |app, term| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--recount"]);
 
@@ -99,7 +99,7 @@ fn stage_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Ac
             .format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Normal)
             .into_bytes();
 
-        state.close_menu();
-        state.run_cmd(term, &input, cmd)
+        app.close_menu();
+        app.run_cmd(term, &input, cmd)
     })
 }

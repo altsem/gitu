@@ -1,5 +1,5 @@
 use super::OpTrait;
-use crate::{error::Error, items::TargetData, screen, state::State, Action};
+use crate::{app::App, error::Error, items::TargetData, screen, Action};
 use core::str;
 use std::{path::Path, process::Command, rc::Rc};
 
@@ -29,18 +29,18 @@ impl OpTrait for Show {
         true
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "Show".into()
     }
 }
 
 fn goto_show_screen(r: String) -> Option<Action> {
-    Some(Rc::new(move |state, term| {
-        state.close_menu();
-        state.screens.borrow_mut().push(
+    Some(Rc::new(move |app, term| {
+        app.close_menu();
+        app.state.screens.borrow_mut().push(
             screen::show::create(
-                Rc::clone(&state.config),
-                Rc::clone(&state.repo),
+                Rc::clone(&app.state.config),
+                Rc::clone(&app.state.repo),
                 term.size().map_err(Error::Term)?,
                 r.clone(),
             )
@@ -54,7 +54,7 @@ pub(crate) const EDITOR_VARS: [&str; 4] = ["GITU_SHOW_EDITOR", "VISUAL", "EDITOR
 fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
     let file = file.to_str().unwrap().to_string();
 
-    Some(Rc::new(move |state, term| {
+    Some(Rc::new(move |app, term| {
         let configured_editor = EDITOR_VARS
             .into_iter()
             .find_map(|var| std::env::var(var).ok());
@@ -65,10 +65,10 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
 
         let cmd = parse_editor_command(&editor, &file, maybe_line);
 
-        state.close_menu();
-        state.run_cmd_interactive(term, cmd)?;
+        app.close_menu();
+        app.run_cmd_interactive(term, cmd)?;
 
-        state.screen_mut().update()
+        app.screen_mut().update()
     }))
 }
 

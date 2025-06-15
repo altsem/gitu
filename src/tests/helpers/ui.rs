@@ -1,9 +1,9 @@
 use crate::{
+    app::App,
     cli::Args,
     config::{self, Config},
     error::Error,
     key_parser::parse_keys,
-    state::State,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
 };
@@ -21,7 +21,7 @@ mod buffer;
 macro_rules! snapshot {
     ($ctx:expr, $keys:expr) => {{
         let mut ctx = $ctx;
-        let mut state = ctx.init_state();
+        let mut state = ctx.init_app();
         ctx.update(&mut state, keys($keys));
         insta::assert_snapshot!(ctx.redact_buffer());
         state
@@ -75,12 +75,12 @@ impl TestContext {
         Rc::get_mut(&mut self.config).unwrap()
     }
 
-    pub fn init_state(&mut self) -> State {
-        self.init_state_at_path(self.dir.path().to_path_buf())
+    pub fn init_app(&mut self) -> App {
+        self.init_app_at_path(self.dir.path().to_path_buf())
     }
 
-    pub fn init_state_at_path(&mut self, path: PathBuf) -> State {
-        let mut state = State::create(
+    pub fn init_app_at_path(&mut self, path: PathBuf) -> App {
+        let mut app = App::create(
             Rc::new(Repository::open(path).unwrap()),
             self.size,
             &Args::default(),
@@ -89,19 +89,19 @@ impl TestContext {
         )
         .unwrap();
 
-        state.redraw_now(&mut self.term).unwrap();
-        state
+        app.redraw_now(&mut self.term).unwrap();
+        app
     }
 
-    pub fn update(&mut self, state: &mut State, new_events: Vec<InputEvent>) {
+    pub fn update(&mut self, app: &mut App, new_events: Vec<InputEvent>) {
         let TermBackend::Test { events, .. } = self.term.backend_mut() else {
             unreachable!();
         };
 
         events.extend(new_events.into_iter().rev());
 
-        let result = state.run(&mut self.term, Duration::ZERO);
-        assert!(state.quit || matches!(result, Err(Error::NoMoreEvents)));
+        let result = app.run(&mut self.term, Duration::ZERO);
+        assert!(app.state.quit || matches!(result, Err(Error::NoMoreEvents)));
     }
 
     pub fn redact_buffer(&self) -> String {

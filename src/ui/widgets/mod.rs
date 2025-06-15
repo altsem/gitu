@@ -1,3 +1,7 @@
+// This file includes code adapted from termwiz, available at
+// https://github.com/wez/wezterm, licensed under the MIT License.
+// Copyright (c) Wez Furlong
+
 // Ideally this would be scoped to WidgetId, but I can't seem to find the
 // right place for it to take effect
 #![allow(clippy::new_without_default)]
@@ -35,12 +39,13 @@ pub struct Rect {
     pub height: usize,
 }
 
-pub struct RenderArgs<'a> {
+pub struct RenderArgs<'a, D> {
     /// The id of the current widget
     pub id: WidgetId,
     pub is_focused: bool,
     pub cursor: &'a mut CursorShapeAndPosition,
     pub surface: &'a mut Surface,
+    pub data: &'a D,
 }
 
 /// UpdateArgs provides access to the widget and UI state during
@@ -53,11 +58,11 @@ pub struct UpdateArgs<'a> {
 
 /// Implementing the `Widget` trait allows for defining a potentially
 /// interactive component in a UI layout.
-pub trait Widget {
+pub trait Widget<D> {
     /// Draw the widget to the RenderArgs::surface, and optionally
     /// update RenderArgs::cursor to reflect the cursor position and
     /// display attributes.
-    fn render(&mut self, args: &mut RenderArgs);
+    fn render(&mut self, args: &mut RenderArgs<D>);
 
     /// Override this to have your widget specify its layout constraints.
     /// You may wish to have your widget constructor receive a `Constraints`
@@ -137,11 +142,11 @@ impl Default for WidgetId {
     }
 }
 
-struct RenderData<'widget> {
+struct RenderData<'widget, D> {
     surface: Surface,
     cursor: CursorShapeAndPosition,
     coordinates: ParentRelativeCoords,
-    widget: Box<dyn Widget + 'widget>,
+    widget: Box<dyn Widget<D> + 'widget>,
 }
 
 #[derive(Default)]
@@ -179,19 +184,24 @@ impl Graph {
 
 /// Manages the widgets on the display
 #[derive(Default)]
-pub struct Ui<'widget> {
+pub struct Ui<'widget, D> {
     graph: Graph,
-    render: FnvHashMap<WidgetId, RenderData<'widget>>,
+    render: FnvHashMap<WidgetId, RenderData<'widget, D>>,
     input_queue: VecDeque<WidgetEvent>,
     focused: Option<WidgetId>,
 }
 
-impl<'widget> Ui<'widget> {
+impl<'widget, D> Ui<'widget, D> {
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            graph: Graph::default(),
+            render: FnvHashMap::default(),
+            input_queue: VecDeque::new(),
+            focused: None,
+        }
     }
 
-    pub fn add<W: Widget + 'widget>(&mut self, parent: Option<WidgetId>, w: W) -> WidgetId {
+    pub fn add<W: Widget<D> + 'widget>(&mut self, parent: Option<WidgetId>, w: W) -> WidgetId {
         let id = self.graph.add(parent);
 
         self.render.insert(
@@ -211,11 +221,11 @@ impl<'widget> Ui<'widget> {
         id
     }
 
-    pub fn set_root<W: Widget + 'widget>(&mut self, w: W) -> WidgetId {
+    pub fn set_root<W: Widget<D> + 'widget>(&mut self, w: W) -> WidgetId {
         self.add(None, w)
     }
 
-    pub fn add_child<W: Widget + 'widget>(&mut self, parent: WidgetId, w: W) -> WidgetId {
+    pub fn add_child<W: Widget<D> + 'widget>(&mut self, parent: WidgetId, w: W) -> WidgetId {
         self.add(Some(parent), w)
     }
 
@@ -357,6 +367,7 @@ impl<'widget> Ui<'widget> {
         id: WidgetId,
         screen: &mut Surface,
         abs_coords: &ScreenRelativeCoords,
+        data: &D,
     ) -> Result<()> {
         let coords = {
             let render_data = self.render.get_mut(&id).unwrap();
@@ -367,6 +378,7 @@ impl<'widget> Ui<'widget> {
                     cursor: &mut render_data.cursor,
                     surface,
                     is_focused: self.focused.map(|f| f == id).unwrap_or(false),
+                    data,
                 };
                 render_data.widget.render(&mut args);
             }
@@ -384,6 +396,7 @@ impl<'widget> Ui<'widget> {
                 child,
                 screen,
                 &ScreenRelativeCoords::new(coords.x + abs_coords.x, coords.y + abs_coords.y),
+                data,
             )?;
         }
 
@@ -440,12 +453,17 @@ impl<'widget> Ui<'widget> {
     /// This has the side effect of clearing out any unconsumed input queue.
     /// Returns true if the Ui may need to be updated again; for example,
     /// if the most recent update operation changed layout.
-    pub fn render_to_screen(&mut self, screen: &mut Surface) -> Result<bool> {
+    pub fn render_to_screen(&mut self, screen: &mut Surface, data: &D) -> Result<bool> {
         if let Some(root) = self.graph.root {
             let (width, height) = screen.dimensions();
             // Render from scratch into a fresh screen buffer
             let mut alt_screen = Surface::new(width, height);
-            self.render_recursive(root, &mut alt_screen, &ScreenRelativeCoords::new(0, 0))?;
+            self.render_recursive(
+                root,
+                &mut alt_screen,
+                &ScreenRelativeCoords::new(0, 0),
+                data,
+            )?;
             // Now compute a delta and apply it to the actual screen
             let diff = screen.diff_screens(&alt_screen);
             screen.add_changes(diff);
@@ -520,8 +538,8 @@ mod test {
 
     struct CursorHider {}
 
-    impl Widget for CursorHider {
-        fn render(&mut self, args: &mut RenderArgs) {
+    impl Widget<()> for CursorHider {
+        fn render(&mut self, args: &mut RenderArgs<()>) {
             args.cursor.visibility = CursorVisibility::Hidden;
         }
     }
@@ -534,7 +552,7 @@ mod test {
 
         let mut surface = Surface::new(10, 10);
         assert_eq!(CursorVisibility::Visible, surface.cursor_visibility());
-        ui.render_to_screen(&mut surface).unwrap();
+        ui.render_to_screen(&mut surface, &mut ()).unwrap();
         assert_eq!(CursorVisibility::Hidden, surface.cursor_visibility());
     }
 }

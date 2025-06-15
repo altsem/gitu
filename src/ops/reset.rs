@@ -1,8 +1,8 @@
 use super::{selected_rev, OpTrait};
 use crate::{
+    app::{App, PromptParams},
     items::TargetData,
     menu::arg::Arg,
-    state::{PromptParams, State},
     term::Term,
     Action, Res,
 };
@@ -15,8 +15,8 @@ pub(crate) fn init_args() -> Vec<Arg> {
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let rev = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let rev = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Soft reset to",
@@ -25,31 +25,31 @@ impl OpTrait for ResetSoft {
                 },
             )?;
 
-            reset_soft(state, term, &rev)?;
+            reset_soft(app, term, &rev)?;
             Ok(())
         }))
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "soft".into()
     }
 }
 
-fn reset_soft(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_soft(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--soft"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)
 }
 
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let rev = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let rev = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Mixed reset to",
@@ -58,31 +58,31 @@ impl OpTrait for ResetMixed {
                 },
             )?;
 
-            reset_mixed(state, term, &rev)?;
+            reset_mixed(app, term, &rev)?;
             Ok(())
         }))
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "mixed".into()
     }
 }
 
-fn reset_mixed(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_mixed(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--mixed"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)
 }
 
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
     fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(move |state: &mut State, term: &mut Term| {
-            let rev = state.prompt(
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let rev = app.prompt(
                 term,
                 &PromptParams {
                     prompt: "Hard reset to",
@@ -91,22 +91,22 @@ impl OpTrait for ResetHard {
                 },
             )?;
 
-            reset_hard(state, term, &rev)?;
+            reset_hard(app, term, &rev)?;
             Ok(())
         }))
     }
 
-    fn display(&self, _state: &State) -> String {
+    fn display(&self, _app: &App) -> String {
         "hard".into()
     }
 }
 
-fn reset_hard(state: &mut State, term: &mut Term, input: &str) -> Res<()> {
+fn reset_hard(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["reset", "--hard"]);
-    cmd.args(state.pending_menu.as_ref().unwrap().args());
+    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)
 }

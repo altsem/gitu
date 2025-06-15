@@ -1,4 +1,7 @@
-use crate::ui::widgets::{RenderArgs, Widget};
+use crate::{
+    app::State,
+    ui::widgets::{RenderArgs, Widget},
+};
 use ratatui::{layout::Size, text::Line};
 use termwiz::{color::ColorAttribute, surface::Change};
 
@@ -329,8 +332,8 @@ struct LineView<'a> {
     highlighted: bool,
 }
 
-impl Widget for Screen {
-    fn render(&mut self, args: &mut RenderArgs) {
+impl Widget<State> for Screen {
+    fn render(&mut self, args: &mut RenderArgs<State>) {
         args.surface
             .add_change(Change::ClearScreen(ColorAttribute::Default));
 
