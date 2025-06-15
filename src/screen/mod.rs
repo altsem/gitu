@@ -1,9 +1,6 @@
+use crate::ui::widgets::{RenderArgs, Widget};
 use ratatui::{layout::Size, text::Line};
-use termwiz::{
-    color::ColorAttribute,
-    surface::Change,
-    widgets::{RenderArgs, Widget},
-};
+use termwiz::{color::ColorAttribute, surface::Change};
 
 use crate::{
     config::Config,

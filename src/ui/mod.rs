@@ -3,12 +3,12 @@ use std::rc::Rc;
 
 use termwiz::color::ColorAttribute;
 use termwiz::surface::Change;
-use termwiz::widgets::layout::{
-    ChildOrientation, Constraints, Dimension, DimensionSpec, VerticalAlignment,
-};
-use termwiz::widgets::{RenderArgs, UpdateArgs, Widget, WidgetEvent};
+use widgets::layout::{ChildOrientation, Constraints, Dimension, DimensionSpec, VerticalAlignment};
+use widgets::{RenderArgs, UpdateArgs, Widget, WidgetEvent};
 
 use crate::screen::Screen;
+
+pub(crate) mod widgets;
 
 pub(crate) struct Root {}
 
