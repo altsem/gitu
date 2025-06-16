@@ -4,18 +4,16 @@ use crate::git::diff::Diff;
 use crate::gitu_diff;
 use crate::highlight;
 use crate::Res;
-use git2::Commit;
 use git2::Oid;
 use git2::Repository;
 use gitu_diff::Status;
 use ratatui::style::Style;
-use ratatui::text::Line;
-use ratatui::text::Span;
 use regex::Regex;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::iter;
+use std::ops::Range;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -27,7 +25,7 @@ pub(crate) struct Item {
     // TODO We'll want to move away from this `Line` struct
     // preferably we can store text and styling separately like in highlight.rs: `(Range<usize>, Style)`
     // and only apply them when rendering
-    pub(crate) display: Line<'static>,
+    pub(crate) display: (String, Vec<(Range<usize>, Style)>),
     pub(crate) section: bool,
     pub(crate) default_collapsed: bool,
     pub(crate) depth: usize,
@@ -80,23 +78,25 @@ pub(crate) fn create_diff_items(
             };
             let config = Rc::clone(&config);
 
+            let status = format!("{:?}", file_diff.header.status).to_lowercase();
+
+            let operation = match file_diff.header.status {
+                Status::Renamed => format!(
+                    "{} -> {}",
+                    &Rc::clone(diff).text[file_diff.header.old_file.clone()],
+                    &Rc::clone(diff).text[file_diff.header.new_file.clone()]
+                ),
+                _ => Rc::clone(diff).text[file_diff.header.new_file.clone()].to_string(),
+            };
+
+            let header = format!("{status:8}   {operation}",);
+            let style_range = 0..header.len();
+
             iter::once(Item {
                 id: hash(diff.file_diff_header(file_i)),
-                display: Line::styled(
-                    format!(
-                        "{:8}   {}",
-                        format!("{:?}", file_diff.header.status).to_lowercase(),
-                        match file_diff.header.status {
-                            Status::Renamed => format!(
-                                "{} -> {}",
-                                &Rc::clone(diff).text[file_diff.header.old_file.clone()],
-                                &Rc::clone(diff).text[file_diff.header.new_file.clone()]
-                            ),
-                            _ =>
-                                Rc::clone(diff).text[file_diff.header.new_file.clone()].to_string(),
-                        }
-                    ),
-                    &config.style.file_header,
+                display: (
+                    header,
+                    vec![(style_range, Style::from(&config.style.file_header))],
                 ),
                 section: true,
                 default_collapsed,
@@ -118,19 +118,23 @@ pub(crate) fn create_diff_items(
         })
 }
 
-fn create_hunk_items(
+fn create_hunk_items<'a>(
     config: Rc<Config>,
     diff: Rc<Diff>,
     file_i: usize,
     hunk_i: usize,
     depth: usize,
 ) -> impl Iterator<Item = Item> {
+    let text = diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string();
+    let style_len = 0..text.len();
+
     iter::once(Item {
         id: hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]),
-        display: Line::styled(
-            diff.text[diff.file_diffs[file_i].hunks[hunk_i].header.range.clone()].to_string(),
-            &config.style.hunk_header,
+        display: (
+            text,
+            vec![(style_len, Style::from(&config.style.hunk_header))],
         ),
+
         section: true,
         depth,
         target_data: Some(TargetData::Hunk {
@@ -163,25 +167,16 @@ fn format_diff_hunk_items(
     highlight::highlight_hunk_lines(config, &diff, file_i, hunk_i)
         .enumerate()
         .map(|(line_i, (line, spans))| {
-            let display = Line::from(
-                spans
-                    .into_iter()
-                    .map(|(range, style)| {
-                        Span::styled(
-                            line[range.clone()]
-                                // TODO These things could probably be done way sooner
-                                // especially if we can avoid allocating new Strings here
-                                .trim_end_matches("\r\n")
-                                .replace('\t', "    "),
-                            style,
-                        )
-                    })
-                    .collect::<Vec<_>>(),
-            );
+            let line = if line.contains('\t') {
+                line.replace('\t', "    ")
+            } else {
+                line.to_string()
+            };
+
             let unselectable = line.starts_with(' ');
 
             Item {
-                display,
+                display: (line, spans),
                 unselectable,
                 depth,
                 target_data: Some(TargetData::HunkLine {
@@ -205,19 +200,18 @@ pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Re
         .iter()
         .enumerate()
         .map(|(i, stash)| -> Res<Item> {
-            let spans = itertools::intersperse(
-                iter::once(Span::styled(format!("stash@{i}"), &style.hash)).chain([stash
-                    .message()
-                    .unwrap_or("")
-                    .to_string()
-                    .into()]),
-                Span::raw(" "),
-            )
-            .collect::<Vec<_>>();
+            let stash_prefix = format!("stash@{i}");
+            let spans = vec![(0..stash_prefix.len(), Style::from(&style.hash))];
+
+            let text = format!(
+                "{} {}",
+                stash_prefix,
+                stash.message().unwrap_or("").to_string()
+            );
 
             Ok(Item {
                 id: hash(stash.id_new()),
-                display: Line::from(spans),
+                display: (text, spans),
                 depth: 1,
                 target_data: Some(TargetData::Stash {
                     commit: stash.id_new().to_string(),
@@ -230,7 +224,7 @@ pub(crate) fn stash_list(config: &Config, repo: &Repository, limit: usize) -> Re
             Ok(item) => item,
             Err(err) => Item {
                 id: hash(err.to_string()),
-                display: err.to_string().into(),
+                display: (err.to_string(), vec![]),
                 ..Default::default()
             },
         })
@@ -253,7 +247,7 @@ pub(crate) fn log(
         return Ok(vec![]);
     }
 
-    let references = repo
+    let references: Vec<_> = repo
         .references()
         .map_err(Error::ReadLog)?
         .filter_map(Result::ok)
@@ -273,33 +267,38 @@ pub(crate) fn log(
                     }
                     .into();
 
-                    Some((target, Span::styled(name.to_string(), style)))
+                    Some((target, name.to_string(), style))
                 }
                 _ => None,
             },
         )
-        .collect::<Vec<(Commit, Span)>>();
+        .collect();
 
     let items: Vec<Item> = revwalk
         .map(|oid_result| -> Res<Option<Item>> {
             let oid = oid_result.map_err(Error::ReadLog)?;
             let commit = repo.find_commit(oid).map_err(Error::ReadLog)?;
-            let short_id =
-                String::from_utf8_lossy(&commit.as_object().short_id().map_err(Error::ReadOid)?)
-                    .to_string();
+            let short_id = commit.as_object().short_id().map_err(Error::ReadOid)?;
+            let short_id = String::from_utf8_lossy(&short_id);
 
-            let spans = itertools::intersperse(
-                iter::once(Span::styled(short_id, &style.hash))
-                    .chain(
-                        references
-                            .iter()
-                            .filter(|(commit, _)| commit.id() == oid)
-                            .map(|(_, name)| name.clone()),
-                    )
-                    .chain([commit.summary().unwrap_or("").to_string().into()]),
-                Span::raw(" "),
-            )
-            .collect::<Vec<_>>();
+            let (commit_name, commit_style) = references
+                .iter()
+                .filter(|(commit, _, _)| commit.id() == oid)
+                .map(|(_, name, style)| (name.as_str(), style.clone()))
+                .next()
+                .unwrap_or(("", Style::default()));
+
+            let commit_summary = commit.summary().unwrap_or("");
+
+            let commit_id_span = 0..short_id.len();
+            let commit_name_span = (commit_id_span.end + 1)..commit_name.len();
+
+            let spans = vec![
+                (commit_id_span, Style::from(&style.hash)),
+                (commit_name_span, commit_style),
+            ];
+
+            let text = format!("{short_id} {commit_name} {commit_summary}");
 
             if let Some(re) = &msg_regex {
                 if !re.is_match(commit.message().unwrap_or("")) {
@@ -309,7 +308,7 @@ pub(crate) fn log(
 
             Ok(Some(Item {
                 id: hash(oid),
-                display: Line::from(spans),
+                display: (text, spans),
                 depth: 1,
                 target_data: Some(TargetData::Commit(oid.to_string())),
                 ..Default::default()
@@ -319,7 +318,7 @@ pub(crate) fn log(
             Ok(item) => item,
             Err(err) => Some(Item {
                 id: hash(err.to_string()),
-                display: err.to_string().into(),
+                display: (err.to_string(), vec![]),
                 ..Default::default()
             }),
         })
@@ -328,7 +327,7 @@ pub(crate) fn log(
 
     if items.is_empty() {
         Ok(vec![Item {
-            display: Line::raw("No commits found"),
+            display: ("No commits found".to_string(), vec![]),
             ..Default::default()
         }])
     } else {
@@ -338,7 +337,7 @@ pub(crate) fn log(
 
 pub(crate) fn blank_line() -> Item {
     Item {
-        display: Line::raw(""),
+        display: ("".to_string(), vec![]),
         depth: 0,
         unselectable: true,
         ..Default::default()

@@ -154,10 +154,23 @@ trait ScanByteRanges<T> {
 
 impl<'a, I: Iterator<Item = &'a str>> ScanByteRanges<&'a str> for I {
     fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, &'a str)> {
-        self.scan(0..0, |prev_line_range, line| {
-            let line_range = prev_line_range.end..(prev_line_range.end + line.len());
-            *prev_line_range = line_range.clone();
-            Some((line_range, line))
+        self.scan(0..0, |previous_line, current_line| {
+            let line_start = previous_line.end;
+            let actual_line_length = current_line.len();
+
+            let line_end = if current_line.ends_with("\r\n") {
+                // subtract \r length + \n length from scanned line to "trim" the line
+                actual_line_length.saturating_sub(2)
+            } else {
+                actual_line_length
+            };
+
+            let valid_line_range = line_start..(line_start + line_end);
+
+            let scanned_line_range = line_start..(line_start + actual_line_length);
+            *previous_line = scanned_line_range.clone();
+
+            Some((valid_line_range, current_line))
         })
     }
 }
