@@ -103,11 +103,11 @@ impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(
-                TargetData::Commit(r)
-                | TargetData::Reference(RefKind::Tag(r))
-                | TargetData::Reference(RefKind::Branch(r)),
+                TargetData::Commit(oid, ..)
+                | TargetData::Reference(RefKind::Tag(oid))
+                | TargetData::Reference(RefKind::Branch(oid)),
             ) => {
-                let rev = OsString::from(r);
+                let rev = OsString::from(oid);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
                     app.close_menu();
@@ -147,11 +147,11 @@ impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(
-                TargetData::Commit(r)
-                | TargetData::Reference(RefKind::Tag(r))
-                | TargetData::Reference(RefKind::Branch(r)),
+                TargetData::Commit(oid, ..)
+                | TargetData::Reference(RefKind::Tag(oid))
+                | TargetData::Reference(RefKind::Branch(oid)),
             ) => {
-                let rev = OsString::from(r);
+                let rev = OsString::from(oid);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
                     app.close_menu();

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, rc::Rc};
+use std::{iter, path::PathBuf, rc::Rc};
 
 use ratatui::text::{Line, Span};
 
@@ -11,7 +11,12 @@ pub(crate) enum TargetData {
     AllStaged,
     AllUntracked(Vec<PathBuf>),
     Reference(RefKind),
-    Commit(String),
+    /// fields:
+    /// - oid
+    /// - short id
+    /// - associated references
+    /// - summary
+    Commit(String, String, Vec<RefKind>, String),
     File(PathBuf),
     Delta {
         diff: Rc<Diff>,
@@ -79,13 +84,37 @@ impl TargetData {
                 // TODO create prefix
                 Line::styled(reference, style)
             }
-            TargetData::Commit(commit) => Line::raw("todo"),
+            TargetData::Commit(_, short_id, associated_references, summary) => {
+                // FIXME avoid clones
+                let spans: Vec<_> = itertools::intersperse(
+                    iter::once(Span::styled(short_id.clone(), &config.style.hash))
+                        .chain(
+                            associated_references
+                                .iter()
+                                .map(|reference| match reference {
+                                    RefKind::Tag(tag) => {
+                                        Span::styled(tag.clone(), &config.style.tag)
+                                    }
+                                    RefKind::Branch(branch) => {
+                                        Span::styled(branch.clone(), &config.style.branch)
+                                    }
+                                    RefKind::Remote(remote) => {
+                                        Span::styled(remote.clone(), &config.style.remote)
+                                    }
+                                }),
+                        )
+                        .chain([Span::raw(summary.clone())]),
+                    Span::raw(" "),
+                )
+                .collect();
+
+                Line::from(spans)
+            }
             TargetData::File(path) => Line::styled(
                 path.to_string_lossy().to_string(),
                 &config.style.file_header,
             ),
             TargetData::Delta { diff, file_i } => {
-                // FIXME is this correct?
                 let file_diff = &diff.file_diffs[*file_i];
 
                 let content = format!(

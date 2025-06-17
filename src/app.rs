@@ -467,13 +467,14 @@ impl App {
 
     pub fn selected_rev(&self) -> Option<String> {
         match &self.screen().get_selected_item().target_data {
-            Some(TargetData::Reference(reference)) => match reference {
-                RefKind::Tag(tag) => Some(tag.to_owned()),
-                RefKind::Branch(branch) => Some(branch.to_owned()),
-                // FIXME is this correct?
-                RefKind::Remote(_) => None,
-            },
-            Some(TargetData::Commit(commit)) => Some(commit.to_owned()),
+            Some(TargetData::Reference(reference)) => {
+                match reference {
+                    RefKind::Tag(tag) => Some(tag.to_owned()),
+                    RefKind::Branch(branch) => Some(branch.to_owned()),
+                    // FIXME is this correct?
+                    RefKind::Remote(_) => None,
+                }
+            }
             _ => None,
         }
     }
