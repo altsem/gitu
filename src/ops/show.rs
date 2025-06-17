@@ -14,10 +14,10 @@ impl OpTrait for Show {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
             Some(
-                TargetData::Commit(r)
-                | TargetData::Reference(RefKind::Tag(r))
-                | TargetData::Reference(RefKind::Branch(r)),
-            ) => goto_show_screen(r.clone()),
+                TargetData::Commit(oid, ..)
+                | TargetData::Reference(RefKind::Tag(oid))
+                | TargetData::Reference(RefKind::Branch(oid)),
+            ) => goto_show_screen(oid.clone()),
             Some(TargetData::File(u)) => editor(u.as_path(), None),
             Some(TargetData::Delta { diff, file_i }) => editor(
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),

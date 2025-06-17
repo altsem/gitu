@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
 use crate::highlight;
+use crate::target_data::RefKind;
 use crate::target_data::TargetData;
 use crate::Res;
 use git2::Oid;
@@ -149,10 +150,41 @@ pub(crate) fn log(
         return Ok(vec![]);
     }
 
+    let references: Vec<_> = repo
+        .references()
+        .map_err(Error::ReadLog)?
+        .filter_map(Result::ok)
+        .filter_map(
+            |reference| match (reference.peel_to_commit(), reference.shorthand()) {
+                (Ok(target), Some(name)) => {
+                    if name.ends_with("/HEAD") || name.starts_with("prefetch/remotes/") {
+                        return None;
+                    }
+
+                    let name = name.to_owned();
+
+                    let ref_kind = if reference.is_remote() {
+                        RefKind::Remote(name)
+                    } else if reference.is_tag() {
+                        RefKind::Tag(name)
+                    } else {
+                        RefKind::Branch(name)
+                    };
+
+                    Some((target, ref_kind))
+                }
+                _ => None,
+            },
+        )
+        .collect();
+
     let items: Vec<Item> = revwalk
         .map(|oid_result| -> Res<Option<Item>> {
             let oid = oid_result.map_err(Error::ReadLog)?;
             let commit = repo.find_commit(oid).map_err(Error::ReadLog)?;
+
+            let short_id = commit.as_object().short_id().map_err(Error::ReadOid)?;
+            let short_id = String::from_utf8_lossy(&short_id).to_string();
 
             if let Some(re) = &msg_regex {
                 if !re.is_match(commit.message().unwrap_or("")) {
@@ -160,10 +192,23 @@ pub(crate) fn log(
                 }
             }
 
+            let associated_references: Vec<_> = references
+                .iter()
+                .filter(|(commit, _)| commit.id() == oid)
+                .map(|(_, reference)| reference.clone())
+                .collect();
+
+            let target_data = TargetData::Commit(
+                oid.to_string(),
+                short_id,
+                associated_references,
+                commit.summary().unwrap_or("").to_string(),
+            );
+
             Ok(Some(Item {
                 id: hash(oid),
                 depth: 1,
-                target_data: Some(TargetData::Commit(oid.to_string())),
+                target_data: Some(target_data),
                 ..Default::default()
             }))
         })
