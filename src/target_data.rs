@@ -64,7 +64,7 @@ pub(crate) enum SectionHeader {
 }
 
 impl TargetData {
-    pub fn to_line<'a>(&self, config: Rc<Config>) -> Line<'a> {
+    pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
         match self {
             TargetData::Empty => Line::raw(""),
             TargetData::AllUnstaged => {
@@ -75,45 +75,40 @@ impl TargetData {
                 Line::styled("Untracked files", &config.style.section_header)
             }
             TargetData::Reference(ref_kind) => {
-                // FIXME can we avoid cloning?
                 let (reference, style) = match ref_kind {
-                    RefKind::Tag(tag) => (tag.clone(), &config.style.tag),
-                    RefKind::Branch(branch) => (branch.clone(), &config.style.branch),
-                    RefKind::Remote(remote) => (remote.clone(), &config.style.remote),
+                    RefKind::Tag(tag) => (tag, &config.style.tag),
+                    RefKind::Branch(branch) => (branch, &config.style.branch),
+                    RefKind::Remote(remote) => (remote, &config.style.remote),
                 };
                 // TODO create prefix
                 Line::styled(reference, style)
             }
             TargetData::Commit(_, short_id, associated_references, summary) => {
-                // FIXME avoid clones
                 let spans: Vec<_> = itertools::intersperse(
-                    iter::once(Span::styled(short_id.clone(), &config.style.hash))
+                    iter::once(Span::styled(short_id, &config.style.hash))
                         .chain(
                             associated_references
                                 .iter()
                                 .map(|reference| match reference {
-                                    RefKind::Tag(tag) => {
-                                        Span::styled(tag.clone(), &config.style.tag)
-                                    }
+                                    RefKind::Tag(tag) => Span::styled(tag, &config.style.tag),
                                     RefKind::Branch(branch) => {
-                                        Span::styled(branch.clone(), &config.style.branch)
+                                        Span::styled(branch, &config.style.branch)
                                     }
                                     RefKind::Remote(remote) => {
-                                        Span::styled(remote.clone(), &config.style.remote)
+                                        Span::styled(remote, &config.style.remote)
                                     }
                                 }),
                         )
-                        .chain([Span::raw(summary.clone())]),
+                        .chain([Span::raw(summary)]),
                     Span::raw(" "),
                 )
                 .collect();
 
                 Line::from(spans)
             }
-            TargetData::File(path) => Line::styled(
-                path.to_string_lossy().to_string(),
-                &config.style.file_header,
-            ),
+            TargetData::File(path) => {
+                Line::styled(path.to_string_lossy(), &config.style.file_header)
+            }
             TargetData::Delta { diff, file_i } => {
                 let file_diff = &diff.file_diffs[*file_i];
 
@@ -140,7 +135,7 @@ impl TargetData {
                 let file_diff = &diff.file_diffs[*file_i];
                 let hunk = &file_diff.hunks[*hunk_i];
 
-                let content = diff.text[hunk.header.range.clone()].to_string();
+                let content = &diff.text[hunk.header.range.clone()];
 
                 Line::styled(content, &config.style.hunk_header)
             }
