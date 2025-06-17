@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{app::App, items::TargetData, screen, term::Term};
+use crate::{app::App, screen, target_data::TargetData, term::Term};
 use std::rc::Rc;
 
 pub(crate) struct ShowRefs;

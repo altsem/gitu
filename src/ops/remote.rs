@@ -1,6 +1,11 @@
 use std::{process::Command, rc::Rc};
 
-use crate::{app::App, app::PromptParams, items::TargetData, term::Term, Res};
+use crate::{
+    app::{App, PromptParams},
+    target_data::TargetData,
+    term::Term,
+    Res,
+};
 
 use super::{Action, OpTrait};
 

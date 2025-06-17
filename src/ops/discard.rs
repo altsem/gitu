@@ -6,7 +6,7 @@ use crate::{
     config::ConfirmDiscardOption,
     git::diff::{Diff, PatchMode},
     gitu_diff,
-    items::TargetData,
+    target_data::{RefKind, TargetData},
 };
 use std::{path::PathBuf, process::Command, rc::Rc};
 
@@ -14,7 +14,15 @@ pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target.cloned() {
-            Some(TargetData::Branch(branch)) => discard_branch(branch),
+            Some(TargetData::Reference(reference)) => {
+                let branch = match reference {
+                    RefKind::Tag(tag) => tag,
+                    RefKind::Branch(branch) => branch,
+                    // FIXME is this correct?
+                    RefKind::Remote(_) => unreachable!("cannot discard remotes"),
+                };
+                discard_branch(branch)
+            }
             Some(TargetData::File(file)) => clean_file(file),
             Some(TargetData::Delta { diff, file_i }) => match diff.file_diffs[file_i].header.status
             {

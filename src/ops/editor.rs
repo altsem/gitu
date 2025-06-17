@@ -1,10 +1,9 @@
 use super::{confirm, Action, OpTrait};
 use crate::{
-    app::App,
-    app::{root_menu, PromptParams},
-    items::TargetData,
+    app::{root_menu, App, PromptParams},
     menu::PendingMenu,
     screen::NavMode,
+    target_data::TargetData,
     term::Term,
 };
 use std::rc::Rc;

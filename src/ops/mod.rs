@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{app::App, items::TargetData, menu::Menu, term::Term, Res};
+use crate::{app::App, menu::Menu, target_data::TargetData, term::Term, Res};
 use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod branch;

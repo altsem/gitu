@@ -1,8 +1,8 @@
 use super::{selected_rev, OpTrait};
 use crate::{
     app::{App, PromptParams},
-    items::TargetData,
     menu::arg::Arg,
+    target_data::TargetData,
     term::Term,
     Action, Res,
 };

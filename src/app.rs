@@ -29,7 +29,6 @@ use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::error::Error;
 use crate::file_watcher::FileWatcher;
-use crate::items::TargetData;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
@@ -38,6 +37,8 @@ use crate::prompt::PromptData;
 use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
+use crate::target_data::RefKind;
+use crate::target_data::TargetData;
 use crate::term;
 use crate::term::Term;
 use crate::ui;
@@ -488,7 +489,12 @@ impl App {
 
     pub fn selected_rev(&self) -> Option<String> {
         match &self.screen().get_selected_item().target_data {
-            Some(TargetData::Branch(branch)) => Some(branch.to_owned()),
+            Some(TargetData::Reference(reference)) => match reference {
+                RefKind::Tag(tag) => Some(tag.to_owned()),
+                RefKind::Branch(branch) => Some(branch.to_owned()),
+                // FIXME is this correct?
+                RefKind::Remote(_) => None,
+            },
             Some(TargetData::Commit(commit)) => Some(commit.to_owned()),
             _ => None,
         }

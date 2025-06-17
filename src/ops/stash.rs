@@ -2,8 +2,8 @@ use super::{Action, OpTrait};
 use crate::{
     app::{App, PromptParams},
     error::Error,
-    items::TargetData,
     menu::arg::Arg,
+    target_data::TargetData,
     term::Term,
     Res,
 };
@@ -321,7 +321,7 @@ fn stash_drop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 fn selected_stash(app: &App) -> Option<String> {
     match app.screen().get_selected_item().target_data {
-        Some(TargetData::Stash { id, commit: _ }) => Some(id.to_string()),
+        Some(TargetData::Stash { id, .. }) => Some(id.to_string()),
         _ => Some("0".to_string()),
     }
 }

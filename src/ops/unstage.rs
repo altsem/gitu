@@ -1,5 +1,5 @@
 use super::OpTrait;
-use crate::{app::App, git::diff::PatchMode, items::TargetData, term::Term, Action};
+use crate::{app::App, git::diff::PatchMode, target_data::TargetData, term::Term, Action};
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;

@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{app::App, items::TargetData, menu::arg::Arg, term::Term};
+use crate::{app::App, menu::arg::Arg, target_data::TargetData, term::Term};
 use std::{
     ffi::{OsStr, OsString},
     process::Command,

@@ -2,7 +2,7 @@ use super::OpTrait;
 use crate::{
     app::App,
     git::diff::{Diff, PatchMode},
-    items::TargetData,
+    target_data::TargetData,
     term::Term,
     Action,
 };

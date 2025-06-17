@@ -80,6 +80,7 @@ pub(crate) fn merge_status(repo: &Repository) -> Res<Option<MergeStatus>> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct RevertStatus {
     pub head: String,
 }

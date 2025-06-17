@@ -14,19 +14,26 @@ use std::path::Path;
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 
-type LineHighlights<'a> = (&'a str, Vec<(Range<usize>, Style)>);
+type LineHighlights<'a> = Vec<(Range<usize>, Style)>;
 
 pub(crate) fn highlight_hunk_lines<'a>(
     config: &'a Config,
     diff: &'a Rc<Diff>,
     file_i: usize,
     hunk_i: usize,
-) -> impl Iterator<Item = LineHighlights<'a>> + 'a {
-    let old_path = &diff.text[diff.file_diffs[file_i].header.old_file.clone()];
-    let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
+) -> impl Iterator<Item = Vec<(Range<usize>, Style)>> + 'a {
+    let file_diff = &diff.file_diffs[file_i];
 
-    let hunk = &diff.file_diffs[file_i].hunks[hunk_i];
-    let hunk_content = &diff.text[hunk.content.range.clone()];
+    let old_file_range = file_diff.header.old_file.clone();
+    let new_file_range = file_diff.header.new_file.clone();
+
+    let old_path = &diff.text[old_file_range];
+    let new_path = &diff.text[new_file_range];
+
+    let hunk = &file_diff.hunks[hunk_i];
+    let hunk_range = hunk.content.range.clone();
+    let hunk_content = &diff.text[hunk_range];
+
     let old_mask = diff.mask_old_hunk(file_i, hunk_i);
     let new_mask = diff.mask_new_hunk(file_i, hunk_i);
 
@@ -46,10 +53,7 @@ pub(crate) fn highlight_hunk_lines<'a>(
     hunk_content
         .split_inclusive('\n')
         .scan_byte_ranges()
-        .map(move |(line_range, line)| {
-            let highlights = collect_line_highlights(&mut highlights_iter, &line_range);
-            (line, highlights)
-        })
+        .map(move |(line_range, _)| collect_line_highlights(&mut highlights_iter, &line_range))
 }
 
 pub(crate) fn iter_diff_highlights<'a>(

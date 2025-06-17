@@ -1,11 +1,10 @@
 use super::{selected_rev, Action, OpTrait};
 use crate::{
-    app::App,
-    app::PromptParams,
+    app::{App, PromptParams},
     error::Error,
     git::{get_current_branch_name, is_branch_merged},
-    items::TargetData,
     menu::arg::Arg,
+    target_data::{RefKind, TargetData},
     term::Term,
     Res,
 };
@@ -82,7 +81,12 @@ pub(crate) struct Delete;
 impl OpTrait for Delete {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let default = match target {
-            Some(TargetData::Branch(b)) => Some(b.clone()),
+            Some(TargetData::Reference(reference)) => match reference {
+                RefKind::Tag(tag) => Some(tag.clone()),
+                RefKind::Branch(branch) => Some(branch.clone()),
+                // FIXME is this correct?
+                RefKind::Remote(_) => None,
+            },
             _ => None,
         };
 
