@@ -156,8 +156,11 @@ impl TargetData {
                             let spans: Vec<_> = line_highlights
                                 .iter()
                                 .map(|(range, style)| {
-                                    // FIXME avoid allocation
-                                    Span::styled(diff.text[range.clone()].to_string(), *style)
+                                    // FIXME avoid allocation?
+                                    Span::styled(
+                                        diff.text[range.clone()].replace('\t', "    "),
+                                        *style,
+                                    )
                                 })
                                 .collect();
                             spans
