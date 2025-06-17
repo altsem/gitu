@@ -7,7 +7,8 @@ use crate::git;
 use crate::git::remote::{
     get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
 };
-use crate::{items::TargetData, menu::arg::Arg, term::Term, Res};
+use crate::target_data::TargetData;
+use crate::{menu::arg::Arg, term::Term, Res};
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {

@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{app::State, error::Error, items::TargetData};
+use crate::{app::State, error::Error, target_data::TargetData};
 use std::rc::Rc;
 
 pub(crate) struct CopyHash;

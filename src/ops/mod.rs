@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app::{App, State},
-    items::TargetData,
     menu::Menu,
+    target_data::TargetData,
     term::Term,
     Res,
 };

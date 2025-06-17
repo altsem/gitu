@@ -1,9 +1,8 @@
 use super::{Action, OpTrait};
 use crate::{
-    app::App,
-    app::{PromptParams, State},
-    items::TargetData,
+    app::{App, PromptParams, State},
     menu::arg::Arg,
+    target_data::TargetData,
     term::Term,
     Res,
 };

@@ -1,9 +1,9 @@
 use super::{Action, OpTrait};
 use crate::{
     app::{root_menu, App, PromptParams, State},
-    items::TargetData,
     menu::PendingMenu,
     screen::NavMode,
+    target_data::TargetData,
     term::Term,
 };
 use std::rc::Rc;

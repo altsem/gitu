@@ -2,8 +2,8 @@ use std::{process::Command, rc::Rc};
 
 use crate::{
     app::{App, PromptParams, State},
-    items::TargetData,
     menu::arg::Arg,
+    target_data::TargetData,
     term::Term,
     Res,
 };

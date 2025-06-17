@@ -1,14 +1,13 @@
 use super::{Action, OpTrait};
 use crate::{
-    app::App,
-    app::{PromptParams, State},
+    app::{App, PromptParams, State},
     error::Error,
     git::{
         self,
         remote::{self, get_push_remote, get_upstream_components, get_upstream_shortname},
     },
-    items::TargetData,
     menu::arg::Arg,
+    target_data::TargetData,
     term::Term,
     Res,
 };

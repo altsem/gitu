@@ -2,9 +2,9 @@ use super::{selected_rev, Action, OpTrait};
 use crate::{
     app::{App, PromptParams, State},
     error::Error,
-    items::TargetData,
     menu::arg::{any_regex, positive_number, Arg},
     screen,
+    target_data::TargetData,
     term::Term,
     Res,
 };

@@ -1,10 +1,8 @@
+use crate::target_data::TargetData;
 use ratatui::prelude::*;
+use ratatui::{layout::Size, text::Line};
 
-use crate::{
-    config::Config,
-    items::{hash, TargetData},
-    Res,
-};
+use crate::{config::Config, items::hash, Res};
 
 use super::Item;
 use std::{collections::HashSet, rc::Rc};
@@ -307,10 +305,14 @@ impl Screen {
                     *highlight_depth = None;
                 };
 
+                let Some(data) = item.target_data.as_ref() else {
+                    return None;
+                };
+
                 Some(LineView {
                     item_index: *item_i,
                     item,
-                    display: &item.display,
+                    display: data.to_line(Rc::clone(&self.config)),
                     highlighted: highlight_depth.is_some(),
                 })
             })
@@ -321,7 +323,7 @@ impl Screen {
 struct LineView<'a> {
     item_index: usize,
     item: &'a Item,
-    display: &'a Line<'a>,
+    display: Line<'a>,
     highlighted: bool,
 }
 

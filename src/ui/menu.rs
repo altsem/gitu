@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::SizedWidget;
 use crate::{
     app::State, bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op,
@@ -91,7 +93,9 @@ impl<'a> MenuWidget<'a> {
                 .collect::<Vec<_>>();
 
             if !target_binds.is_empty() {
-                right_column.push(item.display.clone());
+                if let Some(data) = item.target_data.as_ref() {
+                    right_column.push(todo!("TargetData::to_line"));
+                }
             }
 
             for bind in target_binds {

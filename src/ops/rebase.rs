@@ -1,8 +1,8 @@
 use super::{selected_rev, Action, OpTrait};
 use crate::{
     app::{App, PromptParams, State},
-    items::TargetData,
     menu::arg::Arg,
+    target_data::{RefKind, TargetData},
     term::Term,
     Res,
 };
@@ -102,7 +102,11 @@ pub(crate) struct RebaseInteractive;
 impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
+            Some(
+                TargetData::Commit(r)
+                | TargetData::Reference(RefKind::Tag(r))
+                | TargetData::Reference(RefKind::Branch(r)),
+            ) => {
                 let rev = OsString::from(r);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
@@ -142,7 +146,11 @@ pub(crate) struct RebaseAutosquash;
 impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
+            Some(
+                TargetData::Commit(r)
+                | TargetData::Reference(RefKind::Tag(r))
+                | TargetData::Reference(RefKind::Branch(r)),
+            ) => {
                 let rev = OsString::from(r);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();

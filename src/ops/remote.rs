@@ -2,7 +2,7 @@ use std::{process::Command, rc::Rc};
 
 use crate::{
     app::{App, PromptParams, State},
-    items::TargetData,
+    target_data::TargetData,
     term::Term,
     Res,
 };

@@ -1,8 +1,8 @@
 use super::{Action, OpTrait};
 use crate::{
     app::{App, State},
-    items::TargetData,
     menu::arg::Arg,
+    target_data::TargetData,
     term::Term,
 };
 use std::{
