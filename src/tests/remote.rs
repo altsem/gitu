@@ -40,6 +40,11 @@ fn rename_remote() {
     snapshot!(TestContext::setup_clone(), "Mrorigin<enter>origin2<enter>");
 }
 
+#[test]
+fn remove_remote() {
+    snapshot!(TestContext::setup_clone(), "Mkorigin<enter>");
+}
+
 fn get_head_name(repo: &Repository) -> String {
     repo.head().unwrap().name().unwrap().into()
 }
