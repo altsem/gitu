@@ -3,10 +3,14 @@ source: src/tests/remote.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main add initial-file                                                  |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Remote                                                                          |
-a add remote                                                                    |
-k remove remote                                                                 |
-r rename remote                                                                 |
-q/<esc> Quit/Close                                                              |
-styles_hash: 605cf4b9276a52e2
+$ git remote remove origin                                                      |
+styles_hash: 5e18bafa3d84ff48
