@@ -190,9 +190,9 @@ impl TargetData {
                 let content = if *ahead == 0 && *behind == 0 {
                     format!("Your branch is up to date with '{upstream}'.")
                 } else if *ahead > 0 && *behind == 0 {
-                    format!("Your branch is ahead of '{upstream}' by {ahead} commit.",)
+                    format!("Your branch is ahead of '{upstream}' by {ahead} commit(s).",)
                 } else if *ahead == 0 && *behind > 0 {
-                    format!("Your branch is behind '{upstream}' by {behind} commit.",)
+                    format!("Your branch is behind '{upstream}' by {behind} commit(s).",)
                 } else {
                     format!("Your branch and '{upstream}' have diverged,\nand have {ahead} and {behind} different commits each, respectively.")
                 };
