@@ -249,8 +249,9 @@ impl App {
 
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
         let screen_ref = self.screen();
-        let target = screen_ref.get_selected_item().data.as_ref();
-        if let Some(mut action) = op.clone().implementation().get_action(target) {
+        let item_data = &screen_ref.get_selected_item().data;
+
+        if let Some(mut action) = op.clone().implementation().get_action(item_data) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
             self.handle_result(result)?;
         }
@@ -468,7 +469,7 @@ impl App {
 
     pub fn selected_rev(&self) -> Option<String> {
         match &self.screen().get_selected_item().data {
-            Some(ItemData::Reference(reference)) => {
+            ItemData::Reference(reference) => {
                 match reference {
                     RefKind::Tag(tag) => Some(tag.to_owned()),
                     RefKind::Branch(branch) => Some(branch.to_owned()),

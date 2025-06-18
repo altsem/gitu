@@ -84,7 +84,7 @@ impl Screen {
     fn find_first_hunk(&mut self) -> Option<usize> {
         (0..self.line_index.len()).find(|&line_i| {
             !self.at_line(line_i).unselectable
-                && matches!(self.at_line(line_i).data, Some(ItemData::Hunk { .. }))
+                && matches!(self.at_line(line_i).data, ItemData::Hunk { .. })
         })
     }
 
@@ -143,9 +143,7 @@ impl Screen {
         let item = self.at_line(line_i);
         match nav_mode {
             NavMode::Normal => {
-                let item_data = item.data.as_ref();
-                let is_hunk_line =
-                    item_data.is_some_and(|d| matches!(d, ItemData::HunkLine { .. }));
+                let is_hunk_line = matches!(item.data, ItemData::HunkLine { .. });
 
                 !item.unselectable && !is_hunk_line
             }
@@ -230,7 +228,7 @@ impl Screen {
         }
 
         match self.get_selected_item().data {
-            Some(ItemData::HunkLine { .. }) => NavMode::IncludeHunkLines,
+            ItemData::HunkLine { .. } => NavMode::IncludeHunkLines,
             _ => NavMode::Normal,
         }
     }
@@ -306,14 +304,10 @@ impl Screen {
                     *highlight_depth = None;
                 };
 
-                let Some(data) = item.data.as_ref() else {
-                    return None;
-                };
-
                 Some(LineView {
                     item_index: *item_i,
                     item,
-                    display: data.to_line(Rc::clone(&self.config)),
+                    display: item.data.to_line(Rc::clone(&self.config)),
                     highlighted: highlight_depth.is_some(),
                 })
             })
@@ -333,6 +327,18 @@ impl Widget for &Screen {
         let style = &self.config.style;
 
         for (line_index, line) in self.line_views(area.as_size()).enumerate() {
+            // REMOVE!!!!!
+            {
+                use std::fs::OpenOptions;
+                use std::io::Write;
+
+                let mut file = OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open("/tmp/gitu.log")
+                    .unwrap();
+                writeln!(&mut file, "line: {:?}", line.item.data).unwrap();
+            }
             let line_area = Rect {
                 x: 0,
                 y: line_index as u16,

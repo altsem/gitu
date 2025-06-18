@@ -29,7 +29,7 @@ pub(crate) struct Item {
     pub(crate) unselectable: bool,
     // TODO rename? maybe item_data: Option<ItemData>
     // TODO does this have to be optional anymore?
-    pub(crate) data: Option<ItemData>,
+    pub(crate) data: ItemData,
 }
 pub(crate) fn create_diff_items(
     diff: &Rc<Diff>,
@@ -45,10 +45,10 @@ pub(crate) fn create_diff_items(
                 section: true,
                 default_collapsed,
                 depth,
-                data: Some(ItemData::Delta {
+                data: ItemData::Delta {
                     diff: Rc::clone(diff),
                     file_i,
-                }),
+                },
                 ..Default::default()
             })
             .chain(file_diff.hunks.iter().cloned().enumerate().flat_map(
@@ -69,11 +69,11 @@ fn create_hunk_items<'a>(
         id: hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]),
         section: true,
         depth,
-        data: Some(ItemData::Hunk {
+        data: ItemData::Hunk {
             diff: Rc::clone(&diff),
             file_i,
             hunk_i,
-        }),
+        },
         ..Default::default()
     })
     .chain(format_diff_hunk_items(diff, file_i, hunk_i, depth + 1))
@@ -89,12 +89,12 @@ fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: u
             Item {
                 unselectable,
                 depth,
-                data: Some(ItemData::HunkLine {
+                data: ItemData::HunkLine {
                     diff: Rc::clone(&diff),
                     file_i,
                     hunk_i,
                     line_i,
-                }),
+                },
                 ..Default::default()
             }
         })
@@ -112,11 +112,11 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
             Ok(Item {
                 id: hash(&stash_id),
                 depth: 1,
-                data: Some(ItemData::Stash {
+                data: ItemData::Stash {
                     message: stash.message().unwrap_or("").to_string(),
                     commit: stash_id.to_string(),
                     id: i,
-                }),
+                },
                 ..Default::default()
             })
         })
@@ -126,7 +126,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
                 let err = err.to_string();
                 Item {
                     id: hash(&err),
-                    data: Some(ItemData::Error(err)),
+                    data: ItemData::Error(err),
                     ..Default::default()
                 }
             }
@@ -206,7 +206,7 @@ pub(crate) fn log(
             Ok(Some(Item {
                 id: hash(oid),
                 depth: 1,
-                data: Some(data),
+                data,
                 ..Default::default()
             }))
         })
@@ -216,7 +216,7 @@ pub(crate) fn log(
                 let err = err.to_string();
                 Some(Item {
                     id: hash(&err),
-                    data: Some(ItemData::Error(err)),
+                    data: ItemData::Error(err),
                     ..Default::default()
                 })
             }
@@ -237,7 +237,6 @@ pub(crate) fn blank_line() -> Item {
     Item {
         depth: 0,
         unselectable: true,
-        data: Some(ItemData::Empty),
         ..Default::default()
     }
 }

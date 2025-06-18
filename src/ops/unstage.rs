@@ -10,25 +10,30 @@ use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
 impl OpTrait for Unstage {
-    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
-        let action = match target.cloned() {
-            Some(ItemData::AllStaged) => unstage_staged(),
-            Some(ItemData::Delta { diff, file_i }) => {
-                unstage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let action = match target {
+            ItemData::AllStaged => unstage_staged(),
+            ItemData::Delta { diff, file_i } => {
+                unstage_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
             }
-            Some(ItemData::Hunk {
+            ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            }) => unstage_patch(diff.format_hunk_patch(file_i, hunk_i).into_bytes()),
-            Some(ItemData::HunkLine {
+            } => unstage_patch(diff.format_hunk_patch(*file_i, *hunk_i).into_bytes()),
+            ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
                 line_i,
-            }) => unstage_line(
-                diff.format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Reverse)
-                    .into_bytes(),
+            } => unstage_line(
+                diff.format_line_patch(
+                    *file_i,
+                    *hunk_i,
+                    *line_i..(*line_i + 1),
+                    PatchMode::Reverse,
+                )
+                .into_bytes(),
             ),
             _ => return None,
         };

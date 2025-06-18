@@ -10,27 +10,25 @@ use std::{path::Path, process::Command, rc::Rc};
 
 pub(crate) struct Show;
 impl OpTrait for Show {
-    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
         match target {
-            Some(
-                ItemData::Commit { oid, .. }
-                | ItemData::Reference(RefKind::Tag(oid))
-                | ItemData::Reference(RefKind::Branch(oid)),
-            ) => goto_show_screen(oid.clone()),
-            Some(ItemData::File(u)) => editor(u.as_path(), None),
-            Some(ItemData::Delta { diff, file_i }) => editor(
+            ItemData::Commit { oid, .. }
+            | ItemData::Reference(RefKind::Tag(oid))
+            | ItemData::Reference(RefKind::Branch(oid)) => goto_show_screen(oid.clone()),
+            ItemData::File(u) => editor(u.as_path(), None),
+            ItemData::Delta { diff, file_i } => editor(
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 None,
             ),
-            Some(ItemData::Hunk {
+            ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            }) => editor(
+            } => editor(
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 Some(diff.file_line_of_first_diff(*file_i, *hunk_i) as u32),
             ),
-            Some(ItemData::Stash { commit, .. }) => goto_show_screen(commit.clone()),
+            ItemData::Stash { commit, .. } => goto_show_screen(commit.clone()),
             _ => None,
         }
     }

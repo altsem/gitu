@@ -8,8 +8,8 @@ use super::Screen;
 use crate::{
     config::Config,
     error::Error,
-    items::{self, hash, Item},
     item_data::{ItemData, RefKind, SectionHeader},
+    items::{self, hash, Item},
     Res,
 };
 use git2::{Reference, Repository};
@@ -22,7 +22,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
         Box::new(move || {
             Ok(iter::once(Item {
                 id: hash("local_branches"),
-                data: Some(ItemData::Header(SectionHeader::Branches)),
+                data: ItemData::Header(SectionHeader::Branches),
                 section: true,
                 depth: 0,
                 ..Default::default()
@@ -60,7 +60,7 @@ fn create_remotes_sections<'a>(repo: &'a Repository) -> Res<impl Iterator<Item =
                 id: hash(&name),
                 section: true,
                 depth: 0,
-                data: Some(ItemData::Header(SectionHeader::Remote(name))),
+                data: ItemData::Header(SectionHeader::Remote(name)),
                 ..Default::default()
             },
         ]
@@ -78,7 +78,7 @@ fn create_tags_section<'a>(repo: &'a Repository) -> Res<impl Iterator<Item = Ite
                 id: hash("tags"),
                 section: true,
                 depth: 0,
-                data: Some(ItemData::Header(SectionHeader::Tags)),
+                data: ItemData::Header(SectionHeader::Tags),
                 ..Default::default()
             },
             item,
@@ -122,7 +122,7 @@ where
             let item = Item {
                 id: hash(&name),
                 depth: 1,
-                data: Some(ItemData::Reference(ref_kind)),
+                data: ItemData::Reference(ref_kind),
                 ..Default::default()
             };
             (name, item)

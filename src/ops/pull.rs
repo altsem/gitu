@@ -6,8 +6,8 @@ use crate::{
         self,
         remote::{self, get_push_remote, get_upstream_components, get_upstream_shortname},
     },
-    menu::arg::Arg,
     item_data::ItemData,
+    menu::arg::Arg,
     term::Term,
     Res,
 };
@@ -19,7 +19,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct PullFromPushRemote;
 impl OpTrait for PullFromPushRemote {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(
             |app: &mut App, term: &mut Term| match get_push_remote(&app.state.repo)? {
                 None => {
@@ -65,7 +65,7 @@ fn set_push_remote_and_pull(app: &mut App, term: &mut Term, push_remote_name: &s
 
 pub(crate) struct PullFromUpstream;
 impl OpTrait for PullFromUpstream {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(
             |app: &mut App, term: &mut Term| match get_upstream_components(&app.state.repo)? {
                 None => {
@@ -112,7 +112,7 @@ fn set_upstream_and_pull(app: &mut App, term: &mut Term, upstream_name: &str) ->
 
 pub(crate) struct PullFromElsewhere;
 impl OpTrait for PullFromElsewhere {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let remote = app.prompt(
                 term,

@@ -6,48 +6,47 @@ use crate::{
     config::ConfirmDiscardOption,
     git::diff::{Diff, PatchMode},
     gitu_diff,
-    item_data::{RefKind, ItemData},
+    item_data::{ItemData, RefKind},
 };
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;
 impl OpTrait for Discard {
-    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
-        let action = match target.cloned() {
-            Some(ItemData::Reference(reference)) => {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let action = match target {
+            ItemData::Reference(reference) => {
                 let branch = match reference {
                     RefKind::Tag(tag) => tag,
                     RefKind::Branch(branch) => branch,
                     // FIXME is this correct?
                     RefKind::Remote(_) => unreachable!("cannot discard remotes"),
                 };
-                discard_branch(branch)
+                discard_branch(branch.clone())
             }
-            Some(ItemData::File(file)) => clean_file(file),
-            Some(ItemData::Delta { diff, file_i }) => match diff.file_diffs[file_i].header.status
-            {
+            ItemData::File(file) => clean_file(file.clone()),
+            ItemData::Delta { diff, file_i } => match diff.file_diffs[*file_i].header.status {
                 Status::Added => {
-                    remove_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+                    remove_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
                 }
                 Status::Renamed => rename_file(
-                    diff.text[diff.file_diffs[file_i].header.new_file.clone()].into(),
-                    diff.text[diff.file_diffs[file_i].header.old_file.clone()].into(),
+                    diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into(),
+                    diff.text[diff.file_diffs[*file_i].header.old_file.clone()].into(),
                 ),
-                _ => {
-                    checkout_file(diff.text[diff.file_diffs[file_i].header.old_file.clone()].into())
-                }
+                _ => checkout_file(
+                    diff.text[diff.file_diffs[*file_i].header.old_file.clone()].into(),
+                ),
             },
-            Some(ItemData::Hunk {
+            ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            }) => discard_unstaged_patch(diff, file_i, hunk_i),
-            Some(ItemData::HunkLine {
+            } => discard_unstaged_patch(Rc::clone(diff), *file_i, *hunk_i),
+            ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
                 line_i,
-            }) => discard_unstaged_line(diff, file_i, hunk_i, line_i),
+            } => discard_unstaged_line(Rc::clone(diff), *file_i, *hunk_i, *line_i),
             _ => return None,
         };
 

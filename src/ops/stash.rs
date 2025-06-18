@@ -2,8 +2,8 @@ use super::{Action, OpTrait};
 use crate::{
     app::{App, PromptParams, State},
     error::Error,
-    menu::arg::Arg,
     item_data::ItemData,
+    menu::arg::Arg,
     term::Term,
     Res,
 };
@@ -19,7 +19,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct Stash;
 impl OpTrait for Stash {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let message = app.prompt(
                 term,
@@ -54,7 +54,7 @@ fn stash_push(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 pub(crate) struct StashIndex;
 impl OpTrait for StashIndex {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let message = app.prompt(
                 term,
@@ -89,7 +89,7 @@ fn stash_push_index(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 pub(crate) struct StashWorktree;
 impl OpTrait for StashWorktree {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| -> Res<()> {
             if is_working_tree_empty(&app.state.repo)? {
                 app.close_menu();
@@ -187,7 +187,7 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
 
 pub(crate) struct StashKeepIndex;
 impl OpTrait for StashKeepIndex {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let message = app.prompt(
                 term,
@@ -222,7 +222,7 @@ fn stash_push_keep_index(app: &mut App, term: &mut Term, input: &str) -> Res<()>
 
 pub(crate) struct StashPop;
 impl OpTrait for StashPop {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let input = app.prompt(
                 term,
@@ -255,7 +255,7 @@ fn stash_pop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 pub(crate) struct StashApply;
 impl OpTrait for StashApply {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let input = app.prompt(
                 term,
@@ -288,7 +288,7 @@ fn stash_apply(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 pub(crate) struct StashDrop;
 impl OpTrait for StashDrop {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let input = app.prompt(
                 term,
@@ -321,7 +321,7 @@ fn stash_drop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 fn selected_stash(app: &App) -> Option<String> {
     match app.screen().get_selected_item().data {
-        Some(ItemData::Stash { id, .. }) => Some(id.to_string()),
+        ItemData::Stash { id, .. } => Some(id.to_string()),
         _ => Some("0".to_string()),
     }
 }

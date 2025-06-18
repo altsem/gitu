@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, _term: &mut Term| {
             goto_refs_screen(app);
             Ok(())

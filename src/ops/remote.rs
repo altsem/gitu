@@ -11,7 +11,7 @@ use super::{Action, OpTrait};
 
 pub(crate) struct AddRemote;
 impl OpTrait for AddRemote {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let remote_name = app.prompt(
                 term,
@@ -42,7 +42,7 @@ impl OpTrait for AddRemote {
 
 pub(crate) struct RenameRemote;
 impl OpTrait for RenameRemote {
-    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let remote_name = app.prompt(
                 term,

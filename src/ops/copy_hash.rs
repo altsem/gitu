@@ -4,9 +4,9 @@ use std::rc::Rc;
 
 pub(crate) struct CopyHash;
 impl OpTrait for CopyHash {
-    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
         match target {
-            Some(ItemData::Commit { oid, .. }) => copy_hash(oid.clone()),
+            ItemData::Commit { oid, .. } => copy_hash(oid.clone()),
             _ => None,
         }
     }
