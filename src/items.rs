@@ -198,12 +198,12 @@ pub(crate) fn log(
                 .map(|(_, reference)| reference.clone())
                 .collect();
 
-            let target_data = TargetData::Commit(
-                oid.to_string(),
+            let target_data = TargetData::Commit {
+                oid: oid.to_string(),
                 short_id,
                 associated_references,
-                commit.summary().unwrap_or("").to_string(),
-            );
+                summary: commit.summary().unwrap_or("").to_string(),
+            };
 
             Ok(Some(Item {
                 id: hash(oid),

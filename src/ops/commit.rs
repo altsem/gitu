@@ -65,7 +65,7 @@ pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            Some(TargetData::Commit(oid, ..)) => {
+            Some(TargetData::Commit { oid, .. }) => {
                 let rev = OsString::from(oid);
 
                 Some(Rc::new(move |app: &mut App, term: &mut Term| {
@@ -100,7 +100,7 @@ pub(crate) struct CommitInstantFixup;
 impl OpTrait for CommitInstantFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            Some(TargetData::Commit(oid, ..)) => {
+            Some(TargetData::Commit { oid, .. }) => {
                 let rev = OsString::from(oid);
 
                 Some(Rc::new(move |app: &mut App, term: &mut Term| {

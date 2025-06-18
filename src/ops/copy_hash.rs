@@ -6,7 +6,7 @@ pub(crate) struct CopyHash;
 impl OpTrait for CopyHash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
-            Some(TargetData::Commit(oid, ..)) => copy_hash(oid.clone()),
+            Some(TargetData::Commit { oid, .. }) => copy_hash(oid.clone()),
             _ => None,
         }
     }
