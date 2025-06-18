@@ -327,18 +327,6 @@ impl Widget for &Screen {
         let style = &self.config.style;
 
         for (line_index, line) in self.line_views(area.as_size()).enumerate() {
-            // REMOVE!!!!!
-            {
-                use std::fs::OpenOptions;
-                use std::io::Write;
-
-                let mut file = OpenOptions::new()
-                    .append(true)
-                    .create(true)
-                    .open("/tmp/gitu.log")
-                    .unwrap();
-                writeln!(&mut file, "line: {:?}", line.item.data).unwrap();
-            }
             let line_area = Rect {
                 x: 0,
                 y: line_index as u16,
