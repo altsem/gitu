@@ -5,7 +5,7 @@ use ratatui::text::{Line, Span};
 use crate::{config::Config, git::diff::Diff, gitu_diff::Status};
 
 #[derive(Clone, Debug)]
-pub(crate) enum TargetData {
+pub(crate) enum ItemData {
     Empty,
     AllUnstaged,
     AllStaged,
@@ -63,18 +63,16 @@ pub(crate) enum SectionHeader {
     Revert(String),
 }
 
-impl TargetData {
+impl ItemData {
     pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
         match self {
-            TargetData::Empty => Line::raw(""),
-            TargetData::AllUnstaged => {
-                Line::styled("Unstaged changes", &config.style.section_header)
-            }
-            TargetData::AllStaged => Line::styled("Staged changes", &config.style.section_header),
-            TargetData::AllUntracked(_) => {
+            ItemData::Empty => Line::raw(""),
+            ItemData::AllUnstaged => Line::styled("Unstaged changes", &config.style.section_header),
+            ItemData::AllStaged => Line::styled("Staged changes", &config.style.section_header),
+            ItemData::AllUntracked(_) => {
                 Line::styled("Untracked files", &config.style.section_header)
             }
-            TargetData::Reference(ref_kind) => {
+            ItemData::Reference(ref_kind) => {
                 let (reference, style) = match ref_kind {
                     RefKind::Tag(tag) => (tag, &config.style.tag),
                     RefKind::Branch(branch) => (branch, &config.style.branch),
@@ -83,7 +81,7 @@ impl TargetData {
                 // TODO create prefix
                 Line::styled(reference, style)
             }
-            TargetData::Commit {
+            ItemData::Commit {
                 short_id,
                 associated_references,
                 summary,
@@ -111,10 +109,8 @@ impl TargetData {
 
                 Line::from(spans)
             }
-            TargetData::File(path) => {
-                Line::styled(path.to_string_lossy(), &config.style.file_header)
-            }
-            TargetData::Delta { diff, file_i } => {
+            ItemData::File(path) => Line::styled(path.to_string_lossy(), &config.style.file_header),
+            ItemData::Delta { diff, file_i } => {
                 let file_diff = &diff.file_diffs[*file_i];
 
                 let content = format!(
@@ -132,7 +128,7 @@ impl TargetData {
 
                 Line::styled(content, &config.style.file_header)
             }
-            TargetData::Hunk {
+            ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
@@ -144,7 +140,7 @@ impl TargetData {
 
                 Line::styled(content, &config.style.hunk_header)
             }
-            TargetData::HunkLine {
+            ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
@@ -169,10 +165,10 @@ impl TargetData {
 
                 Line::from(highlighted)
             }
-            TargetData::Stash { message, id, .. } => {
+            ItemData::Stash { message, id, .. } => {
                 Line::styled(format!("Stash@{id} {message}"), &config.style.hash)
             }
-            TargetData::Header(header) => {
+            ItemData::Header(header) => {
                 let content = match header {
                     SectionHeader::Remote(remote) => format!("Remote {remote}"),
                     SectionHeader::Tags => "Tags".to_string(),
@@ -189,7 +185,7 @@ impl TargetData {
 
                 Line::styled(content, &config.style.section_header)
             }
-            TargetData::BranchStatus(upstream, ahead, behind) => {
+            ItemData::BranchStatus(upstream, ahead, behind) => {
                 let content = if *ahead == 0 && *behind == 0 {
                     format!("Your branch is up to date with '{upstream}'.")
                 } else if *ahead > 0 && *behind == 0 {
@@ -202,7 +198,7 @@ impl TargetData {
 
                 Line::raw(content)
             }
-            TargetData::Error(err) => Line::raw(format!("{err}")),
+            ItemData::Error(err) => Line::raw(format!("{err}")),
         }
     }
 }

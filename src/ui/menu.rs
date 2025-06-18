@@ -78,7 +78,7 @@ impl<'a> MenuWidget<'a> {
         }
 
         let mut right_column = vec![];
-        if let Some(target_data) = &item.target_data {
+        if let Some(target_data) = &item.data {
             let target_binds = bindings
                 .list(&pending.menu)
                 .filter(|keybind| keybind.op.clone().implementation().is_target_op())
@@ -93,7 +93,7 @@ impl<'a> MenuWidget<'a> {
                 .collect::<Vec<_>>();
 
             if !target_binds.is_empty() {
-                if let Some(data) = item.target_data.as_ref() {
+                if let Some(data) = item.data.as_ref() {
                     right_column.push(todo!("TargetData::to_line"));
                 }
             }

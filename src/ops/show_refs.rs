@@ -1,15 +1,15 @@
 use super::{Action, OpTrait};
 use crate::{
     app::{App, State},
+    item_data::ItemData,
     screen,
-    target_data::TargetData,
     term::Term,
 };
 use std::rc::Rc;
 
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
         Some(Rc::new(|app: &mut App, _term: &mut Term| {
             goto_refs_screen(app);
             Ok(())

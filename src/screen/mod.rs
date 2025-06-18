@@ -1,6 +1,10 @@
-use crate::target_data::TargetData;
-use ratatui::prelude::*;
-use ratatui::{layout::Size, text::Line};
+use crate::item_data::ItemData;
+use ratatui::{
+    buffer::Buffer,
+    layout::{Rect, Size},
+    text::Line,
+    widgets::Widget,
+};
 
 use crate::{config::Config, items::hash, Res};
 
@@ -80,10 +84,7 @@ impl Screen {
     fn find_first_hunk(&mut self) -> Option<usize> {
         (0..self.line_index.len()).find(|&line_i| {
             !self.at_line(line_i).unselectable
-                && matches!(
-                    self.at_line(line_i).target_data,
-                    Some(TargetData::Hunk { .. })
-                )
+                && matches!(self.at_line(line_i).data, Some(ItemData::Hunk { .. }))
         })
     }
 
@@ -142,9 +143,9 @@ impl Screen {
         let item = self.at_line(line_i);
         match nav_mode {
             NavMode::Normal => {
-                let target_data = item.target_data.as_ref();
+                let item_data = item.data.as_ref();
                 let is_hunk_line =
-                    target_data.is_some_and(|d| matches!(d, TargetData::HunkLine { .. }));
+                    item_data.is_some_and(|d| matches!(d, ItemData::HunkLine { .. }));
 
                 !item.unselectable && !is_hunk_line
             }
@@ -228,8 +229,8 @@ impl Screen {
             return NavMode::Normal;
         }
 
-        match self.get_selected_item().target_data {
-            Some(TargetData::HunkLine { .. }) => NavMode::IncludeHunkLines,
+        match self.get_selected_item().data {
+            Some(ItemData::HunkLine { .. }) => NavMode::IncludeHunkLines,
             _ => NavMode::Normal,
         }
     }
@@ -305,7 +306,7 @@ impl Screen {
                     *highlight_depth = None;
                 };
 
-                let Some(data) = item.target_data.as_ref() else {
+                let Some(data) = item.data.as_ref() else {
                     return None;
                 };
 
@@ -353,12 +354,15 @@ impl Widget for &Screen {
                 }
             }
 
-            line.display.render(indented_line_area, buf);
-            let overflow = line.display.width() > line_area.width as usize;
+            let line_width = line.display.width();
 
-            if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
-                let line_end =
-                    (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
+            line.display.render(indented_line_area, buf);
+            let overflow = line_width > line_area.width as usize;
+
+            let line_width = line_width as u16;
+
+            if self.is_collapsed(line.item) && line_width > 0 || overflow {
+                let line_end = (indented_line_area.x + line_width).min(area.width - 1);
                 buf[(line_end, line_index as u16)].set_char('…');
             }
 

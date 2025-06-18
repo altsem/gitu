@@ -2,8 +2,8 @@ use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
 use crate::highlight;
-use crate::target_data::RefKind;
-use crate::target_data::TargetData;
+use crate::item_data::ItemData;
+use crate::item_data::RefKind;
 use crate::Res;
 use git2::Oid;
 use git2::Repository;
@@ -29,7 +29,7 @@ pub(crate) struct Item {
     pub(crate) unselectable: bool,
     // TODO rename? maybe item_data: Option<ItemData>
     // TODO does this have to be optional anymore?
-    pub(crate) target_data: Option<TargetData>,
+    pub(crate) data: Option<ItemData>,
 }
 pub(crate) fn create_diff_items(
     diff: &Rc<Diff>,
@@ -40,17 +40,15 @@ pub(crate) fn create_diff_items(
         .iter()
         .enumerate()
         .flat_map(move |(file_i, file_diff)| {
-            let target_data = TargetData::Delta {
-                diff: Rc::clone(diff),
-                file_i,
-            };
-
             iter::once(Item {
                 id: hash(diff.file_diff_header(file_i)),
                 section: true,
                 default_collapsed,
                 depth,
-                target_data: Some(target_data),
+                data: Some(ItemData::Delta {
+                    diff: Rc::clone(diff),
+                    file_i,
+                }),
                 ..Default::default()
             })
             .chain(file_diff.hunks.iter().cloned().enumerate().flat_map(
@@ -71,7 +69,7 @@ fn create_hunk_items<'a>(
         id: hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]),
         section: true,
         depth,
-        target_data: Some(TargetData::Hunk {
+        data: Some(ItemData::Hunk {
             diff: Rc::clone(&diff),
             file_i,
             hunk_i,
@@ -91,7 +89,7 @@ fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: u
             Item {
                 unselectable,
                 depth,
-                target_data: Some(TargetData::HunkLine {
+                data: Some(ItemData::HunkLine {
                     diff: Rc::clone(&diff),
                     file_i,
                     hunk_i,
@@ -114,7 +112,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
             Ok(Item {
                 id: hash(&stash_id),
                 depth: 1,
-                target_data: Some(TargetData::Stash {
+                data: Some(ItemData::Stash {
                     message: stash.message().unwrap_or("").to_string(),
                     commit: stash_id.to_string(),
                     id: i,
@@ -128,7 +126,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
                 let err = err.to_string();
                 Item {
                     id: hash(&err),
-                    target_data: Some(TargetData::Error(err)),
+                    data: Some(ItemData::Error(err)),
                     ..Default::default()
                 }
             }
@@ -198,7 +196,7 @@ pub(crate) fn log(
                 .map(|(_, reference)| reference.clone())
                 .collect();
 
-            let target_data = TargetData::Commit {
+            let data = ItemData::Commit {
                 oid: oid.to_string(),
                 short_id,
                 associated_references,
@@ -208,7 +206,7 @@ pub(crate) fn log(
             Ok(Some(Item {
                 id: hash(oid),
                 depth: 1,
-                target_data: Some(target_data),
+                data: Some(data),
                 ..Default::default()
             }))
         })
@@ -218,7 +216,7 @@ pub(crate) fn log(
                 let err = err.to_string();
                 Some(Item {
                     id: hash(&err),
-                    target_data: Some(TargetData::Error(err)),
+                    data: Some(ItemData::Error(err)),
                     ..Default::default()
                 })
             }
@@ -239,7 +237,7 @@ pub(crate) fn blank_line() -> Item {
     Item {
         depth: 0,
         unselectable: true,
-        target_data: Some(TargetData::Empty),
+        data: Some(ItemData::Empty),
         ..Default::default()
     }
 }
