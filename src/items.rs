@@ -20,9 +20,6 @@ pub type ItemId = u64;
 #[derive(Default, Clone, Debug)]
 pub(crate) struct Item {
     pub(crate) id: ItemId,
-    // TODO We'll want to move away from this `Line` struct
-    // preferably we can store text and styling separately like in highlight.rs: `(Range<usize>, Style)`
-    // and only apply them when rendering
     pub(crate) section: bool,
     pub(crate) default_collapsed: bool,
     pub(crate) depth: usize,
