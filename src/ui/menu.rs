@@ -19,7 +19,7 @@ pub(crate) struct MenuWidget<'a> {
 
 impl<'a> MenuWidget<'a> {
     pub fn new(
-        config: &Config,
+        config: Rc<Config>,
         bindings: &'a Bindings,
         pending: &'a PendingMenu,
         item: &'a Item,
@@ -78,7 +78,7 @@ impl<'a> MenuWidget<'a> {
         }
 
         let mut right_column = vec![];
-        if let Some(target_data) = &item.data {
+        if let Some(item_data) = &item.data {
             let target_binds = bindings
                 .list(&pending.menu)
                 .filter(|keybind| keybind.op.clone().implementation().is_target_op())
@@ -87,14 +87,14 @@ impl<'a> MenuWidget<'a> {
                         .op
                         .clone()
                         .implementation()
-                        .get_action(Some(target_data))
+                        .get_action(Some(item_data))
                         .is_some()
                 })
                 .collect::<Vec<_>>();
 
             if !target_binds.is_empty() {
                 if let Some(data) = item.data.as_ref() {
-                    right_column.push(todo!("TargetData::to_line"));
+                    right_column.push(data.to_line(Rc::clone(&config)));
                 }
             }
 
