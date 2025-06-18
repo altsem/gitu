@@ -92,7 +92,9 @@ impl<'a> MenuWidget<'a> {
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
-            right_column.push(item.data.to_line(Rc::clone(&config)));
+            for line in item.data.to_lines(Rc::clone(&config)) {
+                right_column.push(line);
+            }
         }
 
         for bind in target_binds {

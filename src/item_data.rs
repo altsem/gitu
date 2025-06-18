@@ -2,7 +2,7 @@ use std::{iter, path::PathBuf, rc::Rc};
 
 use ratatui::text::{Line, Span};
 
-use crate::{config::Config, git::diff::Diff, gitu_diff::Status};
+use crate::{config::Config, git::diff::Diff, gitu_diff::Status, highlight};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) enum ItemData {
@@ -67,13 +67,21 @@ pub(crate) enum SectionHeader {
 }
 
 impl ItemData {
-    pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
+    pub fn to_lines<'a>(&'a self, config: Rc<Config>) -> Vec<Line<'a>> {
         match self {
-            ItemData::Empty => Line::raw(""),
-            ItemData::AllUnstaged => Line::styled("Unstaged changes", &config.style.section_header),
-            ItemData::AllStaged => Line::styled("Staged changes", &config.style.section_header),
+            ItemData::Empty => vec![Line::raw("")],
+            ItemData::AllUnstaged => vec![Line::styled(
+                "Unstaged changes",
+                &config.style.section_header,
+            )],
+            ItemData::AllStaged => {
+                vec![Line::styled("Staged changes", &config.style.section_header)]
+            }
             ItemData::AllUntracked(_) => {
-                Line::styled("Untracked files", &config.style.section_header)
+                vec![Line::styled(
+                    "Untracked files",
+                    &config.style.section_header,
+                )]
             }
             ItemData::Reference(ref_kind) => {
                 let (reference, style) = match ref_kind {
@@ -82,7 +90,7 @@ impl ItemData {
                     RefKind::Remote(remote) => (remote, &config.style.remote),
                 };
                 // TODO create prefix
-                Line::styled(reference, style)
+                vec![Line::styled(reference, style)]
             }
             ItemData::Commit {
                 short_id,
@@ -90,7 +98,7 @@ impl ItemData {
                 summary,
                 ..
             } => {
-                let spans: Vec<_> = itertools::intersperse(
+                let line = Line::from_iter(itertools::intersperse(
                     iter::once(Span::styled(short_id, &config.style.hash))
                         .chain(
                             associated_references
@@ -107,12 +115,14 @@ impl ItemData {
                         )
                         .chain([Span::raw(summary)]),
                     Span::raw(" "),
-                )
-                .collect();
+                ));
 
-                Line::from(spans)
+                vec![line]
             }
-            ItemData::File(path) => Line::styled(path.to_string_lossy(), &config.style.file_header),
+            ItemData::File(path) => vec![Line::styled(
+                path.to_string_lossy(),
+                &config.style.file_header,
+            )],
             ItemData::Delta { diff, file_i } => {
                 let file_diff = &diff.file_diffs[*file_i];
 
@@ -129,7 +139,7 @@ impl ItemData {
                     }
                 );
 
-                Line::styled(content, &config.style.file_header)
+                vec![Line::styled(content, &config.style.file_header)]
             }
             ItemData::Hunk {
                 diff,
@@ -141,35 +151,25 @@ impl ItemData {
 
                 let content = &diff.text[hunk.header.range.clone()];
 
-                Line::styled(content, &config.style.hunk_header)
+                vec![Line::styled(content, &config.style.hunk_header)]
             }
             ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
                 ..
-            } => {
-                let highlighted: Vec<_> =
-                    crate::highlight::highlight_hunk_lines(&config, diff, *file_i, *hunk_i)
-                        .flat_map(|line_highlights| {
-                            let spans: Vec<_> = line_highlights
-                                .iter()
-                                .map(|(range, style)| {
-                                    // FIXME avoid allocation?
-                                    Span::styled(
-                                        diff.text[range.clone()].replace('\t', "    "),
-                                        *style,
-                                    )
-                                })
-                                .collect();
-                            spans
-                        })
-                        .collect();
-
-                Line::from(highlighted)
-            }
+            } => highlight::highlight_hunk_lines(&config, diff, *file_i, *hunk_i)
+                .map(|(line, line_highlights)| {
+                    Line::from_iter(line_highlights.iter().map(|(range, style)| {
+                        Span::styled(line[range.clone()].replace('\t', "    "), *style)
+                    }))
+                })
+                .collect(),
             ItemData::Stash { message, id, .. } => {
-                Line::styled(format!("Stash@{id} {message}"), &config.style.hash)
+                vec![Line::styled(
+                    format!("Stash@{id} {message}"),
+                    &config.style.hash,
+                )]
             }
             ItemData::Header(header) => {
                 let content = match header {
@@ -188,7 +188,7 @@ impl ItemData {
                     SectionHeader::RecentCommits => "Recent commits".to_string(),
                 };
 
-                Line::styled(content, &config.style.section_header)
+                vec![Line::styled(content, &config.style.section_header)]
             }
             ItemData::BranchStatus(upstream, ahead, behind) => {
                 let content = if *ahead == 0 && *behind == 0 {
@@ -201,9 +201,9 @@ impl ItemData {
                     format!("Your branch and '{upstream}' have diverged,\nand have {ahead} and {behind} different commits each, respectively.")
                 };
 
-                Line::raw(content)
+                vec![Line::raw(content)]
             }
-            ItemData::Error(err) => Line::raw(format!("{err}")),
+            ItemData::Error(err) => vec![Line::raw(format!("{err}"))],
         }
     }
 }
