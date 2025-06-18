@@ -4,8 +4,8 @@ use crate::{
     error::Error,
     git::{self, diff::Diff},
     git2_opts,
-    items::{self, hash, Item},
     item_data::{ItemData, SectionHeader},
+    items::{self, hash, Item},
     Res,
 };
 use git2::Repository;
@@ -72,27 +72,17 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             })
             .chain(untracked)
             .chain(create_status_section_items(
-                Rc::clone(&config),
                 "unstaged_changes",
                 Some(ItemData::AllUnstaged),
                 &Rc::new(git::diff_unstaged(repo.as_ref())?),
             ))
             .chain(create_status_section_items(
-                Rc::clone(&config),
                 "staged_changes",
                 Some(ItemData::AllStaged),
                 &Rc::new(git::diff_staged(repo.as_ref())?),
             ))
-            .chain(create_stash_list_section_items(
-                Rc::clone(&config),
-                repo.as_ref(),
-                "stashes",
-            ))
-            .chain(create_log_section_items(
-                Rc::clone(&config),
-                repo.as_ref(),
-                "recent_commits",
-            ))
+            .chain(create_stash_list_section_items(repo.as_ref(), "stashes"))
+            .chain(create_log_section_items(repo.as_ref(), "recent_commits"))
             .collect();
 
             Ok(items)
@@ -171,9 +161,8 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 }
 
 fn create_status_section_items<'a>(
-    config: Rc<Config>,
     snake_case_header: &str,
-    header_data: Option<ItemData>,
+    item_data: Option<ItemData>,
     diff: &'a Rc<Diff>,
 ) -> impl Iterator<Item = Item> + 'a {
     if diff.file_diffs.is_empty() {
@@ -189,7 +178,7 @@ fn create_status_section_items<'a>(
                 id: hash(snake_case_header),
                 section: true,
                 depth: 0,
-                data: header_data,
+                data: item_data,
                 ..Default::default()
             },
         ]
@@ -198,14 +187,7 @@ fn create_status_section_items<'a>(
     .chain(items::create_diff_items(diff, 1, true))
 }
 
-fn capitalize(str: &str) -> String {
-    let first: String = str.chars().take(1).flat_map(char::to_uppercase).collect();
-    let rest: String = str.chars().skip(1).collect();
-    format!("{first}{rest}")
-}
-
 fn create_stash_list_section_items<'a>(
-    config: Rc<Config>,
     repo: &Repository,
     snake_case_header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
@@ -213,13 +195,13 @@ fn create_stash_list_section_items<'a>(
     if stashes.is_empty() {
         vec![]
     } else {
-        let style = &config.style;
         vec![
             items::blank_line(),
             Item {
                 id: hash(snake_case_header),
                 section: true,
                 depth: 0,
+                data: Some(ItemData::Header(SectionHeader::Stashes)),
                 ..Default::default()
             },
         ]
@@ -229,11 +211,9 @@ fn create_stash_list_section_items<'a>(
 }
 
 fn create_log_section_items<'a>(
-    config: Rc<Config>,
     repo: &Repository,
     snake_case_header: &str,
 ) -> impl Iterator<Item = Item> + 'a {
-    let style = &config.style;
     [
         Item {
             depth: 0,
@@ -244,6 +224,7 @@ fn create_log_section_items<'a>(
             id: hash(snake_case_header),
             section: true,
             depth: 0,
+            data: Some(ItemData::Header(SectionHeader::RecentCommits)),
             ..Default::default()
         },
     ]

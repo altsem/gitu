@@ -4,8 +4,9 @@ use ratatui::text::{Line, Span};
 
 use crate::{config::Config, git::diff::Diff, gitu_diff::Status};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub(crate) enum ItemData {
+    #[default]
     Empty,
     AllUnstaged,
     AllStaged,
@@ -61,6 +62,8 @@ pub(crate) enum SectionHeader {
     Rebase(String, String),
     Merge(String),
     Revert(String),
+    Stashes,
+    RecentCommits,
 }
 
 impl ItemData {
@@ -181,6 +184,8 @@ impl ItemData {
                     SectionHeader::Rebase(head, onto) => format!("Rebasing {head} onto {onto}"),
                     SectionHeader::Merge(head) => format!("Merging {head}"),
                     SectionHeader::Revert(head) => format!("Reverting {head}"),
+                    SectionHeader::Stashes => "Stashes".to_string(),
+                    SectionHeader::RecentCommits => "Recent commits".to_string(),
                 };
 
                 Line::styled(content, &config.style.section_header)
