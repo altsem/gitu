@@ -2,7 +2,7 @@ use super::OpTrait;
 use crate::{
     app::App,
     git::diff::{Diff, PatchMode},
-    target_data::TargetData,
+    item_data::ItemData,
     term::Term,
     Action,
 };
@@ -10,20 +10,20 @@ use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Stage;
 impl OpTrait for Stage {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
         let action = match target.cloned() {
-            Some(TargetData::AllUnstaged) => stage_unstaged(),
-            Some(TargetData::AllUntracked(untracked)) => stage_untracked(untracked),
-            Some(TargetData::File(u)) => stage_file(u.into()),
-            Some(TargetData::Delta { diff, file_i }) => {
+            Some(ItemData::AllUnstaged) => stage_unstaged(),
+            Some(ItemData::AllUntracked(untracked)) => stage_untracked(untracked),
+            Some(ItemData::File(u)) => stage_file(u.into()),
+            Some(ItemData::Delta { diff, file_i }) => {
                 stage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
             }
-            Some(TargetData::Hunk {
+            Some(ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
             }) => stage_patch(diff, file_i, hunk_i),
-            Some(TargetData::HunkLine {
+            Some(ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,

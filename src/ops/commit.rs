@@ -1,5 +1,5 @@
 use super::{Action, OpTrait};
-use crate::{app::App, menu::arg::Arg, target_data::TargetData, term::Term};
+use crate::{app::App, item_data::ItemData, menu::arg::Arg, term::Term};
 use std::{
     ffi::{OsStr, OsString},
     process::Command,
@@ -25,7 +25,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct Commit;
 impl OpTrait for Commit {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["commit"]);
@@ -44,7 +44,7 @@ impl OpTrait for Commit {
 
 pub(crate) struct CommitAmend;
 impl OpTrait for CommitAmend {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend"]);
@@ -63,9 +63,9 @@ impl OpTrait for CommitAmend {
 
 pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
         match target {
-            Some(TargetData::Commit { oid, .. }) => {
+            Some(ItemData::Commit { oid, .. }) => {
                 let rev = OsString::from(oid);
 
                 Some(Rc::new(move |app: &mut App, term: &mut Term| {
@@ -98,9 +98,9 @@ fn commit_fixup_cmd(args: &[OsString], rev: &OsStr) -> Command {
 
 pub(crate) struct CommitInstantFixup;
 impl OpTrait for CommitInstantFixup {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
         match target {
-            Some(TargetData::Commit { oid, .. }) => {
+            Some(ItemData::Commit { oid, .. }) => {
                 let rev = OsString::from(oid);
 
                 Some(Rc::new(move |app: &mut App, term: &mut Term| {

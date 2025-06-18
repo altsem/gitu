@@ -1,12 +1,12 @@
 use super::{Action, OpTrait};
-use crate::{app::App, error::Error, target_data::TargetData};
+use crate::{app::App, error::Error, item_data::ItemData};
 use std::rc::Rc;
 
 pub(crate) struct CopyHash;
 impl OpTrait for CopyHash {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
         match target {
-            Some(TargetData::Commit { oid, .. }) => copy_hash(oid.clone()),
+            Some(ItemData::Commit { oid, .. }) => copy_hash(oid.clone()),
             _ => None,
         }
     }

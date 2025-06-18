@@ -16,7 +16,7 @@ mod ops;
 mod prompt;
 mod screen;
 mod syntax_parser;
-mod target_data;
+mod item_data;
 pub mod term;
 #[cfg(test)]
 mod tests;

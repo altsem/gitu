@@ -5,7 +5,7 @@ use crate::{
     git::{self, diff::Diff},
     git2_opts,
     items::{self, hash, Item},
-    target_data::{SectionHeader, TargetData},
+    item_data::{ItemData, SectionHeader},
     Res,
 };
 use git2::Repository;
@@ -32,7 +32,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
                     id: hash("rebase_status"),
-                    target_data: Some(TargetData::Header(SectionHeader::Rebase(
+                    data: Some(ItemData::Header(SectionHeader::Rebase(
                         rebase.head_name,
                         rebase.onto,
                     ))),
@@ -42,14 +42,14 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             } else if let Some(merge) = git::merge_status(&repo)? {
                 vec![Item {
                     id: hash("merge_status"),
-                    target_data: Some(TargetData::Header(SectionHeader::Merge(merge.head))),
+                    data: Some(ItemData::Header(SectionHeader::Merge(merge.head))),
                     ..Default::default()
                 }]
                 .into_iter()
             } else if let Some(revert) = git::revert_status(&repo)? {
                 vec![Item {
                     id: hash("revert_status"),
-                    target_data: Some(TargetData::Header(SectionHeader::Revert(revert.head))),
+                    data: Some(ItemData::Header(SectionHeader::Revert(revert.head))),
                     ..Default::default()
                 }]
                 .into_iter()
@@ -65,7 +65,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                         id: hash("untracked"),
                         section: true,
                         depth: 0,
-                        target_data: Some(TargetData::AllUntracked(untracked_files)),
+                        data: Some(ItemData::AllUntracked(untracked_files)),
                         ..Default::default()
                     },
                 ]
@@ -74,13 +74,13 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "unstaged_changes",
-                Some(TargetData::AllUnstaged),
+                Some(ItemData::AllUnstaged),
                 &Rc::new(git::diff_unstaged(repo.as_ref())?),
             ))
             .chain(create_status_section_items(
                 Rc::clone(&config),
                 "staged_changes",
-                Some(TargetData::AllStaged),
+                Some(ItemData::AllStaged),
                 &Rc::new(git::diff_staged(repo.as_ref())?),
             ))
             .chain(create_stash_list_section_items(
@@ -106,7 +106,7 @@ fn items_list(files: Vec<PathBuf>) -> Vec<Item> {
         .map(|path| Item {
             id: hash(&path),
             depth: 1,
-            target_data: Some(TargetData::File(path)),
+            data: Some(ItemData::File(path)),
             ..Default::default()
         })
         .collect::<Vec<_>>()
@@ -118,7 +118,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
             id: hash("branch_status"),
             section: true,
             depth: 0,
-            target_data: Some(TargetData::Header(SectionHeader::NoBranch)),
+            data: Some(ItemData::Header(SectionHeader::NoBranch)),
             ..Default::default()
         }]);
     };
@@ -129,7 +129,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
         id: hash("branch_status"),
         section: true,
         depth: 0,
-        target_data: Some(TargetData::Header(SectionHeader::OnBranch(head_shorthand))),
+        data: Some(ItemData::Header(SectionHeader::OnBranch(head_shorthand))),
         ..Default::default()
     }];
 
@@ -147,7 +147,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
             id: hash("branch_status"),
             depth: 1,
             unselectable: true,
-            target_data: Some(TargetData::Header(SectionHeader::UpstreamGone(
+            data: Some(ItemData::Header(SectionHeader::UpstreamGone(
                 upstream_shortname,
             ))),
             ..Default::default()
@@ -163,7 +163,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
         id: hash("branch_status"),
         depth: 1,
         unselectable: true,
-        target_data: Some(TargetData::BranchStatus(upstream_shortname, ahead, behind)),
+        data: Some(ItemData::BranchStatus(upstream_shortname, ahead, behind)),
         ..Default::default()
     });
 
@@ -173,7 +173,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 fn create_status_section_items<'a>(
     config: Rc<Config>,
     snake_case_header: &str,
-    header_data: Option<TargetData>,
+    header_data: Option<ItemData>,
     diff: &'a Rc<Diff>,
 ) -> impl Iterator<Item = Item> + 'a {
     if diff.file_diffs.is_empty() {
@@ -189,7 +189,7 @@ fn create_status_section_items<'a>(
                 id: hash(snake_case_header),
                 section: true,
                 depth: 0,
-                target_data: header_data,
+                data: header_data,
                 ..Default::default()
             },
         ]

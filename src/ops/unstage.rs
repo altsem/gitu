@@ -1,21 +1,21 @@
 use super::OpTrait;
-use crate::{app::App, git::diff::PatchMode, target_data::TargetData, term::Term, Action};
+use crate::{app::App, git::diff::PatchMode, item_data::ItemData, term::Term, Action};
 use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
 impl OpTrait for Unstage {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
         let action = match target.cloned() {
-            Some(TargetData::AllStaged) => unstage_staged(),
-            Some(TargetData::Delta { diff, file_i }) => {
+            Some(ItemData::AllStaged) => unstage_staged(),
+            Some(ItemData::Delta { diff, file_i }) => {
                 unstage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
             }
-            Some(TargetData::Hunk {
+            Some(ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
             }) => unstage_patch(diff.format_hunk_patch(file_i, hunk_i).into_bytes()),
-            Some(TargetData::HunkLine {
+            Some(ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,

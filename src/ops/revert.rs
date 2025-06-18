@@ -3,7 +3,7 @@ use std::{process::Command, rc::Rc};
 use crate::{
     app::{App, PromptParams},
     menu::arg::Arg,
-    target_data::TargetData,
+    item_data::ItemData,
     term::Term,
     Res,
 };
@@ -22,7 +22,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct RevertAbort;
 impl OpTrait for RevertAbort {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--abort"]);
@@ -40,7 +40,7 @@ impl OpTrait for RevertAbort {
 
 pub(crate) struct RevertContinue;
 impl OpTrait for RevertContinue {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--continue"]);
@@ -58,7 +58,7 @@ impl OpTrait for RevertContinue {
 
 pub(crate) struct RevertCommit;
 impl OpTrait for RevertCommit {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: Option<&ItemData>) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let commit = app.prompt(
                 term,

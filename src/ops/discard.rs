@@ -6,15 +6,15 @@ use crate::{
     config::ConfirmDiscardOption,
     git::diff::{Diff, PatchMode},
     gitu_diff,
-    target_data::{RefKind, TargetData},
+    item_data::{RefKind, ItemData},
 };
 use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Discard;
 impl OpTrait for Discard {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action> {
         let action = match target.cloned() {
-            Some(TargetData::Reference(reference)) => {
+            Some(ItemData::Reference(reference)) => {
                 let branch = match reference {
                     RefKind::Tag(tag) => tag,
                     RefKind::Branch(branch) => branch,
@@ -23,8 +23,8 @@ impl OpTrait for Discard {
                 };
                 discard_branch(branch)
             }
-            Some(TargetData::File(file)) => clean_file(file),
-            Some(TargetData::Delta { diff, file_i }) => match diff.file_diffs[file_i].header.status
+            Some(ItemData::File(file)) => clean_file(file),
+            Some(ItemData::Delta { diff, file_i }) => match diff.file_diffs[file_i].header.status
             {
                 Status::Added => {
                     remove_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
@@ -37,12 +37,12 @@ impl OpTrait for Discard {
                     checkout_file(diff.text[diff.file_diffs[file_i].header.old_file.clone()].into())
                 }
             },
-            Some(TargetData::Hunk {
+            Some(ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
             }) => discard_unstaged_patch(diff, file_i, hunk_i),
-            Some(TargetData::HunkLine {
+            Some(ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,

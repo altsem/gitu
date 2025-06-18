@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{app::App, menu::Menu, target_data::TargetData, term::Term, Res};
+use crate::{app::App, menu::Menu, item_data::ItemData, term::Term, Res};
 use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod branch;
@@ -27,7 +27,7 @@ pub(crate) type Action = Rc<dyn FnMut(&mut App, &mut Term) -> Res<()>>;
 pub(crate) trait OpTrait {
     /// Get the implementation (which may or may not exist) of the Op given some TargetData.
     /// This indirection allows Gitu to show a contextual menu of applicable actions.
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action>;
+    fn get_action(&self, target: Option<&ItemData>) -> Option<Action>;
 
     /// This indicates whether the Op is meant to read and
     /// act on TargetData. Those are listed differently in the help menu.
