@@ -1,4 +1,7 @@
 use std::borrow::Cow;
+use std::cell::Ref;
+use std::cell::RefCell;
+use std::cell::RefMut;
 use std::io::Read;
 use std::io::Write;
 use std::ops::DerefMut;
@@ -17,6 +20,7 @@ use termwiz::input::InputEvent;
 use termwiz::input::KeyCode;
 use termwiz::input::KeyEvent;
 use termwiz::input::Modifiers;
+use ui::widgets::Ui;
 
 use crate::bindings::Bindings;
 use crate::cli;
@@ -34,6 +38,7 @@ use crate::prompt::PromptData;
 use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
+use crate::term;
 use crate::term::Term;
 use crate::ui;
 
@@ -45,7 +50,7 @@ pub(crate) struct State {
     pub bindings: Bindings,
     pending_keys: Vec<(Modifiers, KeyCode)>,
     pub quit: bool,
-    pub screens: Vec<Screen>,
+    pub screens: Rc<RefCell<Vec<Screen>>>,
     pub pending_menu: Option<PendingMenu>,
     pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
     enable_async_cmds: bool,
@@ -57,6 +62,7 @@ pub(crate) struct State {
 }
 
 pub(crate) struct App {
+    ui: Ui<'static>,
     pub state: State,
 }
 
@@ -68,7 +74,7 @@ impl App {
         config: Rc<Config>,
         enable_async_cmds: bool,
     ) -> Res<Self> {
-        let screens = match args.command {
+        let screens = Rc::new(RefCell::new(match args.command {
             Some(cli::Commands::Show { ref reference }) => {
                 vec![screen::show::create(
                     Rc::clone(&config),
@@ -82,7 +88,7 @@ impl App {
                 Rc::clone(&repo),
                 size,
             )?],
-        };
+        }));
 
         let bindings = Bindings::from(&config.bindings);
         let pending_menu = root_menu(&config).map(PendingMenu::init);
@@ -91,7 +97,13 @@ impl App {
             .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {}", e))
             .ok();
 
+        let mut ui = Ui::new();
+        let root = ui.set_root(ui::Root {});
+        ui.add_child(root, ui::ScreenWindow(Rc::clone(&screens)));
+        ui.add_child(root, ui::Menu {});
+
         let mut app = Self {
+            ui,
             state: State {
                 repo,
                 config,
@@ -151,7 +163,7 @@ impl App {
         Ok(())
     }
 
-    pub fn update(&mut self, term: &mut Term, wait: Option<Duration>) -> Res<()> {
+    fn update(&mut self, term: &mut Term, wait: Option<Duration>) -> Res<()> {
         if let Some(event) = term.backend_mut().poll_input(wait)? {
             self.handle_event(term, event)?;
         }
@@ -176,7 +188,7 @@ impl App {
     pub fn handle_event(&mut self, term: &mut Term, event: InputEvent) -> Res<()> {
         match event {
             InputEvent::Resized { cols, rows } => {
-                for screen in self.state.screens.iter_mut() {
+                for screen in self.state.screens.borrow_mut().iter_mut() {
                     screen.size = Size::new(cols as u16, rows as u16);
                 }
 
@@ -203,9 +215,15 @@ impl App {
     }
 
     pub fn redraw_now(&mut self, term: &mut Term) -> Res<()> {
-        if self.state.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui(frame, &mut self.state))
-                .map_err(Error::Term)?;
+        // TODO Refactor this
+        let buf = match term.backend_mut() {
+            term::TermBackend::Termwiz(termwiz_backend) => termwiz_backend.buffered_terminal_mut(),
+            term::TermBackend::Test { backend, events } => todo!(),
+        };
+
+        if self.state.screens.borrow().last().is_some() {
+            self.ui.render_to_screen(buf).unwrap();
+            buf.flush().unwrap();
 
             self.state.needs_redraw = false;
         };
@@ -246,8 +264,10 @@ impl App {
     }
 
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
-        let target = self.screen().get_selected_item().target_data.as_ref();
+        let screen_ref = self.screen();
+        let target = screen_ref.get_selected_item().target_data.as_ref();
         if let Some(mut action) = op.clone().implementation().get_action(target) {
+            drop(screen_ref);
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
             self.handle_result(result)?;
         }
@@ -274,12 +294,16 @@ impl App {
         self.state.pending_menu = root_menu(&self.state.config).map(PendingMenu::init)
     }
 
-    pub fn screen_mut(&mut self) -> &mut Screen {
-        self.state.screens.last_mut().expect("No screen")
+    pub fn screen_mut(&mut self) -> RefMut<Screen> {
+        RefMut::map(self.state.screens.borrow_mut(), |screens| {
+            screens.last_mut().expect("No screen")
+        })
     }
 
-    pub fn screen(&self) -> &Screen {
-        self.state.screens.last().expect("No screen")
+    pub fn screen(&self) -> Ref<Screen> {
+        Ref::map(self.state.screens.borrow(), |screen| {
+            screen.last().expect("No screen")
+        })
     }
 
     /// Displays an `Info` message to the CmdLog.
@@ -321,8 +345,7 @@ impl App {
         cmd.stderr(Stdio::piped());
 
         let log_entry = self.state.current_cmd_log.push_cmd(&cmd);
-        term.draw(|frame| ui::ui(frame, &mut self.state))
-            .map_err(Error::Term)?;
+        self.redraw_now(term)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
