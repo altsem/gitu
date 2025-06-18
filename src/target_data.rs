@@ -11,12 +11,12 @@ pub(crate) enum TargetData {
     AllStaged,
     AllUntracked(Vec<PathBuf>),
     Reference(RefKind),
-    /// fields:
-    /// - oid
-    /// - short id
-    /// - associated references
-    /// - summary
-    Commit(String, String, Vec<RefKind>, String),
+    Commit {
+        oid: String,
+        short_id: String,
+        associated_references: Vec<RefKind>,
+        summary: String,
+    },
     File(PathBuf),
     Delta {
         diff: Rc<Diff>,
@@ -83,7 +83,12 @@ impl TargetData {
                 // TODO create prefix
                 Line::styled(reference, style)
             }
-            TargetData::Commit(_, short_id, associated_references, summary) => {
+            TargetData::Commit {
+                short_id,
+                associated_references,
+                summary,
+                ..
+            } => {
                 let spans: Vec<_> = itertools::intersperse(
                     iter::once(Span::styled(short_id, &config.style.hash))
                         .chain(

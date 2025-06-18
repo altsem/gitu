@@ -14,7 +14,7 @@ impl OpTrait for Show {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         match target {
             Some(
-                TargetData::Commit(oid, ..)
+                TargetData::Commit { oid, .. }
                 | TargetData::Reference(RefKind::Tag(oid))
                 | TargetData::Reference(RefKind::Branch(oid)),
             ) => goto_show_screen(oid.clone()),

@@ -103,7 +103,7 @@ impl OpTrait for RebaseInteractive {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(
-                TargetData::Commit(oid, ..)
+                TargetData::Commit { oid, .. }
                 | TargetData::Reference(RefKind::Tag(oid))
                 | TargetData::Reference(RefKind::Branch(oid)),
             ) => {
@@ -147,7 +147,7 @@ impl OpTrait for RebaseAutosquash {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
         let action = match target {
             Some(
-                TargetData::Commit(oid, ..)
+                TargetData::Commit { oid, .. }
                 | TargetData::Reference(RefKind::Tag(oid))
                 | TargetData::Reference(RefKind::Branch(oid)),
             ) => {
