@@ -21,7 +21,7 @@ pub(crate) fn highlight_hunk_lines<'a>(
     diff: &'a Rc<Diff>,
     file_i: usize,
     hunk_i: usize,
-) -> impl Iterator<Item = Vec<(Range<usize>, Style)>> + 'a {
+) -> impl Iterator<Item = (&'a str, LineHighlights<'a>)> + 'a {
     let file_diff = &diff.file_diffs[file_i];
 
     let old_file_range = file_diff.header.old_file.clone();
@@ -53,7 +53,12 @@ pub(crate) fn highlight_hunk_lines<'a>(
     hunk_content
         .split_inclusive('\n')
         .scan_byte_ranges()
-        .map(move |(line_range, _)| collect_line_highlights(&mut highlights_iter, &line_range))
+        .map(move |(line_range, line)| {
+            (
+                line,
+                collect_line_highlights(&mut highlights_iter, &line_range),
+            )
+        })
 }
 
 pub(crate) fn iter_diff_highlights<'a>(
