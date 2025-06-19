@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::app::State;
 use crate::prompt::TextPrompt;
 use ratatui::prelude::*;
@@ -48,7 +50,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
             None
         } else {
             Some(menu::MenuWidget::new(
-                &state.config,
+                Rc::clone(&state.config),
                 &state.bindings,
                 menu,
                 state.screens.last().unwrap().get_selected_item(),

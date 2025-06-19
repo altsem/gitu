@@ -2,7 +2,7 @@ use super::{selected_rev, Action, OpTrait};
 use crate::{
     app::{App, PromptParams, State},
     error::Error,
-    items::TargetData,
+    item_data::ItemData,
     menu::arg::{any_regex, positive_number, Arg},
     screen,
     term::Term,
@@ -27,7 +27,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, _term: &mut Term| {
             goto_log_screen(app, None);
             Ok(())
@@ -41,7 +41,7 @@ impl OpTrait for LogCurrent {
 
 pub(crate) struct LogOther;
 impl OpTrait for LogOther {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let rev = app.prompt(
                 term,

@@ -1,7 +1,7 @@
 use super::{Action, OpTrait};
 use crate::{
     app::{root_menu, App, PromptParams, State},
-    items::TargetData,
+    item_data::ItemData,
     menu::PendingMenu,
     screen::NavMode,
     term::Term,
@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 pub(crate) struct Quit;
 impl OpTrait for Quit {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, term| {
             let menu = app
                 .state
@@ -47,7 +47,7 @@ impl OpTrait for Quit {
 
 pub(crate) struct OpenMenu(pub crate::menu::Menu);
 impl OpTrait for OpenMenu {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         let submenu = self.0;
         Some(Rc::new(move |app, _term| {
             app.state.pending_menu = Some(PendingMenu::init(submenu));
@@ -62,7 +62,7 @@ impl OpTrait for OpenMenu {
 
 pub(crate) struct Refresh;
 impl OpTrait for Refresh {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().update()
@@ -76,7 +76,7 @@ impl OpTrait for Refresh {
 
 pub(crate) struct ToggleArg(pub String);
 impl OpTrait for ToggleArg {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         let arg_name = self.0.clone();
         Some(Rc::new(move |app, term| {
             let mut need_prompt = None;
@@ -137,7 +137,7 @@ impl OpTrait for ToggleArg {
 
 pub(crate) struct ToggleSection;
 impl OpTrait for ToggleSection {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().toggle_section();
@@ -152,7 +152,7 @@ impl OpTrait for ToggleSection {
 
 pub(crate) struct MoveUp;
 impl OpTrait for MoveUp {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().select_previous(NavMode::Normal);
@@ -167,7 +167,7 @@ impl OpTrait for MoveUp {
 
 pub(crate) struct MoveDown;
 impl OpTrait for MoveDown {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().select_next(NavMode::Normal);
@@ -182,7 +182,7 @@ impl OpTrait for MoveDown {
 
 pub(crate) struct MoveDownLine;
 impl OpTrait for MoveDownLine {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().select_next(NavMode::IncludeHunkLines);
@@ -197,7 +197,7 @@ impl OpTrait for MoveDownLine {
 
 pub(crate) struct MoveUpLine;
 impl OpTrait for MoveUpLine {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().select_previous(NavMode::IncludeHunkLines);
@@ -212,7 +212,7 @@ impl OpTrait for MoveUpLine {
 
 pub(crate) struct MoveNextSection;
 impl OpTrait for MoveNextSection {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             let depth = app.screen().get_selected_item().depth;
@@ -228,7 +228,7 @@ impl OpTrait for MoveNextSection {
 
 pub(crate) struct MovePrevSection;
 impl OpTrait for MovePrevSection {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             let depth = app.screen().get_selected_item().depth;
@@ -245,7 +245,7 @@ impl OpTrait for MovePrevSection {
 
 pub(crate) struct MoveParentSection;
 impl OpTrait for MoveParentSection {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             let depth = app.screen().get_selected_item().depth.saturating_sub(1);
@@ -262,7 +262,7 @@ impl OpTrait for MoveParentSection {
 
 pub(crate) struct HalfPageUp;
 impl OpTrait for HalfPageUp {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().scroll_half_page_up();
@@ -277,7 +277,7 @@ impl OpTrait for HalfPageUp {
 
 pub(crate) struct HalfPageDown;
 impl OpTrait for HalfPageDown {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
             app.screen_mut().scroll_half_page_down();

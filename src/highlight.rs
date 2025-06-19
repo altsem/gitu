@@ -14,19 +14,26 @@ use std::path::Path;
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 
-type LineHighlights<'a> = (&'a str, Vec<(Range<usize>, Style)>);
+type LineHighlights<'a> = Vec<(Range<usize>, Style)>;
 
 pub(crate) fn highlight_hunk_lines<'a>(
     config: &'a Config,
     diff: &'a Rc<Diff>,
     file_i: usize,
     hunk_i: usize,
-) -> impl Iterator<Item = LineHighlights<'a>> + 'a {
-    let old_path = &diff.text[diff.file_diffs[file_i].header.old_file.clone()];
-    let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
+) -> impl Iterator<Item = (&'a str, LineHighlights<'a>)> + 'a {
+    let file_diff = &diff.file_diffs[file_i];
 
-    let hunk = &diff.file_diffs[file_i].hunks[hunk_i];
-    let hunk_content = &diff.text[hunk.content.range.clone()];
+    let old_file_range = file_diff.header.old_file.clone();
+    let new_file_range = file_diff.header.new_file.clone();
+
+    let old_path = &diff.text[old_file_range];
+    let new_path = &diff.text[new_file_range];
+
+    let hunk = &file_diff.hunks[hunk_i];
+    let hunk_range = hunk.content.range.clone();
+    let hunk_content = &diff.text[hunk_range];
+
     let old_mask = diff.mask_old_hunk(file_i, hunk_i);
     let new_mask = diff.mask_new_hunk(file_i, hunk_i);
 
@@ -47,8 +54,10 @@ pub(crate) fn highlight_hunk_lines<'a>(
         .split_inclusive('\n')
         .scan_byte_ranges()
         .map(move |(line_range, line)| {
-            let highlights = collect_line_highlights(&mut highlights_iter, &line_range);
-            (line, highlights)
+            (
+                line,
+                collect_line_highlights(&mut highlights_iter, &line_range),
+            )
         })
 }
 
@@ -154,10 +163,23 @@ trait ScanByteRanges<T> {
 
 impl<'a, I: Iterator<Item = &'a str>> ScanByteRanges<&'a str> for I {
     fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, &'a str)> {
-        self.scan(0..0, |prev_line_range, line| {
-            let line_range = prev_line_range.end..(prev_line_range.end + line.len());
-            *prev_line_range = line_range.clone();
-            Some((line_range, line))
+        self.scan(0..0, |previous_line, current_line| {
+            let line_start = previous_line.end;
+            let actual_line_length = current_line.len();
+
+            let line_end = if current_line.ends_with("\r\n") {
+                // subtract \r length + \n length from scanned line to "trim" the line
+                actual_line_length.saturating_sub(2)
+            } else {
+                actual_line_length
+            };
+
+            let valid_line_range = line_start..(line_start + line_end);
+
+            let scanned_line_range = line_start..(line_start + actual_line_length);
+            *previous_line = scanned_line_range.clone();
+
+            Some((valid_line_range, current_line))
         })
     }
 }

@@ -1,10 +1,12 @@
-use ratatui::prelude::*;
-
-use crate::{
-    config::Config,
-    items::{hash, TargetData},
-    Res,
+use crate::item_data::ItemData;
+use ratatui::{
+    buffer::Buffer,
+    layout::{Rect, Size},
+    text::Line,
+    widgets::Widget,
 };
+
+use crate::{config::Config, items::hash, Res};
 
 use super::Item;
 use std::{collections::HashSet, rc::Rc};
@@ -82,10 +84,7 @@ impl Screen {
     fn find_first_hunk(&mut self) -> Option<usize> {
         (0..self.line_index.len()).find(|&line_i| {
             !self.at_line(line_i).unselectable
-                && matches!(
-                    self.at_line(line_i).target_data,
-                    Some(TargetData::Hunk { .. })
-                )
+                && matches!(self.at_line(line_i).data, ItemData::Hunk { .. })
         })
     }
 
@@ -144,9 +143,7 @@ impl Screen {
         let item = self.at_line(line_i);
         match nav_mode {
             NavMode::Normal => {
-                let target_data = item.target_data.as_ref();
-                let is_hunk_line =
-                    target_data.is_some_and(|d| matches!(d, TargetData::HunkLine { .. }));
+                let is_hunk_line = matches!(item.data, ItemData::HunkLine { .. });
 
                 !item.unselectable && !is_hunk_line
             }
@@ -230,8 +227,8 @@ impl Screen {
             return NavMode::Normal;
         }
 
-        match self.get_selected_item().target_data {
-            Some(TargetData::HunkLine { .. }) => NavMode::IncludeHunkLines,
+        match self.get_selected_item().data {
+            ItemData::HunkLine { .. } => NavMode::IncludeHunkLines,
             _ => NavMode::Normal,
         }
     }
@@ -297,31 +294,39 @@ impl Screen {
         let scan_highlight_range = scan_start..(scan_end);
         let context_lines = self.scroll - scan_start;
 
-        self.line_index[scan_highlight_range]
-            .iter()
-            .scan(None, |highlight_depth, item_i| {
-                let item = &self.items[*item_i];
-                if self.line_index[self.cursor] == *item_i {
-                    *highlight_depth = Some(item.depth);
-                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                    *highlight_depth = None;
-                };
+        let mut line_views = vec![];
+        let mut highlight_depth = None;
 
-                Some(LineView {
-                    item_index: *item_i,
+        'outer: for item_index in &self.line_index[scan_highlight_range] {
+            let item = &self.items[*item_index];
+            if self.line_index[self.cursor] == *item_index {
+                highlight_depth = Some(item.depth);
+            } else if highlight_depth.is_some_and(|s| s >= item.depth) {
+                highlight_depth = None;
+            };
+
+            for line in item.data.to_lines(Rc::clone(&self.config)) {
+                line_views.push(LineView {
+                    item_index: *item_index,
                     item,
-                    display: &item.display,
+                    display: line,
                     highlighted: highlight_depth.is_some(),
-                })
-            })
-            .skip(context_lines)
+                });
+
+                if line_views.len() >= area.height as usize {
+                    break 'outer;
+                }
+            }
+        }
+
+        line_views.into_iter().skip(context_lines)
     }
 }
 
 struct LineView<'a> {
     item_index: usize,
     item: &'a Item,
-    display: &'a Line<'a>,
+    display: Line<'a>,
     highlighted: bool,
 }
 
@@ -351,12 +356,15 @@ impl Widget for &Screen {
                 }
             }
 
-            line.display.render(indented_line_area, buf);
-            let overflow = line.display.width() > line_area.width as usize;
+            let line_width = line.display.width();
 
-            if self.is_collapsed(line.item) && line.display.width() > 0 || overflow {
-                let line_end =
-                    (indented_line_area.x + line.display.width() as u16).min(area.width - 1);
+            line.display.render(indented_line_area, buf);
+            let overflow = line_width > line_area.width as usize;
+
+            let line_width = line_width as u16;
+
+            if self.is_collapsed(line.item) && line_width > 0 || overflow {
+                let line_end = (indented_line_area.x + line_width).min(area.width - 1);
                 buf[(line_end, line_index as u16)].set_char('…');
             }
 

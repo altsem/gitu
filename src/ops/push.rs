@@ -7,7 +7,8 @@ use crate::git;
 use crate::git::remote::{
     get_push_remote, get_upstream_components, get_upstream_shortname, set_push_remote,
 };
-use crate::{items::TargetData, menu::arg::Arg, term::Term, Res};
+use crate::item_data::ItemData;
+use crate::{menu::arg::Arg, term::Term, Res};
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -21,7 +22,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct PushToPushRemote;
 impl OpTrait for PushToPushRemote {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(
             |app: &mut App, term: &mut Term| match get_push_remote(&app.state.repo)? {
                 None => {
@@ -70,7 +71,7 @@ fn set_push_remote_and_push(app: &mut App, term: &mut Term, push_remote_name: &s
 
 pub(crate) struct PushToUpstream;
 impl OpTrait for PushToUpstream {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(
             |app: &mut App, term: &mut Term| match get_upstream_components(&app.state.repo)? {
                 None => {
@@ -116,7 +117,7 @@ fn set_upstream_and_push(app: &mut App, term: &mut Term, upstream_name: &str) ->
 
 pub(crate) struct PushToElsewhere;
 impl OpTrait for PushToElsewhere {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let remote = app.prompt(
                 term,
