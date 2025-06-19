@@ -29,6 +29,7 @@ impl OpTrait for Stage {
                 file_i,
                 hunk_i,
                 line_i,
+                ..
             } => stage_line(Rc::clone(diff), *file_i, *hunk_i, *line_i),
             _ => return None,
         };

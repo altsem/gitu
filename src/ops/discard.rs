@@ -46,6 +46,7 @@ impl OpTrait for Discard {
                 file_i,
                 hunk_i,
                 line_i,
+                ..
             } => discard_unstaged_line(Rc::clone(diff), *file_i, *hunk_i, *line_i),
             _ => return None,
         };

@@ -297,7 +297,7 @@ impl Screen {
         let mut line_views = vec![];
         let mut highlight_depth = None;
 
-        for item_index in &self.line_index[scan_highlight_range] {
+        'outer: for item_index in &self.line_index[scan_highlight_range] {
             let item = &self.items[*item_index];
             if self.line_index[self.cursor] == *item_index {
                 highlight_depth = Some(item.depth);
@@ -311,7 +311,11 @@ impl Screen {
                     item,
                     display: line,
                     highlighted: highlight_depth.is_some(),
-                })
+                });
+
+                if line_views.len() >= area.height as usize {
+                    break 'outer;
+                }
             }
         }
 

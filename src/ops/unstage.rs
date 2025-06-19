@@ -26,6 +26,7 @@ impl OpTrait for Unstage {
                 file_i,
                 hunk_i,
                 line_i,
+                ..
             } => unstage_line(
                 diff.format_line_patch(
                     *file_i,

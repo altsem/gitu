@@ -77,12 +77,21 @@ fn create_hunk_items<'a>(
 }
 
 fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
-    diff.text
-        .lines()
-        .enumerate()
-        .map(|(line_i, line)| {
-            let unselectable = line.starts_with(' ');
+    let hunk = diff.hunk(file_i, hunk_i);
 
+    hunk.lines()
+        .scan(0usize, |prev_line_end, line| {
+            let line_start = *prev_line_end;
+            let line_end = line.len() + 1;
+
+            *prev_line_end = line_start + line_end;
+            Some(line_start..(line_start + line_end))
+        })
+        .skip(1) // skip hunk header line
+        .enumerate()
+        .map(|(line_index, line_range)| {
+            let line = &hunk[line_range.clone()];
+            let unselectable = line.starts_with(' ');
             Item {
                 unselectable,
                 depth,
@@ -90,7 +99,8 @@ fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: u
                     diff: Rc::clone(&diff),
                     file_i,
                     hunk_i,
-                    line_i,
+                    line_i: line_index,
+                    line_range,
                 },
                 ..Default::default()
             }

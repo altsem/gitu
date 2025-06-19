@@ -1,4 +1,4 @@
-use std::{iter, path::PathBuf, rc::Rc};
+use std::{iter, ops::Range, path::PathBuf, rc::Rc};
 
 use ratatui::text::{Line, Span};
 
@@ -33,6 +33,7 @@ pub(crate) enum ItemData {
         file_i: usize,
         hunk_i: usize,
         line_i: usize,
+        line_range: Range<usize>,
     },
     Stash {
         message: String,
@@ -67,6 +68,7 @@ pub(crate) enum SectionHeader {
 }
 
 impl ItemData {
+    // FIXME this can go back to returning just one single `Line`
     pub fn to_lines<'a>(&'a self, config: Rc<Config>) -> Vec<Line<'a>> {
         match self {
             ItemData::Empty => vec![Line::raw("")],
@@ -157,14 +159,14 @@ impl ItemData {
                 diff,
                 file_i,
                 hunk_i,
+                line_range,
                 ..
-            } => highlight::highlight_hunk_lines(&config, diff, *file_i, *hunk_i)
-                .map(|(line, line_highlights)| {
-                    Line::from_iter(line_highlights.iter().map(|(range, style)| {
-                        Span::styled(line[range.clone()].replace('\t', "    "), *style)
-                    }))
-                })
-                .collect(),
+            } => {
+                let hunk = diff.hunk(*file_i, *hunk_i);
+
+                let line = Line::raw(&hunk[line_range.clone()]);
+                vec![line]
+            }
             ItemData::Stash { message, id, .. } => {
                 vec![Line::styled(
                     format!("Stash@{id} {message}"),
