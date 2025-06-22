@@ -24,8 +24,6 @@ pub(crate) struct Item {
     pub(crate) default_collapsed: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
-    // TODO rename? maybe item_data: Option<ItemData>
-    // TODO does this have to be optional anymore?
     pub(crate) data: ItemData,
 }
 pub(crate) fn create_diff_items(
