@@ -7,8 +7,8 @@ use crate::{config::Config, git::diff::Diff, gitu_diff::Status, highlight};
 #[derive(Clone, Debug)]
 pub(crate) enum ItemData {
     Raw(String),
-    AllUnstaged,
-    AllStaged,
+    AllUnstaged(usize),
+    AllStaged(usize),
     AllUntracked(Vec<PathBuf>),
     Reference(RefKind),
     Commit {
@@ -78,8 +78,14 @@ impl ItemData {
     pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
         match self {
             ItemData::Raw(content) => Line::raw(content),
-            ItemData::AllUnstaged => Line::styled("Unstaged changes", &config.style.section_header),
-            ItemData::AllStaged => Line::styled("Staged changes", &config.style.section_header),
+            ItemData::AllUnstaged(count) => Line::from(vec![
+                Span::styled("Unstaged changes", &config.style.section_header),
+                Span::raw(format!(" ({count})")),
+            ]),
+            ItemData::AllStaged(count) => Line::from(vec![
+                Span::styled("Staged changes", &config.style.section_header),
+                Span::raw(format!(" ({count})")),
+            ]),
             ItemData::AllUntracked(_) => {
                 Line::styled("Untracked files", &config.style.section_header)
             }

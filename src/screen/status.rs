@@ -12,6 +12,12 @@ use git2::Repository;
 use ratatui::prelude::Size;
 use std::{path::PathBuf, rc::Rc};
 
+#[derive(Hash)]
+enum StatusSection {
+    Unstaged,
+    Staged,
+}
+
 pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
     Screen::new(
         Rc::clone(&config),
@@ -69,13 +75,11 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             })
             .chain(untracked)
             .chain(create_status_section_items(
-                "unstaged_changes",
-                ItemData::AllUnstaged,
+                StatusSection::Unstaged,
                 &Rc::new(git::diff_unstaged(repo.as_ref())?),
             ))
             .chain(create_status_section_items(
-                "staged_changes",
-                ItemData::AllStaged,
+                StatusSection::Staged,
                 &Rc::new(git::diff_staged(repo.as_ref())?),
             ))
             .chain(create_stash_list_section_items(repo.as_ref(), "stashes"))
@@ -156,13 +160,18 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 }
 
 fn create_status_section_items<'a>(
-    snake_case_header: &str,
-    item_data: ItemData,
+    section: StatusSection,
     diff: &'a Rc<Diff>,
 ) -> impl Iterator<Item = Item> + 'a {
     if diff.file_diffs.is_empty() {
         vec![]
     } else {
+        let count = diff.file_diffs.len();
+        let item_data = match section {
+            StatusSection::Unstaged => ItemData::AllUnstaged(count),
+            StatusSection::Staged => ItemData::AllStaged(count),
+        };
+
         vec![
             Item {
                 unselectable: true,
@@ -170,7 +179,7 @@ fn create_status_section_items<'a>(
                 ..Default::default()
             },
             Item {
-                id: hash(snake_case_header),
+                id: hash(section),
                 section: true,
                 depth: 0,
                 data: item_data,

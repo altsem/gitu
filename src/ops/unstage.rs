@@ -12,7 +12,7 @@ pub(crate) struct Unstage;
 impl OpTrait for Unstage {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            ItemData::AllStaged => unstage_staged(),
+            ItemData::AllStaged(_) => unstage_staged(),
             ItemData::Delta { diff, file_i } => {
                 unstage_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
             }

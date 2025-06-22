@@ -12,7 +12,7 @@ pub(crate) struct Stage;
 impl OpTrait for Stage {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            ItemData::AllUnstaged => stage_unstaged(),
+            ItemData::AllUnstaged(_) => stage_unstaged(),
             // FIXME can we avoid clone?
             ItemData::AllUntracked(untracked) => stage_untracked(untracked.clone()),
             ItemData::File(u) => stage_file(u.into()),
