@@ -231,6 +231,7 @@ pub(crate) fn log(
 
     if items.is_empty() {
         Ok(vec![Item {
+            data: ItemData::Raw("No commits found".to_string()),
             ..Default::default()
         }])
     } else {

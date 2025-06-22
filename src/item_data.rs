@@ -4,10 +4,9 @@ use ratatui::text::{Line, Span};
 
 use crate::{config::Config, git::diff::Diff, gitu_diff::Status, highlight};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub(crate) enum ItemData {
-    #[default]
-    Empty,
+    Raw(String),
     AllUnstaged,
     AllStaged,
     AllUntracked(Vec<PathBuf>),
@@ -45,6 +44,12 @@ pub(crate) enum ItemData {
     Error(String),
 }
 
+impl Default for ItemData {
+    fn default() -> Self {
+        ItemData::Raw(String::new())
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum RefKind {
     Tag(String),
@@ -65,13 +70,14 @@ pub(crate) enum SectionHeader {
     Revert(String),
     Stashes,
     RecentCommits,
+    Commit(String),
 }
 
 impl ItemData {
     // FIXME this can go back to returning just one single `Line`
     pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
         match self {
-            ItemData::Empty => Line::raw(""),
+            ItemData::Raw(content) => Line::raw(content),
             ItemData::AllUnstaged => Line::styled("Unstaged changes", &config.style.section_header),
             ItemData::AllStaged => Line::styled("Staged changes", &config.style.section_header),
             ItemData::AllUntracked(_) => {
@@ -169,6 +175,7 @@ impl ItemData {
                     SectionHeader::Revert(head) => format!("Reverting {head}"),
                     SectionHeader::Stashes => "Stashes".to_string(),
                     SectionHeader::RecentCommits => "Recent commits".to_string(),
+                    SectionHeader::Commit(oid) => format!("commit {oid}"),
                 };
 
                 Line::styled(content, &config.style.section_header)
