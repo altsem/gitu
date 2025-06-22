@@ -77,21 +77,22 @@ fn create_hunk_items<'a>(
 fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
     let hunk = diff.hunk(file_i, hunk_i);
 
-    hunk.lines()
+    hunk.split_inclusive('\n')
         .scan(0usize, |prev_line_end, line| {
             let line_start = *prev_line_end;
-            let line_end = line.len() + 1;
+            let line_end = line_start + line.len();
 
-            *prev_line_end = line_start + line_end;
-            Some(line_start..(line_start + line_end))
+            *prev_line_end = line_end;
+            Some(line_start..line_end)
         })
         .skip(1) // skip hunk header line
         .enumerate()
         .map(|(line_index, line_range)| {
-            let line = &hunk[line_range.clone()];
-            let unselectable = line.starts_with(' ');
+            let hunk_line = &hunk[line_range.clone()];
+
             Item {
-                unselectable,
+                // line is marked unselectable if it starts with a space character
+                unselectable: hunk_line.starts_with(' '),
                 depth,
                 data: ItemData::HunkLine {
                     diff: Rc::clone(&diff),

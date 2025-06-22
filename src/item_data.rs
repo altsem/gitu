@@ -2,7 +2,12 @@ use std::{iter, ops::Range, path::PathBuf, rc::Rc};
 
 use ratatui::text::{Line, Span};
 
-use crate::{config::Config, git::diff::Diff, gitu_diff::Status, highlight};
+use crate::{
+    config::Config,
+    git::diff::Diff,
+    gitu_diff::Status,
+    highlight::{self, collect_line_highlights},
+};
 
 #[derive(Clone, Debug)]
 pub(crate) enum ItemData {
@@ -157,11 +162,20 @@ impl ItemData {
                 file_i,
                 hunk_i,
                 line_range,
-                ..
+                line_i,
             } => {
                 let hunk = diff.hunk(*file_i, *hunk_i);
 
-                Line::raw(&hunk[line_range.clone()])
+                let hunk_highlights =
+                    highlight::highlight_hunk(&config, &Rc::clone(&diff), *file_i, *hunk_i);
+
+                let hunk_line = &hunk[line_range.clone()];
+
+                Line::from_iter(hunk_highlights.get_hunk_line(*line_i).iter().map(
+                    |(range, style)| {
+                        Span::styled(hunk_line[range.clone()].replace('\t', "    "), *style)
+                    },
+                ))
             }
             ItemData::Stash { message, id, .. } => {
                 Line::styled(format!("stash@{id} {message}"), &config.style.hash)
