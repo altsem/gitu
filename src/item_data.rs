@@ -164,7 +164,7 @@ impl ItemData {
                 Line::raw(&hunk[line_range.clone()])
             }
             ItemData::Stash { message, id, .. } => {
-                Line::styled(format!("Stash@{id} {message}"), &config.style.hash)
+                Line::styled(format!("stash@{id} {message}"), &config.style.hash)
             }
             ItemData::Header(header) => {
                 let content = match header {
