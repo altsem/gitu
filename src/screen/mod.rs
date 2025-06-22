@@ -294,32 +294,25 @@ impl Screen {
         let scan_highlight_range = scan_start..(scan_end);
         let context_lines = self.scroll - scan_start;
 
-        let mut line_views = vec![];
-        let mut highlight_depth = None;
+        self.line_index[scan_highlight_range]
+            .iter()
+            .scan(None, |highlight_depth, item_index| {
+                let item = &self.items[*item_index];
+                if self.line_index[self.cursor] == *item_index {
+                    *highlight_depth = Some(item.depth);
+                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
+                    *highlight_depth = None;
+                };
+                let display = item.data.to_line(Rc::clone(&self.config));
 
-        'outer: for item_index in &self.line_index[scan_highlight_range] {
-            let item = &self.items[*item_index];
-            if self.line_index[self.cursor] == *item_index {
-                highlight_depth = Some(item.depth);
-            } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                highlight_depth = None;
-            };
-
-            for line in item.data.to_lines(Rc::clone(&self.config)) {
-                line_views.push(LineView {
+                Some(LineView {
                     item_index: *item_index,
                     item,
-                    display: line,
+                    display,
                     highlighted: highlight_depth.is_some(),
-                });
-
-                if line_views.len() >= area.height as usize {
-                    break 'outer;
-                }
-            }
-        }
-
-        line_views.into_iter().skip(context_lines)
+                })
+            })
+            .skip(context_lines)
     }
 }
 

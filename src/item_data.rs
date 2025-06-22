@@ -69,21 +69,13 @@ pub(crate) enum SectionHeader {
 
 impl ItemData {
     // FIXME this can go back to returning just one single `Line`
-    pub fn to_lines<'a>(&'a self, config: Rc<Config>) -> Vec<Line<'a>> {
+    pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
         match self {
-            ItemData::Empty => vec![Line::raw("")],
-            ItemData::AllUnstaged => vec![Line::styled(
-                "Unstaged changes",
-                &config.style.section_header,
-            )],
-            ItemData::AllStaged => {
-                vec![Line::styled("Staged changes", &config.style.section_header)]
-            }
+            ItemData::Empty => Line::raw(""),
+            ItemData::AllUnstaged => Line::styled("Unstaged changes", &config.style.section_header),
+            ItemData::AllStaged => Line::styled("Staged changes", &config.style.section_header),
             ItemData::AllUntracked(_) => {
-                vec![Line::styled(
-                    "Untracked files",
-                    &config.style.section_header,
-                )]
+                Line::styled("Untracked files", &config.style.section_header)
             }
             ItemData::Reference(ref_kind) => {
                 let (reference, style) = match ref_kind {
@@ -92,39 +84,32 @@ impl ItemData {
                     RefKind::Remote(remote) => (remote, &config.style.remote),
                 };
                 // TODO create prefix
-                vec![Line::styled(reference, style)]
+                Line::styled(reference, style)
             }
             ItemData::Commit {
                 short_id,
                 associated_references,
                 summary,
                 ..
-            } => {
-                let line = Line::from_iter(itertools::intersperse(
-                    iter::once(Span::styled(short_id, &config.style.hash))
-                        .chain(
-                            associated_references
-                                .iter()
-                                .map(|reference| match reference {
-                                    RefKind::Tag(tag) => Span::styled(tag, &config.style.tag),
-                                    RefKind::Branch(branch) => {
-                                        Span::styled(branch, &config.style.branch)
-                                    }
-                                    RefKind::Remote(remote) => {
-                                        Span::styled(remote, &config.style.remote)
-                                    }
-                                }),
-                        )
-                        .chain([Span::raw(summary)]),
-                    Span::raw(" "),
-                ));
-
-                vec![line]
-            }
-            ItemData::File(path) => vec![Line::styled(
-                path.to_string_lossy(),
-                &config.style.file_header,
-            )],
+            } => Line::from_iter(itertools::intersperse(
+                iter::once(Span::styled(short_id, &config.style.hash))
+                    .chain(
+                        associated_references
+                            .iter()
+                            .map(|reference| match reference {
+                                RefKind::Tag(tag) => Span::styled(tag, &config.style.tag),
+                                RefKind::Branch(branch) => {
+                                    Span::styled(branch, &config.style.branch)
+                                }
+                                RefKind::Remote(remote) => {
+                                    Span::styled(remote, &config.style.remote)
+                                }
+                            }),
+                    )
+                    .chain([Span::raw(summary)]),
+                Span::raw(" "),
+            )),
+            ItemData::File(path) => Line::styled(path.to_string_lossy(), &config.style.file_header),
             ItemData::Delta { diff, file_i } => {
                 let file_diff = &diff.file_diffs[*file_i];
 
@@ -141,7 +126,7 @@ impl ItemData {
                     }
                 );
 
-                vec![Line::styled(content, &config.style.file_header)]
+                Line::styled(content, &config.style.file_header)
             }
             ItemData::Hunk {
                 diff,
@@ -153,7 +138,7 @@ impl ItemData {
 
                 let content = &diff.text[hunk.header.range.clone()];
 
-                vec![Line::styled(content, &config.style.hunk_header)]
+                Line::styled(content, &config.style.hunk_header)
             }
             ItemData::HunkLine {
                 diff,
@@ -164,14 +149,10 @@ impl ItemData {
             } => {
                 let hunk = diff.hunk(*file_i, *hunk_i);
 
-                let line = Line::raw(&hunk[line_range.clone()]);
-                vec![line]
+                Line::raw(&hunk[line_range.clone()])
             }
             ItemData::Stash { message, id, .. } => {
-                vec![Line::styled(
-                    format!("Stash@{id} {message}"),
-                    &config.style.hash,
-                )]
+                Line::styled(format!("Stash@{id} {message}"), &config.style.hash)
             }
             ItemData::Header(header) => {
                 let content = match header {
@@ -190,7 +171,7 @@ impl ItemData {
                     SectionHeader::RecentCommits => "Recent commits".to_string(),
                 };
 
-                vec![Line::styled(content, &config.style.section_header)]
+                Line::styled(content, &config.style.section_header)
             }
             ItemData::BranchStatus(upstream, ahead, behind) => {
                 let content = if *ahead == 0 && *behind == 0 {
@@ -203,9 +184,9 @@ impl ItemData {
                     format!("Your branch and '{upstream}' have diverged,\nand have {ahead} and {behind} different commits each, respectively.")
                 };
 
-                vec![Line::raw(content)]
+                Line::raw(content)
             }
-            ItemData::Error(err) => vec![Line::raw(format!("{err}"))],
+            ItemData::Error(err) => Line::raw(format!("{err}")),
         }
     }
 }
