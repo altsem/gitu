@@ -28,23 +28,23 @@ pub(crate) fn highlight_hunk<'a>(
 ) -> HunkHighlights {
     let file_diff = &diff.file_diffs[file_index];
 
-    let old_file_range = file_diff.header.old_file.clone();
-    let new_file_range = file_diff.header.new_file.clone();
-
-    let old_path = &diff.text[old_file_range];
-    let new_path = &diff.text[new_file_range];
-
     let hunk = &file_diff.hunks[hunk_index];
     let hunk_range = hunk.content.range.clone();
     let hunk_content = &diff.text[hunk_range];
 
     let old_mask = diff.mask_old_hunk(file_index, hunk_index);
+    let old_file_range = file_diff.header.old_file.clone();
+    let old_path = &diff.text[old_file_range];
+
     let new_mask = diff.mask_new_hunk(file_index, hunk_index);
+    let new_file_range = file_diff.header.new_file.clone();
+    let new_path = &diff.text[new_file_range];
 
     let old_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, old_path, old_mask);
     let new_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, new_path, new_mask);
+
     let diff_highlights = iter_diff_highlights(&config.style.diff_highlight, hunk_content, hunk);
     let diff_context_highlights =
         iter_diff_context_highlights(&config.style.diff_highlight, hunk_content);
@@ -54,9 +54,7 @@ pub(crate) fn highlight_hunk<'a>(
         zip_styles(diff_highlights, diff_context_highlights),
     );
 
-    let spans: Vec<_> = hunk_content
-        .split_inclusive('\n')
-        .scan_byte_ranges()
+    let spans: Vec<_> = gitu_diff::line_range_iterator(hunk_content)
         .map(move |(line_range, _)| collect_line_highlights(&mut highlights_iterator, &line_range))
         .collect();
 
@@ -153,37 +151,18 @@ pub(crate) fn iter_diff_context_highlights<'a>(
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
     fill_gaps(
         0..hunk_text.len(),
-        hunk_text
-            .split_inclusive('\n')
-            .scan_byte_ranges()
-            .flat_map(|(range, line)| {
-                if line.starts_with('-') {
-                    Some((range.start..range.start + 1, Style::from(&config.tag_old)))
-                } else if line.starts_with('+') {
-                    Some((range.start..range.start + 1, Style::from(&config.tag_new)))
-                } else {
-                    None
-                }
-            }),
+        gitu_diff::line_range_iterator(hunk_text).flat_map(|(range, line)| {
+            if line.starts_with('-') {
+                Some((range.start..range.start + 1, Style::from(&config.tag_old)))
+            } else if line.starts_with('+') {
+                Some((range.start..range.start + 1, Style::from(&config.tag_new)))
+            } else {
+                None
+            }
+        }),
         Style::new(),
     )
     .peekable()
-}
-
-trait ScanByteRanges<T> {
-    fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, T)>;
-}
-
-impl<'a, I: Iterator<Item = &'a str>> ScanByteRanges<&'a str> for I {
-    fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, &'a str)> {
-        self.scan(0usize, |prev_line_end, current_line| {
-            let line_start = *prev_line_end;
-            let line_end = line_start + current_line.len();
-
-            *prev_line_end = line_end;
-            Some((line_start..line_end, current_line))
-        })
-    }
 }
 
 pub(crate) fn iter_syntax_highlights<'a>(

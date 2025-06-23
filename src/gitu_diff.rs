@@ -113,6 +113,32 @@ impl fmt::Debug for ParseError {
 
 impl std::error::Error for ParseError {}
 
+/// Construct a newline inclusive iterator over each line in a chunk of text.
+///
+/// # Example
+///
+/// ```
+/// let content = "hello\nworld!\n";
+///
+/// let iter = gitu::gitu_diff::line_range_iterator(content);
+///
+/// assert_eq!(iter.next(), Some((0..6, "hello\n")))
+/// assert_eq!(iter.next(), Some((6..13, "world!\n")))
+/// assert_eq!(iter.next(), None)
+///
+/// ```
+pub(crate) fn line_range_iterator(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> {
+    content
+        .split_inclusive('\n')
+        .scan(0usize, |prev_line_end, current_line| {
+            let line_start = *prev_line_end;
+            let line_end = line_start + current_line.len();
+
+            *prev_line_end = line_end;
+            Some((line_start..line_end, current_line))
+        })
+}
+
 #[derive(Clone, Debug)]
 pub struct Parser<'a> {
     input: &'a str,

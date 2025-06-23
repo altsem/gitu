@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
+use crate::gitu_diff;
 use crate::highlight;
 use crate::item_data::ItemData;
 use crate::item_data::RefKind;
@@ -77,22 +78,13 @@ fn create_hunk_items<'a>(
 fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
     let hunk = diff.hunk(file_i, hunk_i);
 
-    hunk.split_inclusive('\n')
-        .scan(0usize, |prev_line_end, line| {
-            let line_start = *prev_line_end;
-            let line_end = line_start + line.len();
-
-            *prev_line_end = line_end;
-            Some(line_start..line_end)
-        })
+    gitu_diff::line_range_iterator(hunk)
         .skip(1) // skip hunk header line
         .enumerate()
-        .map(|(line_index, line_range)| {
-            let hunk_line = &hunk[line_range.clone()];
-
+        .map(|(line_index, (line_range, line))| {
             Item {
                 // line is marked unselectable if it starts with a space character
-                unselectable: hunk_line.starts_with(' '),
+                unselectable: line.starts_with(' '),
                 depth,
                 data: ItemData::HunkLine {
                     diff: Rc::clone(&diff),
