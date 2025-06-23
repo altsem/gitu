@@ -77,7 +77,6 @@ pub(crate) enum SectionHeader {
 }
 
 impl ItemData {
-    // FIXME this can go back to returning just one single `Line`
     pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
         match self {
             ItemData::Raw(content) => Line::raw(content),
