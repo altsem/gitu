@@ -170,11 +170,12 @@ impl ItemData {
 
                 let hunk_line = &hunk[line_range.clone()];
 
-                Line::from_iter(hunk_highlights.get_hunk_line(*line_i).iter().map(
-                    |(range, style)| {
-                        Span::styled(hunk_line[range.clone()].replace('\t', "    "), *style)
-                    },
-                ))
+                Line::from_iter(
+                    hunk_highlights
+                        .get_hunk_line(*line_i)
+                        .iter()
+                        .map(|(range, style)| Span::styled(&hunk_line[range.clone()], *style)),
+                )
             }
             ItemData::Stash { message, id, .. } => {
                 Line::styled(format!("stash@{id} {message}"), &config.style.hash)
