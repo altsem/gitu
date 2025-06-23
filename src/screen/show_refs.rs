@@ -110,7 +110,7 @@ where
             } else if reference.is_tag() {
                 RefKind::Tag(shorthand)
             } else {
-                unreachable!()
+                RefKind::Remote(shorthand)
             };
 
             let prefix = create_prefix(repo, &reference);
