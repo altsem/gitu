@@ -1,15 +1,12 @@
-use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
 use crate::gitu_diff;
-use crate::highlight;
 use crate::item_data::ItemData;
 use crate::item_data::RefKind;
 use crate::Res;
 use git2::Oid;
 use git2::Repository;
 use regex::Regex;
-use similar::DiffableStr;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;

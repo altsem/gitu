@@ -13,7 +13,7 @@ use crate::{
     Res,
 };
 use git2::{Reference, Repository};
-use ratatui::{layout::Size, text::Span};
+use ratatui::layout::Size;
 
 pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
     Screen::new(

@@ -2,12 +2,7 @@ use std::{iter, ops::Range, path::PathBuf, rc::Rc};
 
 use ratatui::text::{Line, Span};
 
-use crate::{
-    config::Config,
-    git::diff::Diff,
-    gitu_diff::Status,
-    highlight::{self, collect_line_highlights},
-};
+use crate::{config::Config, git::diff::Diff, gitu_diff::Status, highlight};
 
 #[derive(Clone, Debug)]
 pub(crate) enum ItemData {

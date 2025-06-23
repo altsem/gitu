@@ -35,7 +35,6 @@ use crate::prompt::PromptData;
 use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
-use crate::term;
 use crate::term::Term;
 use crate::ui;
 
