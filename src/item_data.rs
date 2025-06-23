@@ -10,7 +10,10 @@ pub(crate) enum ItemData {
     AllUnstaged(usize),
     AllStaged(usize),
     AllUntracked(Vec<PathBuf>),
-    Reference(RefKind),
+    Reference {
+        prefix: &'static str,
+        kind: RefKind,
+    },
     Commit {
         oid: String,
         short_id: String,
@@ -89,14 +92,16 @@ impl ItemData {
             ItemData::AllUntracked(_) => {
                 Line::styled("Untracked files", &config.style.section_header)
             }
-            ItemData::Reference(ref_kind) => {
-                let (reference, style) = match ref_kind {
+            ItemData::Reference { kind, prefix } => {
+                let (reference, style) = match kind {
                     RefKind::Tag(tag) => (tag, &config.style.tag),
                     RefKind::Branch(branch) => (branch, &config.style.branch),
                     RefKind::Remote(remote) => (remote, &config.style.remote),
                 };
-                // TODO create prefix
-                Line::styled(reference, style)
+
+                let prefixed_reference = format!("{prefix}{reference}");
+
+                Line::styled(prefixed_reference, style)
             }
             ItemData::Commit {
                 short_id,

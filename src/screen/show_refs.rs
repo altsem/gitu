@@ -105,12 +105,6 @@ where
             let name = reference.name().unwrap().to_owned();
             let shorthand = reference.shorthand().unwrap().to_owned();
 
-            let prefix = create_prefix(repo, &reference);
-
-            // FIXME this is most likely wrong since this shorthand is used
-            //       in other contexts where the prefix would mess things up
-            let shorthand = format!("{prefix}{shorthand}");
-
             let ref_kind = if reference.is_branch() {
                 RefKind::Branch(shorthand)
             } else if reference.is_tag() {
@@ -119,10 +113,15 @@ where
                 unreachable!()
             };
 
+            let prefix = create_prefix(repo, &reference);
+
             let item = Item {
                 id: hash(&name),
                 depth: 1,
-                data: ItemData::Reference(ref_kind),
+                data: ItemData::Reference {
+                    prefix,
+                    kind: ref_kind,
+                },
                 ..Default::default()
             };
             (name, item)

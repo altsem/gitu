@@ -14,8 +14,8 @@ pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            ItemData::Reference(reference) => {
-                let branch = match reference {
+            ItemData::Reference { kind, .. } => {
+                let branch = match kind {
                     RefKind::Tag(tag) => tag,
                     RefKind::Branch(branch) => branch,
                     // FIXME is this correct?

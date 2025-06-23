@@ -81,7 +81,7 @@ pub(crate) struct Delete;
 impl OpTrait for Delete {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let default = match target {
-            ItemData::Reference(reference) => match reference {
+            ItemData::Reference { kind, .. } => match kind {
                 RefKind::Tag(tag) => Some(tag.clone()),
                 RefKind::Branch(branch) => Some(branch.clone()),
                 // FIXME is this correct?

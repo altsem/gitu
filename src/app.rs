@@ -468,8 +468,8 @@ impl App {
 
     pub fn selected_rev(&self) -> Option<String> {
         match &self.screen().get_selected_item().data {
-            ItemData::Reference(reference) => {
-                match reference {
+            ItemData::Reference { kind, .. } => {
+                match kind {
                     RefKind::Tag(tag) => Some(tag.to_owned()),
                     RefKind::Branch(branch) => Some(branch.to_owned()),
                     // FIXME is this correct?
