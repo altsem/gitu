@@ -98,9 +98,7 @@ impl ItemData {
                     RefKind::Remote(remote) => (remote, &config.style.remote),
                 };
 
-                let prefixed_reference = format!("{prefix}{reference}");
-
-                Line::styled(prefixed_reference, style)
+                Line::from(vec![Span::raw(*prefix), Span::styled(reference, style)])
             }
             ItemData::Commit {
                 short_id,
