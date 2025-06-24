@@ -122,8 +122,8 @@ impl std::error::Error for ParseError {}
 ///
 /// let iter = gitu::gitu_diff::line_range_iterator(content);
 ///
-/// assert_eq!(iter.next(), Some((0..6, "hello\n")))
-/// assert_eq!(iter.next(), Some((6..13, "world!\n")))
+/// assert_eq!(iter.next(), Some((0..6, "hello")))
+/// assert_eq!(iter.next(), Some((6..11, "world!")))
 /// assert_eq!(iter.next(), None)
 ///
 /// ```
@@ -132,10 +132,22 @@ pub(crate) fn line_range_iterator(content: &str) -> impl Iterator<Item = (Range<
         .split_inclusive('\n')
         .scan(0usize, |prev_line_end, current_line| {
             let line_start = *prev_line_end;
-            let line_end = line_start + current_line.len();
 
-            *prev_line_end = line_end;
-            Some((line_start..line_end, current_line))
+            let actual_line_length = current_line.len();
+
+            let visual_line_length = if current_line.ends_with("\r\n") {
+                actual_line_length - 2
+            } else {
+                actual_line_length - 1
+            };
+
+            let actual_line_end = line_start + actual_line_length;
+
+            let visual_line_end = line_start + visual_line_length;
+
+            *prev_line_end = actual_line_end;
+
+            Some((line_start..visual_line_end, current_line))
         })
 }
 

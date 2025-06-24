@@ -73,10 +73,9 @@ fn create_hunk_items<'a>(
 }
 
 fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
-    let hunk = diff.hunk(file_i, hunk_i);
+    let hunk_content = diff.hunk_content(file_i, hunk_i);
 
-    gitu_diff::line_range_iterator(hunk)
-        .skip(1) // skip hunk header line
+    gitu_diff::line_range_iterator(hunk_content)
         .enumerate()
         .map(|(line_index, (line_range, line))| {
             Item {

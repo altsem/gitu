@@ -163,12 +163,11 @@ impl ItemData {
                 line_range,
                 line_i,
             } => {
-                let hunk = diff.hunk(*file_i, *hunk_i);
-
                 let hunk_highlights =
                     highlight::highlight_hunk(&config, &Rc::clone(&diff), *file_i, *hunk_i);
 
-                let hunk_line = &hunk[line_range.clone()];
+                let hunk_content = &diff.hunk_content(*file_i, *hunk_i);
+                let hunk_line = &hunk_content[line_range.clone()];
 
                 Line::from_iter(
                     hunk_highlights

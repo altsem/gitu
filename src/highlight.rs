@@ -28,9 +28,7 @@ pub(crate) fn highlight_hunk<'a>(
 ) -> HunkHighlights {
     let file_diff = &diff.file_diffs[file_index];
 
-    let hunk = &file_diff.hunks[hunk_index];
-    let hunk_range = hunk.content.range.clone();
-    let hunk_content = &diff.text[hunk_range];
+    let hunk_content = diff.hunk_content(file_index, hunk_index);
 
     let old_mask = diff.mask_old_hunk(file_index, hunk_index);
     let old_file_range = file_diff.header.old_file.clone();
@@ -45,6 +43,7 @@ pub(crate) fn highlight_hunk<'a>(
     let new_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, new_path, new_mask);
 
+    let hunk = &diff.file_diffs[file_index].hunks[hunk_index];
     let diff_highlights = iter_diff_highlights(&config.style.diff_highlight, hunk_content, hunk);
     let diff_context_highlights =
         iter_diff_context_highlights(&config.style.diff_highlight, hunk_content);
@@ -68,6 +67,10 @@ pub struct HunkHighlights {
 
 impl HunkHighlights {
     pub fn get_hunk_line(&self, line_range: usize) -> &[(Range<usize>, Style)] {
+        if line_range >= self.spans.len() {
+            return &[];
+        }
+
         &self.spans[line_range]
     }
 }
