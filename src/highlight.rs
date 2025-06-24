@@ -20,9 +20,9 @@ use unicode_segmentation::UnicodeSegmentation;
     create = "{ SizedCache::with_size(200) }",
     convert = r#"{ format!("{}", crate::items::hash(&diff.text)) }"#
 )]
-pub(crate) fn highlight_hunk<'a>(
-    config: &'_ Config,
-    diff: &'_ Rc<Diff>,
+pub(crate) fn highlight_hunk(
+    config: &Config,
+    diff: &Rc<Diff>,
     file_index: usize,
     hunk_index: usize,
 ) -> HunkHighlights {

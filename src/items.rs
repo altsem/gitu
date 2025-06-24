@@ -52,7 +52,7 @@ pub(crate) fn create_diff_items(
         })
 }
 
-fn create_hunk_items<'a>(
+fn create_hunk_items(
     diff: Rc<Diff>,
     file_i: usize,
     hunk_i: usize,
@@ -104,7 +104,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
         .map(|(i, stash)| -> Res<Item> {
             let stash_id = stash.id_new();
             Ok(Item {
-                id: hash(&stash_id),
+                id: hash(stash_id),
                 depth: 1,
                 data: ItemData::Stash {
                     message: stash.message().unwrap_or("").to_string(),

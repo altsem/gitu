@@ -162,7 +162,7 @@ impl ItemData {
                 line_i,
             } => {
                 let hunk_highlights =
-                    highlight::highlight_hunk(&config, &Rc::clone(&diff), *file_i, *hunk_i);
+                    highlight::highlight_hunk(&config, &Rc::clone(diff), *file_i, *hunk_i);
 
                 let hunk_content = &diff.hunk_content(*file_i, *hunk_i);
                 let hunk_line = &hunk_content[line_range.clone()];
@@ -210,7 +210,7 @@ impl ItemData {
 
                 Line::raw(content)
             }
-            ItemData::Error(err) => Line::raw(format!("{err}")),
+            ItemData::Error(err) => Line::raw(err),
         }
     }
 }
