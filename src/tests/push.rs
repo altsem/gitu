@@ -82,7 +82,7 @@ fn force_push() {
 fn open_push_menu_after_dash_input() {
     let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "");
-    snapshot!(ctx, "-P");
+    snapshot!(ctx, "-<shift+P>");
 }
 
 #[test]
