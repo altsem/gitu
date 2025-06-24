@@ -131,15 +131,17 @@ where
 fn create_prefix(repo: &Repository, reference: &Reference) -> &'static str {
     let head = repo.head().ok();
 
-    if repo.head_detached().unwrap_or(false) {
-        if reference.target() == head.as_ref().and_then(Reference::target) {
-            "? "
-        } else {
-            "  "
-        }
-    } else if reference.name() == head.as_ref().and_then(Reference::name) {
-        "* "
-    } else {
-        "  "
+    let head_detached = repo.head_detached().unwrap_or(false);
+    let reference_targets_match = reference.target() == head.as_ref().and_then(Reference::target);
+    if head_detached && reference_targets_match {
+        return "? ";
     }
+
+    let reference_names_match = reference.name() == head.as_ref().and_then(Reference::name);
+
+    if reference_names_match {
+        return "* ";
+    }
+
+    "  "
 }
