@@ -18,8 +18,8 @@ expression: ctx.redact_buffer()
 Branch                                                                          |
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
-K Delete branch                                                                 |
+<shift+K> Delete branch                                                         |
 q/<esc> Quit/Close                                                              |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Branch name required                                                          |
-styles_hash: 343b1fffa75cf86c
+styles_hash: d350a4d5cf95f8fa

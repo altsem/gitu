@@ -9,19 +9,20 @@ fn setup() -> TestContext {
     ctx
 }
 
+// <shift+Y>
 #[test]
 fn branch_menu() {
-    snapshot!(setup(), "Yjb");
+    snapshot!(setup(), "<shift+Y>jb");
 }
 
 #[test]
 fn switch_branch_selected() {
-    snapshot!(setup(), "Yjjbb<enter>");
+    snapshot!(setup(), "<shift+Y>jjbb<enter>");
 }
 
 #[test]
 fn switch_branch_input() {
-    snapshot!(setup(), "Ybbmerged<enter>");
+    snapshot!(setup(), "<shift+Y>bbmerged<enter>");
 }
 
 #[test]
@@ -31,20 +32,23 @@ fn checkout_new_branch() {
 
 #[test]
 fn delete_branch_selected() {
-    snapshot!(setup(), "YjjbK<enter>");
+    snapshot!(setup(), "<shift+Y>jjb<shift+K><enter>");
 }
 
 #[test]
 fn delete_branch_input() {
-    snapshot!(setup(), "bKmerged<enter>");
+    snapshot!(setup(), "b<shift+K>merged<enter>");
 }
 
 #[test]
 fn delete_branch_empty() {
-    snapshot!(setup(), "bK<enter>");
+    snapshot!(setup(), "b<shift+K><enter>");
 }
 
 #[test]
 fn delete_unmerged_branch() {
-    snapshot!(setup(), "bKunmerged<enter>nbKunmerged<enter>y");
+    snapshot!(
+        setup(),
+        "b<shift+K>unmerged<enter>nb<shift+K>unmerged<enter>y"
+    );
 }

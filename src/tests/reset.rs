@@ -8,25 +8,25 @@ fn setup() -> TestContext {
 
 #[test]
 pub(crate) fn reset_menu() {
-    snapshot!(setup(), "lljX");
+    snapshot!(setup(), "llj<shift+X>");
 }
 
 #[test]
 pub(crate) fn reset_soft_prompt() {
-    snapshot!(setup(), "lljXsq");
+    snapshot!(setup(), "llj<shift+X>sq");
 }
 
 #[test]
 pub(crate) fn reset_soft() {
-    snapshot!(setup(), "lljXs<enter>q");
+    snapshot!(setup(), "llj<shift+X>s<enter>q");
 }
 
 #[test]
 pub(crate) fn reset_mixed() {
-    snapshot!(setup(), "lljXm<enter>q");
+    snapshot!(setup(), "llj<shift+X>m<enter>q");
 }
 
 #[test]
 fn reset_hard() {
-    snapshot!(setup(), "lljXh<enter>q");
+    snapshot!(setup(), "llj<shift+X>h<enter>q");
 }

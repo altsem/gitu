@@ -6,38 +6,44 @@ use super::*;
 
 #[test]
 fn remote_menu() {
-    snapshot!(TestContext::setup_clone(), "M");
+    snapshot!(TestContext::setup_clone(), "<shift+M>");
 }
 
 #[test]
 fn add_remote_name_prompt() {
-    snapshot!(TestContext::setup_clone(), "Ma");
+    snapshot!(TestContext::setup_clone(), "<shift+M>a");
 }
 
 #[test]
 fn add_remote_url_prompt() {
-    snapshot!(TestContext::setup_clone(), "Matest<enter>");
+    snapshot!(TestContext::setup_clone(), "<shift+M>atest<enter>");
 }
 
 #[test]
 fn add_remote() {
-    snapshot!(TestContext::setup_clone(), "Matest<enter>localhost<enter>");
+    snapshot!(
+        TestContext::setup_clone(),
+        "<shift+M>atest<enter>localhost<enter>"
+    );
     // TODO Assert the remote is visible somewhere too
 }
 
 #[test]
 fn rename_remote_name_prompt() {
-    snapshot!(TestContext::setup_clone(), "Mr");
+    snapshot!(TestContext::setup_clone(), "<shift+M>r");
 }
 
 #[test]
 fn rename_remote_new_name_prompt() {
-    snapshot!(TestContext::setup_clone(), "Mrorigin<enter>");
+    snapshot!(TestContext::setup_clone(), "<shift+M>rorigin<enter>");
 }
 
 #[test]
 fn rename_remote() {
-    snapshot!(TestContext::setup_clone(), "Mrorigin<enter>origin2<enter>");
+    snapshot!(
+        TestContext::setup_clone(),
+        "<shift+M>rorigin<enter>origin2<enter>"
+    );
 }
 
 fn get_head_name(repo: &Repository) -> String {

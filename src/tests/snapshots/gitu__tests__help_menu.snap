@@ -9,17 +9,17 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 Help                                Submenu                                     |
-Y Show Refs                         b Branch                                    |
+<shift+Y> Show Refs                 b Branch                                    |
 <tab> Toggle section                c Commit                                    |
 k/<up> Up                           f Fetch                                     |
 j/<down> Down                       h/? Help                                    |
 <ctrl+k>/<ctrl+up> Up line          l Log                                       |
-<ctrl+j>/<ctrl+down> Down line      M Remote                                    |
-<alt+k>/<alt+up> Prev section       F Pull                                      |
-<alt+j>/<alt+down> Next section     P Push                                      |
+<ctrl+j>/<ctrl+down> Down line      <shift+M> Remote                            |
+<alt+k>/<alt+up> Prev section       <shift+F> Pull                              |
+<alt+j>/<alt+down> Next section     <shift+P> Push                              |
 <alt+h>/<alt+left> Parent section   r Rebase                                    |
-<ctrl+u> Half page up               X Reset                                     |
-<ctrl+d> Half page down             V Revert                                    |
+<ctrl+u> Half page up               <shift+X> Reset                             |
+<ctrl+d> Half page down             <shift+V> Revert                            |
 g Refresh                           z Stash                                     |
 q/<esc> Quit/Close                                                              |
-styles_hash: 9121f6ae27760193
+styles_hash: 94bb793923eaea5c

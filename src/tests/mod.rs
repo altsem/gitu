@@ -174,25 +174,25 @@ fn revert_abort() {
 
     run(ctx.dir.path(), &["git", "revert", "HEAD~1"]);
 
-    snapshot!(ctx, "Va");
+    snapshot!(ctx, "<shift+V>a");
 }
 
 #[test]
 fn revert_menu() {
     let ctx = TestContext::setup_clone();
-    snapshot!(ctx, "llV");
+    snapshot!(ctx, "ll<shift+V>");
 }
 
 #[test]
 fn revert_commit_prompt() {
     let ctx = TestContext::setup_clone();
-    snapshot!(ctx, "llVV");
+    snapshot!(ctx, "ll<shift+V><shift+V>");
 }
 
 #[test]
 fn revert_commit() {
     let ctx = TestContext::setup_clone();
-    snapshot!(ctx, "llV-EV<enter>");
+    snapshot!(ctx, "ll<shift+V>-E<shift+V><enter>");
 }
 
 #[test]
@@ -241,20 +241,20 @@ mod show_refs {
     fn show_refs_at_local_branch() {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "tag", "main"]);
-        snapshot!(ctx, "Y");
+        snapshot!(ctx, "<shift+Y>");
     }
 
     #[test]
     fn show_refs_at_remote_branch() {
         let ctx = TestContext::setup_clone();
-        snapshot!(ctx, "Yjjjjbb<enter>Y");
+        snapshot!(ctx, "<shift+Y>jjjjbb<enter><shift+Y>");
     }
 
     #[test]
     fn show_refs_at_tag() {
         let ctx = TestContext::setup_clone();
         run(ctx.dir.path(), &["git", "tag", "v1.0"]);
-        snapshot!(ctx, "Yjjjjjjbb<enter>Y");
+        snapshot!(ctx, "<shift+Y>jjjjjjbb<enter><shift+Y>");
     }
 }
 
