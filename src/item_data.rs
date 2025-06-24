@@ -176,9 +176,10 @@ impl ItemData {
                         .map(|(range, style)| Span::styled(&hunk_line[range.clone()], *style)),
                 )
             }
-            ItemData::Stash { message, id, .. } => {
-                Line::styled(format!("stash@{id} {message}"), &config.style.hash)
-            }
+            ItemData::Stash { message, id, .. } => Line::from(vec![
+                Span::styled(format!("stash@{id}"), &config.style.hash),
+                Span::raw(format!(" {message}")),
+            ]),
             ItemData::Header(header) => {
                 let content = match header {
                     SectionHeader::Remote(remote) => format!("Remote {remote}"),
