@@ -77,7 +77,7 @@ pub(crate) enum SectionHeader {
 }
 
 impl ItemData {
-    pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
+    pub fn to_line<'a>(&'a self, item_id: u64, config: Rc<Config>) -> Line<'a> {
         match self {
             ItemData::Raw(content) => Line::raw(content),
             ItemData::AllUnstaged(count) => Line::from(vec![
@@ -162,7 +162,7 @@ impl ItemData {
                 line_i,
             } => {
                 let hunk_highlights =
-                    highlight::highlight_hunk(&config, &Rc::clone(diff), *file_i, *hunk_i);
+                    highlight::highlight_hunk(item_id, &config, &Rc::clone(diff), *file_i, *hunk_i);
 
                 let hunk_content = &diff.hunk_content(*file_i, *hunk_i);
                 let hunk_line = &hunk_content[line_range.clone()];

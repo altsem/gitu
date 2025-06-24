@@ -58,8 +58,9 @@ fn create_hunk_items(
     hunk_i: usize,
     depth: usize,
 ) -> impl Iterator<Item = Item> {
+    let hunk_hash = hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]);
     iter::once(Item {
-        id: hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]),
+        id: hunk_hash,
         section: true,
         depth,
         data: ItemData::Hunk {
@@ -69,16 +70,29 @@ fn create_hunk_items(
         },
         ..Default::default()
     })
-    .chain(format_diff_hunk_items(diff, file_i, hunk_i, depth + 1))
+    .chain(format_diff_hunk_items(
+        diff,
+        file_i,
+        hunk_i,
+        depth + 1,
+        hunk_hash,
+    ))
 }
 
-fn format_diff_hunk_items(diff: Rc<Diff>, file_i: usize, hunk_i: usize, depth: usize) -> Vec<Item> {
+fn format_diff_hunk_items(
+    diff: Rc<Diff>,
+    file_i: usize,
+    hunk_i: usize,
+    depth: usize,
+    hunk_hash: u64,
+) -> Vec<Item> {
     let hunk_content = diff.hunk_content(file_i, hunk_i);
 
     gitu_diff::line_range_iterator(hunk_content)
         .enumerate()
         .map(|(line_index, (line_range, line))| {
             Item {
+                id: hunk_hash,
                 // line is marked unselectable if it starts with a space character
                 unselectable: line.starts_with(' '),
                 depth,

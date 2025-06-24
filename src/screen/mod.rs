@@ -303,7 +303,7 @@ impl Screen {
                 } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                     *highlight_depth = None;
                 };
-                let display = item.data.to_line(Rc::clone(&self.config));
+                let display = item.data.to_line(item.id, Rc::clone(&self.config));
 
                 Some(LineView {
                     item_index: *item_index,

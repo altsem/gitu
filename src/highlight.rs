@@ -18,9 +18,10 @@ use unicode_segmentation::UnicodeSegmentation;
 #[cached(
     ty = "SizedCache<String, HunkHighlights>",
     create = "{ SizedCache::with_size(200) }",
-    convert = r#"{ format!("{}", crate::items::hash(&diff.text)) }"#
+    convert = r#"{ format!("{_hunk_hash}") }"#
 )]
 pub(crate) fn highlight_hunk(
+    _hunk_hash: u64,
     config: &Config,
     diff: &Rc<Diff>,
     file_index: usize,
