@@ -3,7 +3,7 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is behind 'origin/main' by 1 commit.                               |
+▌Your branch is behind 'origin/main' by 1 commit(s).                            |
                                                                                 |
  Recent commits                                                                 |
  b66a0bf main add initial-file                                                  |

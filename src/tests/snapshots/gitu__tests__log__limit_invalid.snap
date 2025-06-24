@@ -3,7 +3,7 @@ source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 3 commit.                             |
+▌Your branch is ahead of 'origin/main' by 3 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
  8bb5532 main add first commit                                                  |

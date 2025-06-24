@@ -3,7 +3,7 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 2 commit.                             |
+▌Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
  7294ba4 main modify new-file                                                   |
