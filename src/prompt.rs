@@ -92,7 +92,7 @@ impl TextState<'_> {
             (KeyCode::Delete, _) | (KeyCode::Char('d'), Modifiers::CTRL) => self.delete(),
             (KeyCode::Char('k'), Modifiers::CTRL) => self.kill(),
             (KeyCode::Char('u'), Modifiers::CTRL) => self.truncate(),
-            (KeyCode::Char(c), Modifiers::NONE | Modifiers::SHIFT) => self.push(c),
+            (KeyCode::Char(c), Modifiers::NONE) => self.push(c),
             _ => {}
         }
     }
