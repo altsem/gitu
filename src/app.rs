@@ -187,8 +187,8 @@ impl App {
             InputEvent::Key(ref mut key) => {
                 // unify shift-prefixed key events between terminal emulators
                 // see: https://github.com/altsem/gitu/pull/394
-                if key.modifiers == Modifiers::SHIFT {
-                    if let KeyCode::Char(c) = key.key {
+                if let KeyCode::Char(c) = key.key {
+                    if key.modifiers == Modifiers::SHIFT {
                         key.key = KeyCode::Char(c.to_ascii_uppercase());
                         key.modifiers = Modifiers::NONE;
                     }
