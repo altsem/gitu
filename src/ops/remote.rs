@@ -87,6 +87,7 @@ impl OpTrait for RemoveRemote {
                     },
                 )?;
 
+                state.confirm(term, "Really delete remote (y or n)")?;
                 remove_remote(state, term, &remote_name)?;
 
                 Ok(())
