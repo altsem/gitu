@@ -1,6 +1,6 @@
 use crate::error::Error;
 use crate::git::diff::Diff;
-use crate::gitu_diff;
+use crate::highlight;
 use crate::item_data::ItemData;
 use crate::item_data::RefKind;
 use crate::Res;
@@ -88,7 +88,7 @@ fn format_diff_hunk_items(
 ) -> Vec<Item> {
     let hunk_content = diff.hunk_content(file_i, hunk_i);
 
-    gitu_diff::line_range_iterator(hunk_content)
+    highlight::line_range_iterator(hunk_content)
         .enumerate()
         .map(|(line_index, (line_range, line))| {
             Item {
