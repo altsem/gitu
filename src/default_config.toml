@@ -173,7 +173,7 @@ rebase_menu.quit = ["q", "<esc>"]
 
 root.remote_menu=["M"]
 remote_menu.add_remote=["a"]
-remote_menu.remove_remote=["k"]
+remote_menu.remove_remote=["K"]
 remote_menu.rename_remote=["r"]
 remote_menu.quit = ["q", "<esc>"]
 
