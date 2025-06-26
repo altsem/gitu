@@ -14,15 +14,10 @@ pub(crate) struct Discard;
 impl OpTrait for Discard {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            ItemData::Reference { kind, .. } => {
-                let branch = match kind {
-                    RefKind::Tag(tag) => tag,
-                    RefKind::Branch(branch) => branch,
-                    // FIXME is this correct?
-                    RefKind::Remote(_) => unreachable!("cannot discard remotes"),
-                };
-                discard_branch(branch.clone())
-            }
+            ItemData::Reference {
+                kind: RefKind::Branch(branch),
+                ..
+            } => discard_branch(branch.clone()),
             ItemData::File(file) => clean_file(file.clone()),
             ItemData::Delta { diff, file_i } => match diff.file_diffs[*file_i].header.status {
                 Status::Added => {
