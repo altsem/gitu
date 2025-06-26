@@ -167,11 +167,14 @@ impl ItemData {
                 let hunk_content = &diff.hunk_content(*file_i, *hunk_i);
                 let hunk_line = &hunk_content[line_range.clone()];
 
-                Line::from_iter(hunk_highlights.get_hunk_line(*line_i).iter().map(
-                    |(range, style)| {
-                        Span::styled(hunk_line[range.clone()].replace("\t", "    "), *style)
-                    },
-                ))
+                let line_highlights = hunk_highlights.get_line_highlights(*line_i);
+
+                Line::from_iter(line_highlights.iter().map(|(highlight_range, style)| {
+                    Span::styled(
+                        hunk_line[highlight_range.clone()].replace("\t", "    "),
+                        *style,
+                    )
+                }))
             }
             ItemData::Stash { message, id, .. } => Line::from(vec![
                 Span::styled(format!("stash@{id}"), &config.style.hash),

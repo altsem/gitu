@@ -67,12 +67,11 @@ pub struct HunkHighlights {
 }
 
 impl HunkHighlights {
-    pub fn get_hunk_line(&self, line_range: usize) -> &[(Range<usize>, Style)] {
-        if line_range >= self.spans.len() {
-            return &[];
-        }
-
-        &self.spans[line_range]
+    /// Get highlight segments for a given hunk line.
+    ///
+    /// NOTE: This method does not do any bounds checking internally!
+    pub fn get_line_highlights(&self, line: usize) -> &[(Range<usize>, Style)] {
+        &self.spans[line]
     }
 }
 
