@@ -10,12 +10,36 @@ use crate::{
 };
 use git2::Repository;
 use ratatui::prelude::Size;
-use std::{path::PathBuf, rc::Rc};
+use std::{hash::Hash, path::PathBuf, rc::Rc};
 
-#[derive(Hash)]
-enum StatusSection {
-    Unstaged,
-    Staged,
+enum SectionID {
+    RebaseStatus,
+    MergeStatus,
+    RevertStatus,
+    Untracked,
+    Stashes,
+    RecentCommits,
+    BranchStatus,
+    UnstagedChanges,
+    StagedChanges,
+}
+
+impl Hash for SectionID {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let id = match self {
+            SectionID::RebaseStatus => "rebase_status",
+            SectionID::MergeStatus => "merge_status",
+            SectionID::RevertStatus => "revert_status",
+            SectionID::Untracked => "untracked",
+            SectionID::Stashes => "stashes",
+            SectionID::RecentCommits => "recent_commits",
+            SectionID::BranchStatus => "branch_status",
+            SectionID::UnstagedChanges => "unstaged_changes",
+            SectionID::StagedChanges => "staged_changes",
+        };
+
+        id.hash(state)
+    }
 }
 
 pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
@@ -37,21 +61,21 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
-                    id: hash("rebase_status"),
+                    id: hash(SectionID::RebaseStatus),
                     data: ItemData::Header(SectionHeader::Rebase(rebase.head_name, rebase.onto)),
                     ..Default::default()
                 }]
                 .into_iter()
             } else if let Some(merge) = git::merge_status(&repo)? {
                 vec![Item {
-                    id: hash("merge_status"),
+                    id: hash(SectionID::MergeStatus),
                     data: ItemData::Header(SectionHeader::Merge(merge.head)),
                     ..Default::default()
                 }]
                 .into_iter()
             } else if let Some(revert) = git::revert_status(&repo)? {
                 vec![Item {
-                    id: hash("revert_status"),
+                    id: hash(SectionID::RevertStatus),
                     data: ItemData::Header(SectionHeader::Revert(revert.head)),
                     ..Default::default()
                 }]
@@ -65,7 +89,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 vec![
                     items::blank_line(),
                     Item {
-                        id: hash("untracked"),
+                        id: hash(SectionID::Untracked),
                         section: true,
                         depth: 0,
                         data: ItemData::AllUntracked(untracked_files),
@@ -75,15 +99,15 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
             })
             .chain(untracked)
             .chain(create_status_section_items(
-                StatusSection::Unstaged,
+                SectionID::UnstagedChanges,
                 &Rc::new(git::diff_unstaged(repo.as_ref())?),
             ))
             .chain(create_status_section_items(
-                StatusSection::Staged,
+                SectionID::StagedChanges,
                 &Rc::new(git::diff_staged(repo.as_ref())?),
             ))
-            .chain(create_stash_list_section_items(repo.as_ref(), "stashes"))
-            .chain(create_log_section_items(repo.as_ref(), "recent_commits"))
+            .chain(create_stash_list_section_items(repo.as_ref()))
+            .chain(create_log_section_items(repo.as_ref()))
             .collect();
 
             Ok(items)
@@ -106,7 +130,7 @@ fn items_list(files: Vec<PathBuf>) -> Vec<Item> {
 fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
     let Ok(head) = repo.head() else {
         return Ok(vec![Item {
-            id: hash("branch_status"),
+            id: hash(SectionID::BranchStatus),
             section: true,
             depth: 0,
             data: ItemData::Header(SectionHeader::NoBranch),
@@ -117,7 +141,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
     let head_shorthand = head.shorthand().unwrap().to_string();
 
     let mut items = vec![Item {
-        id: hash("branch_status"),
+        id: hash(SectionID::BranchStatus),
         section: true,
         depth: 0,
         data: ItemData::Header(SectionHeader::OnBranch(head_shorthand)),
@@ -135,7 +159,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 
     let Ok(upstream_id) = repo.refname_to_id(&upstream_name) else {
         items.push(Item {
-            id: hash("branch_status"),
+            id: hash(SectionID::BranchStatus),
             depth: 1,
             unselectable: true,
             data: ItemData::Header(SectionHeader::UpstreamGone(upstream_shortname)),
@@ -149,7 +173,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
         .map_err(Error::GitStatus)?;
 
     items.push(Item {
-        id: hash("branch_status"),
+        id: hash(SectionID::BranchStatus),
         depth: 1,
         unselectable: true,
         data: ItemData::BranchStatus(upstream_shortname, ahead, behind),
@@ -160,7 +184,7 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
 }
 
 fn create_status_section_items<'a>(
-    section: StatusSection,
+    section: SectionID,
     diff: &'a Rc<Diff>,
 ) -> impl Iterator<Item = Item> + 'a {
     if diff.file_diffs.is_empty() {
@@ -168,8 +192,9 @@ fn create_status_section_items<'a>(
     } else {
         let count = diff.file_diffs.len();
         let item_data = match section {
-            StatusSection::Unstaged => ItemData::AllUnstaged(count),
-            StatusSection::Staged => ItemData::AllStaged(count),
+            SectionID::UnstagedChanges => ItemData::AllUnstaged(count),
+            SectionID::StagedChanges => ItemData::AllStaged(count),
+            _ => unreachable!("no other status section should be created"),
         };
 
         vec![
@@ -191,10 +216,7 @@ fn create_status_section_items<'a>(
     .chain(items::create_diff_items(diff, 1, true))
 }
 
-fn create_stash_list_section_items<'a>(
-    repo: &Repository,
-    snake_case_header: &str,
-) -> impl Iterator<Item = Item> + 'a {
+fn create_stash_list_section_items<'a>(repo: &Repository) -> impl Iterator<Item = Item> + 'a {
     let stashes = items::stash_list(repo, 10).unwrap();
     if stashes.is_empty() {
         vec![]
@@ -202,7 +224,7 @@ fn create_stash_list_section_items<'a>(
         vec![
             items::blank_line(),
             Item {
-                id: hash(snake_case_header),
+                id: hash(SectionID::Stashes),
                 section: true,
                 depth: 0,
                 data: ItemData::Header(SectionHeader::Stashes),
@@ -214,10 +236,7 @@ fn create_stash_list_section_items<'a>(
     .chain(stashes)
 }
 
-fn create_log_section_items<'a>(
-    repo: &Repository,
-    snake_case_header: &str,
-) -> impl Iterator<Item = Item> + 'a {
+fn create_log_section_items<'a>(repo: &Repository) -> impl Iterator<Item = Item> + 'a {
     [
         Item {
             depth: 0,
@@ -225,7 +244,7 @@ fn create_log_section_items<'a>(
             ..Default::default()
         },
         Item {
-            id: hash(snake_case_header),
+            id: hash(SectionID::RecentCommits),
             section: true,
             depth: 0,
             data: ItemData::Header(SectionHeader::RecentCommits),
