@@ -16,9 +16,9 @@ use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[cached(
-    ty = "SizedCache<String, HunkHighlights>",
+    ty = "SizedCache<u64, HunkHighlights>",
     create = "{ SizedCache::with_size(200) }",
-    convert = r#"{ format!("{_hunk_hash}") }"#
+    convert = r#"{ _hunk_hash }"#
 )]
 pub(crate) fn highlight_hunk(
     _hunk_hash: u64,
