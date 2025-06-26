@@ -1,11 +1,16 @@
+use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
+use crate::gitu_diff::Status;
 use crate::highlight;
 use crate::item_data::ItemData;
 use crate::item_data::RefKind;
+use crate::item_data::SectionHeader;
 use crate::Res;
 use git2::Oid;
 use git2::Repository;
+use ratatui::text::Line;
+use ratatui::text::Span;
 use regex::Regex;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
@@ -24,6 +29,149 @@ pub(crate) struct Item {
     pub(crate) unselectable: bool,
     pub(crate) data: ItemData,
 }
+
+impl Item {
+    pub fn to_line<'a>(&'a self, config: Rc<Config>) -> Line<'a> {
+        match &self.data {
+            ItemData::Raw(content) => Line::raw(content),
+            ItemData::AllUnstaged(count) => Line::from(vec![
+                Span::styled("Unstaged changes", &config.style.section_header),
+                Span::raw(format!(" ({count})")),
+            ]),
+            ItemData::AllStaged(count) => Line::from(vec![
+                Span::styled("Staged changes", &config.style.section_header),
+                Span::raw(format!(" ({count})")),
+            ]),
+            ItemData::AllUntracked(_) => {
+                Line::styled("Untracked files", &config.style.section_header)
+            }
+            ItemData::Reference { kind, prefix } => {
+                let (reference, style) = match kind {
+                    RefKind::Tag(tag) => (tag, &config.style.tag),
+                    RefKind::Branch(branch) => (branch, &config.style.branch),
+                    RefKind::Remote(remote) => (remote, &config.style.remote),
+                };
+
+                Line::from(vec![Span::raw(*prefix), Span::styled(reference, style)])
+            }
+            ItemData::Commit {
+                short_id,
+                associated_references,
+                summary,
+                ..
+            } => Line::from_iter(itertools::intersperse(
+                iter::once(Span::styled(short_id, &config.style.hash))
+                    .chain(
+                        associated_references
+                            .iter()
+                            .map(|reference| match reference {
+                                RefKind::Tag(tag) => Span::styled(tag, &config.style.tag),
+                                RefKind::Branch(branch) => {
+                                    Span::styled(branch, &config.style.branch)
+                                }
+                                RefKind::Remote(remote) => {
+                                    Span::styled(remote, &config.style.remote)
+                                }
+                            }),
+                    )
+                    .chain([Span::raw(summary)]),
+                Span::raw(" "),
+            )),
+            ItemData::File(path) => Line::styled(path.to_string_lossy(), &config.style.file_header),
+            ItemData::Delta { diff, file_i } => {
+                let file_diff = &diff.file_diffs[*file_i];
+
+                let content = format!(
+                    "{:8}   {}",
+                    format!("{:?}", file_diff.header.status).to_lowercase(),
+                    match file_diff.header.status {
+                        Status::Renamed => format!(
+                            "{} -> {}",
+                            &Rc::clone(diff).text[file_diff.header.old_file.clone()],
+                            &Rc::clone(diff).text[file_diff.header.new_file.clone()]
+                        ),
+                        _ => Rc::clone(diff).text[file_diff.header.new_file.clone()].to_string(),
+                    }
+                );
+
+                Line::styled(content, &config.style.file_header)
+            }
+            ItemData::Hunk {
+                diff,
+                file_i,
+                hunk_i,
+            } => {
+                let file_diff = &diff.file_diffs[*file_i];
+                let hunk = &file_diff.hunks[*hunk_i];
+
+                let content = &diff.text[hunk.header.range.clone()];
+
+                Line::styled(content, &config.style.hunk_header)
+            }
+            ItemData::HunkLine {
+                diff,
+                file_i,
+                hunk_i,
+                line_range,
+                line_i,
+            } => {
+                let hunk_highlights =
+                    highlight::highlight_hunk(self.id, &config, &Rc::clone(diff), *file_i, *hunk_i);
+
+                let hunk_content = &diff.hunk_content(*file_i, *hunk_i);
+                let hunk_line = &hunk_content[line_range.clone()];
+
+                let line_highlights = hunk_highlights.get_line_highlights(*line_i);
+
+                Line::from_iter(line_highlights.iter().map(|(highlight_range, style)| {
+                    Span::styled(
+                        hunk_line[highlight_range.clone()].replace("\t", "    "),
+                        *style,
+                    )
+                }))
+            }
+            ItemData::Stash { message, id, .. } => Line::from(vec![
+                Span::styled(format!("stash@{id}"), &config.style.hash),
+                Span::raw(format!(" {message}")),
+            ]),
+            ItemData::Header(header) => {
+                let content = match header {
+                    SectionHeader::Remote(remote) => format!("Remote {remote}"),
+                    SectionHeader::Tags => "Tags".to_string(),
+                    SectionHeader::Branches => "Branches".to_string(),
+                    SectionHeader::NoBranch => "No branch".to_string(),
+                    SectionHeader::OnBranch(branch) => format!("On branch {branch}"),
+                    SectionHeader::UpstreamGone(upstream) => {
+                        format!("Your branch is based on '{upstream}', but the upstream is gone.")
+                    }
+                    SectionHeader::Rebase(head, onto) => format!("Rebasing {head} onto {onto}"),
+                    SectionHeader::Merge(head) => format!("Merging {head}"),
+                    SectionHeader::Revert(head) => format!("Reverting {head}"),
+                    SectionHeader::Stashes => "Stashes".to_string(),
+                    SectionHeader::RecentCommits => "Recent commits".to_string(),
+                    SectionHeader::Commit(oid) => format!("commit {oid}"),
+                };
+
+                Line::styled(content, &config.style.section_header)
+            }
+            ItemData::BranchStatus(upstream, ahead, behind) => {
+                let content = if *ahead == 0 && *behind == 0 {
+                    format!("Your branch is up to date with '{upstream}'.")
+                } else if *ahead > 0 && *behind == 0 {
+                    format!("Your branch is ahead of '{upstream}' by {ahead} commit(s).",)
+                } else if *ahead == 0 && *behind > 0 {
+                    format!("Your branch is behind '{upstream}' by {behind} commit(s).",)
+                } else {
+                    format!("Your branch and '{upstream}' have diverged,\nand have {ahead} and {behind} different commits each, respectively.")
+                };
+
+                Line::raw(content)
+            }
+            ItemData::Error(err) => Line::raw(err),
+        }
+    }
+}
+
 pub(crate) fn create_diff_items(
     diff: &Rc<Diff>,
     depth: usize,
