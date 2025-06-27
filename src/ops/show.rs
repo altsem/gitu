@@ -1,27 +1,40 @@
 use super::OpTrait;
-use crate::{app::State, error::Error, items::TargetData, screen, Action};
+use crate::{
+    app::State,
+    error::Error,
+    item_data::{ItemData, RefKind},
+    screen, Action,
+};
 use core::str;
 use std::{path::Path, process::Command, rc::Rc};
 
 pub(crate) struct Show;
 impl OpTrait for Show {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
         match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => goto_show_screen(r.clone()),
-            Some(TargetData::File(u)) => editor(u.as_path(), None),
-            Some(TargetData::Delta { diff, file_i }) => editor(
+            ItemData::Commit { oid, .. }
+            | ItemData::Reference {
+                kind: RefKind::Tag(oid),
+                ..
+            }
+            | ItemData::Reference {
+                kind: RefKind::Branch(oid),
+                ..
+            } => goto_show_screen(oid.clone()),
+            ItemData::File(u) => editor(u.as_path(), None),
+            ItemData::Delta { diff, file_i } => editor(
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 None,
             ),
-            Some(TargetData::Hunk {
+            ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            }) => editor(
+            } => editor(
                 Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
                 Some(diff.file_line_of_first_diff(*file_i, *hunk_i) as u32),
             ),
-            Some(TargetData::Stash { id: _, commit }) => goto_show_screen(commit.clone()),
+            ItemData::Stash { commit, .. } => goto_show_screen(commit.clone()),
             _ => None,
         }
     }

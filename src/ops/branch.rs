@@ -3,7 +3,7 @@ use crate::{
     app::{App, PromptParams, State},
     error::Error,
     git::{get_current_branch_name, is_branch_merged},
-    items::TargetData,
+    item_data::{ItemData, RefKind},
     menu::arg::Arg,
     term::Term,
     Res,
@@ -16,7 +16,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let rev = app.prompt(
                 term,
@@ -48,7 +48,7 @@ fn checkout(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
 
 pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let branch_name = app.prompt(
                 term,
@@ -79,9 +79,12 @@ fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name
 
 pub(crate) struct Delete;
 impl OpTrait for Delete {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
         let default = match target {
-            Some(TargetData::Branch(b)) => Some(b.clone()),
+            ItemData::Reference {
+                kind: RefKind::Branch(branch),
+                ..
+            } => Some(branch.clone()),
             _ => None,
         };
 

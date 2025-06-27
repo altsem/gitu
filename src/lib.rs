@@ -9,6 +9,7 @@ mod git;
 mod git2_opts;
 pub mod gitu_diff;
 mod highlight;
+mod item_data;
 mod items;
 mod key_parser;
 mod menu;

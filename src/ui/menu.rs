@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::SizedWidget;
 use crate::{
     app::State, bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op,
@@ -17,7 +19,7 @@ pub(crate) struct MenuWidget<'a> {
 
 impl<'a> MenuWidget<'a> {
     pub fn new(
-        config: &Config,
+        config: Rc<Config>,
         bindings: &'a Bindings,
         pending: &'a PendingMenu,
         item: &'a Item,
@@ -76,33 +78,31 @@ impl<'a> MenuWidget<'a> {
         }
 
         let mut right_column = vec![];
-        if let Some(target_data) = &item.target_data {
-            let target_binds = bindings
-                .list(&pending.menu)
-                .filter(|keybind| keybind.op.clone().implementation().is_target_op())
-                .filter(|keybind| {
-                    keybind
-                        .op
-                        .clone()
-                        .implementation()
-                        .get_action(Some(target_data))
-                        .is_some()
-                })
-                .collect::<Vec<_>>();
+        let target_binds = bindings
+            .list(&pending.menu)
+            .filter(|keybind| keybind.op.clone().implementation().is_target_op())
+            .filter(|keybind| {
+                keybind
+                    .op
+                    .clone()
+                    .implementation()
+                    .get_action(&item.data)
+                    .is_some()
+            })
+            .collect::<Vec<_>>();
 
-            if !target_binds.is_empty() {
-                right_column.push(item.display.clone());
-            }
+        if !target_binds.is_empty() {
+            right_column.push(item.to_line(Rc::clone(&config)));
+        }
 
-            for bind in target_binds {
-                right_column.push(Line::from(vec![
-                    Span::styled(&bind.raw, &style.hotkey),
-                    Span::styled(
-                        format!(" {}", bind.op.clone().implementation().display(state)),
-                        Style::new(),
-                    ),
-                ]));
-            }
+        for bind in target_binds {
+            right_column.push(Line::from(vec![
+                Span::styled(&bind.raw, &style.hotkey),
+                Span::styled(
+                    format!(" {}", bind.op.clone().implementation().display(state)),
+                    Style::new(),
+                ),
+            ]));
         }
 
         if !arg_binds.is_empty() {

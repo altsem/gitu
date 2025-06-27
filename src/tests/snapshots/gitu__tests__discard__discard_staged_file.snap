@@ -3,7 +3,7 @@ source: src/tests/discard.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
- Your branch is ahead of 'origin/main' by 1 commit.                             |
+ Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
 ▌4f3ed19 main add file-one                                                      |

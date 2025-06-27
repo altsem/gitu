@@ -25,7 +25,8 @@ use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::error::Error;
 use crate::file_watcher::FileWatcher;
-use crate::items::TargetData;
+use crate::item_data::ItemData;
+use crate::item_data::RefKind;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
@@ -246,8 +247,10 @@ impl App {
     }
 
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
-        let target = self.screen().get_selected_item().target_data.as_ref();
-        if let Some(mut action) = op.clone().implementation().get_action(target) {
+        let screen_ref = self.screen();
+        let item_data = &screen_ref.get_selected_item().data;
+
+        if let Some(mut action) = op.clone().implementation().get_action(item_data) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
             self.handle_result(result)?;
         }
@@ -464,9 +467,13 @@ impl App {
     }
 
     pub fn selected_rev(&self) -> Option<String> {
-        match &self.screen().get_selected_item().target_data {
-            Some(TargetData::Branch(branch)) => Some(branch.to_owned()),
-            Some(TargetData::Commit(commit)) => Some(commit.to_owned()),
+        match &self.screen().get_selected_item().data {
+            ItemData::Reference { kind, .. } => match kind {
+                RefKind::Tag(tag) => Some(tag.to_owned()),
+                RefKind::Branch(branch) => Some(branch.to_owned()),
+                RefKind::Remote(remote) => Some(remote.to_owned()),
+            },
+            ItemData::Commit { oid, .. } => Some(oid.to_owned()),
             _ => None,
         }
     }

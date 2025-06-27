@@ -3,7 +3,7 @@ source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 1 commit.                             |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
  e7eb2bd main add new-file                                                      |

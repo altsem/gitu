@@ -2,7 +2,7 @@ use super::OpTrait;
 use crate::{
     app::{App, State},
     git::diff::{Diff, PatchMode},
-    items::TargetData,
+    item_data::ItemData,
     term::Term,
     Action,
 };
@@ -10,25 +10,27 @@ use std::{ffi::OsString, process::Command, rc::Rc};
 
 pub(crate) struct Stage;
 impl OpTrait for Stage {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
-        let action = match target.cloned() {
-            Some(TargetData::AllUnstaged) => stage_unstaged(),
-            Some(TargetData::AllUntracked(untracked)) => stage_untracked(untracked),
-            Some(TargetData::File(u)) => stage_file(u.into()),
-            Some(TargetData::Delta { diff, file_i }) => {
-                stage_file(diff.text[diff.file_diffs[file_i].header.new_file.clone()].into())
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let action = match target {
+            ItemData::AllUnstaged(_) => stage_unstaged(),
+            // FIXME can we avoid clone?
+            ItemData::AllUntracked(untracked) => stage_untracked(untracked.clone()),
+            ItemData::File(u) => stage_file(u.into()),
+            ItemData::Delta { diff, file_i } => {
+                stage_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
             }
-            Some(TargetData::Hunk {
+            ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            }) => stage_patch(diff, file_i, hunk_i),
-            Some(TargetData::HunkLine {
+            } => stage_patch(Rc::clone(diff), *file_i, *hunk_i),
+            ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
                 line_i,
-            }) => stage_line(diff, file_i, hunk_i, line_i),
+                ..
+            } => stage_line(Rc::clone(diff), *file_i, *hunk_i, *line_i),
             _ => return None,
         };
 

@@ -5,6 +5,7 @@ use crate::git::diff::Diff;
 use crate::gitu_diff;
 use crate::syntax_parser;
 use crate::syntax_parser::SyntaxTag;
+use cached::{proc_macro::cached, SizedCache};
 use itertools::Itertools;
 use ratatui::style::Style;
 use std::iter;
@@ -14,41 +15,88 @@ use std::path::Path;
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 
-type LineHighlights<'a> = (&'a str, Vec<(Range<usize>, Style)>);
+#[cached(
+    ty = "SizedCache<u64, HunkHighlights>",
+    create = "{ SizedCache::with_size(200) }",
+    convert = r#"{ _hunk_hash }"#
+)]
+pub(crate) fn highlight_hunk(
+    _hunk_hash: u64,
+    config: &Config,
+    diff: &Rc<Diff>,
+    file_index: usize,
+    hunk_index: usize,
+) -> HunkHighlights {
+    let file_diff = &diff.file_diffs[file_index];
 
-pub(crate) fn highlight_hunk_lines<'a>(
-    config: &'a Config,
-    diff: &'a Rc<Diff>,
-    file_i: usize,
-    hunk_i: usize,
-) -> impl Iterator<Item = LineHighlights<'a>> + 'a {
-    let old_path = &diff.text[diff.file_diffs[file_i].header.old_file.clone()];
-    let new_path = &diff.text[diff.file_diffs[file_i].header.new_file.clone()];
+    let hunk_content = diff.hunk_content(file_index, hunk_index);
 
-    let hunk = &diff.file_diffs[file_i].hunks[hunk_i];
-    let hunk_content = &diff.text[hunk.content.range.clone()];
-    let old_mask = diff.mask_old_hunk(file_i, hunk_i);
-    let new_mask = diff.mask_new_hunk(file_i, hunk_i);
+    let old_mask = diff.mask_old_hunk(file_index, hunk_index);
+    let old_file_range = file_diff.header.old_file.clone();
+    let old_path = &diff.text[old_file_range];
+
+    let new_mask = diff.mask_new_hunk(file_index, hunk_index);
+    let new_file_range = file_diff.header.new_file.clone();
+    let new_path = &diff.text[new_file_range];
 
     let old_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, old_path, old_mask);
     let new_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, new_path, new_mask);
+
+    let hunk = &diff.file_diffs[file_index].hunks[hunk_index];
     let diff_highlights = iter_diff_highlights(&config.style.diff_highlight, hunk_content, hunk);
     let diff_context_highlights =
         iter_diff_context_highlights(&config.style.diff_highlight, hunk_content);
 
-    let mut highlights_iter = zip_styles(
+    let mut highlights_iterator = zip_styles(
         zip_styles(old_syntax_highlights, new_syntax_highlights),
         zip_styles(diff_highlights, diff_context_highlights),
     );
 
-    hunk_content
+    let spans: Vec<_> = line_range_iterator(hunk_content)
+        .map(move |(line_range, _)| collect_line_highlights(&mut highlights_iterator, &line_range))
+        .collect();
+
+    HunkHighlights { spans }
+}
+
+#[derive(Clone)]
+pub struct HunkHighlights {
+    spans: Vec<Vec<(Range<usize>, Style)>>,
+}
+
+impl HunkHighlights {
+    /// Get highlight segments for a given hunk line.
+    ///
+    /// NOTE: This method does not do any bounds checking internally!
+    pub fn get_line_highlights(&self, line: usize) -> &[(Range<usize>, Style)] {
+        &self.spans[line]
+    }
+}
+
+/// Construct a newline inclusive iterator over each line in a chunk of text.
+pub fn line_range_iterator(content: &str) -> impl Iterator<Item = (Range<usize>, &str)> {
+    content
         .split_inclusive('\n')
-        .scan_byte_ranges()
-        .map(move |(line_range, line)| {
-            let highlights = collect_line_highlights(&mut highlights_iter, &line_range);
-            (line, highlights)
+        .scan(0usize, |prev_line_end, current_line| {
+            let line_start = *prev_line_end;
+
+            let actual_line_length = current_line.len();
+
+            let visual_line_length = if current_line.ends_with("\r\n") {
+                actual_line_length - 2
+            } else {
+                actual_line_length - 1
+            };
+
+            let actual_line_end = line_start + actual_line_length;
+
+            let visual_line_end = line_start + visual_line_length;
+
+            *prev_line_end = actual_line_end;
+
+            Some((line_start..visual_line_end, current_line))
         })
 }
 
@@ -131,35 +179,18 @@ pub(crate) fn iter_diff_context_highlights<'a>(
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
     fill_gaps(
         0..hunk_text.len(),
-        hunk_text
-            .split_inclusive('\n')
-            .scan_byte_ranges()
-            .flat_map(|(range, line)| {
-                if line.starts_with('-') {
-                    Some((range.start..range.start + 1, Style::from(&config.tag_old)))
-                } else if line.starts_with('+') {
-                    Some((range.start..range.start + 1, Style::from(&config.tag_new)))
-                } else {
-                    None
-                }
-            }),
+        line_range_iterator(hunk_text).flat_map(|(range, line)| {
+            if line.starts_with('-') {
+                Some((range.start..range.start + 1, Style::from(&config.tag_old)))
+            } else if line.starts_with('+') {
+                Some((range.start..range.start + 1, Style::from(&config.tag_new)))
+            } else {
+                None
+            }
+        }),
         Style::new(),
     )
     .peekable()
-}
-
-trait ScanByteRanges<T> {
-    fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, T)>;
-}
-
-impl<'a, I: Iterator<Item = &'a str>> ScanByteRanges<&'a str> for I {
-    fn scan_byte_ranges(self) -> impl Iterator<Item = (Range<usize>, &'a str)> {
-        self.scan(0..0, |prev_line_range, line| {
-            let line_range = prev_line_range.end..(prev_line_range.end + line.len());
-            *prev_line_range = line_range.clone();
-            Some((line_range, line))
-        })
-    }
 }
 
 pub(crate) fn iter_syntax_highlights<'a>(
@@ -264,19 +295,31 @@ pub(crate) fn collect_line_highlights(
     highlights_iter: &mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
     line_range: &Range<usize>,
 ) -> Vec<(Range<usize>, Style)> {
+    // collection of resulting line highlights
     let mut spans = vec![];
 
+    // peek iter
     while let Some((range, style)) = highlights_iter.peek() {
+        // if the current range in the iter ends before the line we
+        // are interested in highlights for, we advance the iterator
+        // and continue the loop
         if range.end <= line_range.start {
             highlights_iter.next();
             continue;
         }
 
+        // clamp the range to within the given line range
         let start = range.start.max(line_range.start);
         let end = range.end.min(line_range.end);
 
-        spans.push(((start - line_range.start)..(end - line_range.start), *style));
+        // the range coordinates have to be localized to the line in question
+        // before we report the highlights
+        let local_line_range_start = start - line_range.start;
+        let local_line_range_end = end - line_range.start;
 
+        spans.push((local_line_range_start..local_line_range_end, *style));
+
+        // break loop if we are outside of the line range
         if line_range.end <= range.end {
             break;
         }

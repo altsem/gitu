@@ -1,8 +1,7 @@
 use super::{Action, OpTrait};
 use crate::{
-    app::App,
-    app::{PromptParams, State},
-    items::TargetData,
+    app::{App, PromptParams, State},
+    item_data::ItemData,
     menu::arg::Arg,
     term::Term,
     Res,
@@ -18,7 +17,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct FetchAll;
 impl OpTrait for FetchAll {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, term| {
             let mut cmd = Command::new("git");
             cmd.args(["fetch", "--all", "--jobs", "10"]);
@@ -37,7 +36,7 @@ impl OpTrait for FetchAll {
 
 pub(crate) struct FetchElsewhere;
 impl OpTrait for FetchElsewhere {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let remote = app.prompt(
                 term,

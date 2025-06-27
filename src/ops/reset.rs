@@ -1,7 +1,7 @@
 use super::{selected_rev, OpTrait};
 use crate::{
     app::{App, PromptParams, State},
-    items::TargetData,
+    item_data::ItemData,
     menu::arg::Arg,
     term::Term,
     Action, Res,
@@ -14,7 +14,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct ResetSoft;
 impl OpTrait for ResetSoft {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let rev = app.prompt(
                 term,
@@ -47,7 +47,7 @@ fn reset_soft(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 pub(crate) struct ResetMixed;
 impl OpTrait for ResetMixed {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let rev = app.prompt(
                 term,
@@ -80,7 +80,7 @@ fn reset_mixed(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 
 pub(crate) struct ResetHard;
 impl OpTrait for ResetHard {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let rev = app.prompt(
                 term,

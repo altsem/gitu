@@ -40,6 +40,13 @@ impl Diff {
         &self.text[self.file_diffs[file_i].hunks[hunk_i].range.clone()]
     }
 
+    pub(crate) fn hunk_content(&self, file_index: usize, hunk_index: usize) -> &str {
+        &self.text[self.file_diffs[file_index].hunks[hunk_index]
+            .content
+            .range
+            .clone()]
+    }
+
     pub(crate) fn format_line_patch(
         &self,
         file_i: usize,

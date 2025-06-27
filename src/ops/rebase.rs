@@ -1,7 +1,7 @@
 use super::{selected_rev, Action, OpTrait};
 use crate::{
     app::{App, PromptParams, State},
-    items::TargetData,
+    item_data::{ItemData, RefKind},
     menu::arg::Arg,
     term::Term,
     Res,
@@ -30,7 +30,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct RebaseContinue;
 impl OpTrait for RebaseContinue {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--continue"]);
@@ -48,7 +48,7 @@ impl OpTrait for RebaseContinue {
 
 pub(crate) struct RebaseAbort;
 impl OpTrait for RebaseAbort {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--abort"]);
@@ -66,7 +66,7 @@ impl OpTrait for RebaseAbort {
 
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let rev = app.prompt(
                 term,
@@ -100,10 +100,18 @@ fn rebase_elsewhere(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
 
 pub(crate) struct RebaseInteractive;
 impl OpTrait for RebaseInteractive {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                let rev = OsString::from(r);
+            ItemData::Commit { oid, .. }
+            | ItemData::Reference {
+                kind: RefKind::Tag(oid),
+                ..
+            }
+            | ItemData::Reference {
+                kind: RefKind::Branch(oid),
+                ..
+            } => {
+                let rev = OsString::from(oid);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
                     app.close_menu();
@@ -140,10 +148,18 @@ fn parent(reference: &OsStr) -> OsString {
 
 pub(crate) struct RebaseAutosquash;
 impl OpTrait for RebaseAutosquash {
-    fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            Some(TargetData::Commit(r) | TargetData::Branch(r)) => {
-                let rev = OsString::from(r);
+            ItemData::Commit { oid, .. }
+            | ItemData::Reference {
+                kind: RefKind::Tag(oid),
+                ..
+            }
+            | ItemData::Reference {
+                kind: RefKind::Branch(oid),
+                ..
+            } => {
+                let rev = OsString::from(oid);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
                     app.close_menu();
