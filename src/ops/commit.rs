@@ -66,6 +66,25 @@ impl OpTrait for CommitAmend {
     }
 }
 
+pub(crate) struct CommitExtend;
+impl OpTrait for CommitExtend {
+    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let mut cmd = Command::new("git");
+            cmd.args(["commit", "--amend", "--no-edit"]);
+            cmd.args(app.state.pending_menu.as_ref().unwrap().args());
+
+            app.close_menu();
+            app.run_cmd_interactive(term, cmd)?;
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "extend".into()
+    }
+}
+
 pub(crate) struct CommitFixup;
 impl OpTrait for CommitFixup {
     fn get_action(&self, target: Option<&TargetData>) -> Option<Action> {
