@@ -174,7 +174,7 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_event(&mut self, term: &mut Term, event: InputEvent) -> Res<()> {
+    pub fn handle_event(&mut self, term: &mut Term, mut event: InputEvent) -> Res<()> {
         match event {
             InputEvent::Resized { cols, rows } => {
                 for screen in self.state.screens.iter_mut() {
@@ -185,13 +185,22 @@ impl App {
                 self.stage_redraw();
                 Ok(())
             }
-            InputEvent::Key(key) => {
+            InputEvent::Key(ref mut key) => {
+                // unify shift-prefixed key events between terminal emulators
+                // see: https://github.com/altsem/gitu/pull/394
+                if let KeyCode::Char(c) = key.key {
+                    if key.modifiers == Modifiers::SHIFT {
+                        key.key = KeyCode::Char(c.to_ascii_uppercase());
+                        key.modifiers = Modifiers::NONE;
+                    }
+                }
+
                 if self.state.pending_cmd.is_none() {
                     self.state.current_cmd_log.clear();
                 }
 
                 if self.state.prompt.state.is_focused() {
-                    self.state.prompt.state.handle_key_event(&key);
+                    self.state.prompt.state.handle_key_event(key);
                 } else {
                     self.handle_key_input(term, key)?;
                 }
@@ -218,7 +227,7 @@ impl App {
         self.state.needs_redraw = true;
     }
 
-    fn handle_key_input(&mut self, term: &mut Term, key: KeyEvent) -> Res<()> {
+    fn handle_key_input(&mut self, term: &mut Term, key: &KeyEvent) -> Res<()> {
         let menu = match &self.state.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
