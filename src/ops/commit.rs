@@ -68,7 +68,7 @@ impl OpTrait for CommitAmend {
 
 pub(crate) struct CommitExtend;
 impl OpTrait for CommitExtend {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend", "--no-edit"]);
