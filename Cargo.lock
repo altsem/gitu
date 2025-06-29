@@ -858,11 +858,13 @@ version = "0.34.0"
 dependencies = [
  "arboard",
  "cached",
+ "cassowary",
  "chrono",
  "clap",
  "criterion",
  "etcetera",
  "figment",
+ "fnv",
  "git-version",
  "git2",
  "insta",
