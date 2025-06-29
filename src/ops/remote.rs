@@ -72,23 +72,21 @@ impl OpTrait for RenameRemote {
 
 pub(crate) struct RemoveRemote;
 impl OpTrait for RemoveRemote {
-    fn get_action(&self, _target: Option<&TargetData>) -> Option<Action> {
-        Some(Rc::new(
-            |state: &mut crate::state::State, term: &mut Term| {
-                let remote_name = state.prompt(
-                    term,
-                    &PromptParams {
-                        prompt: "Delete remote",
-                        ..Default::default()
-                    },
-                )?;
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let remote_name = app.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Delete remote",
+                    ..Default::default()
+                },
+            )?;
 
-                state.confirm(term, "Really delete remote (y or n)")?;
-                remove_remote(state, term, &remote_name)?;
+            app.confirm(term, "Really delete remote (y or n)")?;
+            remove_remote(app, term, &remote_name)?;
 
-                Ok(())
-            },
-        ))
+            Ok(())
+        }))
     }
 
     fn display(&self, _state: &State) -> String {
@@ -97,15 +95,15 @@ impl OpTrait for RemoveRemote {
 }
 
 fn remove_remote(
-    state: &mut State,
+    app: &mut App,
     term: &mut ratatui::Terminal<crate::term::TermBackend>,
     remote_name: &str,
 ) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["remote", "remove", remote_name]);
 
-    state.close_menu();
-    state.run_cmd(term, &[], cmd)?;
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
 
