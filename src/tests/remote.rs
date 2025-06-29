@@ -42,7 +42,7 @@ fn rename_remote() {
 
 #[test]
 fn remove_remote() {
-    snapshot!(TestContext::setup_clone(), "Mkorigin<enter>");
+    snapshot!(TestContext::setup_clone(), "MKorigin<enter>y");
 }
 
 fn get_head_name(repo: &Repository) -> String {
