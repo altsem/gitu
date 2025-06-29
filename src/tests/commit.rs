@@ -1,6 +1,16 @@
 use super::*;
 
 #[test]
+fn commit_menu() {
+    let ctx = TestContext::setup_clone();
+
+    fs::write(ctx.dir.child("new_file.txt"), "lol\n").unwrap();
+    run(ctx.dir.path(), &["git", "add", "."]);
+
+    snapshot!(ctx, "c");
+}
+
+#[test]
 fn commit_instant_fixup() {
     let mut ctx = TestContext::setup_init();
     let mut state = ctx.init_app();
@@ -31,4 +41,14 @@ fn commit_instant_fixup_stashes_changes_and_keeps_empty() {
     ctx.update(&mut state, keys("gjjjjjjjjjcF"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn commit_extend() {
+    let ctx = TestContext::setup_clone();
+
+    fs::write(ctx.dir.child("new_file.txt"), "lol\n").unwrap();
+    run(ctx.dir.path(), &["git", "add", "."]);
+
+    snapshot!(ctx, "ce");
 }

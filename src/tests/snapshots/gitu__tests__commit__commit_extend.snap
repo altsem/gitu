@@ -1,0 +1,25 @@
+---
+source: src/tests/commit.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch and 'origin/main' have diverged,and have 1 and 1 different commits…|
+                                                                                |
+ Recent commits                                                                 |
+ 5dfe782 main add initial-file                                                  |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git commit --amend --no-edit                                                  |
+styles_hash: c98cd4a568aa98f0
