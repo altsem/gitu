@@ -9,29 +9,6 @@ use crate::{
     ops::Op,
 };
 
-// TODO: Make the nom parsing code return an error instead.
-const SPECIAL_KEYS: [&str; 19] = [
-    "backspace",
-    "enter",
-    "left",
-    "right",
-    "up",
-    "down",
-    "home",
-    "end",
-    "pageup",
-    "pagedown",
-    "tab",
-    "delete",
-    "insert",
-    "esc",
-    "capslock",
-    "shift",
-    "ctrl",
-    "alt",
-    "super",
-];
-
 pub(crate) struct Bindings {
     vec: Vec<Binding>,
 }
@@ -44,21 +21,9 @@ impl TryFrom<BTreeMap<Menu, BTreeMap<Op, Vec<String>>>> for Bindings {
     fn try_from(value: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>) -> Result<Self, Self::Error> {
         let mut bindings = Vec::new();
         let mut bad_bindings = Vec::new();
-        let mut special_key_found = false;
         for (menu, ops) in value {
             for (op, binds) in ops {
                 for keys in binds {
-                    // TODO: Make the nom parsing code return an error instead.
-                    if keys.split(&['+', ' ']).any(|k| SPECIAL_KEYS.contains(&k)) {
-                        special_key_found = true;
-                        bad_bindings.push(format!(
-                            "- {}.{} = {}",
-                            menu.as_ref(),
-                            op.as_ref(),
-                            keys
-                        ));
-                    }
-
                     if let Some(binding) = Binding::parse(menu, &keys, op.clone()) {
                         bindings.push(binding);
                     } else {
@@ -78,7 +43,6 @@ impl TryFrom<BTreeMap<Menu, BTreeMap<Op, Vec<String>>>> for Bindings {
         if !bad_bindings.is_empty() {
             return Err(Error::Bindings {
                 bad_key_bindings: bad_bindings,
-                special_key_included: special_key_found,
             });
         }
 
@@ -145,7 +109,7 @@ impl Binding {
     /// Attempt to parse the key combination passed in. If it fails, `None` is
     /// returned; the caller should report this to the user.
     pub fn parse(menu: Menu, raw_keys: &str, op: Op) -> Option<Self> {
-        if let Ok(("", keys)) = key_parser::parse_keys(raw_keys) {
+        if let Ok(("", keys)) = key_parser::parse_config_keys(raw_keys) {
             Some(Self {
                 menu,
                 raw: raw_keys.to_string(),

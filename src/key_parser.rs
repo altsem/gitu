@@ -1,77 +1,133 @@
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{anychar, char, none_of},
-    combinator::{all_consuming, map, opt, value},
-    multi::{many0, separated_list0},
-    sequence::{delimited, preceded},
-    IResult,
+    character::complete::{anychar, char},
+    combinator::{all_consuming, map},
+    error::{Error, ErrorKind},
+    multi::{many1, separated_list1},
+    sequence::{delimited, preceded, tuple},
+    Err, IResult,
 };
 use termwiz::input::{KeyCode, Modifiers};
 
-// TODO Improve error messages
-
 pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(Modifiers, KeyCode)>> {
-    all_consuming(many0(parse_key))(input)
+    map(parse_key_string, |keys| {
+        keys.into_iter().map(|key| (Modifiers::NONE, key)).collect()
+    })(input)
 }
 
-fn parse_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
-    alt((parse_quoted, parse_char_key))(input)
+/// Parse a string into [`Modifiers`] and [`KeyCode`]s. This function is
+/// intended to be used only when parsing the key bindings in a config file.
+pub(crate) fn parse_config_keys(input: &str) -> IResult<&str, Vec<(Modifiers, KeyCode)>> {
+    map(parse_key_combo, |(modifiers, keys)| {
+        keys.into_iter().map(|key| (modifiers, key)).collect()
+    })(input)
 }
 
-fn parse_quoted(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
-    delimited(char('<'), parse_modifiers_and_key, char('>'))(input)
+/// Parse a string of keys *that aren't* delimited by '+" into a key
+/// combination. There can be multiple "normal" keys and modifiers (represented
+/// as a single `Modifiers`).
+fn parse_key_string(input: &str) -> IResult<&str, Vec<KeyCode>> {
+    all_consuming(many1(parse_normal_key))(input)
 }
 
-fn parse_modifiers_and_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
-    let (input, mods_vec) = separated_list0(tag("+"), parse_modifier)(input)?;
-    let mods = mods_vec
-        .into_iter()
-        .reduce(Modifiers::union)
-        .unwrap_or(Modifiers::NONE);
+/// Parse a string of keys delimited by '+" into a key combination. There can be
+/// multiple "normal" keys and modifiers (represented as a single `Modifiers`).
+fn parse_key_combo(input: &str) -> IResult<&str, (Modifiers, Vec<KeyCode>)> {
+    let input = input.trim();
+    if input.trim().is_empty() {
+        return Err(Err::Error(Error::new(input, ErrorKind::Eof)));
+    }
 
-    preceded(opt(tag("+")), alt((parse_special_key, parse_char_key)))(input)
-        .map(|(rem, (m, key))| (rem, (m.union(mods), key)))
+    all_consuming(alt((
+        map(parse_prefixed, |key| (Modifiers::NONE, vec![key])),
+        parse_multiple_keys,
+    )))(input)
 }
 
-fn parse_special_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
+fn parse_prefixed(input: &str) -> IResult<&str, KeyCode> {
+    preceded(char('-'), parse_char_key)(input)
+}
+
+fn parse_multiple_keys(input: &str) -> IResult<&str, (Modifiers, Vec<KeyCode>)> {
     alt((
-        value(KeyCode::Backspace, tag("backspace")),
-        value(KeyCode::Enter, tag("enter")),
-        value(KeyCode::LeftArrow, tag("left")),
-        value(KeyCode::RightArrow, tag("right")),
-        value(KeyCode::UpArrow, tag("up")),
-        value(KeyCode::DownArrow, tag("down")),
-        value(KeyCode::Home, tag("home")),
-        value(KeyCode::End, tag("end")),
-        value(KeyCode::PageUp, tag("pageup")),
-        value(KeyCode::PageDown, tag("pagedown")),
-        value(KeyCode::Tab, tag("tab")),
-        // FIXME Drop this and mention in changelog
-        // value(KeyCode::BackTab, tag("backtab")),
-        value(KeyCode::Delete, tag("delete")),
-        value(KeyCode::Insert, tag("insert")),
-        value(KeyCode::Escape, tag("esc")),
-        value(KeyCode::CapsLock, tag("capslock")),
+        map(
+            tuple((
+                parse_modifiers,
+                char('+'),
+                separated_list1(char('+'), parse_normal_key),
+            )),
+            |(modifiers, _, keys)| (modifiers, keys),
+        ),
+        map(separated_list1(char('+'), parse_normal_key), |keys| {
+            (Modifiers::NONE, keys)
+        }),
     ))(input)
-    .map(|(rem, key)| (rem, (Modifiers::NONE, key)))
+}
+
+fn parse_modifiers(input: &str) -> IResult<&str, Modifiers> {
+    map(separated_list1(char('+'), parse_modifier), |modifiers| {
+        modifiers
+            .into_iter()
+            .fold(Modifiers::NONE, |acc, m| acc | m)
+    })(input)
 }
 
 fn parse_modifier(input: &str) -> IResult<&str, Modifiers> {
     alt((
-        value(Modifiers::SHIFT, tag("shift")),
-        value(Modifiers::CTRL, tag("ctrl")),
-        value(Modifiers::ALT, tag("alt")),
-        value(Modifiers::SUPER, tag("super")),
+        map(tag("shift"), |_| Modifiers::SHIFT),
+        map(tag("ctrl"), |_| Modifiers::CTRL),
+        map(tag("alt"), |_| Modifiers::ALT),
+        map(tag("super"), |_| Modifiers::SUPER),
         // FIXME Drop these and mention in changelog
-        // value(Modifiers::HYPER, tag("hyper")),
-        // value(Modifiers::META, tag("meta")),
+        // map(tag("hyper"), |_| Modifiers::HYPER),
+        // map(tag("meta"), |_| Modifiers::META),
     ))(input)
 }
 
-fn parse_char_key(input: &str) -> IResult<&str, (Modifiers, KeyCode)> {
-    none_of("<>")(input)?;
-    map(anychar, |c| (Modifiers::NONE, KeyCode::Char(c)))(input)
+fn parse_normal_key(input: &str) -> IResult<&str, KeyCode> {
+    // alt((parse_special_key, parse_char_key))(input)
+    alt((
+        delimited(char('<'), parse_special_key, char('>')),
+        parse_special_key,
+        parse_char_key,
+    ))(input)
+}
+
+fn parse_char_key(input: &str) -> IResult<&str, KeyCode> {
+    map(anychar, |c| KeyCode::Char(c))(input)
+}
+
+fn parse_special_key(input: &str) -> IResult<&str, KeyCode> {
+    alt((
+        map(tag("backspace"), |_| KeyCode::Backspace),
+        map(tag("enter"), |_| KeyCode::Enter),
+        map(tag("left"), |_| KeyCode::LeftArrow),
+        map(tag("right"), |_| KeyCode::RightArrow),
+        map(tag("up"), |_| KeyCode::UpArrow),
+        map(tag("down"), |_| KeyCode::DownArrow),
+        map(tag("home"), |_| KeyCode::Home),
+        map(tag("end"), |_| KeyCode::End),
+        map(tag("pageup"), |_| KeyCode::PageUp),
+        map(tag("pagedown"), |_| KeyCode::PageDown),
+        map(tag("tab"), |_| KeyCode::Tab),
+        map(tag("delete"), |_| KeyCode::Delete),
+        map(tag("insert"), |_| KeyCode::Insert),
+        map(tag("esc"), |_| KeyCode::Escape),
+        map(tag("capslock"), |_| KeyCode::CapsLock),
+        map(tag("f1"), |_| KeyCode::Function(1)),
+        map(tag("f2"), |_| KeyCode::Function(2)),
+        map(tag("f3"), |_| KeyCode::Function(3)),
+        map(tag("f4"), |_| KeyCode::Function(4)),
+        map(tag("f5"), |_| KeyCode::Function(5)),
+        map(tag("f6"), |_| KeyCode::Function(6)),
+        // map(tag("f7"), |_| KeyCode::Function(7)),
+        // map(tag("f8"), |_| KeyCode::Function(8)),
+        // map(tag("f9"), |_| KeyCode::Function(9)),
+        // map(tag("f10"), |_| KeyCode::Function(10)),
+        // map(tag("f11"), |_| KeyCode::Function(11)),
+        // map(tag("f12"), |_| KeyCode::Function(12)),
+    ))(input)
 }
 
 #[cfg(test)]
@@ -83,47 +139,54 @@ mod tests {
     #[test]
     fn single_char() {
         assert_eq!(
-            parse_keys("a"),
-            Ok(("", vec![(Modifiers::NONE, Char('a'))]))
+            parse_key_combo("a"),
+            Ok(("", (Modifiers::NONE, vec![Char('a')])))
         );
     }
 
     #[test]
     fn upper_char() {
         assert_eq!(
-            parse_keys("A"),
-            Ok(("", vec![(Modifiers::NONE, Char('A'))]))
+            parse_key_combo("A"),
+            Ok(("", (Modifiers::NONE, vec![Char('A')])))
         );
     }
 
     #[test]
     fn special_key() {
         assert_eq!(
-            parse_keys("<backspace>"),
-            Ok(("", vec![(Modifiers::NONE, KeyCode::Backspace)]))
+            parse_key_combo("backspace"),
+            Ok(("", (Modifiers::NONE, vec![KeyCode::Backspace])))
+        );
+        assert_eq!(
+            parse_key_combo("enter"),
+            Ok(("", (Modifiers::NONE, vec![KeyCode::Enter])))
         );
     }
 
     #[test]
     fn modifier() {
         assert_eq!(
-            parse_keys("<ctrl+j>"),
-            Ok(("", vec![(Modifiers::CTRL, KeyCode::Char('j'))]))
+            parse_key_combo("ctrl+j"),
+            Ok(("", (Modifiers::CTRL, vec![KeyCode::Char('j')])))
         );
+
+        // "ctrla" is invalid
+        assert!(parse_key_combo("ctrla+j").is_err());
     }
 
     #[test]
     fn multiple_modifiers() {
         assert_eq!(
-            parse_keys("<shift+ctrl+alt+k>"),
+            parse_key_combo("shift+ctrl+alt+k"),
             Ok((
                 "",
-                vec![(
+                (
                     Modifiers::SHIFT
                         .union(Modifiers::CTRL)
                         .union(Modifiers::ALT),
-                    KeyCode::Char('k')
-                )]
+                    vec![KeyCode::Char('k')]
+                )
             ))
         );
     }
@@ -131,15 +194,8 @@ mod tests {
     #[test]
     fn multiple() {
         assert_eq!(
-            parse_keys("1<alt+end>A"),
-            Ok((
-                "",
-                vec![
-                    (Modifiers::NONE, Char('1')),
-                    (Modifiers::ALT, End),
-                    (Modifiers::NONE, Char('A')),
-                ]
-            ))
+            parse_key_combo("alt+end"),
+            Ok(("", (Modifiers::ALT, vec![End])))
         );
     }
 }
