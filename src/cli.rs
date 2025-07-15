@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
 #[derive(Default, Debug, Parser)]
@@ -26,6 +28,10 @@ pub struct Args {
     #[clap(long, action)]
     /// Print version
     pub version: bool,
+
+    /// Config file to use
+    #[clap(short, long)]
+    pub config: Option<PathBuf>
 }
 
 #[derive(Debug, Subcommand)]

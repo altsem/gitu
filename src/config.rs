@@ -183,8 +183,8 @@ impl From<&SymbolStyleConfigEntry> for Style {
     }
 }
 
-pub(crate) fn init_config() -> Res<Config> {
-    let config_path = config_path();
+pub(crate) fn init_config(path: Option<PathBuf>) -> Res<Config> {
+    let config_path = path.unwrap_or_else(config_path);
 
     if config_path.exists() {
         log::info!("Loading config file at {:?}", config_path);
