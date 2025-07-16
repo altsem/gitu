@@ -79,7 +79,7 @@ pub type Res<T> = Result<T, Error>;
 pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
-    let config = Rc::new(config::init_config()?);
+    let config = Rc::new(config::init_config(args.config.clone())?);
 
     let mut app = app::App::create(
         Rc::new(repo),
