@@ -3,7 +3,7 @@ use crate::{
     cli::Args,
     config::{self, Config},
     error::Error,
-    key_parser::parse_keys,
+    key_parser::parse_test_keys,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
 };
@@ -123,7 +123,7 @@ fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
 }
 
 pub fn keys(input: &str) -> Vec<InputEvent> {
-    let ("", keys) = parse_keys(input).unwrap() else {
+    let ("", keys) = parse_test_keys(input).unwrap() else {
         unreachable!();
     };
 

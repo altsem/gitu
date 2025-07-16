@@ -45,8 +45,9 @@ pub(crate) trait OpTrait {
     fn display(&self, state: &State) -> String;
 }
 
-#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize, strum::AsRefStr)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub(crate) enum Op {
     AddRemote,
     Checkout,

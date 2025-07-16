@@ -18,8 +18,8 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 ? Search messages: ›                                                            |
 ────────────────────────────────────────────────────────────────────────────────|
-Log                     Arguments                                               |
-l current               -F Search messages (--grep)                             |
-o other                 -n Limit number of commits (-n=256)                     |
-q/<esc> Quit/Close                                                              |
-styles_hash: 1975e842a24d7fe3
+Log                   Arguments                                                 |
+l current             -F Search messages (--grep)                               |
+o other               -n Limit number of commits (-n=256)                       |
+q/esc Quit/Close                                                                |
+styles_hash: 3fc7870144b77995

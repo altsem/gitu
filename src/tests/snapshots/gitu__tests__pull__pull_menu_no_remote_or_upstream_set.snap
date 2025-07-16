@@ -21,5 +21,5 @@ Pull                            Arguments                                       
 p pushRemote, setting that      -r Rebase local commits (--rebase)              |
 u upstream, setting that                                                        |
 e from elsewhere                                                                |
-q/<esc> Quit/Close                                                              |
-styles_hash: 9294d1c15def01e9
+q/esc Quit/Close                                                                |
+styles_hash: 9ca8480d57b593bd
