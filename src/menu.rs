@@ -8,36 +8,51 @@ use crate::ops;
 
 pub(crate) mod arg;
 
-#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize, strum::AsRefStr,
+)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum Menu {
     #[serde(rename = "root")]
+    #[strum(serialize = "root")]
     Root,
     #[serde(rename = "branch_menu")]
+    #[strum(serialize = "branch_menu")]
     Branch,
     #[serde(rename = "commit_menu")]
+    #[strum(serialize = "commit_menu")]
     Commit,
     #[serde(rename = "fetch_menu")]
+    #[strum(serialize = "fetch_menu")]
     Fetch,
     #[serde(rename = "help_menu")]
+    #[strum(serialize = "help_menu")]
     Help,
     #[serde(rename = "log_menu")]
+    #[strum(serialize = "log_menu")]
     Log,
     #[serde(rename = "merge_menu")]
     Merge,
     #[serde(rename = "remote_menu")]
+    #[strum(serialize = "remote_menu")]
     Remote,
     #[serde(rename = "pull_menu")]
+    #[strum(serialize = "pull_menu")]
     Pull,
     #[serde(rename = "push_menu")]
+    #[strum(serialize = "push_menu")]
     Push,
     #[serde(rename = "rebase_menu")]
+    #[strum(serialize = "rebase_menu")]
     Rebase,
     #[serde(rename = "reset_menu")]
+    #[strum(serialize = "reset_menu")]
     Reset,
     #[serde(rename = "revert_menu")]
+    #[strum(serialize = "revert_menu")]
     Revert,
     #[serde(rename = "stash_menu")]
+    #[strum(serialize = "stash_menu")]
     Stash,
 }
 

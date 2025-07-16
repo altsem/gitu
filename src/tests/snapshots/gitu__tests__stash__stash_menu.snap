@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
                                                                                 |
  Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Stash                   Arguments                                               |
-z both                  -a Also save untracked and ignored files (--all)        |
-a apply                 -u Also save untracked files (--include-untracked)      |
+Stash                 Arguments                                                 |
+z both                -a Also save untracked and ignored files (--all)          |
+a apply               -u Also save untracked files (--include-untracked)        |
 i index                                                                         |
 w worktree                                                                      |
 x keeping index                                                                 |
 p pop                                                                           |
 k drop                                                                          |
-q/<esc> Quit/Close                                                              |
-styles_hash: 6353e9d00db1a7d3
+q/esc Quit/Close                                                                |
+styles_hash: bd7d338934b4927

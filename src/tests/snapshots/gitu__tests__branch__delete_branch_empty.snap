@@ -19,7 +19,7 @@ Branch                                                                          
 b Checkout branch/revision                                                      |
 c Checkout new branch                                                           |
 K Delete branch                                                                 |
-q/<esc> Quit/Close                                                              |
+q/esc Quit/Close                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Branch name required                                                          |
-styles_hash: 343b1fffa75cf86c
+styles_hash: b3cccdbd152231f5

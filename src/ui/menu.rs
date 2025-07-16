@@ -1,9 +1,7 @@
 use std::rc::Rc;
 
 use super::SizedWidget;
-use crate::{
-    app::State, bindings::Bindings, config::Config, items::Item, menu::PendingMenu, ops::Op,
-};
+use crate::{app::State, config::Config, items::Item, menu::PendingMenu, ops::Op};
 use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
@@ -20,16 +18,16 @@ pub(crate) struct MenuWidget<'a> {
 impl<'a> MenuWidget<'a> {
     pub fn new(
         config: Rc<Config>,
-        bindings: &'a Bindings,
         pending: &'a PendingMenu,
         item: &'a Item,
         state: &'a State,
     ) -> SizedWidget<Self> {
         let style = &config.style;
 
-        let arg_binds = bindings.arg_list(pending).collect::<Vec<_>>();
+        let arg_binds = config.bindings.arg_list(pending).collect::<Vec<_>>();
 
-        let non_target_binds = bindings
+        let non_target_binds = config
+            .bindings
             .list(&pending.menu)
             .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
             .collect::<Vec<_>>();
@@ -78,7 +76,8 @@ impl<'a> MenuWidget<'a> {
         }
 
         let mut right_column = vec![];
-        let target_binds = bindings
+        let target_binds = config
+            .bindings
             .list(&pending.menu)
             .filter(|keybind| keybind.op.clone().implementation().is_target_op())
             .filter(|keybind| {
@@ -97,7 +96,7 @@ impl<'a> MenuWidget<'a> {
 
         for bind in target_binds {
             right_column.push(Line::from(vec![
-                Span::styled(&bind.raw, &style.hotkey),
+                Span::styled(bind.raw.clone(), &style.hotkey),
                 Span::styled(
                     format!(" {}", bind.op.clone().implementation().display(state)),
                     Style::new(),
@@ -117,7 +116,7 @@ impl<'a> MenuWidget<'a> {
             let arg = pending.args.get(name.as_str()).unwrap();
 
             right_column.push(Line::from(vec![
-                Span::styled(&bind.raw, &style.hotkey),
+                Span::styled(bind.raw.clone(), &style.hotkey),
                 Span::raw(" "),
                 Span::raw(arg.display),
                 Span::raw(" ("),

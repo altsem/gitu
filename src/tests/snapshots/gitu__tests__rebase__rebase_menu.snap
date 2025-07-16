@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Rebase                  Arguments                                               |
-a abort                 -a Autosquash (--autosquash)                            |
-c continue              -A Autostash (--autostash)                              |
-e onto elsewhere        -d Lie about committer date (--committer-date-is-author-|
-q/<esc> Quit/Close      -i Interactive (--interactive)                          |
-                        -k Keep empty commits (--keep-empty)                    |
-                        -h Disable hooks (--no-verify)                          |
-                        -p Preserve merges (--preserve-merges)                  |
-styles_hash: c456a01c0e45182a
+Rebase                Arguments                                                 |
+a abort               -a Autosquash (--autosquash)                              |
+c continue            -A Autostash (--autostash)                                |
+e onto elsewhere      -d Lie about committer date (--committer-date-is-author-da|
+q/esc Quit/Close      -i Interactive (--interactive)                            |
+                      -k Keep empty commits (--keep-empty)                      |
+                      -h Disable hooks (--no-verify)                            |
+                      -p Preserve merges (--preserve-merges)                    |
+styles_hash: 571d8ea0d3ed08fa

@@ -22,6 +22,7 @@ pub mod term;
 mod tests;
 mod ui;
 
+use bindings::Bindings;
 use error::Error;
 use git2::Repository;
 use items::Item;
@@ -85,7 +86,7 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
         args,
-        config.clone(),
+        config,
         true,
     )?;
 

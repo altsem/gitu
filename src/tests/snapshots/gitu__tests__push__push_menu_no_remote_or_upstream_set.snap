@@ -21,5 +21,5 @@ Push                            Arguments                                       
 p pushRemote, setting that      -n Dry run (--dry-run)                          |
 u upstream, setting that        -F Force (--force)                              |
 e to elsewhere                  -f Force with lease (--force-with-lease)        |
-q/<esc> Quit/Close              -h Disable hooks (--no-verify)                  |
-styles_hash: 97c38ee7b4dd67be
+q/esc Quit/Close                -h Disable hooks (--no-verify)                  |
+styles_hash: bf6efdfac4691f2c

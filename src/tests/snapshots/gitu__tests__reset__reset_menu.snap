@@ -21,5 +21,5 @@ Reset                                                                           
 s soft                                                                          |
 m mixed                                                                         |
 h hard                                                                          |
-q/<esc> Quit/Close                                                              |
-styles_hash: 887f50ccce685158
+q/esc Quit/Close                                                                |
+styles_hash: cb2a2fb9e1ff99bd

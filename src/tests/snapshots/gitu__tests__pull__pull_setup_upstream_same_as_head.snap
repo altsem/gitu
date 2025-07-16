@@ -18,8 +18,8 @@ Pull                            Arguments                                       
 p pushRemote, setting that      -r Rebase local commits (--rebase)              |
 u upstream, setting that                                                        |
 e from elsewhere                                                                |
-q/<esc> Quit/Close                                                              |
+q/esc Quit/Close                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |
-styles_hash: 6796d754f17d6809
+styles_hash: d752193435beaf2d

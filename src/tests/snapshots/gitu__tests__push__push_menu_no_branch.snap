@@ -21,5 +21,5 @@ Push                               Arguments                                    
 p error: Head is not a branch      -n Dry run (--dry-run)                       |
 u error: Head is not a branch      -F Force (--force)                           |
 e to elsewhere                     -f Force with lease (--force-with-lease)     |
-q/<esc> Quit/Close                 -h Disable hooks (--no-verify)               |
-styles_hash: 18ab2c30f676c031
+q/esc Quit/Close                   -h Disable hooks (--no-verify)               |
+styles_hash: 6f801176e12e4bfc
