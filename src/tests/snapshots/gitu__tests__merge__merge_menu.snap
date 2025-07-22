@@ -1,0 +1,25 @@
+---
+source: src/tests/merge.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+Merge                   Arguments                                               |
+m merge                 -f Fast-forward only (--ff-only)                        |
+a abort                 -n No fast-forward (--no-ff)                            |
+c continue                                                                      |
+q/<esc> Quit/Close                                                              |
+styles_hash: 218a5930a2320238

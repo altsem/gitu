@@ -23,6 +23,7 @@ mod discard;
 mod editor;
 mod fetch;
 mod log;
+mod merge;
 mod pull;
 mod push;
 mod quit;
