@@ -9,6 +9,8 @@ confirm_quit.enabled = false
 # collapsed_sections = ["untracked", "recent_commits", "branch_status"]
 collapsed_sections = []
 refresh_on_file_change.enabled = true
+stash_list_limit = 10
+recent_commits_limit = 10
 
 # When to prompt for discard confirmation. Options:
 # "line"  - always prompt even for individual lines (default),

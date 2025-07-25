@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 3 commit(s).                          |
+                                                                                |
+ Recent commits                                                                 |
+ 421fbe4 main add thirdfile                                                     |
+ 0c2c6c3 add secondfile                                                         |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 960194502264d5c0
