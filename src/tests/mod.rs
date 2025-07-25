@@ -101,6 +101,34 @@ fn collapsed_sections_config() {
 }
 
 #[test]
+fn stash_list_with_limit() {
+    let mut ctx = TestContext::setup_clone();
+    ctx.config().general.stash_list_limit = 2;
+
+    fs::write(ctx.dir.child("file1.txt"), "content").unwrap();
+    run(ctx.dir.path(), &["git", "add", "."]);
+    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+    fs::write(ctx.dir.child("file2.txt"), "content").unwrap();
+    run(ctx.dir.path(), &["git", "add", "."]);
+    run(ctx.dir.path(), &["git", "stash", "save", "secondstash"]);
+    fs::write(ctx.dir.child("file3.txt"), "content").unwrap();
+    run(ctx.dir.path(), &["git", "add", "."]);
+    run(ctx.dir.path(), &["git", "stash", "save", "thirdstash"]);
+
+    snapshot!(ctx, "");
+}
+
+#[test]
+fn recent_commits_with_limit() {
+    let mut ctx = TestContext::setup_clone();
+    ctx.config().general.recent_commits_limit = 2;
+    commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
+    commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
+    commit(ctx.dir.path(), "thirdfile", "testing\ntesttest\n");
+    snapshot!(ctx, "");
+}
+
+#[test]
 fn log() {
     let ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
