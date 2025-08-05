@@ -221,7 +221,12 @@ fn create_highlight_config(lang: &Lang) -> HighlightConfiguration {
             "",
             "",
         ),
-        Lang::Php => todo!(),
+        Lang::Php => (
+            tree_sitter_php::LANGUAGE_PHP,
+            tree_sitter_php::HIGHLIGHTS_QUERY,
+            tree_sitter_php::INJECTIONS_QUERY,
+            "",
+        ),
         Lang::Java => (
             tree_sitter_java::LANGUAGE,
             tree_sitter_java::HIGHLIGHTS_QUERY,
