@@ -31,7 +31,7 @@ pub struct Args {
 
     /// Config file to use
     #[clap(short, long)]
-    pub config: Option<PathBuf>
+    pub config: Option<PathBuf>,
 }
 
 #[derive(Debug, Subcommand)]
