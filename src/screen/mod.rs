@@ -288,7 +288,7 @@ impl Screen {
         &self.items[self.line_index[self.cursor]]
     }
 
-    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView> {
+    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView<'_>> {
         let scan_start = self.scroll.min(self.cursor);
         let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);

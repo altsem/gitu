@@ -235,7 +235,7 @@ pub(crate) fn get_head_name(repo: &git2::Repository) -> Res<String> {
         .map_err(Error::BranchNameUtf8)
 }
 
-pub(crate) fn get_current_branch(repo: &git2::Repository) -> Res<Branch> {
+pub(crate) fn get_current_branch(repo: &git2::Repository) -> Res<Branch<'_>> {
     let head = repo.head().map_err(Error::GetHead)?;
     if head.is_branch() {
         Ok(Branch::wrap(head))

@@ -6,7 +6,7 @@ use crate::{git, Res};
 
 use super::{Error, Utf8Error};
 
-pub(crate) fn get_upstream(repo: &Repository) -> Res<Option<Branch>> {
+pub(crate) fn get_upstream(repo: &Repository) -> Res<Option<Branch<'_>>> {
     get_branch_upstream(&git::get_current_branch(repo)?)
 }
 
