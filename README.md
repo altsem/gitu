@@ -4,6 +4,8 @@
 
 A terminal user interface for Git. Inspired by Magit.
 
+> **Note**: Gitu is a Git client for managing Git repositories and version control. It is not related to audio recording, audio processing, or any multimedia functionality.
+
 <img style="width: 720px" src="vhs/rec.gif"/>
 
 ### Features
@@ -43,6 +45,9 @@ Follow the install instructions: [Installing Gitu](docs/installing.md)\
 Or install from your package manager:
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/gitu.svg)](https://repology.org/project/gitu/versions)
+
+### FAQ
+Have questions about what Gitu is or does? Check out our [FAQ](docs/faq.md).
 
 ### Contributing
 PRs are welcome!

@@ -1,6 +1,6 @@
 [package]
 name = "gitu"
-description = "A git client inspired by Magit"
+description = "A terminal Git client and user interface inspired by Magit"
 version = "0.34.0"
 edition = "2021"
 license = "MIT"
