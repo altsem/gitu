@@ -1,3 +1,5 @@
+use temp_env::with_var;
+
 use super::*;
 
 fn setup() -> TestContext {
@@ -25,7 +27,7 @@ fn merge_ff_only() {
 
 #[test]
 fn merge_no_ff() {
-    temp_env::with_var("GIT_MERGE_AUTOEDIT", Some("no"), || {
+    with_var("GIT_MERGE_AUTOEDIT", Some("no"), || {
         snapshot!(setup(), "m-nmother-branch<enter>");
     });
 }
