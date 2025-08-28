@@ -22,3 +22,10 @@ fn merge_prompt() {
 fn merge_ff_only() {
     snapshot!(setup(), "m-fmother-branch<enter>");
 }
+
+#[test]
+fn merge_no_ff() {
+    temp_env::with_var("GIT_MERGE_AUTOEDIT", Some("no"), || {
+        snapshot!(setup(), "m-nmother-branch<enter>");
+    });
+}
