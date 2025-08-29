@@ -16,6 +16,7 @@ pub(crate) mod discard;
 pub(crate) mod editor;
 pub(crate) mod fetch;
 pub(crate) mod log;
+pub(crate) mod merge;
 pub(crate) mod pull;
 pub(crate) mod push;
 pub(crate) mod rebase;
@@ -87,6 +88,9 @@ pub(crate) enum Op {
     RevertAbort,
     RevertContinue,
     RevertCommit,
+    Merge,
+    MergeAbort,
+    MergeContinue,
 
     Stage,
     Unstage,
@@ -179,6 +183,10 @@ impl Op {
             Op::AddRemote => Box::new(remote::AddRemote),
             Op::RemoveRemote => Box::new(remote::RemoveRemote),
             Op::RenameRemote => Box::new(remote::RenameRemote),
+
+            Op::Merge => Box::new(merge::Merge),
+            Op::MergeAbort => Box::new(merge::MergeAbort),
+            Op::MergeContinue => Box::new(merge::MergeContinue),
         }
     }
 }
@@ -192,6 +200,7 @@ impl Display for Menu {
             Menu::Fetch => "Fetch",
             Menu::Help => "Help",
             Menu::Log => "Log",
+            Menu::Merge => "Merge",
             Menu::Remote => "Remote",
             Menu::Pull => "Pull",
             Menu::Push => "Push",

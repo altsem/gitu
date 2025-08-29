@@ -1,0 +1,25 @@
+---
+source: src/tests/merge.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 2 commit(s).                          |
+                                                                                |
+ Recent commits                                                                 |
+ 4d7c2d6 main Merge branch 'other-branch'                                       |
+ b66a0bf origin/main add initial-file                                           |
+ 46c81ca other-branch add new-file                                              |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git merge --no-ff other-branch                                                |
+styles_hash: b5c08b1a2d972251

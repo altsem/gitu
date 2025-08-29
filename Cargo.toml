@@ -15,6 +15,7 @@ temp-dir = "0.1.13"
 criterion = "0.5.1"
 insta = "1.42.2"
 unicode-width = "0.2.0"
+temp-env = "0.3.6"
 
 [profile.release]
 strip = true
