@@ -71,7 +71,7 @@ impl<'a> MenuWidget<'a> {
                     binds.into_iter().map(|bind| &bind.raw).join("/"),
                     &style.hotkey,
                 ),
-                Span::styled(format!(" {}", menu), Style::new()),
+                Span::styled(format!(" {menu}"), Style::new()),
             ]));
         }
 

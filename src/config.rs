@@ -195,9 +195,9 @@ pub(crate) fn init_config(path: Option<PathBuf>) -> Res<Config> {
     let config_path = path.unwrap_or_else(config_path);
 
     if config_path.exists() {
-        log::info!("Loading config file at {:?}", config_path);
+        log::info!("Loading config file at {config_path:?}");
     } else {
-        log::info!("No config file at {:?}", config_path);
+        log::info!("No config file at {config_path:?}");
     }
 
     let FigmentConfig {

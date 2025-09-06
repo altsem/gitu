@@ -54,7 +54,7 @@ pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, 
         .map_err(Utf8Error::String)
         .map_err(Error::RemoteNameUtf8)?;
 
-        let remote_prefix = format!("{}/", remote);
+        let remote_prefix = format!("{remote}/");
         Ok(Some((remote, branch.replace(&remote_prefix, ""))))
     } else {
         Ok(Some((".".into(), branch)))
