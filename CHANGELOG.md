@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.35.0] - 2025-09-06
+
+### 🚀 Features
+
+- Ability to invoke merge operations (#401)
+- Add config cli arg to override the config file to use (#400)
+
+### 🐛 Bug Fixes
+
+- Crash when opening PHP files (#405)
+
 ## [0.34.0] - 2025-06-29
 
 ### 🚀 Features
