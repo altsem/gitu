@@ -267,7 +267,7 @@ fn create_highlight_config(lang: &Lang) -> HighlightConfiguration {
 
     let mut highlight_config = HighlightConfiguration::new(
         Language::new(lang_fn),
-        format!("{:?}", lang),
+        format!("{lang:?}"),
         hquery,
         iquery,
         lquery,

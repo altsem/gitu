@@ -86,7 +86,7 @@ impl App {
         let pending_menu = root_menu(&config).map(PendingMenu::init);
 
         let clipboard = Clipboard::new()
-            .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {}", e))
+            .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {e}"))
             .ok();
 
         let mut app = Self {
@@ -369,7 +369,7 @@ impl App {
             return Ok(());
         };
 
-        log::debug!("pending cmd finished with {:?}", status);
+        log::debug!("pending cmd finished with {status:?}");
 
         let result = write_child_output_to_log(log_rwlock, child, status);
         self.state.pending_cmd = None;

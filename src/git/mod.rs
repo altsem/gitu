@@ -188,7 +188,7 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     let email = commit
         .author()
         .email()
-        .map(|email| format!("<{}>", email))
+        .map(|email| format!("<{email}>"))
         .unwrap_or("".to_string());
 
     let message = commit
@@ -196,7 +196,7 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
         .unwrap_or("")
         .to_string()
         .lines()
-        .map(|line| format!("    {}", line))
+        .map(|line| format!("    {line}"))
         .join("\n");
 
     let offset = chrono::FixedOffset::east_opt(author.when().offset_minutes() * 60).unwrap();

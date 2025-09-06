@@ -127,7 +127,7 @@ fn parse_normal_key(input: &str) -> IResult<&str, KeyCode> {
 }
 
 fn parse_char_key(input: &str) -> IResult<&str, KeyCode> {
-    map(anychar, |c| KeyCode::Char(c))(input)
+    map(anychar, KeyCode::Char)(input)
 }
 
 fn parse_special_key(input: &str) -> IResult<&str, KeyCode> {

@@ -44,9 +44,9 @@ impl OpTrait for PullFromPushRemote {
 
     fn display(&self, state: &State) -> String {
         match get_push_remote(&state.repo) {
-            Ok(Some(remote)) => format!("from {}", remote),
+            Ok(Some(remote)) => format!("from {remote}"),
             Ok(None) => "pushRemote, setting that".into(),
-            Err(e) => format!("error: {}", e),
+            Err(e) => format!("error: {e}"),
         }
     }
 }
@@ -81,7 +81,7 @@ impl OpTrait for PullFromUpstream {
                     Ok(())
                 }
                 Some((remote, branch)) => {
-                    let refspec = format!("refs/heads/{}", branch);
+                    let refspec = format!("refs/heads/{branch}");
                     pull(app, term, &[&remote, &refspec])
                 }
             },
@@ -90,9 +90,9 @@ impl OpTrait for PullFromUpstream {
 
     fn display(&self, state: &State) -> String {
         match get_upstream_shortname(&state.repo) {
-            Ok(Some(upstream)) => format!("from {}", upstream),
+            Ok(Some(upstream)) => format!("from {upstream}"),
             Ok(None) => "upstream, setting that".into(),
-            Err(e) => format!("error: {}", e),
+            Err(e) => format!("error: {e}"),
         }
     }
 }
@@ -106,7 +106,7 @@ fn set_upstream_and_pull(app: &mut App, term: &mut Term, upstream_name: &str) ->
         return Ok(());
     };
 
-    let refspec = format!("refs/heads/{}", branch);
+    let refspec = format!("refs/heads/{branch}");
     pull(app, term, &[&remote, &refspec])
 }
 

@@ -60,48 +60,46 @@ impl std::error::Error for Error {}
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::StashList(e) => f.write_fmt(format_args!("Couldn't list stash: {}", e)),
-            Error::ReadLog(e) => f.write_fmt(format_args!("Couldn't read log: {}", e)),
+            Error::StashList(e) => f.write_fmt(format_args!("Couldn't list stash: {e}")),
+            Error::ReadLog(e) => f.write_fmt(format_args!("Couldn't read log: {e}")),
             Error::OpenRepo(e) => match e.code() {
                 git2::ErrorCode::NotFound => f.write_str("No .git found in the current directory"),
                 _ => f.write_fmt(format_args!("Couldn't open repo: {e:?}")),
             },
-            Error::FindGitDir(e) => f.write_fmt(format_args!("Couldn't find git directory: {}", e)),
-            Error::Term(e) => f.write_fmt(format_args!("Terminal error: {}", e)),
-            Error::Termwiz(e) => f.write_fmt(format_args!("Terminal error: {}", e)),
+            Error::FindGitDir(e) => f.write_fmt(format_args!("Couldn't find git directory: {e}")),
+            Error::Term(e) => f.write_fmt(format_args!("Terminal error: {e}")),
+            Error::Termwiz(e) => f.write_fmt(format_args!("Terminal error: {e}")),
             Error::GitDirUtf8(_e) => f.write_str("Git directory not valid UTF-8"),
-            Error::Config(e) => f.write_fmt(format_args!("Configuration error: {}", e)),
+            Error::Config(e) => f.write_fmt(format_args!("Configuration error: {e}")),
             Error::Bindings { bad_key_bindings } => {
                 let mut error_string = String::from("Errors while parsing key bindings:");
                 for item in bad_key_bindings {
                     error_string.push_str(&format!("\n{item}"));
                 }
-                f.write_fmt(format_args!("{}", error_string))
+                f.write_fmt(format_args!("{error_string}"))
             }
-            Error::FileWatcher(e) => f.write_fmt(format_args!("File watcher error: {}", e)),
+            Error::FileWatcher(e) => f.write_fmt(format_args!("File watcher error: {e}")),
             Error::ReadRebaseStatusFile(e) => {
-                f.write_fmt(format_args!("Couldn't read rebase status file: {}", e))
+                f.write_fmt(format_args!("Couldn't read rebase status file: {e}"))
             }
-            Error::ReadBranchName(e) => {
-                f.write_fmt(format_args!("Couldn't read branch name: {}", e))
-            }
+            Error::ReadBranchName(e) => f.write_fmt(format_args!("Couldn't read branch name: {e}")),
             Error::BranchNameUtf8(_e) => f.write_str("Branch name error"),
-            Error::GitDiff(e) => f.write_fmt(format_args!("Git diff error: {}", e)),
+            Error::GitDiff(e) => f.write_fmt(format_args!("Git diff error: {e}")),
             Error::GitDiffUtf8(e) => {
-                f.write_fmt(format_args!("Git diff output is not valid UTF-8: {}", e))
+                f.write_fmt(format_args!("Git diff output is not valid UTF-8: {e}"))
             }
-            Error::GitShow(e) => f.write_fmt(format_args!("Git show error: {}", e)),
+            Error::GitShow(e) => f.write_fmt(format_args!("Git show error: {e}")),
             Error::GitShowUtf8(e) => {
-                f.write_fmt(format_args!("Git show output is not valid UTF-8: {}", e))
+                f.write_fmt(format_args!("Git show output is not valid UTF-8: {e}"))
             }
-            Error::GitShowMeta(e) => f.write_fmt(format_args!("Git show metadata error: {}", e)),
+            Error::GitShowMeta(e) => f.write_fmt(format_args!("Git show metadata error: {e}")),
             Error::NotOnBranch => f.write_str("Head is not a branch"),
-            Error::GetHead(e) => f.write_fmt(format_args!("Couldn't get HEAD: {}", e)),
+            Error::GetHead(e) => f.write_fmt(format_args!("Couldn't get HEAD: {e}")),
             Error::CurrentBranchName(e) => {
-                f.write_fmt(format_args!("Couldn't get current branch name: {}", e))
+                f.write_fmt(format_args!("Couldn't get current branch name: {e}"))
             }
             Error::GetCurrentBranchUpstream(e) => {
-                f.write_fmt(format_args!("Couldn't get current branch upstream: {}", e))
+                f.write_fmt(format_args!("Couldn't get current branch upstream: {e}"))
             }
             Error::GetCurrentBranchUpstreamUtf8(_e) => {
                 f.write_str("Current branch upstream is not valid UTF-8")
@@ -110,31 +108,31 @@ impl Display for Error {
             Error::CannotDeleteCurrentBranch => f.write_str("Cannot delete current branch"),
             Error::BranchNameRequired => f.write_str("Branch name required"),
             Error::IsBranchMerged(e) => {
-                f.write_fmt(format_args!("Couldn't check if branch is merged: {}", e))
+                f.write_fmt(format_args!("Couldn't check if branch is merged: {e}"))
             }
-            Error::GetRemote(e) => f.write_fmt(format_args!("Couldn't get remote: {}", e)),
-            Error::ReadGitConfig(e) => f.write_fmt(format_args!("Couldn't read git config: {}", e)),
+            Error::GetRemote(e) => f.write_fmt(format_args!("Couldn't get remote: {e}")),
+            Error::ReadGitConfig(e) => f.write_fmt(format_args!("Couldn't read git config: {e}")),
             Error::ReadGitConfigUtf8(_e) => f.write_str("Git config is not valid UTF-8"),
             Error::DeleteGitConfig(e) => {
-                f.write_fmt(format_args!("Couldn't delete git config: {}", e))
+                f.write_fmt(format_args!("Couldn't delete git config: {e}"))
             }
-            Error::SetGitConfig(e) => f.write_fmt(format_args!("Couldn't set git config: {}", e)),
+            Error::SetGitConfig(e) => f.write_fmt(format_args!("Couldn't set git config: {e}")),
             Error::RemoteHasNoName => f.write_str("Remote has no name"),
-            Error::ReadOid(e) => f.write_fmt(format_args!("Couldn't read OID: {}", e)),
+            Error::ReadOid(e) => f.write_fmt(format_args!("Couldn't read OID: {e}")),
             Error::ArgMustBePositiveNumber => f.write_str("Value must be a number greater than 0"),
-            Error::ArgInvalidRegex(e) => f.write_fmt(format_args!("Invalid regex: {}", e)),
-            Error::Clipboard(e) => f.write_fmt(format_args!("Clipboard error: {}", e)),
-            Error::FindGitRev(e) => f.write_fmt(format_args!("Couldn't find git revision: {}", e)),
+            Error::ArgInvalidRegex(e) => f.write_fmt(format_args!("Invalid regex: {e}")),
+            Error::Clipboard(e) => f.write_fmt(format_args!("Clipboard error: {e}")),
+            Error::FindGitRev(e) => f.write_fmt(format_args!("Couldn't find git revision: {e}")),
             Error::NoEditorSet => f.write_fmt(format_args!(
                 "No editor environment variable set ({})",
                 crate::ops::show::EDITOR_VARS.join(", ")
             )),
-            Error::GitStatus(e) => f.write_fmt(format_args!("Git status error: {}", e)),
+            Error::GitStatus(e) => f.write_fmt(format_args!("Git status error: {e}")),
             Error::CmdAlreadyRunning => f.write_str("A command is already running"),
             Error::StashWorkTreeEmpty => f.write_str("Cannot stash: working tree is empty"),
-            Error::CouldntAwaitCmd(e) => f.write_fmt(format_args!("Couldn't await command: {}", e)),
+            Error::CouldntAwaitCmd(e) => f.write_fmt(format_args!("Couldn't await command: {e}")),
             Error::NoRepoWorkdir => f.write_str("No repository working directory"),
-            Error::SpawnCmd(e) => f.write_fmt(format_args!("Failed to spawn command: {}", e)),
+            Error::SpawnCmd(e) => f.write_fmt(format_args!("Failed to spawn command: {e}")),
             Error::CmdBadExit(args, code) => f.write_fmt(format_args!(
                 "'{}' exited with code: {}",
                 args,
@@ -142,12 +140,12 @@ impl Display for Error {
                     .unwrap_or_else(|| "".to_string())
             )),
             Error::CouldntReadCmdOutput(e) => {
-                f.write_fmt(format_args!("Couldn't read command output: {}", e))
+                f.write_fmt(format_args!("Couldn't read command output: {e}"))
             }
             Error::ListGitReferences(e) => {
-                f.write_fmt(format_args!("Couldn't list git references: {}", e))
+                f.write_fmt(format_args!("Couldn't list git references: {e}"))
             }
-            Error::OpenLogFile(e) => f.write_fmt(format_args!("Couldn't open log file: {}", e)),
+            Error::OpenLogFile(e) => f.write_fmt(format_args!("Couldn't open log file: {e}")),
             Error::PromptAborted => f.write_str("Aborted"),
             Error::NoMoreEvents => unimplemented!(),
         }

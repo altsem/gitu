@@ -78,14 +78,14 @@ impl Diff {
                 } else if line.starts_with(add) {
                     None
                 } else if let Some(stripped) = line.strip_prefix(remove) {
-                    Some(format!(" {}", stripped))
+                    Some(format!(" {stripped}"))
                 } else {
                     Some(line.to_string())
                 }
             })
             .collect::<String>();
 
-        format!("{}{}{}", file_header, hunk_header, modified_content)
+        format!("{file_header}{hunk_header}{modified_content}")
     }
 
     pub(crate) fn file_line_of_first_diff(&self, file_i: usize, hunk_i: usize) -> usize {

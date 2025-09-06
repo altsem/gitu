@@ -39,7 +39,7 @@ impl OpTrait for PushToPushRemote {
                 }
                 Some(push_remote) => {
                     let head_ref = git::get_head_name(&app.state.repo)?;
-                    let refspec = format!("{0}:{0}", head_ref);
+                    let refspec = format!("{head_ref}:{head_ref}");
                     push(app, term, &[&push_remote, &refspec])
                 }
             },
@@ -48,9 +48,9 @@ impl OpTrait for PushToPushRemote {
 
     fn display(&self, state: &State) -> String {
         match get_push_remote(&state.repo) {
-            Ok(Some(remote)) => format!("to {}", remote),
+            Ok(Some(remote)) => format!("to {remote}"),
             Ok(None) => "pushRemote, setting that".into(),
-            Err(e) => format!("error: {}", e),
+            Err(e) => format!("error: {e}"),
         }
     }
 }
@@ -65,7 +65,7 @@ fn set_push_remote_and_push(app: &mut App, term: &mut Term, push_remote_name: &s
     set_push_remote(&repo, Some(&push_remote))?;
 
     let head_ref = git::get_head_name(&app.state.repo)?;
-    let refspec = format!("{0}:{0}", head_ref);
+    let refspec = format!("{head_ref}:{head_ref}");
     push(app, term, &[push_remote_name, &refspec])
 }
 
@@ -96,9 +96,9 @@ impl OpTrait for PushToUpstream {
 
     fn display(&self, state: &State) -> String {
         match get_upstream_shortname(&state.repo) {
-            Ok(Some(upstream)) => format!("to {}", upstream),
+            Ok(Some(upstream)) => format!("to {upstream}"),
             Ok(None) => "upstream, setting that".into(),
-            Err(e) => format!("error: {}", e),
+            Err(e) => format!("error: {e}"),
         }
     }
 }
@@ -143,7 +143,7 @@ fn push_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
 
 fn push_head_to(app: &mut App, term: &mut Term, remote: &str, branch: &str) -> Res<()> {
     let head_ref = git::get_head_name(&app.state.repo)?;
-    let refspec = format!("{}:refs/heads/{}", head_ref, branch);
+    let refspec = format!("{head_ref}:refs/heads/{branch}");
     push(app, term, &[remote, &refspec])
 }
 

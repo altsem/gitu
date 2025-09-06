@@ -91,14 +91,11 @@ pub(crate) fn format_log_entry<'a>(
         }))
         .collect::<Vec<_>>(),
         CmdLogEntry::Error(err) => {
-            vec![Line::styled(
-                format!("! {}", err),
-                Style::new().red().bold(),
-            )]
+            vec![Line::styled(format!("! {err}"), Style::new().red().bold())]
         }
         CmdLogEntry::Info(msg) => {
             vec![Line::styled(
-                format!("> {}", msg),
+                format!("> {msg}"),
                 Style::new().green().bold(),
             )]
         }

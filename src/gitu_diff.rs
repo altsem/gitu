@@ -96,10 +96,10 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseError::Expected { cursor, expected } => {
-                write!(f, "Expected {:?} at byte {:?}", expected, cursor)
+                write!(f, "Expected {expected:?} at byte {cursor:?}")
             }
             ParseError::NotFound { cursor, expected } => {
-                write!(f, "Couldn't find {:?} from byte {:?}", expected, cursor)
+                write!(f, "Couldn't find {expected:?} from byte {cursor:?}")
             }
         }
     }
