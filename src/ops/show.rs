@@ -76,7 +76,11 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
             return Err(Error::NoEditorSet);
         };
 
-        let cmd = parse_editor_command(&editor, &file, maybe_line);
+        let cmd = if cfg!(windows) {
+            parse_editor_command_windows(&editor, &file, maybe_line)
+        } else {
+            parse_editor_command(&editor, &file, maybe_line)
+        };
 
         app.close_menu();
         app.run_cmd_interactive(term, cmd)?;
@@ -87,20 +91,25 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
 
 fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Command {
     let args = &editor.split_whitespace().collect::<Vec<_>>();
-    #[cfg(windows)]
-    let mut cmd = {
-        let mut c = Command::new("cmd");
-        c.arg("/C");
-        c.arg(args[0]);
-        c
-    };
-
-    #[cfg(not(windows))]
     let mut cmd = Command::new(args[0]);
+
     cmd.args(&args[1..]);
+    cmd.args(line_args(file, maybe_line, args[0].to_lowercase()));
+    cmd
+}
 
-    let lower = args[0].to_lowercase();
+fn parse_editor_command_windows(editor: &str, file: &str, maybe_line: Option<u32>) -> Command {
+    let args = &editor.split_whitespace().collect::<Vec<_>>();
+    let mut cmd = Command::new("cmd");
+    cmd.arg("/C");
+    cmd.arg(args[0]);
 
+    cmd.args(&args[1..]);
+    cmd.args(line_args(file, maybe_line, args[0].to_lowercase()));
+    cmd
+}
+
+fn line_args(file: &str, maybe_line: Option<u32>, lower: String) -> Vec<String> {
     if let Some(line) = maybe_line {
         if lower.ends_with("vi")
             || lower.ends_with("vim")
@@ -108,14 +117,13 @@ fn parse_editor_command(editor: &str, file: &str, maybe_line: Option<u32>) -> Co
             || lower.ends_with("nano")
             || lower.ends_with("nvr")
         {
-            cmd.args([&format!("+{line}"), file]);
+            vec![format!("+{line}"), file.to_string()]
         } else {
-            cmd.args([&format!("{file}:{line}")]);
+            vec![format!("{file}:{line}")]
         }
     } else {
-        cmd.args([file.to_string()]);
+        vec![file.to_string()]
     }
-    cmd
 }
 
 #[cfg(test)]
@@ -129,6 +137,16 @@ mod tests {
         assert_eq!(
             &cmd.get_args().collect::<Vec<_>>(),
             &["-f", "+42", "README.md"]
+        );
+    }
+
+    #[test]
+    fn parse_editor_command_test_windows() {
+        let cmd = super::parse_editor_command_windows("/bin/nAnO -f", "README.md", Some(42));
+        assert_eq!(cmd.get_program(), OsStr::new("cmd"));
+        assert_eq!(
+            &cmd.get_args().collect::<Vec<_>>(),
+            &["/C", "/bin/nAnO", "-f", "+42", "README.md"]
         );
     }
 }
