@@ -33,6 +33,8 @@ pub struct GeneralConfig {
     pub refresh_on_file_change: BoolConfigEntry,
     pub confirm_discard: ConfirmDiscardOption,
     pub collapsed_sections: Vec<String>,
+    pub stash_list_limit: usize,
+    pub recent_commits_limit: usize,
 }
 
 #[derive(Default, Debug, Deserialize)]

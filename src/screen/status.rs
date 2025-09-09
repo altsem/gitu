@@ -106,8 +106,14 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 SectionID::StagedChanges,
                 &Rc::new(git::diff_staged(repo.as_ref())?),
             ))
-            .chain(create_stash_list_section_items(repo.as_ref()))
-            .chain(create_log_section_items(repo.as_ref()))
+            .chain(create_stash_list_section_items(
+                repo.as_ref(),
+                config.general.stash_list_limit,
+            ))
+            .chain(create_log_section_items(
+                repo.as_ref(),
+                config.general.recent_commits_limit,
+            ))
             .collect();
 
             Ok(items)
@@ -216,8 +222,11 @@ fn create_status_section_items<'a>(
     .chain(items::create_diff_items(diff, 1, true))
 }
 
-fn create_stash_list_section_items<'a>(repo: &Repository) -> impl Iterator<Item = Item> + 'a {
-    let stashes = items::stash_list(repo, 10).unwrap();
+fn create_stash_list_section_items<'a>(
+    repo: &Repository,
+    limit: usize,
+) -> impl Iterator<Item = Item> + 'a {
+    let stashes = items::stash_list(repo, limit).unwrap();
     if stashes.is_empty() {
         vec![]
     } else {
@@ -236,7 +245,10 @@ fn create_stash_list_section_items<'a>(repo: &Repository) -> impl Iterator<Item 
     .chain(stashes)
 }
 
-fn create_log_section_items<'a>(repo: &Repository) -> impl Iterator<Item = Item> + 'a {
+fn create_log_section_items<'a>(
+    repo: &Repository,
+    limit: usize,
+) -> impl Iterator<Item = Item> + 'a {
     [
         Item {
             depth: 0,
@@ -252,5 +264,5 @@ fn create_log_section_items<'a>(repo: &Repository) -> impl Iterator<Item = Item>
         },
     ]
     .into_iter()
-    .chain(items::log(repo, 10, None, None).unwrap())
+    .chain(items::log(repo, limit, None, None).unwrap())
 }
