@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.36.0] - 2025-09-16
+
+### 🚀 Features
+
+- Allow configuring recent commits and stash list limits
+- *(config)* Removed support of sequences of keys (e.g. abc)
+
+### 🐛 Bug Fixes
+
+- *(config)* Report invalid key binding errors
+- Process bug when running show commands on Windows (#330)
+
 ## [0.35.0] - 2025-09-06
 
 ### 🚀 Features
