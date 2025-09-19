@@ -14,6 +14,7 @@ use std::{collections::HashSet, rc::Rc};
 pub(crate) mod log;
 pub(crate) mod show;
 pub(crate) mod show_refs;
+pub(crate) mod show_stash;
 pub(crate) mod status;
 
 const BOTTOM_CONTEXT_LINES: usize = 2;

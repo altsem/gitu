@@ -265,12 +265,13 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
         .enumerate()
         .map(|(i, stash)| -> Res<Item> {
             let stash_id = stash.id_new();
+            let stash_ref = format!("stash@{{{}}}", i);
             Ok(Item {
                 id: hash(stash_id),
                 depth: 1,
                 data: ItemData::Stash {
                     message: stash.message().unwrap_or("").to_string(),
-                    commit: stash_id.to_string(),
+                    stash_ref: stash_ref,
                     id: i,
                 },
                 ..Default::default()
