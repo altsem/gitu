@@ -37,7 +37,7 @@ pub(crate) enum ItemData {
     },
     Stash {
         message: String,
-        commit: String,
+        stash_ref: String,
         id: usize,
     },
     Header(SectionHeader),

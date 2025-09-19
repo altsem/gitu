@@ -177,6 +177,24 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     })
 }
 
+pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
+    let text = String::from_utf8(
+        Command::new("git")
+            // TODO What if bare repo?
+            .current_dir(repo.workdir().expect("Bare repos unhandled"))
+            .args(["stash", "show", "-p", stash_ref])
+            .output()
+            .map_err(Error::GitShow)?
+            .stdout,
+    )
+    .map_err(Error::GitShowUtf8)?;
+
+    Ok(Diff {
+        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+        text,
+    })
+}
+
 pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
     let object = &repo
         .revparse_single(reference)
