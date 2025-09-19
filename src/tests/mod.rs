@@ -146,6 +146,19 @@ fn show() {
 }
 
 #[test]
+fn show_stash() {
+    let ctx = TestContext::setup_clone();
+
+    fs::write(ctx.dir.child("file1.txt"), "content").unwrap();
+    run(ctx.dir.path(), &["git", "add", "file1.txt"]);
+    // Unstaged changes to "file1.txt"
+    fs::write(ctx.dir.child("file1.txt"), "content\nmodified content").unwrap();
+    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+
+    snapshot!(ctx, "jj<enter>");
+}
+
+#[test]
 fn rebase_conflict() {
     let mut ctx = TestContext::setup_clone();
     commit(ctx.dir.path(), "new-file", "hello");
