@@ -271,7 +271,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
                 depth: 1,
                 data: ItemData::Stash {
                     message: stash.message().unwrap_or("").to_string(),
-                    stash_ref: stash_ref,
+                    stash_ref,
                     id: i,
                 },
                 ..Default::default()
