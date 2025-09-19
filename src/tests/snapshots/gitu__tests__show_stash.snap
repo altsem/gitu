@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+▌commit 0a076c73d486bf053bb41b602a7d0746a139c61c                                |
+▌Author: Author Name <author@email.com>                                         |
+▌Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+▌                                                                               |
+▌    On main: firststash                                                        |
+                                                                                |
+ unmerged   file1.txt                                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: ba965d919318ab16
