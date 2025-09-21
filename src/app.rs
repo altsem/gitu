@@ -264,13 +264,18 @@ impl App {
     fn handle_mouse_input(&mut self, term: &mut Term, mouse: &MouseEvent) -> Res<()> {
         if mouse.mouse_buttons == MouseButtons::LEFT {
             let click_y = (mouse.y as usize).saturating_sub(1);
-            let current_selected_item_id = self.screen().get_selected_item().id;
+            let old_selected_item_id = self.screen().get_selected_item().id;
             self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+            let new_selected_item = self.screen().get_selected_item();
 
-            if current_selected_item_id == self.screen().get_selected_item().id {
+            if old_selected_item_id == new_selected_item.id {
                 // If the item clicked was already the current item, then try to
-                // toggle it.
-                self.handle_op(Op::ToggleSection, term)?;
+                // toggle it if it's a section or show it.
+                if new_selected_item.section {
+                    self.handle_op(Op::ToggleSection, term)?;
+                } else {
+                    self.handle_op(Op::Show, term)?;
+                }
             }
         } else if mouse.mouse_buttons == MouseButtons::RIGHT {
             let click_y = (mouse.y as usize).saturating_sub(1);
