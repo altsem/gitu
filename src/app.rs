@@ -55,6 +55,7 @@ pub(crate) struct State {
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
+    last_broken_scroll_event_timestamp: Option<std::time::SystemTime>,
 }
 
 pub(crate) struct App {
@@ -106,6 +107,7 @@ impl App {
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
+                last_broken_scroll_event_timestamp: None,
             },
         };
 
@@ -233,6 +235,21 @@ impl App {
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: &KeyEvent) -> Res<()> {
+        // HACK: This is a workaround for a bug in Termwiz where mouse scroll
+        // escape codes can be presented as key events instead of being handled.
+        // Here we ignore the next 75ms of key events after the beginning of an
+        // escape sequence.
+        if key.modifiers == Modifiers::ALT && key.key == KeyCode::Char('[') {
+            self.state.last_broken_scroll_event_timestamp = Some(std::time::SystemTime::now());
+            return Ok(());
+        } else if let Some(timestamp) = self.state.last_broken_scroll_event_timestamp {
+            if timestamp.elapsed().unwrap().as_millis() > 75 {
+                self.state.last_broken_scroll_event_timestamp = None;
+            } else {
+                return Ok(());
+            }
+        }
+
         let menu = match &self.state.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
