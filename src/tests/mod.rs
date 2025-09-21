@@ -482,3 +482,64 @@ fn mouse_show_item() {
     ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }
+
+#[test]
+fn mouse_wheel_scroll_up() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    // Create many files to have something to scroll through
+    for i in 1..=30 {
+        let filename = format!("file{:02}", i);
+        let content = format!("line 1\nline 2\nline 3\nline 4\nline 5\n");
+        commit(ctx.dir.path(), &filename, &content);
+        fs::write(
+            ctx.dir.child(&filename),
+            format!("modified content {}\n", i),
+        )
+        .expect("error writing to file");
+    }
+
+    let mut app = ctx.init_app();
+
+    // Scroll down a bit to be able to scroll up.
+    ctx.update(&mut app, keys("<ctrl+d><ctrl+d>"));
+
+    let mouse_event = MouseEvent {
+        x: 0,
+        y: 10,
+        modifiers: Modifiers::NONE,
+        mouse_buttons: MouseButtons::VERT_WHEEL | MouseButtons::WHEEL_POSITIVE,
+    };
+    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_wheel_scroll_down() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    // Create many files to have something to scroll through
+    for i in 1..=30 {
+        let filename = format!("file{:02}", i);
+        let content = format!("line 1\nline 2\nline 3\nline 4\nline 5\n");
+        commit(ctx.dir.path(), &filename, &content);
+        fs::write(
+            ctx.dir.child(&filename),
+            format!("modified content {}\n", i),
+        )
+        .expect("error writing to file");
+    }
+
+    let mut app = ctx.init_app();
+
+    let mouse_event = MouseEvent {
+        x: 0,
+        y: 10,
+        modifiers: Modifiers::NONE,
+        mouse_buttons: MouseButtons::VERT_WHEEL,
+    };
+    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}

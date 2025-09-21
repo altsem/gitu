@@ -36,6 +36,7 @@ pub struct GeneralConfig {
     pub stash_list_limit: usize,
     pub recent_commits_limit: usize,
     pub mouse_support: bool,
+    pub mouse_scroll_lines: usize,
 }
 
 #[derive(Default, Debug, Deserialize)]

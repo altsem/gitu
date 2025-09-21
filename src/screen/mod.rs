@@ -191,6 +191,22 @@ impl Screen {
         self.update_cursor(nav_mode);
     }
 
+    pub(crate) fn scroll_up(&mut self, lines: usize) {
+        self.scroll = self.scroll.saturating_sub(lines);
+        let nav_mode = self.selected_item_nav_mode();
+        self.update_cursor(nav_mode);
+    }
+
+    pub(crate) fn scroll_down(&mut self, lines: usize) {
+        let max_scroll = self
+            .line_index
+            .len()
+            .saturating_sub(self.size.height as usize);
+        self.scroll = (self.scroll + lines).min(max_scroll);
+        let nav_mode = self.selected_item_nav_mode();
+        self.update_cursor(nav_mode);
+    }
+
     pub(crate) fn toggle_section(&mut self) {
         let selected = &self.items[self.line_index[self.cursor]];
 

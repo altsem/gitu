@@ -276,6 +276,15 @@ impl App {
             let click_y = (mouse.y as usize).saturating_sub(1);
             self.handle_op(Op::MoveToScreenLine(click_y), term)?;
             self.handle_op(Op::Show, term)?;
+        } else if mouse.mouse_buttons.contains(MouseButtons::VERT_WHEEL) {
+            let scroll_lines = self.state.config.general.mouse_scroll_lines;
+            if scroll_lines > 0 {
+                if mouse.mouse_buttons.contains(MouseButtons::WHEEL_POSITIVE) {
+                    self.screen_mut().scroll_up(scroll_lines);
+                } else {
+                    self.screen_mut().scroll_down(scroll_lines);
+                }
+            }
         }
 
         Ok(())

@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ modified   file01…                                                             |
+ modified   file02…                                                             |
+ modified   file03…                                                             |
+ modified   file04…                                                             |
+ modified   file05…                                                             |
+ modified   file06…                                                             |
+ modified   file07…                                                             |
+ modified   file08…                                                             |
+ modified   file09…                                                             |
+ modified   file10…                                                             |
+▌modified   file11…                                                             |
+ modified   file12…                                                             |
+ modified   file13…                                                             |
+ modified   file14…                                                             |
+ modified   file15…                                                             |
+ modified   file16…                                                             |
+ modified   file17…                                                             |
+ modified   file18…                                                             |
+ modified   file19…                                                             |
+ modified   file20…                                                             |
+styles_hash: da4075784874982a

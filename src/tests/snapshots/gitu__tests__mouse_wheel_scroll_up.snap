@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ modified   file15…                                                             |
+ modified   file16…                                                             |
+ modified   file17…                                                             |
+▌modified   file18…                                                             |
+ modified   file19…                                                             |
+ modified   file20…                                                             |
+ modified   file21…                                                             |
+ modified   file22…                                                             |
+ modified   file23…                                                             |
+ modified   file24…                                                             |
+ modified   file25…                                                             |
+ modified   file26…                                                             |
+ modified   file27…                                                             |
+ modified   file28…                                                             |
+ modified   file29…                                                             |
+ modified   file30…                                                             |
+                                                                                |
+ Recent commits                                                                 |
+ 45183e5 main add file30                                                        |
+ d823a8b add file29                                                             |
+styles_hash: f22bfab8ba35bcab
