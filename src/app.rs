@@ -494,6 +494,9 @@ impl App {
 
         // restore the raw mode
         term.backend_mut().enable_raw_mode()?;
+        if !self.state.config.general.mouse_support {
+            term.backend_mut().disable_mouse_reporting()?;
+        }
 
         // Prevents cursor flash when exiting editor
         term.hide_cursor().map_err(Error::Term)?;

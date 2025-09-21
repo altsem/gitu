@@ -138,6 +138,24 @@ impl TermBackend {
         }
     }
 
+    pub fn disable_mouse_reporting(&mut self) -> Res<()> {
+        match self {
+            TermBackend::Termwiz(_t) => {
+                #[cfg(unix)]
+                {
+                    use std::io::{stdout, Write};
+                    // Write the escapes directly to stdout, since Termwiz doesn't
+                    // have an API for mouse reporting.
+                    let mut stdout = stdout();
+                    stdout.write_all(b"\x1b[?1000l\x1b[?1002l\x1b[?1006l").ok();
+                    stdout.flush().ok();
+                }
+                Ok(())
+            }
+            TermBackend::Test { .. } => Ok(()),
+        }
+    }
+
     pub fn poll_input(&mut self, wait: Option<Duration>) -> Res<Option<InputEvent>> {
         match self {
             TermBackend::Termwiz(t) => t
