@@ -17,6 +17,8 @@ use termwiz::input::InputEvent;
 use termwiz::input::KeyCode;
 use termwiz::input::KeyEvent;
 use termwiz::input::Modifiers;
+use termwiz::input::MouseButtons;
+use termwiz::input::MouseEvent;
 
 use crate::cli;
 use crate::cmd_log::CmdLog;
@@ -181,6 +183,13 @@ impl App {
                 self.stage_redraw();
                 Ok(())
             }
+            InputEvent::Mouse(ref mouse) => {
+                if self.state.config.general.mouse_support {
+                    self.handle_mouse_input(term, mouse)?;
+                    self.stage_redraw();
+                }
+                Ok(())
+            }
             InputEvent::Key(ref mut key) => {
                 // unify shift-prefixed key events between terminal emulators
                 // see: https://github.com/altsem/gitu/pull/394
@@ -247,6 +256,26 @@ impl App {
             }
             [] => self.state.pending_keys.clear(),
             [_, ..] => (),
+        }
+
+        Ok(())
+    }
+
+    fn handle_mouse_input(&mut self, term: &mut Term, mouse: &MouseEvent) -> Res<()> {
+        if mouse.mouse_buttons == MouseButtons::LEFT {
+            let click_y = (mouse.y as usize).saturating_sub(1);
+            let current_selected_item_id = self.screen().get_selected_item().id;
+            self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+
+            if current_selected_item_id == self.screen().get_selected_item().id {
+                // If the item clicked was already the current item, then try to
+                // toggle it.
+                self.handle_op(Op::ToggleSection, term)?;
+            }
+        } else if mouse.mouse_buttons == MouseButtons::RIGHT {
+            let click_y = (mouse.y as usize).saturating_sub(1);
+            self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+            self.handle_op(Op::Show, term)?;
         }
 
         Ok(())

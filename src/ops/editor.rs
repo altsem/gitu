@@ -210,6 +210,22 @@ impl OpTrait for MoveUpLine {
     }
 }
 
+pub(crate) struct MoveToScreenLine(pub usize);
+impl OpTrait for MoveToScreenLine {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        let screen_line = self.0;
+        Some(Rc::new(move |app, _term| {
+            app.close_menu();
+            app.screen_mut().move_cursor_to_screen_line(screen_line);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Move to line".into()
+    }
+}
+
 pub(crate) struct MoveNextSection;
 impl OpTrait for MoveNextSection {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {

@@ -281,6 +281,40 @@ impl Screen {
         }
     }
 
+    pub(crate) fn move_cursor_to_screen_line(&mut self, screen_line: usize) {
+        if self.line_index.is_empty() {
+            return;
+        }
+
+        // Build a mapping from screen lines to cursor indices by recreating
+        // the same logic used in line_views.
+        let area_height = self.size.height as usize;
+        let scan_start = self.scroll.min(self.cursor);
+        let scan_end = (self.scroll + area_height).min(self.line_index.len());
+        let context_lines = self.scroll - scan_start;
+        let displayed_line_index: Vec<usize> = (scan_start..scan_end).skip(context_lines).collect();
+        if screen_line < displayed_line_index.len() {
+            let new_cursor = displayed_line_index[screen_line];
+            if self.cursor == new_cursor {
+                return;
+            }
+
+            let old_cursor = self.cursor;
+            self.cursor = new_cursor;
+
+            let nav_mode = self.selected_item_nav_mode();
+            self.move_from_unselectable(nav_mode);
+
+            if !self.nav_filter(self.cursor, nav_mode) {
+                // There was no selectable item, put the cursor back.
+                self.cursor = old_cursor;
+            } else {
+                // Use minimal scrolling to keep the cursor visible.
+                self.scroll_fit_start();
+            }
+        }
+    }
+
     fn is_collapsed(&self, item: &Item) -> bool {
         self.collapsed.contains(&item.id)
     }

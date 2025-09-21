@@ -117,6 +117,8 @@ pub(crate) enum Op {
     OpenMenu(Menu),
     #[serde(untagged)]
     ToggleArg(String),
+    #[serde(untagged)]
+    MoveToScreenLine(usize),
 }
 
 impl Op {
@@ -131,12 +133,12 @@ impl Op {
             Op::MoveUp => Box::new(editor::MoveUp),
             Op::MoveDownLine => Box::new(editor::MoveDownLine),
             Op::MoveUpLine => Box::new(editor::MoveUpLine),
+            Op::MoveToScreenLine(screen_line) => Box::new(editor::MoveToScreenLine(screen_line)),
             Op::MoveNextSection => Box::new(editor::MoveNextSection),
             Op::MovePrevSection => Box::new(editor::MovePrevSection),
             Op::MoveParentSection => Box::new(editor::MoveParentSection),
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
-
             Op::Checkout => Box::new(branch::Checkout),
             Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
             Op::Delete => Box::new(branch::Delete),
