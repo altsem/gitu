@@ -82,6 +82,10 @@ pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
     let repo = open_repo(&dir)?;
     let config = Rc::new(config::init_config(args.config.clone())?);
 
+    if !config.general.mouse_support {
+        term.backend_mut().disable_mouse_reporting()?;
+    }
+
     let mut app = app::App::create(
         Rc::new(repo),
         term.size().map_err(Error::Term)?,
