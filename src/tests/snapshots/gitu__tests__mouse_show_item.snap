@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ commit f431046ef8cfa535f5ddf0a042cfdbcb1f7e64c8                                |
+ Author: Author Name <author@email.com>                                         |
+ Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+                                                                                |
+     add testfile                                                               |
+                                                                                |
+     Commit body goes here                                                      |
+                                                                                |
+ added      testfile                                                            |
+▌@@ -0,0 +1,2 @@                                                                |
+▌+testing                                                                       |
+▌+testtest                                                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 3185110292c06b5

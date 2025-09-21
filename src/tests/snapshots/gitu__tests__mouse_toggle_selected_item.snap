@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+▌modified   testfile                                                            |
+▌@@ -1,2 +1,2 @@                                                                |
+▌-testing                                                                       |
+▌-testtest                                                                      |
+▌+test                                                                          |
+▌+moretest                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ f431046 main add testfile                                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 4df1e6312d2b7d53

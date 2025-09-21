@@ -35,6 +35,7 @@ mod stash;
 mod unstage;
 
 use helpers::{clone_and_commit, commit, keys, run, TestContext};
+use termwiz::input::{InputEvent, Modifiers, MouseButtons, MouseEvent};
 
 #[test]
 fn no_repo() {
@@ -418,5 +419,66 @@ fn ext_diff() {
     );
     ctx.update(&mut app, keys("g"));
 
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_select_item() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+
+    let mouse_event = MouseEvent {
+        x: 0,
+        y: 4,
+        modifiers: Modifiers::NONE,
+        mouse_buttons: MouseButtons::LEFT,
+    };
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_toggle_selected_item() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+
+    let mouse_event = MouseEvent {
+        x: 0,
+        y: 4,
+        modifiers: Modifiers::NONE,
+        mouse_buttons: MouseButtons::LEFT,
+    };
+    let mut app = ctx.init_app();
+    ctx.update(
+        &mut app,
+        vec![
+            InputEvent::Mouse(mouse_event.clone()),
+            InputEvent::Mouse(mouse_event),
+        ],
+    );
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_show_item() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+
+    let mouse_event = MouseEvent {
+        x: 0,
+        y: 4,
+        modifiers: Modifiers::NONE,
+        mouse_buttons: MouseButtons::RIGHT,
+    };
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }

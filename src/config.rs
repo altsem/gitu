@@ -35,6 +35,7 @@ pub struct GeneralConfig {
     pub collapsed_sections: Vec<String>,
     pub stash_list_limit: usize,
     pub recent_commits_limit: usize,
+    pub mouse_support: bool,
 }
 
 #[derive(Default, Debug, Deserialize)]
