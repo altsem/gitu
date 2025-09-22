@@ -11,14 +11,16 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 use arboard::Clipboard;
+use crossterm::event;
+use crossterm::event::Event;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyModifiers;
+use crossterm::event::MouseButton;
+use crossterm::event::MouseEvent;
+use crossterm::event::MouseEventKind;
 use git2::Repository;
 use ratatui::layout::Size;
-use termwiz::input::InputEvent;
-use termwiz::input::KeyCode;
-use termwiz::input::KeyEvent;
-use termwiz::input::Modifiers;
-use termwiz::input::MouseButtons;
-use termwiz::input::MouseEvent;
+use tui_prompts::State as _;
 
 use crate::cli;
 use crate::cmd_log::CmdLog;
@@ -32,8 +34,6 @@ use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt;
-use crate::prompt::PromptData;
-use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
@@ -44,7 +44,7 @@ use super::Res;
 pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
-    pending_keys: Vec<(Modifiers, KeyCode)>,
+    pending_keys: Vec<(KeyModifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
@@ -55,7 +55,6 @@ pub(crate) struct State {
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
-    last_broken_scroll_event_timestamp: Option<std::time::SystemTime>,
 }
 
 pub(crate) struct App {
@@ -107,7 +106,6 @@ impl App {
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
-                last_broken_scroll_event_timestamp: None,
             },
         };
 
@@ -146,14 +144,16 @@ impl App {
 
     pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
         while !self.state.quit {
-            self.update(term, Some(max_tick_delay))?;
+            term.backend_mut().poll_event(max_tick_delay)?;
+            self.update(term)?;
         }
 
         Ok(())
     }
 
-    pub fn update(&mut self, term: &mut Term, wait: Option<Duration>) -> Res<()> {
-        if let Some(event) = term.backend_mut().poll_input(wait)? {
+    pub fn update(&mut self, term: &mut Term) -> Res<()> {
+        if term.backend_mut().poll_event(Duration::ZERO)? {
+            let event = term.backend_mut().read_event()?;
             self.handle_event(term, event)?;
         }
 
@@ -174,18 +174,17 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_event(&mut self, term: &mut Term, mut event: InputEvent) -> Res<()> {
+    pub fn handle_event(&mut self, term: &mut Term, event: Event) -> Res<()> {
         match event {
-            InputEvent::Resized { cols, rows } => {
+            Event::Resize(w, h) => {
                 for screen in self.state.screens.iter_mut() {
-                    screen.size = Size::new(cols as u16, rows as u16);
+                    screen.size = Size::new(w, h);
                 }
 
-                term.backend_mut().resize(cols, rows)?;
                 self.stage_redraw();
                 Ok(())
             }
-            InputEvent::Mouse(ref mouse) => {
+            Event::Mouse(ref mouse) => {
                 if self.state.config.general.mouse_support
                     && self.handle_mouse_input(term, mouse)?
                 {
@@ -193,14 +192,9 @@ impl App {
                 }
                 Ok(())
             }
-            InputEvent::Key(ref mut key) => {
-                // unify shift-prefixed key events between terminal emulators
-                // see: https://github.com/altsem/gitu/pull/394
-                if let KeyCode::Char(c) = key.key {
-                    if key.modifiers == Modifiers::SHIFT {
-                        key.key = KeyCode::Char(c.to_ascii_uppercase());
-                        key.modifiers = Modifiers::NONE;
-                    }
+            Event::Key(key) => {
+                if self.state.pending_cmd.is_none() {
+                    self.state.current_cmd_log.clear();
                 }
 
                 if self.state.pending_cmd.is_none() {
@@ -235,29 +229,18 @@ impl App {
         self.state.needs_redraw = true;
     }
 
-    fn handle_key_input(&mut self, term: &mut Term, key: &KeyEvent) -> Res<()> {
-        // HACK: This is a workaround for a bug in Termwiz where mouse scroll
-        // escape codes can be presented as key events instead of being handled.
-        // Here we ignore the next 75ms of key events after the beginning of an
-        // escape sequence.
-        if key.modifiers == Modifiers::ALT && key.key == KeyCode::Char('[') {
-            self.state.last_broken_scroll_event_timestamp = Some(std::time::SystemTime::now());
-            return Ok(());
-        } else if let Some(timestamp) = self.state.last_broken_scroll_event_timestamp {
-            if timestamp.elapsed().unwrap().as_millis() > 75 {
-                self.state.last_broken_scroll_event_timestamp = None;
-            } else {
-                return Ok(());
-            }
-        }
-
+    fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
         let menu = match &self.state.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
             Some(menu) => menu.menu,
         };
 
-        self.state.pending_keys.push((key.modifiers, key.key));
+        // The the character received in the KeyEvent changes as shift is pressed,
+        // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
+        let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
+        self.state.pending_keys.push((mods_without_shift, key.code));
+
         let matching_bindings = self
             .state
             .config
@@ -280,42 +263,45 @@ impl App {
     }
 
     fn handle_mouse_input(&mut self, term: &mut Term, mouse: &MouseEvent) -> Res<bool> {
-        if mouse.mouse_buttons == MouseButtons::NONE {
-            return Ok(false);
-        }
+        match mouse.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                let click_y = mouse.row as usize;
+                if self.screen().is_valid_screen_line(click_y) {
+                    let old_selected_item_id = self.screen().get_selected_item().id;
+                    self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+                    let new_selected_item = self.screen().get_selected_item();
 
-        if mouse.mouse_buttons == MouseButtons::LEFT {
-            let click_y = (mouse.y as usize).saturating_sub(1);
-            if self.screen().is_valid_screen_line(click_y) {
-                let old_selected_item_id = self.screen().get_selected_item().id;
-                self.handle_op(Op::MoveToScreenLine(click_y), term)?;
-                let new_selected_item = self.screen().get_selected_item();
-
-                if old_selected_item_id == new_selected_item.id {
-                    // If the item clicked was already the current item, then try to
-                    // toggle it if it's a section or show it.
-                    if new_selected_item.section {
-                        self.handle_op(Op::ToggleSection, term)?;
-                    } else {
-                        self.handle_op(Op::Show, term)?;
+                    if old_selected_item_id == new_selected_item.id {
+                        // If the item clicked was already the current item, then try to
+                        // toggle it if it's a section or show it.
+                        if new_selected_item.section {
+                            self.handle_op(Op::ToggleSection, term)?;
+                        } else {
+                            self.handle_op(Op::Show, term)?;
+                        }
                     }
                 }
             }
-        } else if mouse.mouse_buttons == MouseButtons::RIGHT {
-            let click_y = (mouse.y as usize).saturating_sub(1);
-            if self.screen().is_valid_screen_line(click_y) {
-                self.handle_op(Op::MoveToScreenLine(click_y), term)?;
-                self.handle_op(Op::Show, term)?;
+            MouseEventKind::Down(MouseButton::Right) => {
+                let click_y = mouse.row as usize;
+                if self.screen().is_valid_screen_line(click_y) {
+                    self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+                    self.handle_op(Op::Show, term)?;
+                }
             }
-        } else if mouse.mouse_buttons.contains(MouseButtons::VERT_WHEEL) {
-            let scroll_lines = self.state.config.general.mouse_scroll_lines;
-            if scroll_lines > 0 {
-                if mouse.mouse_buttons.contains(MouseButtons::WHEEL_POSITIVE) {
+            MouseEventKind::ScrollUp => {
+                let scroll_lines = self.state.config.general.mouse_scroll_lines;
+                if scroll_lines > 0 {
                     self.screen_mut().scroll_up(scroll_lines);
-                } else {
+                }
+            }
+            MouseEventKind::ScrollDown => {
+                let scroll_lines = self.state.config.general.mouse_scroll_lines;
+                if scroll_lines > 0 {
                     self.screen_mut().scroll_down(scroll_lines);
                 }
             }
+            _ => return Ok(false),
         }
 
         Ok(true)
@@ -470,7 +456,7 @@ impl App {
 
         // git will have staircased output in raw mode (issue #290)
         // disable raw mode temporarily for the git command
-        term.backend_mut().disable_raw_mode()?;
+        term.backend().disable_raw_mode()?;
 
         // If we don't show the cursor prior spawning (thus restore the default
         // state), the cursor may be missing in $EDITOR.
@@ -502,9 +488,9 @@ impl App {
             .push_cmd_with_output(&cmd, out_utf8);
 
         // restore the raw mode
-        term.backend_mut().enable_raw_mode()?;
-        if !self.state.config.general.mouse_support {
-            term.backend_mut().disable_mouse_reporting()?;
+        term.backend().enable_raw_mode()?;
+        if self.state.config.general.mouse_support {
+            term.backend_mut().enable_mouse_capture()?;
         }
 
         // Prevents cursor flash when exiting editor
@@ -567,7 +553,7 @@ impl App {
             self.hide_menu();
         }
 
-        self.state.prompt.set(PromptData { prompt_text });
+        self.state.prompt.set(prompt::PromptData { prompt_text });
         let result = self.handle_prompt(term, params);
 
         self.unhide_menu();
@@ -583,13 +569,12 @@ impl App {
         self.redraw_now(term)?;
 
         loop {
-            if let Some(event) = term.backend_mut().poll_input(None)? {
-                self.handle_event(term, event)?;
-            }
+            let event = term.backend_mut().read_event()?;
+            self.handle_event(term, event)?;
 
-            if self.state.prompt.state.status == Status::Done {
+            if self.state.prompt.state.status().is_done() {
                 return get_prompt_result(params, self);
-            } else if self.state.prompt.state.status == Status::Aborted {
+            } else if self.state.prompt.state.status().is_aborted() {
                 return Err(Error::PromptAborted);
             }
 
@@ -599,7 +584,7 @@ impl App {
 
     pub fn confirm(&mut self, term: &mut Term, prompt: &'static str) -> Res<()> {
         self.hide_menu();
-        self.state.prompt.set(PromptData {
+        self.state.prompt.set(prompt::PromptData {
             prompt_text: prompt.into(),
         });
 
@@ -617,11 +602,10 @@ impl App {
     fn handle_confirm(&mut self, term: &mut Term) -> Res<()> {
         self.redraw_now(term)?;
         loop {
-            if let Some(event) = term.backend_mut().poll_input(None)? {
-                self.handle_event(term, event)?;
-            }
+            let event = term.backend_mut().read_event()?;
+            self.handle_event(term, event)?;
 
-            match self.state.prompt.state.value.as_ref() {
+            match self.state.prompt.state.value() {
                 "y" => {
                     return Ok(());
                 }
@@ -637,7 +621,7 @@ impl App {
 }
 
 fn get_prompt_result(params: &PromptParams, app: &mut App) -> Res<String> {
-    let input = app.state.prompt.state.value.as_ref();
+    let input = app.state.prompt.state.value();
     let default_value = (params.create_default_value)(app);
 
     let value = match (input, &default_value) {

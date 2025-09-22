@@ -7,11 +7,11 @@ use crate::{
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
 };
+use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
 use std::{path::PathBuf, rc::Rc, time::Duration};
 use temp_dir::TempDir;
-use termwiz::input::{InputEvent, KeyEvent, Modifiers, MouseButtons, MouseEvent};
 
 use self::buffer::TestBuffer;
 
@@ -93,7 +93,7 @@ impl TestContext {
         app
     }
 
-    pub fn update(&mut self, app: &mut App, new_events: Vec<InputEvent>) {
+    pub fn update(&mut self, app: &mut App, new_events: Vec<Event>) {
         let TermBackend::Test { events, .. } = self.term.backend_mut() else {
             unreachable!();
         };
@@ -122,21 +122,34 @@ fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
     *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
 }
 
-pub fn keys(input: &str) -> Vec<InputEvent> {
+pub fn keys(input: &str) -> Vec<Event> {
     let ("", keys) = parse_test_keys(input).unwrap() else {
         unreachable!();
     };
 
     keys.into_iter()
-        .map(|(modifiers, key)| InputEvent::Key(KeyEvent { key, modifiers }))
+        .map(|(mods, key)| Event::Key(KeyEvent::new(key, mods)))
         .collect()
 }
 
-pub fn mouse_event(x: u16, y: u16, mouse_buttons: MouseButtons) -> InputEvent {
-    InputEvent::Mouse(MouseEvent {
-        x,
-        y,
-        mouse_buttons,
-        modifiers: Modifiers::NONE,
+pub fn mouse_event(x: u16, y: u16, mouse_button: MouseButton) -> Event {
+    Event::Mouse(crossterm::event::MouseEvent {
+        kind: crossterm::event::MouseEventKind::Down(mouse_button),
+        column: x,
+        row: y.saturating_sub(1),
+        modifiers: KeyModifiers::NONE,
+    })
+}
+
+pub fn mouse_scroll_event(x: u16, y: u16, scroll_up: bool) -> Event {
+    Event::Mouse(crossterm::event::MouseEvent {
+        kind: if scroll_up {
+            MouseEventKind::ScrollUp
+        } else {
+            MouseEventKind::ScrollDown
+        },
+        column: x,
+        row: y,
+        modifiers: KeyModifiers::NONE,
     })
 }
