@@ -34,8 +34,8 @@ mod stage;
 mod stash;
 mod unstage;
 
-use helpers::{clone_and_commit, commit, keys, mouse_event, run, TestContext};
-use termwiz::input::MouseButtons;
+use crossterm::event::MouseButton;
+use helpers::{clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run, TestContext};
 
 #[test]
 fn no_repo() {
@@ -430,7 +430,7 @@ fn mouse_select_item() {
     commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
 
     let mut app = ctx.init_app();
-    ctx.update(&mut app, vec![mouse_event(0, 4, MouseButtons::LEFT)]);
+    ctx.update(&mut app, vec![mouse_event(0, 4, MouseButton::Left)]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -448,11 +448,11 @@ fn mouse_select_hunk_line() {
         &mut app,
         vec![
             // Select the file with an unstaged change.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Expand the selected file.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Select the hunk line.
-            mouse_event(0, 8, MouseButtons::LEFT),
+            mouse_event(0, 8, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -471,9 +471,9 @@ fn mouse_select_ignore_empty_lines() {
         &mut app,
         vec![
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Click the space underneath the last unstaged change.
-            mouse_event(0, 5, MouseButtons::LEFT),
+            mouse_event(0, 5, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -492,9 +492,9 @@ fn mouse_select_ignore_empty_region() {
         &mut app,
         vec![
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Click the open space at the bottom of the screen.
-            mouse_event(0, 10, MouseButtons::LEFT),
+            mouse_event(0, 10, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -513,9 +513,9 @@ fn mouse_toggle_selected_item() {
         &mut app,
         vec![
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -533,7 +533,7 @@ fn mouse_show_item() {
         &mut app,
         vec![
             // Right-click the last unstaged change.
-            mouse_event(0, 4, MouseButtons::RIGHT),
+            mouse_event(0, 4, MouseButton::Right),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -554,9 +554,9 @@ fn mouse_show_ignore_empty_lines() {
         &mut app,
         vec![
             // Left-click the last stash.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Right-click the space underneath the last stash.
-            mouse_event(0, 5, MouseButtons::RIGHT),
+            mouse_event(0, 5, MouseButton::Right),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -577,9 +577,9 @@ fn mouse_show_ignore_empty_region() {
         &mut app,
         vec![
             // Left-click the last stash change.
-            mouse_event(0, 4, MouseButtons::LEFT),
+            mouse_event(0, 4, MouseButton::Left),
             // Right-click the open space at the bottom of the screen.
-            mouse_event(0, 10, MouseButtons::RIGHT),
+            mouse_event(0, 10, MouseButton::Right),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -593,7 +593,7 @@ fn mouse_wheel_scroll_up() {
     // Create many files to have something to scroll through
     for i in 1..=30 {
         let filename = format!("file{:02}", i);
-        let content = format!("line 1\nline 2\nline 3\nline 4\nline 5\n");
+        let content = "line 1\nline 2\nline 3\nline 4\nline 5\n".to_string();
         commit(ctx.dir.path(), &filename, &content);
         fs::write(
             ctx.dir.child(&filename),
@@ -611,11 +611,7 @@ fn mouse_wheel_scroll_up() {
         &mut app,
         vec![
             // Scroll the mouse wheel up.
-            mouse_event(
-                0,
-                10,
-                MouseButtons::VERT_WHEEL | MouseButtons::WHEEL_POSITIVE,
-            ),
+            mouse_scroll_event(0, 10, true),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -629,7 +625,7 @@ fn mouse_wheel_scroll_down() {
     // Create many files to have something to scroll through
     for i in 1..=30 {
         let filename = format!("file{:02}", i);
-        let content = format!("line 1\nline 2\nline 3\nline 4\nline 5\n");
+        let content = "line 1\nline 2\nline 3\nline 4\nline 5\n".to_string();
         commit(ctx.dir.path(), &filename, &content);
         fs::write(
             ctx.dir.child(&filename),
@@ -643,7 +639,7 @@ fn mouse_wheel_scroll_down() {
         &mut app,
         vec![
             // Scroll the mouse wheel down.
-            mouse_event(0, 10, MouseButtons::VERT_WHEEL),
+            mouse_scroll_event(0, 10, false),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());

@@ -1,38 +1,78 @@
 use crate::{error::Error, Res};
+use crossterm::{
+    event::{EnableMouseCapture, Event},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
+    ExecutableCommand,
+};
 use ratatui::{
-    backend::{Backend, TestBackend},
+    backend::{Backend, CrosstermBackend, TestBackend},
     layout::Size,
-    prelude::{backend::WindowSize, buffer::Cell, Position, TermwizBackend},
+    prelude::{backend::WindowSize, buffer::Cell, Position},
     Terminal,
 };
-use std::{io, time::Duration};
-use termwiz::{
-    caps::Capabilities,
-    input::InputEvent,
-    terminal::Terminal as _,
-    terminal::{buffered::BufferedTerminal, SystemTerminal},
-};
+use std::io::{self, stderr, Stderr};
+use std::{fmt::Display, time::Duration};
 
 pub type Term = Terminal<TermBackend>;
 
-pub fn create_backend() -> Res<TermBackend> {
-    let buffered_terminal = BufferedTerminal::new(
-        SystemTerminal::new(Capabilities::new_from_env().map_err(Error::Termwiz)?)
-            .map_err(Error::Termwiz)?,
-    )
-    .map_err(Error::Termwiz)?;
+// TODO It would be more logical if the following top-level functions also were in 'TermBackend'.
+//      However left here for now.
 
-    Ok(TermBackend::Termwiz(Box::new(
-        TermwizBackend::with_buffered_terminal(buffered_terminal),
-    )))
+pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
+    stderr()
+        .execute(EnterAlternateScreen)
+        .map_err(Error::Term)?;
+    let result = fun();
+    stderr()
+        .execute(LeaveAlternateScreen)
+        .map_err(Error::Term)?;
+    result
+}
+
+pub fn raw_mode<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
+    let was_raw_mode_enabled = is_raw_mode_enabled().map_err(Error::Term)?;
+
+    if !was_raw_mode_enabled {
+        enable_raw_mode().map_err(Error::Term)?;
+    }
+
+    let result = fun();
+
+    if !was_raw_mode_enabled {
+        disable_raw_mode().map_err(Error::Term)?;
+    }
+
+    result
+}
+
+pub fn cleanup_alternate_screen() {
+    print_err(stderr().execute(LeaveAlternateScreen));
+}
+
+pub fn cleanup_raw_mode() {
+    print_err(disable_raw_mode());
+}
+
+fn print_err<T, E: Display>(result: Result<T, E>) {
+    match result {
+        Ok(_) => (),
+        Err(error) => eprintln!("Error: {}", error),
+    };
+}
+
+pub fn backend() -> TermBackend {
+    TermBackend::Crossterm(CrosstermBackend::new(stderr()))
 }
 
 pub enum TermBackend {
-    Termwiz(Box<TermwizBackend>),
+    Crossterm(CrosstermBackend<Stderr>),
     #[allow(dead_code)]
     Test {
         backend: TestBackend,
-        events: Vec<InputEvent>,
+        events: Vec<Event>,
     },
 }
 
@@ -42,63 +82,63 @@ impl Backend for TermBackend {
         I: Iterator<Item = (u16, u16, &'a Cell)>,
     {
         match self {
-            TermBackend::Termwiz(t) => t.draw(content),
+            TermBackend::Crossterm(t) => t.draw(content),
             TermBackend::Test { backend, .. } => backend.draw(content),
         }
     }
 
     fn hide_cursor(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Termwiz(t) => t.hide_cursor(),
+            TermBackend::Crossterm(t) => t.hide_cursor(),
             TermBackend::Test { backend, .. } => backend.hide_cursor(),
         }
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Termwiz(t) => t.show_cursor(),
+            TermBackend::Crossterm(t) => t.show_cursor(),
             TermBackend::Test { backend, .. } => backend.show_cursor(),
         }
     }
 
     fn get_cursor_position(&mut self) -> io::Result<Position> {
         match self {
-            TermBackend::Termwiz(t) => t.get_cursor_position(),
+            TermBackend::Crossterm(t) => t.get_cursor_position(),
             TermBackend::Test { backend, .. } => backend.get_cursor_position(),
         }
     }
 
     fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
         match self {
-            TermBackend::Termwiz(t) => t.set_cursor_position(position),
+            TermBackend::Crossterm(t) => t.set_cursor_position(position),
             TermBackend::Test { backend, .. } => backend.set_cursor_position(position),
         }
     }
 
     fn clear(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Termwiz(t) => t.clear(),
+            TermBackend::Crossterm(t) => t.clear(),
             TermBackend::Test { backend, .. } => backend.clear(),
         }
     }
 
     fn size(&self) -> io::Result<Size> {
         match self {
-            TermBackend::Termwiz(t) => t.size(),
+            TermBackend::Crossterm(t) => t.size(),
             TermBackend::Test { backend, .. } => backend.size(),
         }
     }
 
     fn window_size(&mut self) -> io::Result<WindowSize> {
         match self {
-            TermBackend::Termwiz(t) => t.window_size(),
+            TermBackend::Crossterm(t) => t.window_size(),
             TermBackend::Test { backend, .. } => backend.window_size(),
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Termwiz(t) => t.flush(),
+            TermBackend::Crossterm(t) => Backend::flush(t),
             TermBackend::Test { backend, .. } => backend.flush(),
         }
     }
@@ -107,73 +147,55 @@ impl Backend for TermBackend {
 impl TermBackend {
     pub fn enter_alternate_screen(&mut self) -> Res<()> {
         match self {
-            TermBackend::Termwiz(c) => c
-                .buffered_terminal_mut()
-                .terminal()
-                .enter_alternate_screen()
-                .map_err(Error::Termwiz),
+            TermBackend::Crossterm(c) => c
+                .execute(EnterAlternateScreen)
+                .map_err(Error::Term)
+                .map(|_| ()),
             TermBackend::Test { .. } => Ok(()),
         }
     }
 
-    pub fn enable_raw_mode(&mut self) -> Res<()> {
+    pub fn enable_raw_mode(&self) -> Res<()> {
         match self {
-            TermBackend::Termwiz(t) => t
-                .buffered_terminal_mut()
-                .terminal()
-                .set_raw_mode()
-                .map_err(Error::Termwiz),
+            TermBackend::Crossterm(_) => enable_raw_mode().map_err(Error::Term),
             TermBackend::Test { .. } => Ok(()),
         }
     }
 
-    pub fn disable_raw_mode(&mut self) -> Res<()> {
+    pub fn disable_raw_mode(&self) -> Res<()> {
         match self {
-            TermBackend::Termwiz(t) => t
-                .buffered_terminal_mut()
-                .terminal()
-                .set_cooked_mode()
-                .map_err(Error::Termwiz),
+            TermBackend::Crossterm(_) => disable_raw_mode().map_err(Error::Term),
             TermBackend::Test { .. } => Ok(()),
         }
     }
 
-    pub fn disable_mouse_reporting(&mut self) -> Res<()> {
+    pub fn enable_mouse_capture(&mut self) -> Res<()> {
         match self {
-            TermBackend::Termwiz(_t) => {
-                #[cfg(unix)]
-                {
-                    use std::io::{stdout, Write};
-                    // Write the escapes directly to stdout, since Termwiz doesn't
-                    // have an API for mouse reporting.
-                    let mut stdout = stdout();
-                    stdout.write_all(b"\x1b[?1000l\x1b[?1002l\x1b[?1006l").ok();
-                    stdout.flush().ok();
+            TermBackend::Crossterm(t) => {
+                t.execute(EnableMouseCapture).map_err(Error::Term)?;
+                Ok(())
+            }
+            TermBackend::Test { .. } => Ok(()),
+        }
+    }
+
+    pub fn poll_event(&self, timeout: Duration) -> Res<bool> {
+        match self {
+            TermBackend::Crossterm(_) => crossterm::event::poll(timeout).map_err(Error::Term),
+            TermBackend::Test { events, .. } => {
+                if events.is_empty() {
+                    Err(Error::NoMoreEvents)
+                } else {
+                    Ok(true)
                 }
-                Ok(())
             }
-            TermBackend::Test { .. } => Ok(()),
         }
     }
 
-    pub fn poll_input(&mut self, wait: Option<Duration>) -> Res<Option<InputEvent>> {
+    pub fn read_event(&mut self) -> Res<Event> {
         match self {
-            TermBackend::Termwiz(t) => t
-                .buffered_terminal_mut()
-                .terminal()
-                .poll_input(wait)
-                .map_err(Error::Termwiz),
-            TermBackend::Test { events, .. } => events.pop().map(Some).ok_or(Error::NoMoreEvents),
-        }
-    }
-
-    pub fn resize(&mut self, cols: usize, rows: usize) -> Res<()> {
-        match self {
-            TermBackend::Termwiz(t) => {
-                t.buffered_terminal_mut().resize(cols, rows);
-                Ok(())
-            }
-            TermBackend::Test { .. } => Ok(()),
+            TermBackend::Crossterm(_) => crossterm::event::read().map_err(Error::Term),
+            TermBackend::Test { events, .. } => events.pop().ok_or(Error::NoMoreEvents),
         }
     }
 }
