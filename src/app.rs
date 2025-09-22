@@ -17,6 +17,7 @@ use termwiz::input::InputEvent;
 use termwiz::input::KeyCode;
 use termwiz::input::KeyEvent;
 use termwiz::input::Modifiers;
+use tui_prompts::State as _;
 
 use crate::cli;
 use crate::cmd_log::CmdLog;
@@ -30,8 +31,6 @@ use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
 use crate::prompt;
-use crate::prompt::PromptData;
-use crate::prompt::Status;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
@@ -514,9 +513,9 @@ impl App {
                 self.handle_event(term, event)?;
             }
 
-            if self.state.prompt.state.status == Status::Done {
+            if self.state.prompt.state.status().is_done() {
                 return get_prompt_result(params, self);
-            } else if self.state.prompt.state.status == Status::Aborted {
+            } else if self.state.prompt.state.status().is_aborted() {
                 return Err(Error::PromptAborted);
             }
 
@@ -548,7 +547,7 @@ impl App {
                 self.handle_event(term, event)?;
             }
 
-            match self.state.prompt.state.value.as_ref() {
+            match self.state.prompt.state.value() {
                 "y" => {
                     return Ok(());
                 }
@@ -564,7 +563,7 @@ impl App {
 }
 
 fn get_prompt_result(params: &PromptParams, app: &mut App) -> Res<String> {
-    let input = app.state.prompt.state.value.as_ref();
+    let input = app.state.prompt.state.value();
     let default_value = (params.create_default_value)(app);
 
     let value = match (input, &default_value) {
