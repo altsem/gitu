@@ -170,7 +170,7 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_event(&mut self, term: &mut Term, mut event: InputEvent) -> Res<()> {
+    pub fn handle_event(&mut self, term: &mut Term, event: InputEvent) -> Res<()> {
         match event {
             InputEvent::Resized { cols, rows } => {
                 for screen in self.state.screens.iter_mut() {
