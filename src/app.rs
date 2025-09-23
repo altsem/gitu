@@ -187,8 +187,9 @@ impl App {
             }
             InputEvent::Mouse(ref mouse) => {
                 if self.state.config.general.mouse_support {
-                    self.handle_mouse_input(term, mouse)?;
-                    self.stage_redraw();
+                    if self.handle_mouse_input(term, mouse)? {
+                        self.stage_redraw();
+                    }
                 }
                 Ok(())
             }
@@ -278,7 +279,11 @@ impl App {
         Ok(())
     }
 
-    fn handle_mouse_input(&mut self, term: &mut Term, mouse: &MouseEvent) -> Res<()> {
+    fn handle_mouse_input(&mut self, term: &mut Term, mouse: &MouseEvent) -> Res<bool> {
+        if mouse.mouse_buttons == MouseButtons::NONE {
+            return Ok(false);
+        }
+
         if mouse.mouse_buttons == MouseButtons::LEFT {
             let click_y = (mouse.y as usize).saturating_sub(1);
             let old_selected_item_id = self.screen().get_selected_item().id;
@@ -309,7 +314,7 @@ impl App {
             }
         }
 
-        Ok(())
+        Ok(true)
     }
 
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
