@@ -187,9 +187,10 @@ impl App {
             }
             InputEvent::Mouse(ref mouse) => {
                 if self.state.config.general.mouse_support
-                    && self.handle_mouse_input(term, mouse)? {
-                        self.stage_redraw();
-                    }
+                    && self.handle_mouse_input(term, mouse)?
+                {
+                    self.stage_redraw();
+                }
                 Ok(())
             }
             InputEvent::Key(ref mut key) => {
