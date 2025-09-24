@@ -115,6 +115,7 @@ fn line_args(file: &str, maybe_line: Option<u32>, lower: String) -> Vec<String> 
             || lower.ends_with("vim")
             || lower.ends_with("nvim")
             || lower.ends_with("nano")
+            || lower.ends_with("micro")
             || lower.ends_with("nvr")
         {
             vec![format!("+{line}"), file.to_string()]
