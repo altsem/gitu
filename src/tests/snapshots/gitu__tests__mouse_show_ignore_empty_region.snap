@@ -2,18 +2,13 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- commit 0ceb2a2e799bdd15373901a2239705f3b04566b4                                |
- Author: Author Name <author@email.com>                                         |
- Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+ On branch main                                                                 |
                                                                                 |
-     On main: firststash                                                        |
+ Stashes                                                                        |
+▌stash@0 On main: firststash                                                    |
                                                                                 |
- modified   testfile                                                            |
-▌@@ -1,2 +1,2 @@                                                                |
-▌-testing                                                                       |
-▌-testtest                                                                      |
-▌+test                                                                          |
-▌+moretest                                                                      |
+ Recent commits                                                                 |
+ f431046 main add testfile                                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 19ccb2fc33bd4faf
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 601f39e098e07421

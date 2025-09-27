@@ -5,12 +5,7 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
                                                                                 |
  Unstaged changes (1)                                                           |
-▌modified   testfile                                                            |
-▌@@ -1,2 +1,2 @@                                                                |
-▌-testing                                                                       |
-▌-testtest                                                                      |
-▌+test                                                                          |
-▌+moretest                                                                      |
+▌modified   testfile…                                                           |
                                                                                 |
  Recent commits                                                                 |
  f431046 main add testfile                                                      |
@@ -22,4 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 4df1e6312d2b7d53
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: b2ad77bb640fc2d4
