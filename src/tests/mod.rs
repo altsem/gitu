@@ -435,6 +435,30 @@ fn mouse_select_item() {
 }
 
 #[test]
+fn mouse_select_hunk_line() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    fs::write(ctx.dir.child("testfile"), "test\ntesttest\n").expect("error writing to file");
+    run(ctx.dir.path(), &["git", "add", "."]);
+    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+
+    let mut app = ctx.init_app();
+    ctx.update(
+        &mut app,
+        vec![
+            // Select the file with an unstaged change.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Expand the selected file.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Select the hunk line.
+            mouse_event(0, 8, MouseButtons::LEFT),
+        ],
+    );
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn mouse_select_ignore_empty_lines() {
     let mut ctx = TestContext::setup_init();
     ctx.config().general.mouse_support = true;
