@@ -204,11 +204,7 @@ fn create_status_section_items<'a>(
         };
 
         vec![
-            Item {
-                unselectable: true,
-                depth: 0,
-                ..Default::default()
-            },
+            items::blank_line(),
             Item {
                 id: hash(section),
                 section: true,

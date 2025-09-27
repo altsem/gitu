@@ -11,7 +11,7 @@ use git2::Repository;
 use ratatui::{backend::TestBackend, layout::Size, Terminal};
 use std::{path::PathBuf, rc::Rc, time::Duration};
 use temp_dir::TempDir;
-use termwiz::input::{InputEvent, KeyEvent};
+use termwiz::input::{InputEvent, KeyEvent, Modifiers, MouseButtons, MouseEvent};
 
 use self::buffer::TestBuffer;
 
@@ -130,4 +130,13 @@ pub fn keys(input: &str) -> Vec<InputEvent> {
     keys.into_iter()
         .map(|(modifiers, key)| InputEvent::Key(KeyEvent { key, modifiers }))
         .collect()
+}
+
+pub fn mouse_event(x: u16, y: u16, mouse_buttons: MouseButtons) -> InputEvent {
+    InputEvent::Mouse(MouseEvent {
+        x,
+        y,
+        mouse_buttons,
+        modifiers: Modifiers::NONE,
+    })
 }

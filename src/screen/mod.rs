@@ -93,7 +93,7 @@ impl Screen {
         (0..self.line_index.len()).find(|&line_i| !self.at_line(line_i).unselectable)
     }
 
-    fn at_line(&mut self, line_i: usize) -> &Item {
+    fn at_line(&self, line_i: usize) -> &Item {
         &self.items[self.line_index[line_i]]
     }
 
@@ -140,7 +140,7 @@ impl Screen {
             .unwrap_or(self.cursor)
     }
 
-    fn nav_filter(&mut self, line_i: usize, nav_mode: NavMode) -> bool {
+    fn nav_filter(&self, line_i: usize, nav_mode: NavMode) -> bool {
         let item = self.at_line(line_i);
         match nav_mode {
             NavMode::Normal => {
@@ -328,6 +328,14 @@ impl Screen {
 
     pub(crate) fn get_selected_item(&self) -> &Item {
         &self.items[self.line_index[self.cursor]]
+    }
+
+    pub(crate) fn is_valid_screen_line(&self, screen_line: usize) -> bool {
+        let target_line_i = screen_line + self.scroll;
+        if self.line_index.is_empty() || target_line_i >= self.line_index.len() {
+            return false;
+        }
+        self.nav_filter(target_line_i, NavMode::IncludeHunkLines)
     }
 
     fn line_views(&self, area: Size) -> impl Iterator<Item = LineView<'_>> {
