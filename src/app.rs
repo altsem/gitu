@@ -286,23 +286,27 @@ impl App {
 
         if mouse.mouse_buttons == MouseButtons::LEFT {
             let click_y = (mouse.y as usize).saturating_sub(1);
-            let old_selected_item_id = self.screen().get_selected_item().id;
-            self.handle_op(Op::MoveToScreenLine(click_y), term)?;
-            let new_selected_item = self.screen().get_selected_item();
+            if self.screen().is_valid_screen_line(click_y) {
+                let old_selected_item_id = self.screen().get_selected_item().id;
+                self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+                let new_selected_item = self.screen().get_selected_item();
 
-            if old_selected_item_id == new_selected_item.id {
-                // If the item clicked was already the current item, then try to
-                // toggle it if it's a section or show it.
-                if new_selected_item.section {
-                    self.handle_op(Op::ToggleSection, term)?;
-                } else {
-                    self.handle_op(Op::Show, term)?;
+                if old_selected_item_id == new_selected_item.id {
+                    // If the item clicked was already the current item, then try to
+                    // toggle it if it's a section or show it.
+                    if new_selected_item.section {
+                        self.handle_op(Op::ToggleSection, term)?;
+                    } else {
+                        self.handle_op(Op::Show, term)?;
+                    }
                 }
             }
         } else if mouse.mouse_buttons == MouseButtons::RIGHT {
             let click_y = (mouse.y as usize).saturating_sub(1);
-            self.handle_op(Op::MoveToScreenLine(click_y), term)?;
-            self.handle_op(Op::Show, term)?;
+            if self.screen().is_valid_screen_line(click_y) {
+                self.handle_op(Op::MoveToScreenLine(click_y), term)?;
+                self.handle_op(Op::Show, term)?;
+            }
         } else if mouse.mouse_buttons.contains(MouseButtons::VERT_WHEEL) {
             let scroll_lines = self.state.config.general.mouse_scroll_lines;
             if scroll_lines > 0 {
