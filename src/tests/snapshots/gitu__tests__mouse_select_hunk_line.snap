@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ No branch                                                                      |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   testfile                                                            |
+ @@ -1,2 +1,2 @@                                                                |
+  test                                                                          |
+ -testtest                                                                      |
+▌+moretest                                                                      |
+                                                                                |
+ Staged changes (1)                                                             |
+ added      testfile…                                                           |
+                                                                                |
+ Recent commits                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 5265bcb857a5c4d8
