@@ -34,8 +34,8 @@ mod stage;
 mod stash;
 mod unstage;
 
-use helpers::{clone_and_commit, commit, keys, run, TestContext};
-use termwiz::input::{InputEvent, Modifiers, MouseButtons, MouseEvent};
+use helpers::{clone_and_commit, commit, keys, mouse_event, run, TestContext};
+use termwiz::input::MouseButtons;
 
 #[test]
 fn no_repo() {
@@ -429,14 +429,50 @@ fn mouse_select_item() {
 
     commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
 
-    let mouse_event = MouseEvent {
-        x: 0,
-        y: 4,
-        modifiers: Modifiers::NONE,
-        mouse_buttons: MouseButtons::LEFT,
-    };
     let mut app = ctx.init_app();
-    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    ctx.update(&mut app, vec![mouse_event(0, 4, MouseButtons::LEFT)]);
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_select_ignore_empty_lines() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+
+    let mut app = ctx.init_app();
+    ctx.update(
+        &mut app,
+        vec![
+            // Click the last unstaged change.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Click the space underneath the last unstaged change.
+            mouse_event(0, 5, MouseButtons::LEFT),
+        ],
+    );
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_select_ignore_empty_region() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+
+    let mut app = ctx.init_app();
+    ctx.update(
+        &mut app,
+        vec![
+            // Click the last unstaged change.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Click the open space at the bottom of the screen.
+            mouse_event(0, 10, MouseButtons::LEFT),
+        ],
+    );
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -448,18 +484,14 @@ fn mouse_toggle_selected_item() {
     commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
     fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
 
-    let mouse_event = MouseEvent {
-        x: 0,
-        y: 4,
-        modifiers: Modifiers::NONE,
-        mouse_buttons: MouseButtons::LEFT,
-    };
     let mut app = ctx.init_app();
     ctx.update(
         &mut app,
         vec![
-            InputEvent::Mouse(mouse_event.clone()),
-            InputEvent::Mouse(mouse_event),
+            // Click the last unstaged change.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Click the last unstaged change.
+            mouse_event(0, 4, MouseButtons::LEFT),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -472,14 +504,60 @@ fn mouse_show_item() {
 
     commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
 
-    let mouse_event = MouseEvent {
-        x: 0,
-        y: 4,
-        modifiers: Modifiers::NONE,
-        mouse_buttons: MouseButtons::RIGHT,
-    };
     let mut app = ctx.init_app();
-    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    ctx.update(
+        &mut app,
+        vec![
+            // Right-click the last unstaged change.
+            mouse_event(0, 4, MouseButtons::RIGHT),
+        ],
+    );
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_show_ignore_empty_lines() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+    run(ctx.dir.path(), &["git", "add", "."]);
+    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+
+    let mut app = ctx.init_app();
+    ctx.update(
+        &mut app,
+        vec![
+            // Left-click the last stash.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Right-click the space underneath the last stash.
+            mouse_event(0, 5, MouseButtons::RIGHT),
+        ],
+    );
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn mouse_show_ignore_empty_region() {
+    let mut ctx = TestContext::setup_init();
+    ctx.config().general.mouse_support = true;
+
+    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+    run(ctx.dir.path(), &["git", "add", "."]);
+    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+
+    let mut app = ctx.init_app();
+    ctx.update(
+        &mut app,
+        vec![
+            // Left-click the last stash change.
+            mouse_event(0, 4, MouseButtons::LEFT),
+            // Right-click the open space at the bottom of the screen.
+            mouse_event(0, 10, MouseButtons::RIGHT),
+        ],
+    );
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -505,13 +583,17 @@ fn mouse_wheel_scroll_up() {
     // Scroll down a bit to be able to scroll up.
     ctx.update(&mut app, keys("<ctrl+d><ctrl+d>"));
 
-    let mouse_event = MouseEvent {
-        x: 0,
-        y: 10,
-        modifiers: Modifiers::NONE,
-        mouse_buttons: MouseButtons::VERT_WHEEL | MouseButtons::WHEEL_POSITIVE,
-    };
-    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    ctx.update(
+        &mut app,
+        vec![
+            // Scroll the mouse wheel up.
+            mouse_event(
+                0,
+                10,
+                MouseButtons::VERT_WHEEL | MouseButtons::WHEEL_POSITIVE,
+            ),
+        ],
+    );
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -533,13 +615,12 @@ fn mouse_wheel_scroll_down() {
     }
 
     let mut app = ctx.init_app();
-
-    let mouse_event = MouseEvent {
-        x: 0,
-        y: 10,
-        modifiers: Modifiers::NONE,
-        mouse_buttons: MouseButtons::VERT_WHEEL,
-    };
-    ctx.update(&mut app, vec![InputEvent::Mouse(mouse_event)]);
+    ctx.update(
+        &mut app,
+        vec![
+            // Scroll the mouse wheel down.
+            mouse_event(0, 10, MouseButtons::VERT_WHEEL),
+        ],
+    );
     insta::assert_snapshot!(ctx.redact_buffer());
 }
