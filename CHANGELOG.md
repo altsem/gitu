@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.37.0] - 2025-09-28
+
+### 🚀 Features
+
+- Support file line positions for the micro editor (#424)
+- Add mouse wheel scrolling support
+- Simple mouse interactions
+- Show the diff on the stash detail screen
+
+### 🐛 Bug Fixes
+
+- Mouse clicks on invalid screen lines trigger actions
+- Avoid redrawing for unhandled mouse events
+- Disable mouse reporting when mouse support is disabled
+- Workaround Termwiz mouse scroll event buggy handling
+
 ## [0.36.0] - 2025-09-16
 
 ### 🚀 Features
