@@ -152,10 +152,8 @@ impl App {
     }
 
     pub fn update(&mut self, term: &mut Term) -> Res<()> {
-        if term.backend_mut().poll_event(Duration::ZERO)? {
-            let event = term.backend_mut().read_event()?;
-            self.handle_event(term, event)?;
-        }
+        let event = term.backend_mut().read_event()?;
+        self.handle_event(term, event)?;
 
         if let Some(file_watcher) = &mut self.state.file_watcher {
             if file_watcher.pending_updates() {
