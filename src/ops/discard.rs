@@ -1,6 +1,6 @@
 use gitu_diff::Status;
 
-use super::{confirm, Action, OpTrait};
+use super::{Action, OpTrait, confirm};
 use crate::{
     app::State,
     config::ConfirmDiscardOption,

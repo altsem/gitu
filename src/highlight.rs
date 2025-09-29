@@ -5,7 +5,7 @@ use crate::git::diff::Diff;
 use crate::gitu_diff;
 use crate::syntax_parser;
 use crate::syntax_parser::SyntaxTag;
-use cached::{proc_macro::cached, SizedCache};
+use cached::{SizedCache, proc_macro::cached};
 use itertools::Itertools;
 use ratatui::style::Style;
 use std::iter;

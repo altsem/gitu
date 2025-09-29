@@ -1,5 +1,5 @@
 use super::Screen;
-use crate::{config::Config, items::log, Res};
+use crate::{Res, config::Config, items::log};
 use git2::{Oid, Repository};
 use ratatui::layout::Size;
 use regex::Regex;

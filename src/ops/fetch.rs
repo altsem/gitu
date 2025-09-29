@@ -1,10 +1,10 @@
 use super::{Action, OpTrait};
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     item_data::ItemData,
     menu::arg::Arg,
     term::Term,
-    Res,
 };
 use std::{process::Command, rc::Rc};
 

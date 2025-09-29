@@ -1,4 +1,4 @@
-use crate::{error::Error, Res};
+use crate::{Res, error::Error};
 use git2::{Repository, StatusOptions};
 
 pub(crate) fn status(repo: &Repository) -> Res<StatusOptions> {

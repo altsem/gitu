@@ -1,12 +1,12 @@
 use super::Screen;
 use crate::{
+    Res,
     config::Config,
     error::Error,
     git::{self, diff::Diff},
     git2_opts,
     item_data::{ItemData, SectionHeader},
-    items::{self, hash, Item},
-    Res,
+    items::{self, Item, hash},
 };
 use git2::Repository;
 use ratatui::prelude::Size;

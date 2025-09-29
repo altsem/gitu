@@ -1,10 +1,10 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
-use crate::{error::Error, menu::Menu, ops::Op, Bindings, Res};
-use etcetera::{choose_base_strategy, BaseStrategy};
+use crate::{Bindings, Res, error::Error, menu::Menu, ops::Op};
+use etcetera::{BaseStrategy, choose_base_strategy};
 use figment::{
-    providers::{Format, Toml},
     Figment,
+    providers::{Format, Toml},
 };
 use ratatui::style::{Color, Modifier, Style};
 use serde::Deserialize;
@@ -255,12 +255,12 @@ pub(crate) fn init_test_config() -> Res<Config> {
 #[cfg(test)]
 mod tests {
     use figment::{
-        providers::{Format, Toml},
         Figment,
+        providers::{Format, Toml},
     };
     use ratatui::style::Color;
 
-    use super::{FigmentConfig, DEFAULT_CONFIG};
+    use super::{DEFAULT_CONFIG, FigmentConfig};
 
     #[test]
     fn config_merges() {

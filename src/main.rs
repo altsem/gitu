@@ -1,5 +1,5 @@
 use clap::Parser;
-use gitu::{cli::Args, error::Error, term, Res};
+use gitu::{Res, cli::Args, error::Error, term};
 use log::LevelFilter;
 use ratatui::Terminal;
 use std::{backtrace::Backtrace, panic};

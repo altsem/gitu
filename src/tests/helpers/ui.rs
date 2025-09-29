@@ -9,7 +9,7 @@ use crate::{
 };
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
-use ratatui::{backend::TestBackend, layout::Size, Terminal};
+use ratatui::{Terminal, backend::TestBackend, layout::Size};
 use std::{path::PathBuf, rc::Rc, time::Duration};
 use temp_dir::TempDir;
 

@@ -1,5 +1,6 @@
 use super::{Action, OpTrait};
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     error::Error,
     git::{
@@ -9,7 +10,6 @@ use crate::{
     item_data::ItemData,
     menu::arg::Arg,
     term::Term,
-    Res,
 };
 use std::{process::Command, rc::Rc, str};
 

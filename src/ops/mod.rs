@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    Res,
     app::{App, State},
     item_data::ItemData,
     menu::Menu,
     term::Term,
-    Res,
 };
 use std::{fmt::Display, rc::Rc};
 

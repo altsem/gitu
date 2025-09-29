@@ -1,12 +1,12 @@
-use super::{selected_rev, Action, OpTrait};
+use super::{Action, OpTrait, selected_rev};
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     error::Error,
     item_data::ItemData,
-    menu::arg::{any_regex, positive_number, Arg},
+    menu::arg::{Arg, any_regex, positive_number},
     screen,
     term::Term,
-    Res,
 };
 use git2::Oid;
 use regex::Regex;

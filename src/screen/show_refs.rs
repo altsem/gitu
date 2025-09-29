@@ -1,16 +1,16 @@
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{BTreeMap, btree_map::Entry},
     iter,
     rc::Rc,
 };
 
 use super::Screen;
 use crate::{
+    Res,
     config::Config,
     error::Error,
     item_data::{ItemData, RefKind, SectionHeader},
-    items::{self, hash, Item},
-    Res,
+    items::{self, Item, hash},
 };
 use git2::{Reference, Repository};
 use ratatui::layout::Size;

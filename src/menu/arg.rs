@@ -1,4 +1,4 @@
-use crate::{error::Error, Res};
+use crate::{Res, error::Error};
 use regex::Regex;
 
 #[derive(Debug)]

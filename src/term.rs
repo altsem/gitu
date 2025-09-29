@@ -1,19 +1,19 @@
-use crate::{error::Error, Res};
+use crate::{Res, error::Error};
 use crossterm::{
+    ExecutableCommand,
     event::{EnableMouseCapture, Event},
     terminal::{
-        disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-        LeaveAlternateScreen,
+        EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+        is_raw_mode_enabled,
     },
-    ExecutableCommand,
 };
 use ratatui::{
+    Terminal,
     backend::{Backend, CrosstermBackend, TestBackend},
     layout::Size,
-    prelude::{backend::WindowSize, buffer::Cell, Position},
-    Terminal,
+    prelude::{Position, backend::WindowSize, buffer::Cell},
 };
-use std::io::{self, stderr, Stderr};
+use std::io::{self, Stderr, stderr};
 use std::{fmt::Display, time::Duration};
 
 pub type Term = Terminal<TermBackend>;

@@ -1,9 +1,10 @@
 use super::OpTrait;
 use crate::{
+    Action,
     app::State,
     error::Error,
     item_data::{ItemData, RefKind},
-    screen, Action,
+    screen,
 };
 use core::str;
 use std::{path::Path, process::Command, rc::Rc};

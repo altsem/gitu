@@ -6,7 +6,7 @@ use ratatui::{
     widgets::Widget,
 };
 
-use crate::{config::Config, items::hash, Res};
+use crate::{Res, config::Config, items::hash};
 
 use super::Item;
 use std::{collections::HashSet, rc::Rc};

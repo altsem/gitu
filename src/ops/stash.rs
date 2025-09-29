@@ -1,11 +1,11 @@
 use super::{Action, OpTrait};
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     error::Error,
     item_data::ItemData,
     menu::arg::Arg,
     term::Term,
-    Res,
 };
 use git2::{Repository, Status, StatusOptions};
 use std::{process::Command, rc::Rc};

@@ -1,5 +1,6 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 use nom::{
+    Err, IResult,
     branch::alt,
     bytes::complete::tag,
     character::complete::{anychar, char},
@@ -7,7 +8,6 @@ use nom::{
     error::{Error, ErrorKind},
     multi::{many1, separated_list1},
     sequence::{delimited, preceded, tuple},
-    Err, IResult,
 };
 
 pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, KeyCode)>> {

@@ -1,6 +1,6 @@
 use super::Res;
 use crate::error::Error;
-use ratatui::{backend::Backend, Terminal};
+use ratatui::{Terminal, backend::Backend};
 use std::borrow::Cow;
 use tui_prompts::{State, TextState};
 

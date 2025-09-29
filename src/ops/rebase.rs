@@ -1,10 +1,10 @@
-use super::{selected_rev, Action, OpTrait};
+use super::{Action, OpTrait, selected_rev};
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
     term::Term,
-    Res,
 };
 use std::{
     ffi::{OsStr, OsString},

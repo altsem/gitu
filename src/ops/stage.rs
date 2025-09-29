@@ -1,10 +1,10 @@
 use super::OpTrait;
 use crate::{
+    Action,
     app::{App, State},
     git::diff::{Diff, PatchMode},
     item_data::ItemData,
     term::Term,
-    Action,
 };
 use std::{ffi::OsString, process::Command, rc::Rc};
 

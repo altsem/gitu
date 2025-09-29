@@ -1,8 +1,8 @@
 use crate::app::State;
+use ratatui::Frame;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use ratatui::widgets::*;
-use ratatui::Frame;
 use std::rc::Rc;
 use tui_prompts::State as _;
 use tui_prompts::TextPrompt;

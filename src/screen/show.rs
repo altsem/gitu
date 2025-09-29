@@ -1,11 +1,11 @@
 use std::{iter, rc::Rc};
 
 use crate::{
+    Res,
     config::Config,
     git,
     item_data::{ItemData, SectionHeader},
-    items::{self, hash, Item},
-    Res,
+    items::{self, Item, hash},
 };
 use git2::Repository;
 use ratatui::layout::Size;

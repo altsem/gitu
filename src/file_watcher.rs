@@ -1,10 +1,10 @@
-use crate::{error::Error, open_repo, Res};
+use crate::{Res, error::Error, open_repo};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
     path::Path,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
 };
 

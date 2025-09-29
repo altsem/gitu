@@ -35,7 +35,7 @@ mod stash;
 mod unstage;
 
 use crossterm::event::MouseButton;
-use helpers::{clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run, TestContext};
+use helpers::{TestContext, clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run};
 
 #[test]
 fn no_repo() {

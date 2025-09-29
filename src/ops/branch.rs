@@ -1,12 +1,12 @@
-use super::{selected_rev, Action, OpTrait};
+use super::{Action, OpTrait, selected_rev};
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     error::Error,
     git::{get_current_branch_name, is_branch_merged},
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
     term::Term,
-    Res,
 };
 use std::{process::Command, rc::Rc};
 

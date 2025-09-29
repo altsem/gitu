@@ -1,14 +1,14 @@
 use std::{process::Command, rc::Rc};
 
 use crate::{
+    Res,
     app::{App, PromptParams, State},
     item_data::ItemData,
     menu::arg::Arg,
     term::Term,
-    Res,
 };
 
-use super::{selected_rev, Action, OpTrait};
+use super::{Action, OpTrait, selected_rev};
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![
