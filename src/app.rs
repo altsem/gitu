@@ -20,7 +20,9 @@ use crossterm::event::MouseEvent;
 use crossterm::event::MouseEventKind;
 use git2::Repository;
 use ratatui::layout::Size;
+use ratatui::text::Span;
 use tui_prompts::State as _;
+use ui::layout::LayoutTree;
 
 use crate::cli;
 use crate::cmd_log::CmdLog;
@@ -59,6 +61,7 @@ pub(crate) struct State {
 
 pub(crate) struct App {
     pub state: State,
+    layout_tree: LayoutTree<Span<'static>>,
 }
 
 impl App {
@@ -107,6 +110,7 @@ impl App {
                 file_watcher: None,
                 needs_redraw: true,
             },
+            layout_tree: LayoutTree::new(),
         };
 
         app.state.file_watcher = app.init_file_watcher()?;
@@ -214,7 +218,7 @@ impl App {
 
     pub fn redraw_now(&mut self, term: &mut Term) -> Res<()> {
         if self.state.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui(frame, &mut self.state))
+            term.draw(|frame| ui::ui(frame, &mut self.state, &mut self.layout_tree))
                 .map_err(Error::Term)?;
 
             self.state.needs_redraw = false;
@@ -383,7 +387,8 @@ impl App {
         cmd.stderr(Stdio::piped());
 
         let log_entry = self.state.current_cmd_log.push_cmd(&cmd);
-        term.draw(|frame| ui::ui(frame, &mut self.state))
+
+        term.draw(|frame| ui::ui(frame, &mut self.state, &mut self.layout_tree))
             .map_err(Error::Term)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
