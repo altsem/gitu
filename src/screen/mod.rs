@@ -1,10 +1,6 @@
-use crate::item_data::ItemData;
-use ratatui::{
-    buffer::Buffer,
-    layout::{Rect, Size},
-    text::Line,
-    widgets::Widget,
-};
+use crate::ui::layout::{LayoutTree, OPTS};
+use crate::{item_data::ItemData, ui};
+use ratatui::{layout::Size, prelude::Span, style::Style, text::Line};
 
 use crate::{Res, config::Config, items::hash};
 
@@ -338,7 +334,7 @@ impl Screen {
         self.nav_filter(target_line_i, NavMode::IncludeHunkLines)
     }
 
-    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView<'_>> {
+    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView> + '_ {
         let scan_start = self.scroll.min(self.cursor);
         let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);
@@ -357,7 +353,6 @@ impl Screen {
 
                 Some(LineView {
                     item_index: *item_index,
-                    item,
                     display,
                     highlighted: highlight_depth.is_some(),
                 })
@@ -366,56 +361,80 @@ impl Screen {
     }
 }
 
-struct LineView<'a> {
+struct LineView {
     item_index: usize,
-    item: &'a Item,
-    display: Line<'a>,
+    display: Line<'static>,
     highlighted: bool,
 }
 
-impl Widget for &Screen {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let style = &self.config.style;
+pub(crate) fn layout_screen(layout: &mut LayoutTree<Span>, size: Size, screen: &Screen) {
+    let style = &screen.config.style;
 
-        for (line_index, line) in self.line_views(area.as_size()).enumerate() {
-            let line_area = Rect {
-                x: 0,
-                y: line_index as u16,
-                width: buf.area.width,
-                height: 1,
+    layout.vertical(OPTS, |layout| {
+        for line in screen.line_views(size) {
+            let selected_line = screen.line_index[screen.cursor] == line.item_index;
+            let area_highlight = area_selection_highlgiht(style, &line);
+            let line_highlight = line_selection_highlight(style, &line, selected_line);
+            let gutter_char = if line.highlighted {
+                gutter_char(style, selected_line, area_highlight, line_highlight)
+            } else {
+                Span::raw(" ")
             };
 
-            let indented_line_area = Rect { x: 1, ..line_area };
+            let line_spans = std::iter::once(gutter_char)
+                .chain(
+                    line.display
+                        .spans
+                        .into_iter()
+                        .map(|span| span.patch_style(area_highlight).patch_style(line_highlight)),
+                )
+                .collect::<Line<'static>>();
 
-            if line.highlighted {
-                buf.set_style(line_area, &style.selection_area);
+            ui::layout_line(layout, line_spans);
 
-                if self.line_index[self.cursor] == line.item_index {
-                    buf.set_style(line_area, &style.selection_line);
-                } else {
-                    buf[(0, line_index as u16)]
-                        .set_char(style.selection_bar.symbol)
-                        .set_style(&style.selection_bar);
-                }
-            }
-
-            let line_width = line.display.width();
-
-            line.display.render(indented_line_area, buf);
-            let overflow = line_width > line_area.width as usize;
-
-            let line_width = line_width as u16;
-
-            if self.is_collapsed(line.item) && line_width > 0 || overflow {
-                let line_end = (indented_line_area.x + line_width).min(area.width - 1);
-                buf[(line_end, line_index as u16)].set_char('…');
-            }
-
-            if self.line_index[self.cursor] == line.item_index {
-                buf[(0, line_index as u16)]
-                    .set_char(style.cursor.symbol)
-                    .set_style(&style.cursor);
-            }
+            // TODO Do something about this
+            // if screen.is_collapsed(line.item) && line_width > 0 || overflow {
+            //     let line_end = (indented_line_area.x + line_width).min(size.width - 1);
+            //     buf[(line_end, line_index as u16)].set_char('…');
+            // }
         }
+    });
+}
+
+fn gutter_char(
+    style: &crate::config::StyleConfig,
+    selected_line: bool,
+    area_highlight: Style,
+    line_highlight: Style,
+) -> Span<'static> {
+    if selected_line {
+        Span::styled(
+            style.cursor.symbol.to_string(),
+            Style::from(&style.cursor)
+                .patch(area_highlight)
+                .patch(line_highlight),
+        )
+    } else {
+        Span::styled(style.selection_bar.symbol.to_string(), area_highlight)
+    }
+}
+
+fn line_selection_highlight(
+    style: &crate::config::StyleConfig,
+    line: &LineView,
+    selected_line: bool,
+) -> Style {
+    if line.highlighted && selected_line {
+        Style::from(&style.selection_line)
+    } else {
+        Style::new()
+    }
+}
+
+fn area_selection_highlgiht(style: &crate::config::StyleConfig, line: &LineView) -> Style {
+    if line.highlighted {
+        Style::from(&style.selection_area)
+    } else {
+        Style::new()
     }
 }
