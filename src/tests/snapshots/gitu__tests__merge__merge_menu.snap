@@ -22,4 +22,4 @@ m merge                 -f Fast-forward only (--ff-only)                        
 a abort                 -n No fast-forward (--no-ff)                            |
 c continue                                                                      |
 q/<esc> Quit/Close                                                              |
-styles_hash: 218a5930a2320238
+styles_hash: d6eec1a5c7502309

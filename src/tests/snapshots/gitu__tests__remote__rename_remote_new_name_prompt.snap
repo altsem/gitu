@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-? Rename to: ›                                                                  |
-styles_hash: 2723afb20d7e3ef0
+? Rename to: › █                                                                |
+styles_hash: 8502d7aed78c2353

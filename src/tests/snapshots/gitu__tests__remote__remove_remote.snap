@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git remote remove origin                                                      |
-styles_hash: 5e18bafa3d84ff48
+styles_hash: c0c7b7ab92e41f28

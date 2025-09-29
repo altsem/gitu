@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --staged --message test                                        |
 Saved working directory and index state On main: test                           |
-styles_hash: 1d8668271ca8912a
+styles_hash: b7ab65dc1bdc1391

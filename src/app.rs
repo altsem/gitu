@@ -398,6 +398,7 @@ impl App {
         cmd.stderr(Stdio::piped());
 
         let log_entry = self.state.current_cmd_log.push_cmd(&cmd);
+
         term.draw(|frame| ui::ui(frame, &mut self.state))
             .map_err(Error::Term)?;
 

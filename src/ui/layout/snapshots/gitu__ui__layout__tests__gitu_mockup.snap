@@ -1,0 +1,29 @@
+---
+source: src/ui/layout/mod.rs
+expression: result
+---
+On branch master
+Your branch is up to date with 'origin/master'
+
+Recent commits
+9eb6a63 refactor/ui origin/refactor/ui fix more rendering issues
+b5fffd4 fix styling issues in Screen
+61e6c1b refactor: extract type of LayoutTree
+df3bcb5 get rid of frequent clone() in LayoutTree
+9864859 refactor(ui): less allocs
+aa2811e refactor: new LayoutTree module to improve on ui headaches
+───────────────────────────────────────────────────────────────
+Help                               Submenu   @@ -271,7 +271,7
+Y Show Refs                        b Branch  s Stage
+<tab> Toggle section               c Commit  u Unstage
+k/<up> Up                          f Fetch   <enter> Show
+j/<down> Down                      h/? Help  K Discard
+<ctrl+k>/<ctrl+up> Up line         l Log
+<ctrl+j>/<ctrl+down> Down line     M Remote
+<alt+k>/<alt+up> Prev section      F Pull
+<alt+j>/<alt+down> Next section    P Push
+<alt+h>/<alt+left> Parent section  r Rebase
+<ctrl+u> Half page up              X Reset
+<ctrl+d> Half page down            V Revert
+g Refresh                          z Stash
+q/<esc> Quit/Close

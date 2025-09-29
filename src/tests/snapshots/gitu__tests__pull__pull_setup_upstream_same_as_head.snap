@@ -22,4 +22,4 @@ q/esc Quit/Close                                                                
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |
-styles_hash: d752193435beaf2d
+styles_hash: e439852a8290f159

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  @@ -0,0 +1,20 @@                                                               |
  +line 1 (file-2)                                                               |
  +line 2 (file-2)                                                               |
-styles_hash: ac102dc28a09e63c
+styles_hash: ee3d46c497e041fa

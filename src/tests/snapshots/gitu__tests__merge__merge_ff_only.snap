@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git merge --ff-only other-branch                                              |
-styles_hash: 6a2769c2ca1e8994
+styles_hash: 164920bbc1c4bd1c

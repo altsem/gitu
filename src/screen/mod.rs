@@ -1,15 +1,16 @@
-use crate::item_data::ItemData;
-use ratatui::{
-    buffer::Buffer,
-    layout::{Rect, Size},
-    text::Line,
-    widgets::Widget,
-};
+use crate::config::StyleConfig;
+use crate::ui::layout::OPTS;
+use crate::ui::{UiTree, layout_span};
+use crate::{item_data::ItemData, ui};
+use ratatui::{layout::Size, style::Style, text::Line};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Res, config::Config, items::hash};
 
 use super::Item;
-use std::{collections::HashSet, sync::Arc};
+use std::borrow::Cow;
+use std::collections::HashSet;
+use std::sync::Arc;
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -338,7 +339,7 @@ impl Screen {
         self.nav_filter(target_line_i, NavMode::IncludeHunkLines)
     }
 
-    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView<'_>> {
+    fn line_views(&'_ self, area: Size) -> impl Iterator<Item = LineView<'_>> {
         let scan_start = self.scroll.min(self.cursor);
         let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);
@@ -357,7 +358,6 @@ impl Screen {
 
                 Some(LineView {
                     item_index: *item_index,
-                    item,
                     display,
                     highlighted: highlight_depth.is_some(),
                 })
@@ -368,54 +368,102 @@ impl Screen {
 
 struct LineView<'a> {
     item_index: usize,
-    item: &'a Item,
     display: Line<'a>,
     highlighted: bool,
 }
 
-impl Widget for &Screen {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let style = &self.config.style;
+const SPACES: &str = "                                                                ";
 
-        for (line_index, line) in self.line_views(area.as_size()).enumerate() {
-            let line_area = Rect {
-                x: 0,
-                y: line_index as u16,
-                width: buf.area.width,
-                height: 1,
-            };
+pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a Screen) {
+    let style = &screen.config.style;
 
-            let indented_line_area = Rect { x: 1, ..line_area };
+    layout.vertical(None, OPTS, |layout| {
+        for line in screen.line_views(size) {
+            layout.horizontal(None, OPTS, |layout| {
+                let is_line_sel = screen.line_index[screen.cursor] == line.item_index;
+                let area_sel = area_selection_highlight(style, &line);
+                let line_sel = line_selection_highlight(style, &line, is_line_sel);
+                let bg = area_sel.patch(line_sel);
 
-            if line.highlighted {
-                buf.set_style(line_area, &style.selection_area);
-
-                if self.line_index[self.cursor] == line.item_index {
-                    buf.set_style(line_area, &style.selection_line);
+                let mut line_end = 1;
+                let gutter_char = if line.highlighted {
+                    gutter_char(style, is_line_sel, bg)
                 } else {
-                    buf[(0, line_index as u16)]
-                        .set_char(style.selection_bar.symbol)
-                        .set_style(&style.selection_bar);
+                    (" ".into(), Style::new())
+                };
+
+                layout_span(layout, gutter_char);
+
+                line.display.spans.into_iter().for_each(|span| {
+                    let style = bg.patch(line.display.style).patch(span.style);
+
+                    let span_width = span.content.graphemes(true).count();
+
+                    if line_end + span_width >= size.width as usize {
+                        // Truncate the span and insert an ellipsis to indicate overflow
+                        let overflow = line_end + span_width - size.width as usize;
+                        line_end = size.width as usize;
+                        ui::layout_span(
+                            layout,
+                            (
+                                span.content
+                                    .graphemes(true)
+                                    .take(span_width.saturating_sub(overflow + 1))
+                                    .collect::<String>()
+                                    .into(),
+                                style,
+                            ),
+                        );
+                        layout_span(layout, ("…".into(), bg));
+                    } else {
+                        // Insert the span as normal
+                        line_end += span_width;
+                        ui::layout_span(layout, (span.content, style));
+                    }
+                });
+
+                // Add ellipsis indicator for collapsed sections
+                let item = &screen.items[line.item_index];
+                if screen.is_collapsed(item) {
+                    line_end += 1;
+                    layout_span(layout, ("…".into(), bg));
                 }
-            }
 
-            let line_width = line.display.width();
-
-            line.display.render(indented_line_area, buf);
-            let overflow = line_width > line_area.width as usize;
-
-            let line_width = line_width as u16;
-
-            if self.is_collapsed(line.item) && line_width > 0 || overflow {
-                let line_end = (indented_line_area.x + line_width).min(area.width - 1);
-                buf[(line_end, line_index as u16)].set_char('…');
-            }
-
-            if self.line_index[self.cursor] == line.item_index {
-                buf[(0, line_index as u16)]
-                    .set_char(style.cursor.symbol)
-                    .set_style(&style.cursor);
-            }
+                // Style the rest of the line's empty space
+                let style = if is_line_sel { line_sel } else { area_sel };
+                let padding_width = (size.width as usize).saturating_sub(line_end);
+                ui::repeat_chars(layout, padding_width, SPACES, style);
+            });
         }
+    });
+}
+
+fn gutter_char<'a>(style: &'a StyleConfig, is_line_sel: bool, bg: Style) -> (Cow<'a, str>, Style) {
+    if is_line_sel {
+        (
+            style.cursor.symbol.to_string().into(),
+            bg.patch(Style::from(&style.cursor)),
+        )
+    } else {
+        (
+            style.selection_bar.symbol.to_string().into(),
+            bg.patch(Style::from(&style.selection_bar)),
+        )
+    }
+}
+
+fn line_selection_highlight(style: &StyleConfig, line: &LineView, selected_line: bool) -> Style {
+    if line.highlighted && selected_line {
+        Style::from(&style.selection_line)
+    } else {
+        Style::new()
+    }
+}
+
+fn area_selection_highlight(style: &StyleConfig, line: &LineView) -> Style {
+    if line.highlighted {
+        Style::from(&style.selection_area)
+    } else {
+        Style::new()
     }
 }

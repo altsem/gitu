@@ -22,4 +22,4 @@ ctrl+u Half page up             r Rebase                                        
 ctrl+d Half page down           X Reset                                         |
 g Refresh                       V Revert                                        |
 q/esc Quit/Close                z Stash                                         |
-styles_hash: 5d3d73f836cc425b
+styles_hash: 1948c1c151c3789
