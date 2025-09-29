@@ -2,7 +2,7 @@
 name = "gitu"
 description = "A git client inspired by Magit"
 version = "0.37.0"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 repository = "https://github.com/altsem/gitu"
 

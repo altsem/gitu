@@ -2,7 +2,7 @@ use std::{ops::Deref, str};
 
 use git2::{Branch, Remote, Repository};
 
-use crate::{git, Res};
+use crate::{Res, git};
 
 use super::{Error, Utf8Error};
 
@@ -75,7 +75,8 @@ pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {
 pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
     let push_remote_cfg = head_push_remote_cfg(repo)?;
     let config = repo.config().map_err(Error::ReadGitConfig)?;
-    let result = match config.get_entry(&push_remote_cfg) {
+
+    match config.get_entry(&push_remote_cfg) {
         Ok(entry) => Ok(Some(
             String::from_utf8(entry.value_bytes().to_vec())
                 .map_err(Utf8Error::String)
@@ -83,15 +84,14 @@ pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
         )),
         Err(e) if e.class() == git2::ErrorClass::Config => get_default_push_remote(repo),
         Err(e) => Err(Error::ReadGitConfig(e)),
-    };
-
-    result
+    }
 }
 
 pub(crate) fn get_default_push_remote(repo: &Repository) -> Res<Option<String>> {
     let push_default_cfg = "remote.pushDefault";
     let config = repo.config().map_err(Error::ReadGitConfig)?;
-    let result = match config.get_entry(push_default_cfg) {
+
+    match config.get_entry(push_default_cfg) {
         Ok(entry) => Ok(Some(
             String::from_utf8(entry.value_bytes().to_vec())
                 .map_err(Utf8Error::String)
@@ -99,9 +99,7 @@ pub(crate) fn get_default_push_remote(repo: &Repository) -> Res<Option<String>> 
         )),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
         Err(e) => Err(Error::ReadGitConfig(e)),
-    };
-
-    result
+    }
 }
 
 pub(crate) fn set_push_remote(repo: &Repository, remote: Option<&Remote>) -> Res<()> {

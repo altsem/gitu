@@ -1,6 +1,6 @@
 use super::{Action, OpTrait};
 use crate::{
-    app::{root_menu, App, PromptParams, State},
+    app::{App, PromptParams, State, root_menu},
     item_data::ItemData,
     menu::PendingMenu,
     screen::NavMode,
@@ -104,10 +104,10 @@ impl OpTrait for ToggleArg {
             let arg_name = arg_name.clone();
             let parse_and_set_arg =
                 Box::new(move |app: &mut App, _term: &mut Term, value: &str| {
-                    if let Some(menu) = &mut app.state.pending_menu {
-                        if let Some(entry) = menu.args.get_mut(arg_name.as_str()) {
-                            return entry.set(value);
-                        }
+                    if let Some(menu) = &mut app.state.pending_menu
+                        && let Some(entry) = menu.args.get_mut(arg_name.as_str())
+                    {
+                        return entry.set(value);
                     }
 
                     Ok(())

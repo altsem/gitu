@@ -1,3 +1,4 @@
+use crate::Res;
 use crate::config::Config;
 use crate::error::Error;
 use crate::git::diff::Diff;
@@ -6,7 +7,6 @@ use crate::highlight;
 use crate::item_data::ItemData;
 use crate::item_data::RefKind;
 use crate::item_data::SectionHeader;
-use crate::Res;
 use git2::Oid;
 use git2::Repository;
 use ratatui::text::Line;
@@ -162,7 +162,9 @@ impl Item {
                 } else if *ahead == 0 && *behind > 0 {
                     format!("Your branch is behind '{upstream}' by {behind} commit(s).",)
                 } else {
-                    format!("Your branch and '{upstream}' have diverged,\nand have {ahead} and {behind} different commits each, respectively.")
+                    format!(
+                        "Your branch and '{upstream}' have diverged,\nand have {ahead} and {behind} different commits each, respectively."
+                    )
                 };
 
                 Line::raw(content)
@@ -341,10 +343,10 @@ pub(crate) fn log(
             let short_id = commit.as_object().short_id().map_err(Error::ReadOid)?;
             let short_id = String::from_utf8_lossy(&short_id).to_string();
 
-            if let Some(re) = &msg_regex {
-                if !re.is_match(commit.message().unwrap_or("")) {
-                    return Ok(None);
-                }
+            if let Some(re) = &msg_regex
+                && !re.is_match(commit.message().unwrap_or(""))
+            {
+                return Ok(None);
             }
 
             let associated_references: Vec<_> = references

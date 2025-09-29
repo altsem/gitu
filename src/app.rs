@@ -155,11 +155,11 @@ impl App {
         let event = term.backend_mut().read_event()?;
         self.handle_event(term, event)?;
 
-        if let Some(file_watcher) = &mut self.state.file_watcher {
-            if file_watcher.pending_updates() {
-                self.screen_mut().update()?;
-                self.stage_redraw();
-            }
+        if let Some(file_watcher) = &mut self.state.file_watcher
+            && file_watcher.pending_updates()
+        {
+            self.screen_mut().update()?;
+            self.stage_redraw();
         }
 
         let handle_pending_cmd_result = self.handle_pending_cmd();
