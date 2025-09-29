@@ -1,106 +1,93 @@
 use crate::app::State;
+use crate::screen;
+use layout::LayoutTree;
+use layout::OPTS;
 use ratatui::Frame;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
-use ratatui::widgets::*;
-use std::rc::Rc;
 use tui_prompts::State as _;
-use tui_prompts::TextPrompt;
 
+pub(crate) mod layout;
 mod menu;
 
-pub(crate) struct SizedWidget<W> {
-    height: u16,
-    widget: W,
+const CARET: &str = "\u{2588}";
+
+pub(crate) fn ui(frame: &mut Frame, state: &mut State, layout: &mut LayoutTree<Span>) {
+    layout.clear();
+
+    layout.stacked(OPTS, |layout| {
+        screen::layout_screen(
+            layout,
+            frame.area().as_size(),
+            state.screens.last().unwrap(),
+        );
+
+        layout.vertical(OPTS.align_end(), |layout| {
+            menu::layout_menu(layout, state);
+            layout_command_log(layout, state);
+            layout_prompt(layout, state);
+        });
+    });
+
+    layout.compute([frame.area().width, frame.area().height]);
+
+    for span in layout.iter() {
+        let area = Rect {
+            x: span.pos[0],
+            y: span.pos[1],
+            width: span.size[0],
+            height: span.size[1],
+        };
+
+        frame.render_widget(span.data, area);
+    }
+
+    state.screens.last_mut().unwrap().size = frame.area().as_size();
 }
 
-impl<W: Widget> Widget for SizedWidget<W> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.widget.render(area, buf);
+fn layout_command_log(layout: &mut LayoutTree<Span<'_>>, state: &mut State) {
+    if !state.current_cmd_log.is_empty() {
+        layout_text(layout, state.current_cmd_log.format_log(&state.config));
     }
 }
 
-impl<W: StatefulWidget> StatefulWidget for SizedWidget<W> {
-    type State = W::State;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        self.widget.render(area, buf, state);
-    }
-}
-
-pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let maybe_log = if !state.current_cmd_log.is_empty() {
-        let text: Text = state.current_cmd_log.format_log(&state.config);
-
-        Some(SizedWidget {
-            widget: Paragraph::new(text.clone()).block(popup_block()),
-            height: 1 + text.lines.len() as u16,
-        })
-    } else {
-        None
+fn layout_prompt(layout: &mut LayoutTree<Span>, state: &mut State) {
+    let Some(ref prompt_data) = state.prompt.data else {
+        return;
     };
 
-    let maybe_prompt = state.prompt.data.as_ref().map(|prompt_data| SizedWidget {
-        height: 2,
-        widget: TextPrompt::new(prompt_data.prompt_text.clone()).with_block(popup_block()),
-    });
+    let prompt_symbol = state.prompt.state.status().symbol();
 
-    let maybe_menu = state.pending_menu.as_ref().and_then(|menu| {
-        if menu.is_hidden {
-            None
-        } else {
-            Some(menu::MenuWidget::new(
-                Rc::clone(&state.config),
-                menu,
-                state.screens.last().unwrap().get_selected_item(),
-                state,
-            ))
+    layout.horizontal(OPTS, |layout| {
+        let line = Line::from(vec![
+            prompt_symbol,
+            " ".into(),
+            Span::raw(prompt_data.prompt_text.to_string()),
+            " › ".cyan().dim(),
+            Span::raw(state.prompt.state.value().to_string()),
+            Span::raw(CARET),
+        ]);
+
+        layout_line(layout, line);
+    });
+}
+
+pub(crate) fn layout_text<'a>(layout: &mut LayoutTree<Span<'a>>, text: Text<'a>) {
+    layout.vertical(OPTS, |layout| {
+        for line in text {
+            layout_line(layout, line);
         }
     });
-
-    let layout = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Min(1),
-            widget_height(&maybe_prompt),
-            widget_height(&maybe_menu),
-            widget_height(&maybe_log),
-        ],
-    )
-    .split(frame.area());
-
-    frame.render_widget(state.screens.last().unwrap(), layout[0]);
-
-    maybe_render(maybe_menu, frame, layout[2]);
-    maybe_render(maybe_log, frame, layout[3]);
-
-    if let Some(prompt) = maybe_prompt {
-        frame.render_stateful_widget(prompt, layout[1], &mut state.prompt.state);
-        let (cx, cy) = state.prompt.state.cursor();
-        frame.set_cursor_position((cx, cy));
-    }
-
-    state.screens.last_mut().unwrap().size = layout[0].as_size();
 }
 
-fn popup_block() -> Block<'static> {
-    Block::new()
-        .borders(Borders::TOP)
-        .border_style(Style::new().dim())
-        .border_type(ratatui::widgets::BorderType::Plain)
+pub(crate) fn layout_line<'a>(layout: &mut LayoutTree<Span<'a>>, line: Line<'a>) {
+    layout.horizontal(OPTS, |layout| {
+        for span in line {
+            layout_span(layout, span);
+        }
+    });
 }
 
-fn widget_height<W>(maybe_prompt: &Option<SizedWidget<W>>) -> Constraint {
-    Constraint::Length(
-        maybe_prompt
-            .as_ref()
-            .map(|widget| widget.height)
-            .unwrap_or(0),
-    )
-}
-
-fn maybe_render<W: Widget>(maybe_menu: Option<SizedWidget<W>>, frame: &mut Frame, area: Rect) {
-    if let Some(menu) = maybe_menu {
-        frame.render_widget(menu, area);
-    }
+pub(crate) fn layout_span<'a>(layout: &mut LayoutTree<Span<'a>>, span: Span<'a>) {
+    layout.leaf_with_size(span.clone(), [span.width() as u16, 1]);
 }
