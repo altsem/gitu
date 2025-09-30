@@ -267,7 +267,7 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
         parent_data.size = parent_data.size.max(children_size);
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = LayoutItem<T>> {
+    pub fn iter(&self) -> impl Iterator<Item = LayoutItem<&T>> {
         self.index.iter().filter_map(|index| {
             let Node {
                 data: Some(data),
@@ -280,7 +280,7 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
             };
 
             Some(LayoutItem {
-                data: data.clone(),
+                data,
                 pos: (*pos)?.into(),
                 size: (*size).into(),
             })
