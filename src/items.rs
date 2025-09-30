@@ -32,7 +32,7 @@ pub(crate) struct Item {
 }
 
 impl Item {
-    pub fn to_line<'a>(&'a self, config: Arc<Config>) -> Line<'a> {
+    pub fn to_line(&'_ self, config: Arc<Config>) -> Line<'_> {
         match self.data.clone() {
             ItemData::Raw(content) => Line::raw(content),
             ItemData::AllUnstaged(count) => Line::from(vec![
