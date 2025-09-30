@@ -39,12 +39,24 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         let LayoutItem { data, pos, size } = item;
         let area = Rect::new(pos[0], pos[1], size[0], size[1]);
         let (text, style) = data;
-        frame.render_widget(Span::styled(text, style), area);
+        frame.render_widget(SpanRef(text, *style), area);
     }
 
     layout.clear();
 
     state.screens.last_mut().unwrap().size = frame.area().as_size();
+}
+
+struct SpanRef<'a>(&'a Cow<'a, str>, Style);
+
+impl<'a> Widget for SpanRef<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        let SpanRef(text, style) = self;
+        buf.set_string(area.x, area.y, text, style);
+    }
 }
 
 fn layout_command_log<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, state: &State) {
