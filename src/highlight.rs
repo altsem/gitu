@@ -54,24 +54,34 @@ pub(crate) fn highlight_hunk(
         zip_styles(diff_highlights, diff_context_highlights),
     );
 
-    let spans: Vec<_> = line_range_iterator(hunk_content)
-        .map(move |(line_range, _)| collect_line_highlights(&mut highlights_iterator, &line_range))
-        .collect();
+    let mut highlights = HunkHighlights {
+        spans: vec![],
+        line_index: vec![],
+    };
 
-    HunkHighlights { spans }
+    for (line_range, _) in line_range_iterator(hunk_content) {
+        let start = highlights.spans.len();
+
+        collect_line_highlights(&mut highlights_iterator, &line_range, &mut highlights.spans);
+        highlights.line_index.push(start..highlights.spans.len());
+    }
+
+    highlights
 }
 
 #[derive(Clone)]
 pub struct HunkHighlights {
-    spans: Vec<Vec<(Range<usize>, Style)>>,
+    spans: Vec<(Range<usize>, Style)>,
+    line_index: Vec<Range<usize>>,
 }
+
+impl HunkHighlights {}
 
 impl HunkHighlights {
     /// Get highlight segments for a given hunk line.
-    ///
-    /// NOTE: This method does not do any bounds checking internally!
     pub fn get_line_highlights(&self, line: usize) -> &[(Range<usize>, Style)] {
-        &self.spans[line]
+        let line_range = &self.line_index[line];
+        &self.spans[line_range.clone()]
     }
 }
 
@@ -294,11 +304,8 @@ pub(crate) fn next_merged_style(
 pub(crate) fn collect_line_highlights(
     highlights_iter: &mut Peekable<impl Iterator<Item = (Range<usize>, Style)>>,
     line_range: &Range<usize>,
-) -> Vec<(Range<usize>, Style)> {
-    // collection of resulting line highlights
-    let mut spans = vec![];
-
-    // peek iter
+    result: &mut Vec<(Range<usize>, Style)>,
+) {
     while let Some((range, style)) = highlights_iter.peek() {
         // if the current range in the iter ends before the line we
         // are interested in highlights for, we advance the iterator
@@ -317,7 +324,7 @@ pub(crate) fn collect_line_highlights(
         let local_line_range_start = start - line_range.start;
         let local_line_range_end = end - line_range.start;
 
-        spans.push((local_line_range_start..local_line_range_end, *style));
+        result.push((local_line_range_start..local_line_range_end, *style));
 
         // break loop if we are outside of the line range
         if line_range.end <= range.end {
@@ -326,8 +333,6 @@ pub(crate) fn collect_line_highlights(
 
         highlights_iter.next();
     }
-
-    spans
 }
 
 pub(crate) fn syntax_highlight_tag_style(config: &SyntaxHighlightConfig, tag: SyntaxTag) -> Style {
