@@ -13,7 +13,7 @@ use ratatui::{
     layout::Size,
     prelude::{Position, backend::WindowSize, buffer::Cell},
 };
-use std::io::{self, Stderr, stderr};
+use std::io::{self, Stdout, stdout};
 use std::{fmt::Display, time::Duration};
 
 pub type Term = Terminal<TermBackend>;
@@ -22,11 +22,11 @@ pub type Term = Terminal<TermBackend>;
 //      However left here for now.
 
 pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
-    stderr()
+    stdout()
         .execute(EnterAlternateScreen)
         .map_err(Error::Term)?;
     let result = fun();
-    stderr()
+    stdout()
         .execute(LeaveAlternateScreen)
         .map_err(Error::Term)?;
     result
@@ -49,7 +49,7 @@ pub fn raw_mode<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
 }
 
 pub fn cleanup_alternate_screen() {
-    print_err(stderr().execute(LeaveAlternateScreen));
+    print_err(stdout().execute(LeaveAlternateScreen));
 }
 
 pub fn cleanup_raw_mode() {
@@ -64,11 +64,11 @@ fn print_err<T, E: Display>(result: Result<T, E>) {
 }
 
 pub fn backend() -> TermBackend {
-    TermBackend::Crossterm(CrosstermBackend::new(stderr()))
+    TermBackend::Crossterm(CrosstermBackend::new(stdout()))
 }
 
 pub enum TermBackend {
-    Crossterm(CrosstermBackend<Stderr>),
+    Crossterm(CrosstermBackend<Stdout>),
     #[allow(dead_code)]
     Test {
         backend: TestBackend,
