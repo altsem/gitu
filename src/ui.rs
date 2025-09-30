@@ -16,8 +16,10 @@ mod menu;
 
 const CARET: &str = "\u{2588}";
 
+type UiTree<'a> = LayoutTree<(Cow<'a, str>, Style)>;
+
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let mut layout = LayoutTree::new();
+    let mut layout = UiTree::new();
 
     layout.stacked(OPTS, |layout| {
         screen::layout_screen(
@@ -50,22 +52,19 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 struct SpanRef<'a>(&'a Cow<'a, str>, Style);
 
 impl<'a> Widget for SpanRef<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let SpanRef(text, style) = self;
         buf.set_string(area.x, area.y, text, style);
     }
 }
 
-fn layout_command_log<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, state: &State) {
+fn layout_command_log<'a>(layout: &mut UiTree<'a>, state: &State) {
     if !state.current_cmd_log.is_empty() {
         layout_text(layout, state.current_cmd_log.format_log(&state.config));
     }
 }
 
-fn layout_prompt<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, state: &'a State) {
+fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State) {
     let Some(ref prompt_data) = state.prompt.data else {
         return;
     };
@@ -85,7 +84,7 @@ fn layout_prompt<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, state: &'a 
     });
 }
 
-pub(crate) fn layout_text<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, text: Text<'a>) {
+pub(crate) fn layout_text<'a>(layout: &mut UiTree<'a>, text: Text<'a>) {
     layout.vertical(OPTS, |layout| {
         for line in text {
             layout_line(layout, line);
@@ -93,7 +92,7 @@ pub(crate) fn layout_text<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, te
     });
 }
 
-pub(crate) fn layout_line<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, line: Line<'a>) {
+pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, line: Line<'a>) {
     layout.horizontal(OPTS, |layout| {
         for span in line {
             layout_span(layout, (span.content, span.style));
@@ -101,10 +100,7 @@ pub(crate) fn layout_line<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, li
     });
 }
 
-pub(crate) fn layout_span<'a>(
-    layout: &mut LayoutTree<(Cow<'a, str>, Style)>,
-    span: (Cow<'a, str>, Style),
-) {
+pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Style)) {
     let width = span.0.graphemes(true).count() as u16;
     layout.leaf_with_size(span, [width, 1]);
 }
