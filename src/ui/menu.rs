@@ -1,7 +1,7 @@
-use std::borrow::Cow;
 use std::sync::Arc;
 
-use crate::ui::layout::{LayoutTree, OPTS};
+use crate::ui::UiTree;
+use crate::ui::layout::OPTS;
 use crate::{app::State, ops::Op, ui::layout_line};
 use itertools::Itertools;
 use ratatui::{
@@ -9,7 +9,7 @@ use ratatui::{
     text::{Line, Span},
 };
 
-pub(crate) fn layout_menu<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, state: &'a State) {
+pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State) {
     let Some(ref pending) = state.pending_menu else {
         return;
     };
