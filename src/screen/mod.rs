@@ -1,10 +1,12 @@
 use crate::ui::layout::{LayoutTree, OPTS};
+use crate::ui::layout_span;
 use crate::{item_data::ItemData, ui};
-use ratatui::{layout::Size, prelude::Span, style::Style, text::Line};
+use ratatui::{layout::Size, style::Style, text::Line};
 
 use crate::{Res, config::Config, items::hash};
 
 use super::Item;
+use std::borrow::Cow;
 use std::{collections::HashSet, rc::Rc};
 
 pub(crate) mod log;
@@ -334,7 +336,7 @@ impl Screen {
         self.nav_filter(target_line_i, NavMode::IncludeHunkLines)
     }
 
-    fn line_views(&self, area: Size) -> impl Iterator<Item = LineView> + '_ {
+    fn line_views(&'_ self, area: Size) -> impl Iterator<Item = LineView<'_>> {
         let scan_start = self.scroll.min(self.cursor);
         let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
         let scan_highlight_range = scan_start..(scan_end);
@@ -361,61 +363,66 @@ impl Screen {
     }
 }
 
-struct LineView {
+struct LineView<'a> {
     item_index: usize,
-    display: Line<'static>,
+    display: Line<'a>,
     highlighted: bool,
 }
 
-pub(crate) fn layout_screen(layout: &mut LayoutTree<Span>, size: Size, screen: &Screen) {
+pub(crate) fn layout_screen<'a>(
+    layout: &mut LayoutTree<(Cow<'a, str>, Style)>,
+    size: Size,
+    screen: &'a Screen,
+) {
     let style = &screen.config.style;
 
     layout.vertical(OPTS, |layout| {
         for line in screen.line_views(size) {
-            let selected_line = screen.line_index[screen.cursor] == line.item_index;
-            let area_highlight = area_selection_highlgiht(style, &line);
-            let line_highlight = line_selection_highlight(style, &line, selected_line);
-            let gutter_char = if line.highlighted {
-                gutter_char(style, selected_line, area_highlight, line_highlight)
-            } else {
-                Span::raw(" ")
-            };
+            layout.horizontal(OPTS, |layout| {
+                let selected_line = screen.line_index[screen.cursor] == line.item_index;
+                let area_highlight = area_selection_highlgiht(style, &line);
+                let line_highlight = line_selection_highlight(style, &line, selected_line);
+                let gutter_char = if line.highlighted {
+                    gutter_char(style, selected_line, area_highlight, line_highlight)
+                } else {
+                    (" ".into(), Style::new())
+                };
 
-            let line_spans = std::iter::once(gutter_char)
-                .chain(
-                    line.display
-                        .spans
-                        .into_iter()
-                        .map(|span| span.patch_style(area_highlight).patch_style(line_highlight)),
-                )
-                .collect::<Line<'static>>();
+                layout_span(layout, gutter_char);
 
-            ui::layout_line(layout, line_spans);
+                line.display.spans.into_iter().for_each(|span| {
+                    let style = span.style.patch(area_highlight).patch(line_highlight);
+                    ui::layout_span(layout, (span.content, style));
+                });
 
-            // TODO Do something about this
-            // if screen.is_collapsed(line.item) && line_width > 0 || overflow {
-            //     let line_end = (indented_line_area.x + line_width).min(size.width - 1);
-            //     buf[(line_end, line_index as u16)].set_char('…');
-            // }
+                // TODO Do something about this
+                // if screen.is_collapsed(line.item) && line_width > 0 || overflow {
+                //     let line_end = (indented_line_area.x + line_width).min(size.width - 1);
+                //     buf[(line_end, line_index as u16)].set_char('…');
+                // }
+            });
         }
     });
 }
 
-fn gutter_char(
-    style: &crate::config::StyleConfig,
+fn gutter_char<'a>(
+    style: &'a crate::config::StyleConfig,
     selected_line: bool,
     area_highlight: Style,
     line_highlight: Style,
-) -> Span<'static> {
+) -> (Cow<'a, str>, Style) {
     if selected_line {
-        Span::styled(
-            style.cursor.symbol.to_string(),
+        (
+            style.cursor.symbol.to_string().into(),
             Style::from(&style.cursor)
                 .patch(area_highlight)
                 .patch(line_highlight),
         )
     } else {
-        Span::styled(style.selection_bar.symbol.to_string(), area_highlight)
+        (
+            style.selection_bar.symbol.to_string().into(),
+            area_highlight,
+        )
     }
 }
 

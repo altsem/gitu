@@ -31,7 +31,7 @@ pub(crate) struct Item {
 }
 
 impl Item {
-    pub fn to_line(&self, config: Rc<Config>) -> Line<'static> {
+    pub fn to_line(&'_ self, config: Rc<Config>) -> Line<'_> {
         match self.data.clone() {
             ItemData::Raw(content) => Line::raw(content),
             ItemData::AllUnstaged(count) => Line::from(vec![

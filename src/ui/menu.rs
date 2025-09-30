@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use crate::ui::layout::{LayoutTree, OPTS};
@@ -8,7 +9,7 @@ use ratatui::{
     text::{Line, Span},
 };
 
-pub(crate) fn layout_menu(layout: &mut LayoutTree<Span>, state: &State) {
+pub(crate) fn layout_menu<'a>(layout: &mut LayoutTree<(Cow<'a, str>, Style)>, state: &'a State) {
     let Some(ref pending) = state.pending_menu else {
         return;
     };
