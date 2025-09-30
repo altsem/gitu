@@ -18,6 +18,10 @@ insta = "1.43.2"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
 
+[profile.profiling]
+inherits = "dev"
+opt-level = 1
+
 [profile.release]
 strip = true
 
