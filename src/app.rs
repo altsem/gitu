@@ -144,16 +144,22 @@ impl App {
 
     pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
         while !self.state.quit {
-            term.backend_mut().poll_event(max_tick_delay)?;
-            self.update(term)?;
+            let event = if term.backend_mut().poll_event(max_tick_delay)? {
+                Some(term.backend_mut().read_event()?)
+            } else {
+                None
+            };
+
+            self.update(term, event)?;
         }
 
         Ok(())
     }
 
-    pub fn update(&mut self, term: &mut Term) -> Res<()> {
-        let event = term.backend_mut().read_event()?;
-        self.handle_event(term, event)?;
+    pub fn update(&mut self, term: &mut Term, event: Option<Event>) -> Res<()> {
+        if let Some(e) = event {
+            self.handle_event(term, e)?;
+        }
 
         if let Some(file_watcher) = &mut self.state.file_watcher
             && file_watcher.pending_updates()
