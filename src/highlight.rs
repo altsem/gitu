@@ -13,10 +13,11 @@ use std::iter::Peekable;
 use std::ops::Range;
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::Arc;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[cached(
-    ty = "SizedCache<u64, HunkHighlights>",
+    ty = "SizedCache<u64, Arc<HunkHighlights>>",
     create = "{ SizedCache::with_size(200) }",
     convert = r#"{ _hunk_hash }"#
 )]
@@ -26,7 +27,7 @@ pub(crate) fn highlight_hunk(
     diff: &Rc<Diff>,
     file_index: usize,
     hunk_index: usize,
-) -> HunkHighlights {
+) -> Arc<HunkHighlights> {
     let file_diff = &diff.file_diffs[file_index];
 
     let hunk_content = diff.hunk_content(file_index, hunk_index);
@@ -66,7 +67,7 @@ pub(crate) fn highlight_hunk(
         highlights.line_index.push(start..highlights.spans.len());
     }
 
-    highlights
+    Arc::new(highlights)
 }
 
 #[derive(Clone)]
