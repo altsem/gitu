@@ -47,15 +47,28 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
         Rc::clone(&config),
         size,
         Box::new(move || {
-            let statuses = repo
-                .statuses(Some(&mut git2_opts::status(&repo)?))
-                .map_err(Error::GitStatus)?;
+            // It appears `repo.statuses(..)` takes an awful amount of time in large repos,
+            // even though the option `status.showUntrackedFiles` is false.
+            // So just skip it entirely.
+            let untracked_files = if repo
+                .config()
+                .map_err(Error::ReadGitConfig)?
+                .get_bool("status.showUntrackedFiles")
+                .ok()
+                .unwrap_or(true)
+            {
+                let statuses = repo
+                    .statuses(Some(&mut git2_opts::status(&repo)?))
+                    .map_err(Error::GitStatus)?;
 
-            let untracked_files = statuses
-                .iter()
-                .filter(|status| status.status().is_wt_new())
-                .map(|status| PathBuf::from(status.path().unwrap()))
-                .collect::<Vec<_>>();
+                statuses
+                    .iter()
+                    .filter(|status| status.status().is_wt_new())
+                    .map(|status| PathBuf::from(status.path().unwrap()))
+                    .collect::<Vec<_>>()
+            } else {
+                vec![]
+            };
 
             let untracked = items_list(untracked_files.clone());
 
