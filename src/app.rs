@@ -164,8 +164,7 @@ impl App {
         if let Some(file_watcher) = &mut self.state.file_watcher
             && file_watcher.pending_updates()
         {
-            self.screen_mut().update()?;
-            self.stage_redraw();
+            self.update_screens()?;
         }
 
         let handle_pending_cmd_result = self.handle_pending_cmd();
@@ -175,6 +174,15 @@ impl App {
             self.redraw_now(term)?;
         }
 
+        Ok(())
+    }
+
+    pub fn update_screens(&mut self) -> Res<()> {
+        for screen in &mut self.state.screens {
+            screen.update()?;
+        }
+
+        self.stage_redraw();
         Ok(())
     }
 
@@ -432,8 +440,7 @@ impl App {
 
         let result = write_child_output_to_log(log_rwlock, child, status);
         self.state.pending_cmd = None;
-        self.screen_mut().update()?;
-        self.stage_redraw();
+        self.update_screens()?;
         result?;
 
         Ok(())
@@ -504,7 +511,7 @@ impl App {
         term.backend_mut().enter_alternate_screen()?;
 
         term.clear().map_err(Error::Term)?;
-        self.screen_mut().update()?;
+        self.update_screens()?;
 
         if !status.success() {
             return Err(Error::CmdBadExit(

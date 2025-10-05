@@ -101,8 +101,7 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
 
         app.close_menu();
         app.run_cmd_interactive(term, cmd)?;
-
-        app.screen_mut().update()
+        app.update_screens()
     }))
 }
 

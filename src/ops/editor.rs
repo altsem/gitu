@@ -27,9 +27,6 @@ impl OpTrait for Quit {
                     app.state.quit = true;
                 } else {
                     app.state.screens.pop();
-                    if let Some(screen) = app.state.screens.last_mut() {
-                        screen.update()?;
-                    }
                 }
             } else {
                 app.close_menu();
@@ -65,7 +62,7 @@ impl OpTrait for Refresh {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().update()
+            app.update_screens()
         }))
     }
 
