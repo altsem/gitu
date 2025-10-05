@@ -141,9 +141,6 @@ impl Item {
                     SectionHeader::Branches => "Branches".to_string(),
                     SectionHeader::NoBranch => "No branch".to_string(),
                     SectionHeader::OnBranch(branch) => format!("On branch {branch}"),
-                    SectionHeader::UpstreamGone(upstream) => {
-                        format!("Your branch is based on '{upstream}', but the upstream is gone.")
-                    }
                     SectionHeader::Rebase(head, onto) => format!("Rebasing {head} onto {onto}"),
                     SectionHeader::Merge(head) => format!("Merging {head}"),
                     SectionHeader::Revert(head) => format!("Reverting {head}"),

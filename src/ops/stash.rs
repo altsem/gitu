@@ -121,7 +121,7 @@ fn is_working_tree_empty(repo: &Repository) -> Res<bool> {
                 .include_untracked(true)
                 .include_ignored(false),
         ))
-        .map_err(Error::GitStatus)?;
+        .unwrap();
 
     let is_working_tree_not_empty = statuses.iter().any(|e| {
         e.status().intersects(
@@ -172,7 +172,7 @@ fn is_something_staged(repo: &Repository) -> Res<bool> {
                 .include_untracked(true)
                 .include_ignored(false),
         ))
-        .map_err(Error::GitStatus)?;
+        .unwrap();
 
     Ok(statuses.iter().any(|e| {
         e.status().intersects(

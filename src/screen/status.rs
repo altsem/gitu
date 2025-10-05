@@ -3,14 +3,17 @@ use crate::{
     Res,
     config::Config,
     error::Error,
-    git::{self, diff::Diff},
-    git2_opts,
+    git::{self, diff::Diff, status::BranchStatus},
     item_data::{ItemData, SectionHeader},
     items::{self, Item, hash},
 };
 use git2::Repository;
 use ratatui::prelude::Size;
-use std::{hash::Hash, path::PathBuf, rc::Rc};
+use std::{
+    hash::Hash,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 enum SectionID {
     RebaseStatus,
@@ -47,30 +50,15 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
         Rc::clone(&config),
         size,
         Box::new(move || {
-            // It appears `repo.statuses(..)` takes an awful amount of time in large repos,
-            // even though the option `status.showUntrackedFiles` is false.
-            // So just skip it entirely.
-            let untracked_files = if repo
-                .config()
-                .map_err(Error::ReadGitConfig)?
-                .get_bool("status.showUntrackedFiles")
-                .ok()
-                .unwrap_or(true)
-            {
-                let statuses = repo
-                    .statuses(Some(&mut git2_opts::status(&repo)?))
-                    .map_err(Error::GitStatus)?;
+            let status = git::status(repo.workdir().ok_or(Error::NoRepoWorkdir)?)?;
+            let untracked_files = status
+                .files
+                .iter()
+                .filter(|status| status.is_untracked())
+                .map(|status| Path::new(&status.path))
+                .collect::<Vec<_>>();
 
-                statuses
-                    .iter()
-                    .filter(|status| status.status().is_wt_new())
-                    .map(|status| PathBuf::from(status.path().unwrap()))
-                    .collect::<Vec<_>>()
-            } else {
-                vec![]
-            };
-
-            let untracked = items_list(untracked_files.clone());
+            let untracked = items_list(&untracked_files);
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
@@ -94,7 +82,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 }]
                 .into_iter()
             } else {
-                branch_status_items(&repo)?.into_iter()
+                branch_status_items(&status.branch_status)?.into_iter()
             }
             .chain(if untracked.is_empty() {
                 vec![]
@@ -105,7 +93,9 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                         id: hash(SectionID::Untracked),
                         section: true,
                         depth: 0,
-                        data: ItemData::AllUntracked(untracked_files),
+                        data: ItemData::AllUntracked(
+                            untracked_files.iter().map(PathBuf::from).collect(),
+                        ),
                         ..Default::default()
                     },
                 ]
@@ -134,20 +124,20 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
     )
 }
 
-fn items_list(files: Vec<PathBuf>) -> Vec<Item> {
+fn items_list(files: &[&Path]) -> Vec<Item> {
     files
         .into_iter()
         .map(|path| Item {
             id: hash(&path),
             depth: 1,
-            data: ItemData::File(path),
+            data: ItemData::File(path.to_path_buf()),
             ..Default::default()
         })
         .collect::<Vec<_>>()
 }
 
-fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
-    let Ok(head) = repo.head() else {
+fn branch_status_items(status: &BranchStatus) -> Res<Vec<Item>> {
+    let Some(ref head) = status.local else {
         return Ok(vec![Item {
             id: hash(SectionID::BranchStatus),
             section: true,
@@ -157,45 +147,23 @@ fn branch_status_items(repo: &Repository) -> Res<Vec<Item>> {
         }]);
     };
 
-    let head_shorthand = head.shorthand().unwrap().to_string();
-
     let mut items = vec![Item {
         id: hash(SectionID::BranchStatus),
         section: true,
         depth: 0,
-        data: ItemData::Header(SectionHeader::OnBranch(head_shorthand)),
+        data: ItemData::Header(SectionHeader::OnBranch(head.clone())),
         ..Default::default()
     }];
 
-    let Ok(upstream) = repo.branch_upstream_name(head.name().unwrap()) else {
+    let Some(ref upstream_name) = status.remote else {
         return Ok(items);
     };
-    let upstream_name = upstream.as_str().unwrap().to_string();
-    let upstream_shortname = upstream_name
-        .strip_prefix("refs/remotes/")
-        .unwrap_or(&upstream_name)
-        .to_string();
-
-    let Ok(upstream_id) = repo.refname_to_id(&upstream_name) else {
-        items.push(Item {
-            id: hash(SectionID::BranchStatus),
-            depth: 1,
-            unselectable: true,
-            data: ItemData::Header(SectionHeader::UpstreamGone(upstream_shortname)),
-            ..Default::default()
-        });
-        return Ok(items);
-    };
-
-    let (ahead, behind) = repo
-        .graph_ahead_behind(head.target().unwrap(), upstream_id)
-        .map_err(Error::GitStatus)?;
 
     items.push(Item {
         id: hash(SectionID::BranchStatus),
         depth: 1,
         unselectable: true,
-        data: ItemData::BranchStatus(upstream_shortname, ahead, behind),
+        data: ItemData::BranchStatus(upstream_name.clone(), status.ahead, status.behind),
         ..Default::default()
     });
 
