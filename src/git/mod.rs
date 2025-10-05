@@ -13,14 +13,16 @@ use std::{
     fs,
     path::Path,
     process::Command,
-    str::{self},
+    str::{self, FromStr},
 };
 
 pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
+mod parse;
 pub(crate) mod rebase_status;
 pub(crate) mod remote;
+pub(crate) mod status;
 
 // TODO Use only plumbing commands
 
@@ -158,6 +160,20 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         text,
     })
+}
+
+pub(crate) fn status(dir: &Path) -> Res<status::Status> {
+    let text = String::from_utf8(
+        Command::new("git")
+            .current_dir(dir)
+            .args(["status", "--porcelain", "--branch"])
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .map_err(Error::GitDiffUtf8)?;
+
+    Ok(status::Status::from_str(&text).unwrap())
 }
 
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {

@@ -3,7 +3,7 @@ source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch new-branch                                                           |
-▌Your branch is up to date with 'refs/heads/main'.                              |
+▌Your branch is up to date with 'main'.                                         |
                                                                                 |
  Recent commits                                                                 |
  e7eb2bd main new-branch add new-file                                           |

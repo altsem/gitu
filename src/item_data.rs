@@ -41,7 +41,7 @@ pub(crate) enum ItemData {
         id: usize,
     },
     Header(SectionHeader),
-    BranchStatus(String, usize, usize),
+    BranchStatus(String, u32, u32),
     Error(String),
 }
 
@@ -65,7 +65,6 @@ pub(crate) enum SectionHeader {
     Branches,
     NoBranch,
     OnBranch(String),
-    UpstreamGone(String),
     Rebase(String, String),
     Merge(String),
     Revert(String),
