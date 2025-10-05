@@ -24,8 +24,6 @@ pub(crate) mod rebase_status;
 pub(crate) mod remote;
 pub(crate) mod status;
 
-// TODO Use only plumbing commands
-
 pub(crate) fn rebase_status(repo: &Repository) -> Res<Option<RebaseStatus>> {
     let dir = repo.workdir().expect("No workdir");
     let mut rebase_onto_file = dir.to_path_buf();
@@ -111,7 +109,6 @@ pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
     }
 }
 
-// TODO replace with libgit2
 fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
     let out = Command::new("git")
         .args(["for-each-ref", "--format", "%(objectname) %(refname:short)"])
@@ -129,7 +126,6 @@ fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
     let text = String::from_utf8(
         Command::new("git")
-            // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["diff", "--no-ext-diff"])
             .output()
@@ -147,7 +143,6 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
 pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
     let text = String::from_utf8(
         Command::new("git")
-            // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["diff", "--no-ext-diff", "--staged"])
             .output()
@@ -179,7 +174,6 @@ pub(crate) fn status(dir: &Path) -> Res<status::Status> {
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     let text = String::from_utf8(
         Command::new("git")
-            // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["show", reference])
             .output()
@@ -197,7 +191,6 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
     let text = String::from_utf8(
         Command::new("git")
-            // TODO What if bare repo?
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["stash", "show", "-p", stash_ref])
             .output()
