@@ -126,9 +126,9 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
 
 fn items_list(files: &[&Path]) -> Vec<Item> {
     files
-        .into_iter()
+        .iter()
         .map(|path| Item {
-            id: hash(&path),
+            id: hash(path),
             depth: 1,
             data: ItemData::File(path.to_path_buf()),
             ..Default::default()
