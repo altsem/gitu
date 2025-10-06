@@ -11,7 +11,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "aarch64-linux" "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
-      perSystem = { config, pkgs, system, inputs', self', ... }:
+      perSystem = { config, pkgs, system, lib, inputs', self', ... }:
         let
           toolchain = with inputs.fenix.packages.${system};
             combine [
@@ -24,8 +24,14 @@
             ];
 
           craneLib = (inputs.crane.mkLib pkgs).overrideToolchain toolchain;
+          pestFilter = path: _type: builtins.match ".*pest$" path != null;
+          pestOrCargo = path: type: (pestFilter path type) || (craneLib.filterCargoSources path type);
           common-build-args = {
-            src = craneLib.cleanCargoSource (craneLib.path ./.);
+            src = lib.cleanSourceWith {
+              src = ./.;
+              filter = pestOrCargo;
+              name = "source";
+            };
           };
           deps-only = craneLib.buildDepsOnly ({ } // common-build-args);
 
