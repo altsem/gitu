@@ -1,13 +1,13 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 use nom::{
-    Err, IResult,
+    Err, IResult, Parser as _,
     branch::alt,
     bytes::complete::tag,
     character::complete::{anychar, char},
     combinator::{all_consuming, map},
     error::{Error, ErrorKind},
     multi::{many1, separated_list1},
-    sequence::{delimited, preceded, tuple},
+    sequence::{delimited, preceded},
 };
 
 pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, KeyCode)>> {
@@ -15,7 +15,8 @@ pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, KeyCod
         keys.into_iter()
             .map(|key| (KeyModifiers::NONE, key))
             .collect()
-    })(input)
+    })
+    .parse(input)
 }
 
 /// Parse a string into [`Modifiers`] and [`KeyCode`]s. This function is
@@ -23,7 +24,8 @@ pub(crate) fn parse_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, KeyCod
 pub(crate) fn parse_config_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, KeyCode)>> {
     map(parse_key_combo, |(modifiers, keys)| {
         keys.into_iter().map(|key| (modifiers, key)).collect()
-    })(input)
+    })
+    .parse(input)
 }
 
 /// Parse a string of keys that lack '+' delimiters into [`KeyModifiers`] and
@@ -42,7 +44,7 @@ pub(crate) fn parse_test_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, K
             delimited(
                 char('<'),
                 map(
-                    tuple((opt(parse_modifiers), opt(char('+')), parse_normal_key)),
+                    (opt(parse_modifiers), opt(char('+')), parse_normal_key),
                     |(modifiers, _, key)| vec![(modifiers.unwrap_or(KeyModifiers::NONE), key)],
                 ),
                 char('>'),
@@ -54,14 +56,15 @@ pub(crate) fn parse_test_keys(input: &str) -> IResult<&str, Vec<(KeyModifiers, K
             acc.extend(items);
             acc
         },
-    ))(input.trim())
+    ))
+    .parse(input.trim())
 }
 
 /// Parse a string of keys *that aren't* delimited by '+' into a key
 /// combination. There can be multiple "normal" keys and modifiers (represented
 /// as a single `KeyModifiers`).
 fn parse_key_string(input: &str) -> IResult<&str, Vec<KeyCode>> {
-    all_consuming(many1(parse_normal_key))(input)
+    all_consuming(many1(parse_normal_key)).parse(input)
 }
 
 /// Parse a string of keys delimited by '+' into a key combination. There can be
@@ -75,29 +78,32 @@ fn parse_key_combo(input: &str) -> IResult<&str, (KeyModifiers, Vec<KeyCode>)> {
     all_consuming(alt((
         map(parse_prefixed, |keys| (KeyModifiers::NONE, keys)),
         parse_multiple_keys,
-    )))(input)
+    )))
+    .parse(input)
 }
 
 fn parse_prefixed(input: &str) -> IResult<&str, Vec<KeyCode>> {
     map(preceded(char('-'), parse_char_key), |key| {
         vec![KeyCode::Char('-'), key]
-    })(input)
+    })
+    .parse(input)
 }
 
 fn parse_multiple_keys(input: &str) -> IResult<&str, (KeyModifiers, Vec<KeyCode>)> {
     alt((
         map(
-            tuple((
+            (
                 parse_modifiers,
                 char('+'),
                 separated_list1(char('+'), parse_normal_key),
-            )),
+            ),
             |(modifiers, _, keys)| (modifiers, keys),
         ),
         map(separated_list1(char('+'), parse_normal_key), |keys| {
             (KeyModifiers::NONE, keys)
         }),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn parse_modifiers(input: &str) -> IResult<&str, KeyModifiers> {
@@ -105,7 +111,8 @@ fn parse_modifiers(input: &str) -> IResult<&str, KeyModifiers> {
         modifiers
             .into_iter()
             .fold(KeyModifiers::NONE, |acc, m| acc | m)
-    })(input)
+    })
+    .parse(input)
 }
 
 fn parse_modifier(input: &str) -> IResult<&str, KeyModifiers> {
@@ -116,7 +123,8 @@ fn parse_modifier(input: &str) -> IResult<&str, KeyModifiers> {
         map(tag("super"), |_| KeyModifiers::SUPER),
         map(tag("hyper"), |_| KeyModifiers::HYPER),
         map(tag("meta"), |_| KeyModifiers::META),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn parse_normal_key(input: &str) -> IResult<&str, KeyCode> {
@@ -124,11 +132,12 @@ fn parse_normal_key(input: &str) -> IResult<&str, KeyCode> {
         delimited(char('<'), parse_special_key, char('>')),
         parse_special_key,
         parse_char_key,
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn parse_char_key(input: &str) -> IResult<&str, KeyCode> {
-    map(anychar, KeyCode::Char)(input)
+    map(anychar, KeyCode::Char).parse(input)
 }
 
 fn parse_special_key(input: &str) -> IResult<&str, KeyCode> {
@@ -165,7 +174,8 @@ fn parse_special_key(input: &str) -> IResult<&str, KeyCode> {
             map(tag("f11"), |_| KeyCode::F(11)),
             map(tag("f12"), |_| KeyCode::F(12)),
         )),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 #[cfg(test)]
