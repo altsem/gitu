@@ -28,27 +28,10 @@ jobs:
 
     - name: Setup
       run: |
-        rustup component add llvm-tools-preview
         cargo install cargo-deny || true
-        cargo install grcov || true
-        cargo install cargo-machete || true
         cargo install git-cliff || true
 
-    - name: make test
-      env: 
-        CARGO_INCREMENTAL: 0
-        RUSTFLAGS: '-Cinstrument-coverage'
-        LLVM_PROFILE_FILE: 'cargo-test-%p-%m.profraw'
-      run: make test
-
-    - name: Coverage
-      run: grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/tests.lcov
-
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4.6.0
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        slug: altsem/gitu
+    - run: make test
 
   test:
     strategy:
@@ -73,5 +56,4 @@ jobs:
             target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Test
-      run: cargo test
+    - run: cargo test
