@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.38.0] - 2025-10-10
+
+### 🚀 Features
+
+- Don't refresh previous screen when closing a nested one
+- Revert to using Crossterm as backend (fixes rendering/input bugs)
+
+### ⚡ Performance
+
+- Revert back to forking out to git to check status (faster)
+- Skip status check if `status.showUntrackedFiles false`, helps in large repos
+- Avoid excessive allocation while computing hunk highlights
+- Change rendering output from Stderr to Stdout - more efficient
+
 ## [0.37.0] - 2025-09-28
 
 ### 🚀 Features
