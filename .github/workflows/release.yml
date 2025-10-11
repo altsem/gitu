@@ -31,7 +31,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 50
 
@@ -75,7 +75,7 @@ jobs:
     environment: release
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 50
 
@@ -94,7 +94,7 @@ jobs:
     environment: release
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 50
 
@@ -117,7 +117,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout .recent-changelog-entry
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: .recent-changelog-entry
           sparse-checkout-cone-mode: false
