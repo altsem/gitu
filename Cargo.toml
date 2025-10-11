@@ -41,7 +41,7 @@ log = "0.4.28"
 nom = "8.0.0"
 pest = "2.7.6"
 pest_derive = "2.7.6"
-notify = "7.0.0"
+notify = "8.0.0"
 serde = { version = "1.0.225", features = ["derive"] }
 ratatui = { version = "0.29.0", features = ["serde"] }
 similar = { version = "2.7.0", features = ["unicode", "inline"] }
