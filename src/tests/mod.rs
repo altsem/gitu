@@ -88,6 +88,14 @@ fn binary_file() {
 }
 
 #[test]
+fn non_ascii_filename() {
+    let ctx = TestContext::setup_init();
+    commit(ctx.dir.path(), "höhöhö", "hehehe\n");
+    fs::write(ctx.dir.child("höhöhö"), "hahaha\n").expect("error writing to file");
+    snapshot!(ctx, "jj<tab>");
+}
+
+#[test]
 fn collapsed_sections_config() {
     let mut ctx = TestContext::setup_clone();
     ctx.config().general.collapsed_sections = vec![

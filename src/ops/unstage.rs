@@ -14,7 +14,8 @@ impl OpTrait for Unstage {
         let action = match target {
             ItemData::AllStaged(_) => unstage_staged(),
             ItemData::Delta { diff, file_i } => {
-                unstage_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
+                let file_path = &diff.file_diffs[*file_i].header.new_file;
+                unstage_file(file_path.fmt(&diff.text).into_owned().into())
             }
             ItemData::Hunk {
                 diff,

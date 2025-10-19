@@ -23,18 +23,23 @@ impl OpTrait for Show {
                 ..
             } => goto_show_screen(oid.clone()),
             ItemData::File(u) => editor(u.as_path(), None),
-            ItemData::Delta { diff, file_i } => editor(
-                Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
-                None,
-            ),
+            ItemData::Delta { diff, file_i } => {
+                let file_path = &diff.file_diffs[*file_i].header.new_file;
+                let path: &str = &file_path.fmt(&diff.text);
+                editor(Path::new(path), None)
+            }
             ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            } => editor(
-                Path::new(&diff.text[diff.file_diffs[*file_i].header.new_file.clone()]),
-                Some(diff.file_line_of_first_diff(*file_i, *hunk_i) as u32),
-            ),
+            } => {
+                let file_path = &diff.file_diffs[*file_i].header.new_file;
+                let path: &str = &file_path.fmt(&diff.text);
+                editor(
+                    Path::new(path),
+                    Some(diff.file_line_of_first_diff(*file_i, *hunk_i) as u32),
+                )
+            }
             ItemData::Stash { stash_ref, .. } => goto_show_stash_screen(stash_ref.clone()),
             _ => None,
         }

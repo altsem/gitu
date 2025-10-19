@@ -74,3 +74,5 @@ strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
 cached = "0.55.1"
 strum = { version = "0.26.3", features = ["strum_macros"] }
+tinyvec = "1.10.0"
+smashquote = "0.1.2"

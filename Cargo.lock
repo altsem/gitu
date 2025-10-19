@@ -837,10 +837,12 @@ dependencies = [
  "serde",
  "similar",
  "simple-logging",
+ "smashquote",
  "strip-ansi-escapes",
  "strum",
  "temp-dir",
  "temp-env",
+ "tinyvec",
  "toml",
  "tree-sitter",
  "tree-sitter-bash",
@@ -1958,6 +1960,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
+name = "smashquote"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "369f05f4a673acc2866a9af6d0249fb75799002adec645584d6f74a5eaa5df03"
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2099,6 +2107,12 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "tinyvec"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa"
 
 [[package]]
 name = "toml"
