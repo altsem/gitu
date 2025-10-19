@@ -34,11 +34,11 @@ pub(crate) fn highlight_hunk(
 
     let old_mask = diff.mask_old_hunk(file_index, hunk_index);
     let old_file_range = file_diff.header.old_file.clone();
-    let old_path = &diff.text[old_file_range];
+    let old_path = &old_file_range.fmt(&diff.text);
 
     let new_mask = diff.mask_new_hunk(file_index, hunk_index);
     let new_file_range = file_diff.header.new_file.clone();
-    let new_path = &diff.text[new_file_range];
+    let new_path = &new_file_range.fmt(&diff.text);
 
     let old_syntax_highlights =
         iter_syntax_highlights(&config.style.syntax_highlight, old_path, old_mask);

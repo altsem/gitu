@@ -47,11 +47,14 @@ impl FromStr for Status {
                                 let mut chars = pair.as_str().chars();
                                 status_code = Some([chars.next().unwrap(), chars.next().unwrap()]);
                             }
-                            Rule::file => path = Some(pair.as_str().to_string().into()),
-                            Rule::new_file => new_path = Some(pair.as_str().to_string().into()),
+                            Rule::file => path = Some(pair.as_str().to_string()),
+                            Rule::new_file => new_path = Some(pair.as_str().to_string()),
                             rule => panic!("No rule {:?}", rule),
                         }
                     }
+
+                    let path = path.take().map(unescape);
+                    let new_path = new_path.take().map(unescape);
 
                     files.push(StatusFile {
                         status_code: status_code.expect("Error parsing status_code"),
@@ -72,6 +75,15 @@ impl FromStr for Status {
             },
             files,
         })
+    }
+}
+
+fn unescape(path: String) -> String {
+    if path.starts_with("\"") && path.ends_with("\"") {
+        String::from_utf8(smashquote::unescape_bytes(&path.as_bytes()[1..path.len() - 1]).unwrap())
+            .unwrap()
+    } else {
+        path
     }
 }
 
@@ -97,17 +109,17 @@ mod tests {
                 files: vec![
                     StatusFile {
                         status_code: [' ', 'M'],
-                        path: "src/git.rs".to_string().into(),
+                        path: "src/git.rs".to_string(),
                         new_path: None,
                     },
                     StatusFile {
                         status_code: [' ', 'R'],
-                        path: "foo".to_string().into(),
-                        new_path: Some("bar".to_string().into())
+                        path: "foo".to_string(),
+                        new_path: Some("bar".to_string())
                     },
                     StatusFile {
                         status_code: ['?', '?'],
-                        path: "spaghet".to_string().into(),
+                        path: "spaghet".to_string(),
                         new_path: None,
                     },
                 ]

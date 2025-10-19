@@ -21,15 +21,21 @@ impl OpTrait for Discard {
             ItemData::File(file) => clean_file(file.clone()),
             ItemData::Delta { diff, file_i } => match diff.file_diffs[*file_i].header.status {
                 Status::Added => {
-                    remove_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
+                    let new_file = &diff.file_diffs[*file_i].header.new_file;
+                    remove_file(new_file.fmt(&diff.text).into_owned().into())
                 }
-                Status::Renamed => rename_file(
-                    diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into(),
-                    diff.text[diff.file_diffs[*file_i].header.old_file.clone()].into(),
-                ),
-                _ => checkout_file(
-                    diff.text[diff.file_diffs[*file_i].header.old_file.clone()].into(),
-                ),
+                Status::Renamed => {
+                    let new_file = &diff.file_diffs[*file_i].header.new_file;
+                    let old_file = &diff.file_diffs[*file_i].header.old_file;
+                    rename_file(
+                        new_file.fmt(&diff.text).into_owned().into(),
+                        old_file.fmt(&diff.text).into_owned().into(),
+                    )
+                }
+                _ => {
+                    let old_file = &diff.file_diffs[*file_i].header.old_file;
+                    checkout_file(old_file.fmt(&diff.text).into_owned().into())
+                }
             },
             ItemData::Hunk {
                 diff,

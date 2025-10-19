@@ -1,0 +1,25 @@
+---
+source: src/tests/mod.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+                                                                                |
+ Unstaged changes (1)                                                           |
+▌modified   höhöhö                                                              |
+▌@@ -1 +1 @@                                                                    |
+▌-hehehe                                                                        |
+▌+hahaha                                                                        |
+                                                                                |
+ Recent commits                                                                 |
+ 95a754f main add höhöhö                                                        |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 94a898211851f229

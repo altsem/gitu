@@ -17,7 +17,8 @@ impl OpTrait for Stage {
             ItemData::AllUntracked(untracked) => stage_untracked(untracked.clone()),
             ItemData::File(u) => stage_file(u.into()),
             ItemData::Delta { diff, file_i } => {
-                stage_file(diff.text[diff.file_diffs[*file_i].header.new_file.clone()].into())
+                let file_path = &diff.file_diffs[*file_i].header.new_file;
+                stage_file(file_path.fmt(&diff.text).into_owned().into())
             }
             ItemData::Hunk {
                 diff,

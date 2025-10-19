@@ -9,11 +9,7 @@ use crate::{
 };
 use git2::Repository;
 use ratatui::prelude::Size;
-use std::{
-    hash::Hash,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::{hash::Hash, path::PathBuf, rc::Rc};
 
 enum SectionID {
     RebaseStatus,
@@ -55,7 +51,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
                 .files
                 .iter()
                 .filter(|status| status.is_untracked())
-                .map(|status| Path::new(&status.path))
+                .map(|status| &status.path)
                 .collect::<Vec<_>>();
 
             let untracked = items_list(&untracked_files);
@@ -124,13 +120,13 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
     )
 }
 
-fn items_list(files: &[&Path]) -> Vec<Item> {
+fn items_list(files: &[&String]) -> Vec<Item> {
     files
         .iter()
         .map(|path| Item {
             id: hash(path),
             depth: 1,
-            data: ItemData::File(path.to_path_buf()),
+            data: ItemData::File(PathBuf::from(path)),
             ..Default::default()
         })
         .collect::<Vec<_>>()

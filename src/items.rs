@@ -87,10 +87,10 @@ impl Item {
                     match file_diff.header.status {
                         Status::Renamed => format!(
                             "{} -> {}",
-                            &Rc::clone(diff).text[file_diff.header.old_file.clone()],
-                            &Rc::clone(diff).text[file_diff.header.new_file.clone()]
+                            &file_diff.header.old_file.fmt(&diff.text),
+                            &file_diff.header.new_file.fmt(&diff.text)
                         ),
-                        _ => Rc::clone(diff).text[file_diff.header.new_file.clone()].to_string(),
+                        _ => file_diff.header.new_file.fmt(&diff.text).to_string(),
                     }
                 );
 

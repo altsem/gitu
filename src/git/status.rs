@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Status {
     pub branch_status: BranchStatus,
@@ -17,8 +15,8 @@ pub(crate) struct BranchStatus {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusFile {
     pub status_code: [char; 2],
-    pub path: PathBuf,
-    pub new_path: Option<PathBuf>,
+    pub path: String,
+    pub new_path: Option<String>,
 }
 
 impl StatusFile {

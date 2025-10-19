@@ -5,8 +5,13 @@
 /// - Use the ranges to highlight changes in a user interface.
 /// - Be sure that the original input is intact.
 ///
+use tinyvec::{ArrayVec, array_vec};
+
 use core::ops::Range;
-use std::fmt::{self, Debug};
+use std::{
+    borrow::Cow,
+    fmt::{self, Debug},
+};
 
 trait ParsedRange {
     fn range(&self) -> &Range<usize>;
@@ -41,9 +46,30 @@ pub enum Status {
 #[derive(Debug, Clone)]
 pub struct DiffHeader {
     pub range: Range<usize>,
-    pub old_file: Range<usize>,
-    pub new_file: Range<usize>,
+    pub old_file: FilePath,
+    pub new_file: FilePath,
     pub status: Status,
+}
+
+impl FilePath {
+    pub fn fmt<'a>(&'a self, input: &'a str) -> Cow<'a, str> {
+        if self.is_quoted {
+            Cow::Owned(
+                String::from_utf8(
+                    smashquote::unescape_bytes(input[self.range.clone()].as_bytes()).unwrap(),
+                )
+                .unwrap(),
+            )
+        } else {
+            Cow::Borrowed(&input[self.range.clone()])
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FilePath {
+    pub range: Range<usize>,
+    pub is_quoted: bool,
 }
 
 #[allow(dead_code)]
@@ -79,47 +105,87 @@ pub struct Change {
     pub new: Range<usize>,
 }
 
-pub type Result<T> = std::result::Result<T, ParseError>;
+pub type Result<'a, T> = std::result::Result<T, ParseError<'a>>;
 
-pub enum ParseError {
-    Expected {
-        cursor: usize,
-        expected: &'static str,
-    },
-    NotFound {
-        cursor: usize,
-        expected: &'static str,
-    },
+pub struct ParseError<'a> {
+    errors: ArrayVec<[ThinParseError; 4]>,
+    parser: Parser<'a>,
 }
 
-impl fmt::Display for ParseError {
+/// Contains all necessary information needed to construct a descriptive error message,
+/// but does not render it out.
+/// This makes conditional `.or_else()` more feasible to use with parsers.
+type ThinResult<T> = std::result::Result<T, ArrayVec<[ThinParseError; 4]>>;
+
+#[derive(Default)]
+pub struct ThinParseError {
+    expected: &'static str,
+}
+
+impl fmt::Display for ParseError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::Expected { cursor, expected } => {
-                write!(f, "Expected {expected:?} at byte {cursor:?}")
+        f.write_str("Error parsing diff\n")?;
+        for (i, error) in self.errors.iter().enumerate() {
+            if i == 0 {
+                f.write_fmt(format_args!("expected {:?}", error.expected))?;
+            } else {
+                f.write_fmt(format_args!("within   {:?}", error.expected))?;
             }
-            ParseError::NotFound { cursor, expected } => {
-                write!(f, "Couldn't find {expected:?} from byte {cursor:?}")
-            }
+
+            f.write_str("\n")?;
         }
+
+        self.parser.fmt(f)?;
+
+        Ok(())
     }
 }
 
-impl fmt::Debug for ParseError {
+impl fmt::Debug for ParseError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{self}"))
     }
 }
 
-impl std::error::Error for ParseError {}
+impl fmt::Display for ThinParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Expected {}", self.expected)
+    }
+}
 
-#[derive(Clone, Debug)]
+impl fmt::Debug for ThinParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{self}"))
+    }
+}
+
+impl std::error::Error for ThinParseError {}
+
+#[derive(Clone)]
 pub struct Parser<'a> {
     input: &'a str,
     cursor: usize,
 }
 
-type ParseFn<'a, T> = fn(&mut Parser<'a>) -> Result<T>;
+type ParseFn<'a, T> = fn(&mut Parser<'a>) -> ThinResult<T>;
+
+impl<'a> fmt::Debug for Parser<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let cursor = self.cursor;
+        // TODO Need to handle invalid unicode
+        let line_start = self.input[..cursor].rfind('\n').unwrap_or(0);
+        let line_end = self.input[line_start..]
+            .find('\n')
+            .unwrap_or(self.input.len());
+        let line = &self.input[line_start..line_end];
+        f.write_fmt(format_args!("{}\n", line))?;
+        for _ in line_start..cursor {
+            f.write_str(" ")?;
+        }
+        f.write_str("^")?;
+        Ok(())
+    }
+}
 
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str) -> Self {
@@ -142,9 +208,10 @@ impl<'a> Parser<'a> {
     /// +bar\n";
     ///
     /// let diff = gitu::gitu_diff::Parser::new(input).parse_diff().unwrap();
-    /// assert_eq!(diff[0].header.new_file, 25..34); // "file2.txt"
+    /// assert_eq!(diff[0].header.range, 0..97);
     /// ```
-    pub fn parse_diff(&mut self) -> Result<Vec<FileDiff>> {
+    pub fn parse_diff<'b>(&'b mut self) -> Result<'b, Vec<FileDiff>> {
+        log::trace!("Parser::parse_diff\n{:?}", self);
         let mut diffs = vec![];
 
         if self.input.is_empty() {
@@ -155,18 +222,28 @@ impl<'a> Parser<'a> {
             return Ok(diffs);
         }
 
-        self.skip_until_diff_header()?;
+        self.skip_until_diff_header().map_err(|errors| ParseError {
+            errors,
+            parser: self.clone(),
+        })?;
 
         while self.is_at_diff_header() {
-            diffs.push(self.file_diff()?);
+            diffs.push(self.file_diff().map_err(|errors| ParseError {
+                errors,
+                parser: self.clone(),
+            })?);
         }
 
-        self.eof()?;
+        self.eof().map_err(|errors| ParseError {
+            errors,
+            parser: self.clone(),
+        })?;
 
         Ok(diffs)
     }
 
-    fn skip_until_diff_header(&mut self) -> Result<()> {
+    fn skip_until_diff_header(&mut self) -> ThinResult<()> {
+        log::trace!("Parser::skip_until_diff_header\n{:?}", self);
         while self.cursor < self.input.len() && !self.is_at_diff_header() {
             self.consume_until(Self::newline_or_eof)?;
         }
@@ -178,9 +255,15 @@ impl<'a> Parser<'a> {
         self.peek("diff") || self.peek("*")
     }
 
-    fn file_diff(&mut self) -> Result<FileDiff> {
+    fn file_diff(&mut self) -> ThinResult<FileDiff> {
+        log::trace!("Parser::file_diff\n{:?}", self);
         let diff_start = self.cursor;
-        let header = self.diff_header()?;
+        let header = self.diff_header().map_err(|mut err| {
+            err.try_push(ThinParseError {
+                expected: "<diff header>",
+            });
+            err
+        })?;
 
         let mut hunks = vec![];
 
@@ -188,7 +271,10 @@ impl<'a> Parser<'a> {
             self.skip_until_diff_header()?;
         } else {
             while self.peek("@@") {
-                hunks.push(self.hunk()?);
+                hunks.push(self.hunk().map_err(|mut err| {
+                    err.try_push(ThinParseError { expected: "<hunk>" });
+                    err
+                })?);
             }
         }
 
@@ -199,7 +285,8 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn diff_header(&mut self) -> Result<DiffHeader> {
+    fn diff_header(&mut self) -> ThinResult<DiffHeader> {
+        log::trace!("Parser::diff_header\n{:?}", self);
         let diff_header_start = self.cursor;
         let mut diff_type = Status::Modified;
 
@@ -207,7 +294,7 @@ impl<'a> Parser<'a> {
             return Ok(unmerged);
         }
 
-        let (old_file, new_file, is_conflicted) = self
+        let (mut old_file, mut new_file, is_conflicted) = self
             .conflicted_file()
             .or_else(|_| self.old_new_file_header())?;
 
@@ -254,17 +341,17 @@ impl<'a> Parser<'a> {
 
         if self.peek("index") {
             self.consume("index ")?;
-            self.consume_until(Self::newline)?;
+            self.consume_until(Self::newline_or_eof)?;
         }
 
         if self.peek("Binary files ") {
-            self.consume_until(Self::newline)?;
+            self.consume_until(Self::newline_or_eof)?;
         }
 
-        if self.peek("---") {
-            self.consume_until(Self::newline)?;
-            self.consume("+++")?;
-            self.consume_until(Self::newline)?;
+        if self.consume("--- ").is_ok() {
+            old_file = self.diff_header_path(Self::newline_or_eof)?;
+            self.consume("+++ ")?;
+            new_file = self.diff_header_path(Self::newline_or_eof)?;
         }
 
         Ok(DiffHeader {
@@ -275,9 +362,10 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn unmerged_file(&mut self) -> Result<DiffHeader> {
+    fn unmerged_file(&mut self) -> ThinResult<DiffHeader> {
+        log::trace!("Parser::unmerged_file\n{:?}", self);
         let unmerged_path_prefix = self.consume("* Unmerged path ")?;
-        let (file, _) = self.consume_until(Self::newline_or_eof)?;
+        let file = self.diff_header_path(Self::newline_or_eof)?;
 
         Ok(DiffHeader {
             range: unmerged_path_prefix.start..self.cursor,
@@ -287,29 +375,102 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn old_new_file_header(&mut self) -> Result<(Range<usize>, Range<usize>, bool)> {
-        self.consume("diff --git")?;
-        self.diff_header_path_prefix()?;
-        let (old_path, _) = self.consume_until(Self::diff_header_path_prefix)?;
-        let (new_path, _) = self.consume_until(Self::newline)?;
+    fn old_new_file_header(&mut self) -> ThinResult<(FilePath, FilePath, bool)> {
+        log::trace!("Parser::old_new_file_header\n{:?}", self);
+        self.consume("diff --git ")?;
+        let old_path = self.diff_header_path(Self::ascii_whitespace)?;
+        let new_path = self.diff_header_path(Self::newline_or_eof)?;
 
         Ok((old_path, new_path, false))
     }
 
-    fn diff_header_path_prefix(&mut self) -> Result<Range<usize>> {
+    fn diff_header_path(&mut self, end: ParseFn<'a, Range<usize>>) -> ThinResult<FilePath> {
+        log::trace!("Parser::diff_header_path\n{:?}", self);
+        if self.consume("\"").ok().is_some() {
+            self.diff_header_path_prefix().ok();
+            let quoted = self.quoted()?;
+            self.ascii_whitespace().ok();
+            Ok(FilePath {
+                range: quoted,
+                is_quoted: true,
+            })
+        } else {
+            self.diff_header_path_prefix().ok();
+            let (consumed, _) = self.consume_until(end)?;
+            Ok(FilePath {
+                range: consumed,
+                is_quoted: false,
+            })
+        }
+    }
+
+    fn quoted(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::quoted\n{:?}", self);
         let start = self.cursor;
-        self.consume(" ")
-            .and_then(|_| self.ascii_lowercase())
+
+        while !self.peek("\"") {
+            if self.peek("\\") {
+                self.escaped()?;
+            } else {
+                self.cursor += 1
+            }
+        }
+
+        let range = start..self.cursor;
+        self.consume("\"")?;
+        Ok(range)
+    }
+
+    fn escaped(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::escaped\n{:?}", self);
+        let start = self.cursor;
+
+        self.consume("\\")?;
+        match self.input.get(self.cursor..self.cursor + 1) {
+            Some("a" | "b" | "e" | "E" | "f" | "n" | "r" | "t" | "v" | "\'" | "\"" | "\\") => {
+                self.cursor += 1;
+            }
+            Some("0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9") => {
+                self.cursor += 1;
+                for _ in 0..2 {
+                    if !matches!(
+                        self.input.get(self.cursor..self.cursor + 1),
+                        Some("0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9")
+                    ) {
+                        break;
+                    }
+
+                    self.cursor += 1;
+                }
+            }
+            _ => {
+                self.cursor = start;
+                return Err(array_vec![ThinParseError {
+                    expected: "<escaped char>",
+                }]);
+            }
+        }
+
+        Ok(start..self.cursor)
+    }
+
+    fn diff_header_path_prefix(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::diff_header_path_prefix\n{:?}", self);
+        let start = self.cursor;
+        self.ascii_lowercase()
             .and_then(|_| self.consume("/"))
-            .map_err(|_| ParseError::Expected {
-                cursor: self.cursor,
-                expected: "<diff header path prefix (' a/...' or ' b/...')>",
+            .map_err(|_| {
+                self.cursor = start;
+                array_vec![ThinParseError {
+                    expected: "<diff header path prefix (' a/...' or ' b/...')>",
+                }]
             })?;
 
         Ok(start..self.cursor)
     }
 
-    fn ascii_lowercase(&mut self) -> Result<Range<usize>> {
+    fn ascii_lowercase(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::ascii_lowercase\n{:?}", self);
         let start = self.cursor;
         let is_ascii_lowercase = self
             .input
@@ -321,23 +482,34 @@ impl<'a> Parser<'a> {
             self.cursor += 1;
             Ok(start..self.cursor)
         } else {
-            Err(ParseError::Expected {
-                cursor: self.cursor,
+            Err(array_vec![ThinParseError {
                 expected: "<ascii lowercase char>",
-            })
+            }])
         }
     }
 
-    fn conflicted_file(&mut self) -> Result<(Range<usize>, Range<usize>, bool)> {
+    fn conflicted_file(&mut self) -> ThinResult<(FilePath, FilePath, bool)> {
+        log::trace!("Parser::conflicted_file\n{:?}", self);
         self.consume("diff --cc ")?;
-        let (file, _) = self.consume_until(Self::newline_or_eof)?;
+        let file = self.diff_header_path(Self::newline_or_eof)?;
         Ok((file.clone(), file, true))
     }
 
-    fn hunk(&mut self) -> Result<Hunk> {
+    fn hunk(&mut self) -> ThinResult<Hunk> {
+        log::trace!("Parser::hunk\n{:?}", self);
         let hunk_start = self.cursor;
-        let header = self.hunk_header()?;
-        let content = self.hunk_content()?;
+        let header = self.hunk_header().map_err(|mut err| {
+            err.try_push(ThinParseError {
+                expected: "<hunk header>",
+            });
+            err
+        })?;
+        let content = self.hunk_content().map_err(|mut err| {
+            err.try_push(ThinParseError {
+                expected: "<hunk content>",
+            });
+            err
+        })?;
 
         Ok(Hunk {
             range: hunk_start..self.cursor,
@@ -346,7 +518,8 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn hunk_content(&mut self) -> Result<HunkContent> {
+    fn hunk_content(&mut self) -> ThinResult<HunkContent> {
+        log::trace!("Parser::hunk_content\n{:?}", self);
         let hunk_content_start = self.cursor;
         let mut changes = vec![];
 
@@ -366,7 +539,8 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn hunk_header(&mut self) -> Result<HunkHeader> {
+    fn hunk_header(&mut self) -> ThinResult<HunkHeader> {
+        log::trace!("Parser::hunk_header\n{:?}", self);
         let hunk_header_start = self.cursor;
 
         self.consume("@@ -")?;
@@ -386,7 +560,7 @@ impl<'a> Parser<'a> {
         self.consume(" @@")?;
         self.consume(" ").ok();
 
-        let (fn_ctx, newline) = self.consume_until(Self::newline)?;
+        let (fn_ctx, newline) = self.consume_until(Self::newline_or_eof)?;
 
         Ok(HunkHeader {
             range: hunk_header_start..self.cursor,
@@ -398,7 +572,8 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn change(&mut self) -> Result<Change> {
+    fn change(&mut self) -> ThinResult<Change> {
+        log::trace!("Parser::change\n{:?}", self);
         let removed = self.consume_lines_while_prefixed(|parser| parser.peek("-"))?;
         let removed_meta = self.consume_lines_while_prefixed(|parser| parser.peek("\\"))?;
         let added = self.consume_lines_while_prefixed(|parser| parser.peek("+"))?;
@@ -410,7 +585,11 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn consume_lines_while_prefixed(&mut self, pred: fn(&Parser) -> bool) -> Result<Range<usize>> {
+    fn consume_lines_while_prefixed(
+        &mut self,
+        pred: fn(&Parser) -> bool,
+    ) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::consume_lines_while_prefixed\n{:?}", self);
         let start = self.cursor;
         while self.cursor < self.input.len() && pred(self) {
             self.consume_until(Self::newline_or_eof)?;
@@ -419,7 +598,8 @@ impl<'a> Parser<'a> {
         Ok(start..self.cursor)
     }
 
-    fn number(&mut self) -> Result<u32> {
+    fn number(&mut self) -> ThinResult<u32> {
+        log::trace!("Parser::number\n{:?}", self);
         let digit_count = &self
             .input
             .get(self.cursor..)
@@ -427,50 +607,63 @@ impl<'a> Parser<'a> {
             .unwrap_or(0);
 
         if digit_count == &0 {
-            return Err(ParseError::Expected {
-                cursor: self.cursor,
+            return Err(array_vec![ThinParseError {
                 expected: "<number>",
-            });
+            }]);
         }
 
         self.cursor += digit_count;
         Ok(self
             .input
             .get(self.cursor - digit_count..self.cursor)
-            .ok_or(ParseError::Expected {
-                cursor: self.cursor,
+            .ok_or(array_vec![ThinParseError {
                 expected: "<number>",
-            })?
+            }])?
             .parse()
             .unwrap())
     }
 
-    fn newline_or_eof(&mut self) -> Result<Range<usize>> {
-        self.newline()
-            .or_else(|_| self.eof())
-            .map_err(|_| ParseError::Expected {
-                cursor: self.cursor,
+    fn newline_or_eof(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::newline_or_eof\n{:?}", self);
+        self.newline().or_else(|_| self.eof()).map_err(|_| {
+            array_vec![ThinParseError {
                 expected: "<newline or eof>",
-            })
+            }]
+        })
     }
 
-    fn newline(&mut self) -> Result<Range<usize>> {
+    fn newline(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::newline\n{:?}", self);
         self.consume("\r\n")
             .or_else(|_| self.consume("\n"))
-            .map_err(|_| ParseError::Expected {
-                cursor: self.cursor,
-                expected: "<newline>",
+            .map_err(|_| {
+                array_vec![ThinParseError {
+                    expected: "<newline>",
+                }]
             })
     }
 
-    fn eof(&mut self) -> Result<Range<usize>> {
+    fn ascii_whitespace(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::ascii_whitespace\n{:?}", self);
+        self.consume(" ")
+            .or_else(|_| self.consume("\t"))
+            .or_else(|_| self.consume("\n"))
+            .or_else(|_| self.consume("\r\n"))
+            .or_else(|_| self.consume("\r"))
+            .or_else(|_| self.consume("\x0C"))
+            .map_err(|_| {
+                array_vec![ThinParseError {
+                    expected: "<ascii whitespace>",
+                }]
+            })
+    }
+
+    fn eof(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::eof\n{:?}", self);
         if self.cursor == self.input.len() {
             Ok(self.cursor..self.cursor)
         } else {
-            Err(ParseError::Expected {
-                cursor: self.cursor,
-                expected: "<eof>",
-            })
+            Err(array_vec![ThinParseError { expected: "<eof>" }])
         }
     }
 
@@ -479,10 +672,16 @@ impl<'a> Parser<'a> {
     /// Returns a tuple of the bytes scanned up until the match, and the match itself.
     fn consume_until<T: ParsedRange>(
         &mut self,
-        parse_fn: fn(&mut Parser<'a>) -> Result<T>,
-    ) -> Result<(Range<usize>, T)> {
+        parse_fn: fn(&mut Parser<'a>) -> ThinResult<T>,
+    ) -> ThinResult<(Range<usize>, T)> {
+        log::trace!("Parser::consume_until\n{:?}", self);
         let start = self.cursor;
-        let found = self.find(parse_fn)?;
+        let found = self.find(parse_fn).map_err(|mut err| {
+            err.try_push(ThinParseError {
+                expected: "to consume the match",
+            });
+            err
+        })?;
         self.cursor = found.range().end;
         Ok((start..found.range().start, found))
     }
@@ -490,7 +689,8 @@ impl<'a> Parser<'a> {
     /// Scans through the input byte-by-byte
     /// until the provided parse_fn will succeed, or the input has been exhausted.
     /// Returning the match. Does not step the parser.
-    fn find<T: ParsedRange>(&self, parse_fn: ParseFn<'a, T>) -> Result<T> {
+    fn find<T: ParsedRange>(&self, parse_fn: ParseFn<'a, T>) -> ThinResult<T> {
+        log::trace!("Parser::find\n{:?}", self);
         let mut sub_parser = self.clone();
         let mut error = None;
 
@@ -507,31 +707,21 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Err(ParseError::NotFound {
-            cursor: self.cursor,
-            expected: match error.unwrap() {
-                ParseError::Expected {
-                    cursor: _,
-                    expected,
-                } => expected,
-                ParseError::NotFound {
-                    cursor: _,
-                    expected,
-                } => expected,
-            },
-        })
+        let mut errors = error.unwrap();
+        errors.try_push(ThinParseError {
+            expected: "to find a match",
+        });
+
+        Err(errors)
     }
 
     /// Consumes `expected` from the input and moves the cursor past it.
     /// Returns an error if `expected` was not found at the cursor.
-    fn consume(&mut self, expected: &'static str) -> Result<Range<usize>> {
+    fn consume(&mut self, expected: &'static str) -> ThinResult<Range<usize>> {
         let start = self.cursor;
 
         if !self.peek(expected) {
-            return Err(ParseError::Expected {
-                cursor: self.cursor,
-                expected,
-            });
+            return Err(array_vec![ThinParseError { expected }]);
         }
 
         self.cursor += expected.len();
@@ -571,10 +761,10 @@ mod tests {
         assert_eq!(diffs.len(), 1, "Expected one diff block");
 
         let diff = &diffs[0];
-        let old_file_str = &input[diff.header.old_file.clone()];
+        let old_file_str = diff.header.old_file.fmt(input);
         assert_eq!(old_file_str, "file1.txt", "Old file does not match");
 
-        let new_file_str = &input[diff.header.new_file.clone()];
+        let new_file_str = diff.header.new_file.fmt(input);
         assert_eq!(new_file_str, "file2.txt", "New file does not match");
 
         assert_eq!(diff.hunks.len(), 1, "Expected one hunk");
@@ -621,11 +811,11 @@ mod tests {
         assert_eq!(diffs.len(), 2, "Expected two diff blocks");
 
         let diff1 = &diffs[0];
-        let old_file1 = &input[diff1.header.old_file.clone()];
+        let old_file1 = &input[diff1.header.old_file.range.clone()];
         assert_eq!(old_file1, "file1.txt", "First diff old file mismatch");
 
         let diff2 = &diffs[1];
-        let old_file2 = &input[diff2.header.old_file.clone()];
+        let old_file2 = &input[diff2.header.old_file.range.clone()];
         assert_eq!(old_file2, "file2.txt", "Second diff old file mismatch");
     }
 
@@ -642,7 +832,7 @@ mod tests {
         let diffs = parser.parse_diff().unwrap();
         assert_eq!(diffs.len(), 1, "Expected one diff block for CRLF input");
         let diff = &diffs[0];
-        let old_file = &input[diff.header.old_file.clone()];
+        let old_file = &input[diff.header.old_file.range.clone()];
         assert_eq!(
             old_file, "file.txt",
             "Old file does not match in CRLF input"
@@ -720,9 +910,9 @@ mod tests {
         let diffs = parser.parse_diff().unwrap();
         assert_eq!(diffs.len(), 1, "Expected one diff block for new file test");
         let diff = &diffs[0];
-        let old_file_str = &input[diff.header.old_file.clone()];
-        assert_eq!(old_file_str, "file.txt",);
-        let new_file_str = &input[diff.header.new_file.clone()];
+        let old_file_str = diff.header.old_file.fmt(input);
+        assert_eq!(old_file_str, "/dev/null",);
+        let new_file_str = diff.header.new_file.fmt(input);
         assert_eq!(new_file_str, "file.txt",);
     }
 
@@ -799,11 +989,11 @@ mod tests {
         let mut parser = Parser::new(input);
         let diffs = parser.parse_diff().unwrap();
         assert_eq!(
-            &input[diffs[0].header.old_file.clone()],
+            &input[diffs[0].header.old_file.range.clone()],
             ".recent-changelog-entry"
         );
         assert_eq!(
-            &input[diffs[0].header.new_file.clone()],
+            &input[diffs[0].header.new_file.range.clone()],
             ".recent-changelog-entry"
         );
         assert_eq!(diffs[0].header.status, Status::Modified);
@@ -839,8 +1029,8 @@ mod tests {
         let diffs = parser.parse_diff().unwrap();
         assert_eq!(diffs.len(), 1);
         assert_eq!(diffs[0].header.status, Status::Unmerged);
-        assert_eq!(&input[diffs[0].header.old_file.clone()], "new-file");
-        assert_eq!(&input[diffs[0].header.new_file.clone()], "new-file");
+        assert_eq!(&input[diffs[0].header.old_file.range.clone()], "new-file");
+        assert_eq!(&input[diffs[0].header.new_file.range.clone()], "new-file");
     }
 
     #[test]
@@ -851,12 +1041,12 @@ mod tests {
 
         assert_eq!(diff.len(), 2);
         assert_eq!(diff[0].header.status, Status::Unmerged);
-        assert_eq!(&input[diff[0].header.old_file.clone()], "new-file");
-        assert_eq!(&input[diff[0].header.new_file.clone()], "new-file");
+        assert_eq!(&input[diff[0].header.old_file.range.clone()], "new-file");
+        assert_eq!(&input[diff[0].header.new_file.range.clone()], "new-file");
         assert!(diff[0].hunks.is_empty());
         assert_eq!(diff[1].header.status, Status::Unmerged);
-        assert_eq!(&input[diff[1].header.old_file.clone()], "new-file-2");
-        assert_eq!(&input[diff[1].header.new_file.clone()], "new-file-2");
+        assert_eq!(&input[diff[1].header.old_file.range.clone()], "new-file-2");
+        assert_eq!(&input[diff[1].header.new_file.range.clone()], "new-file-2");
         assert!(diff[1].hunks.is_empty());
     }
 
@@ -880,11 +1070,36 @@ mod tests {
 
     #[test]
     fn filenames_with_spaces() {
-        let input = "diff --git a/file one.txt b/file two.txt\nindex 5626abf..f719efd 100644\n--- a/file one.txt	\n+++ b/file two.txt	\n@@ -1 +1 @@\n-one\n+two\n";
+        // This case is ambiguous, normally if there's ---/+++ headers, we can use that.
+        let input = "\
+            diff --git a/file one.txt b/file two.txt\n\
+            index 5626abf..f719efd 100644\n\
+            @@ -1 +1 @@\n\
+            -one\n\
+            +two\n\
+            ";
         let mut parser = Parser::new(input);
-        let diffs = parser.parse_diff().unwrap();
-        assert_eq!(&input[diffs[0].header.old_file.clone()], "file one.txt");
-        assert_eq!(&input[diffs[0].header.new_file.clone()], "file two.txt");
+        let diff = parser.parse_diff().unwrap();
+        assert_eq!(diff[0].header.old_file.fmt(input), "file");
+        assert_eq!(diff[0].header.new_file.fmt(input), "one.txt b/file two.txt");
+    }
+
+    #[test]
+    fn utilizes_other_old_new_header_when_ambiguous() {
+        let input = "\
+            diff --git a/file one.txt b/file two.txt\n\
+            index 5626abf..f719efd 100644\n\
+            --- a/file one.txt\n\
+            +++ b/file two.txt\n\
+            @@ -1 +1 @@\n\
+            -one\n\
+            +two\n\
+            ";
+
+        let mut parser = Parser::new(input);
+        let diff = parser.parse_diff().unwrap();
+        assert_eq!(diff[0].header.old_file.fmt(input), "file one.txt");
+        assert_eq!(diff[0].header.new_file.fmt(input), "file two.txt");
     }
 
     #[test]
@@ -895,8 +1110,14 @@ mod tests {
         let diffs = parser.parse_diff().unwrap();
         assert_eq!(diffs.len(), 3);
         assert_eq!(diffs[2].header.status, Status::Unmerged);
-        assert_eq!(&input[diffs[2].header.old_file.clone()], "src/ops/show.rs");
-        assert_eq!(&input[diffs[2].header.new_file.clone()], "src/ops/show.rs");
+        assert_eq!(
+            &input[diffs[2].header.old_file.range.clone()],
+            "src/ops/show.rs"
+        );
+        assert_eq!(
+            &input[diffs[2].header.new_file.range.clone()],
+            "src/ops/show.rs"
+        );
     }
 
     #[test]
@@ -913,10 +1134,84 @@ mod tests {
         assert_eq!(diffs.len(), 1, "Expected one diff block");
 
         let diff = &diffs[0];
-        let old_file_str = &input[diff.header.old_file.clone()];
+        let old_file_str = diff.header.old_file.fmt(input);
         assert_eq!(old_file_str, "file1.txt", "Old file does not match");
 
-        let new_file_str = &input[diff.header.new_file.clone()];
+        let new_file_str = diff.header.new_file.fmt(input);
         assert_eq!(new_file_str, "file2.txt", "New file does not match");
+    }
+
+    #[test]
+    fn parse_quoted_filenames() {
+        let input = "\
+            diff --git \"a/\\303\\266\" \"b/\\303\\266\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\\"\" \"b/\\\\\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\'\" \"b/\\v\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\t\" \"b/\\r\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\n\" \"b/\\f\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\E\" \"b/\\e\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\e\" \"b/\\b\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/\\a\" \"b/\\a\"\n\
+            new file mode 100644\n\
+            index 0000000..e69de29";
+
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 8);
+        assert_eq!(diffs[0].header.old_file.fmt(input), "ö", "Old file");
+        assert_eq!(diffs[0].header.new_file.fmt(input), "ö", "New file");
+        assert_eq!(diffs[1].header.old_file.fmt(input), "\"", "Old file");
+        assert_eq!(diffs[1].header.new_file.fmt(input), "\\", "New file");
+        assert_eq!(diffs[2].header.old_file.fmt(input), "'", "Old file");
+        assert_eq!(diffs[2].header.new_file.fmt(input), "\u{b}", "New file");
+        assert_eq!(diffs[3].header.old_file.fmt(input), "\t", "Old file");
+        assert_eq!(diffs[3].header.new_file.fmt(input), "\r", "New file");
+        assert_eq!(diffs[4].header.old_file.fmt(input), "\n", "Old file");
+        assert_eq!(diffs[4].header.new_file.fmt(input), "\u{c}", "New file");
+    }
+
+    #[test]
+    fn errors_when_bad_escaped_char() {
+        let input = "\
+            diff --git \"a/\\y\" \"b/\\y\"\n\
+            new file mode 100644\n\
+        ";
+
+        let mut parser = Parser::new(input);
+        assert!(parser.parse_diff().is_err());
+    }
+
+    #[test]
+    fn parse_header_noprefix() {
+        let input = "\
+            diff --git Cargo.lock Cargo.lock\n\
+            index 1f88e5a..3b8ea64 100644\n\
+            --- Cargo.lock\n\
+            +++ Cargo.lock";
+
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 1, "Expected one diff block");
+
+        let diff = &diffs[0];
+        let old_file_str = diff.header.old_file.fmt(input);
+        assert_eq!(old_file_str, "Cargo.lock", "Old file does not match");
+
+        let new_file_str = diff.header.new_file.fmt(input);
+        assert_eq!(new_file_str, "Cargo.lock", "New file does not match");
     }
 }
