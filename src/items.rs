@@ -85,12 +85,15 @@ impl Item {
                     "{:8}   {}",
                     format!("{:?}", file_diff.header.status).to_lowercase(),
                     match file_diff.header.status {
-                        Status::Renamed => format!(
+                        Status::Renamed | Status::Copied => format!(
                             "{} -> {}",
                             &file_diff.header.old_file.fmt(&diff.text),
                             &file_diff.header.new_file.fmt(&diff.text)
                         ),
-                        _ => file_diff.header.new_file.fmt(&diff.text).to_string(),
+                        Status::Deleted => file_diff.header.old_file.fmt(&diff.text).to_string(),
+                        Status::Added => file_diff.header.new_file.fmt(&diff.text).to_string(),
+                        Status::Modified => file_diff.header.new_file.fmt(&diff.text).to_string(),
+                        Status::Unmerged => file_diff.header.new_file.fmt(&diff.text).to_string(),
                     }
                 );
 

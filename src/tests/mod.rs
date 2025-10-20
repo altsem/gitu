@@ -72,6 +72,23 @@ fn new_file() {
 }
 
 #[test]
+fn deleted_file() {
+    let ctx = TestContext::setup_init();
+    commit(ctx.dir.path(), "new-file", "testing\ntesttest\n");
+    run(ctx.dir.path(), &["rm", "new-file"]);
+    snapshot!(ctx, "");
+}
+
+#[test]
+fn copied_file() {
+    let ctx = TestContext::setup_init();
+    commit(ctx.dir.path(), "new-file", "testing\ntesttest\n");
+    run(ctx.dir.path(), &["cp", "new-file", "copied-file"]);
+    run(ctx.dir.path(), &["git", "add", "-N", "."]);
+    snapshot!(ctx, "");
+}
+
+#[test]
 fn unstaged_changes() {
     let ctx = TestContext::setup_init();
     commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
