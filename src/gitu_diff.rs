@@ -179,7 +179,7 @@ impl<'a> fmt::Debug for Parser<'a> {
             .map(|pos| line_start + pos)
             .unwrap_or(self.input.len());
         let line = &self.input[line_start..line_end];
-        f.write_fmt(format_args!("{}\n", line))?;
+        f.write_fmt(format_args!("{line}\n"))?;
         for _ in line_start..cursor {
             f.write_str(" ")?;
         }
@@ -212,7 +212,7 @@ impl<'a> Parser<'a> {
     /// assert_eq!(diff[0].header.range, 0..97);
     /// ```
     pub fn parse_diff<'b>(&'b mut self) -> Result<'b, Vec<FileDiff>> {
-        log::trace!("Parser::parse_diff\n{:?}", self);
+        log::trace!("Parser::parse_diff\n{self:?}");
         let mut diffs = vec![];
 
         if self.input.is_empty() {
@@ -237,14 +237,18 @@ impl<'a> Parser<'a> {
 
         // Allow trailing content for compatibility
         if self.cursor < self.input.len() {
-            log::warn!("Diff parsing stopped at position {} of {}, trailing content ignored", self.cursor, self.input.len());
+            log::warn!(
+                "Diff parsing stopped at position {} of {}, trailing content ignored",
+                self.cursor,
+                self.input.len()
+            );
         }
 
         Ok(diffs)
     }
 
     fn skip_until_diff_header(&mut self) -> ThinResult<()> {
-        log::trace!("Parser::skip_until_diff_header\n{:?}", self);
+        log::trace!("Parser::skip_until_diff_header\n{self:?}");
         while self.cursor < self.input.len() && !self.is_at_diff_header() {
             self.consume_until(Self::newline_or_eof)?;
         }
@@ -257,7 +261,7 @@ impl<'a> Parser<'a> {
     }
 
     fn file_diff(&mut self) -> ThinResult<FileDiff> {
-        log::trace!("Parser::file_diff\n{:?}", self);
+        log::trace!("Parser::file_diff\n{self:?}");
         let diff_start = self.cursor;
         let header = self.diff_header().map_err(|mut err| {
             err.try_push(ThinParseError {
@@ -287,7 +291,7 @@ impl<'a> Parser<'a> {
     }
 
     fn diff_header(&mut self) -> ThinResult<DiffHeader> {
-        log::trace!("Parser::diff_header\n{:?}", self);
+        log::trace!("Parser::diff_header\n{self:?}");
         let diff_header_start = self.cursor;
         let mut diff_type = Status::Modified;
 
@@ -364,7 +368,7 @@ impl<'a> Parser<'a> {
     }
 
     fn unmerged_file(&mut self) -> ThinResult<DiffHeader> {
-        log::trace!("Parser::unmerged_file\n{:?}", self);
+        log::trace!("Parser::unmerged_file\n{self:?}");
         let unmerged_path_prefix = self.consume("* Unmerged path ")?;
         let file = self.diff_header_path(Self::newline_or_eof)?;
 
@@ -377,7 +381,7 @@ impl<'a> Parser<'a> {
     }
 
     fn old_new_file_header(&mut self) -> ThinResult<(FilePath, FilePath, bool)> {
-        log::trace!("Parser::old_new_file_header\n{:?}", self);
+        log::trace!("Parser::old_new_file_header\n{self:?}");
         self.consume("diff --git ")?;
         let old_path = self.diff_header_path(Self::ascii_whitespace)?;
         let new_path = self.diff_header_path(Self::newline_or_eof)?;
@@ -386,7 +390,7 @@ impl<'a> Parser<'a> {
     }
 
     fn diff_header_path(&mut self, end: ParseFn<'a, Range<usize>>) -> ThinResult<FilePath> {
-        log::trace!("Parser::diff_header_path\n{:?}", self);
+        log::trace!("Parser::diff_header_path\n{self:?}");
         if self.consume("\"").ok().is_some() {
             self.diff_header_path_prefix().ok();
             let quoted = self.quoted()?;
@@ -406,7 +410,7 @@ impl<'a> Parser<'a> {
     }
 
     fn quoted(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::quoted\n{:?}", self);
+        log::trace!("Parser::quoted\n{self:?}");
         let start = self.cursor;
 
         while !self.peek("\"") {
@@ -423,7 +427,7 @@ impl<'a> Parser<'a> {
     }
 
     fn escaped(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::escaped\n{:?}", self);
+        log::trace!("Parser::escaped\n{self:?}");
         let start = self.cursor;
 
         self.consume("\\")?;
@@ -456,7 +460,7 @@ impl<'a> Parser<'a> {
     }
 
     fn diff_header_path_prefix(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::diff_header_path_prefix\n{:?}", self);
+        log::trace!("Parser::diff_header_path_prefix\n{self:?}");
         let start = self.cursor;
         self.ascii_lowercase()
             .and_then(|_| self.consume("/"))
@@ -471,7 +475,7 @@ impl<'a> Parser<'a> {
     }
 
     fn ascii_lowercase(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::ascii_lowercase\n{:?}", self);
+        log::trace!("Parser::ascii_lowercase\n{self:?}");
         let start = self.cursor;
         let is_ascii_lowercase = self
             .input
@@ -490,14 +494,14 @@ impl<'a> Parser<'a> {
     }
 
     fn conflicted_file(&mut self) -> ThinResult<(FilePath, FilePath, bool)> {
-        log::trace!("Parser::conflicted_file\n{:?}", self);
+        log::trace!("Parser::conflicted_file\n{self:?}");
         self.consume("diff --cc ")?;
         let file = self.diff_header_path(Self::newline_or_eof)?;
         Ok((file.clone(), file, true))
     }
 
     fn hunk(&mut self) -> ThinResult<Hunk> {
-        log::trace!("Parser::hunk\n{:?}", self);
+        log::trace!("Parser::hunk\n{self:?}");
         let hunk_start = self.cursor;
         let header = self.hunk_header().map_err(|mut err| {
             err.try_push(ThinParseError {
@@ -520,7 +524,7 @@ impl<'a> Parser<'a> {
     }
 
     fn hunk_content(&mut self) -> ThinResult<HunkContent> {
-        log::trace!("Parser::hunk_content\n{:?}", self);
+        log::trace!("Parser::hunk_content\n{self:?}");
         let hunk_content_start = self.cursor;
         let mut changes = vec![];
 
@@ -541,7 +545,7 @@ impl<'a> Parser<'a> {
     }
 
     fn hunk_header(&mut self) -> ThinResult<HunkHeader> {
-        log::trace!("Parser::hunk_header\n{:?}", self);
+        log::trace!("Parser::hunk_header\n{self:?}");
         let hunk_header_start = self.cursor;
 
         self.consume("@@ -")?;
@@ -574,7 +578,7 @@ impl<'a> Parser<'a> {
     }
 
     fn change(&mut self) -> ThinResult<Change> {
-        log::trace!("Parser::change\n{:?}", self);
+        log::trace!("Parser::change\n{self:?}");
         let removed = self.consume_lines_while_prefixed(|parser| parser.peek("-"))?;
         let removed_meta = self.consume_lines_while_prefixed(|parser| parser.peek("\\"))?;
         let added = self.consume_lines_while_prefixed(|parser| parser.peek("+"))?;
@@ -590,7 +594,7 @@ impl<'a> Parser<'a> {
         &mut self,
         pred: fn(&Parser) -> bool,
     ) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::consume_lines_while_prefixed\n{:?}", self);
+        log::trace!("Parser::consume_lines_while_prefixed\n{self:?}");
         let start = self.cursor;
         while self.cursor < self.input.len() && pred(self) {
             self.consume_until(Self::newline_or_eof)?;
@@ -600,7 +604,7 @@ impl<'a> Parser<'a> {
     }
 
     fn number(&mut self) -> ThinResult<u32> {
-        log::trace!("Parser::number\n{:?}", self);
+        log::trace!("Parser::number\n{self:?}");
         let digit_count = &self
             .input
             .get(self.cursor..)
@@ -625,7 +629,7 @@ impl<'a> Parser<'a> {
     }
 
     fn newline_or_eof(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::newline_or_eof\n{:?}", self);
+        log::trace!("Parser::newline_or_eof\n{self:?}");
         self.newline().or_else(|_| self.eof()).map_err(|_| {
             array_vec![ThinParseError {
                 expected: "<newline or eof>",
@@ -634,7 +638,7 @@ impl<'a> Parser<'a> {
     }
 
     fn newline(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::newline\n{:?}", self);
+        log::trace!("Parser::newline\n{self:?}");
         self.consume("\r\n")
             .or_else(|_| self.consume("\n"))
             .map_err(|_| {
@@ -645,7 +649,7 @@ impl<'a> Parser<'a> {
     }
 
     fn ascii_whitespace(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::ascii_whitespace\n{:?}", self);
+        log::trace!("Parser::ascii_whitespace\n{self:?}");
         self.consume(" ")
             .or_else(|_| self.consume("\t"))
             .or_else(|_| self.consume("\n"))
@@ -660,7 +664,7 @@ impl<'a> Parser<'a> {
     }
 
     fn eof(&mut self) -> ThinResult<Range<usize>> {
-        log::trace!("Parser::eof\n{:?}", self);
+        log::trace!("Parser::eof\n{self:?}");
         if self.cursor == self.input.len() {
             Ok(self.cursor..self.cursor)
         } else {
@@ -675,7 +679,7 @@ impl<'a> Parser<'a> {
         &mut self,
         parse_fn: fn(&mut Parser<'a>) -> ThinResult<T>,
     ) -> ThinResult<(Range<usize>, T)> {
-        log::trace!("Parser::consume_until\n{:?}", self);
+        log::trace!("Parser::consume_until\n{self:?}");
         let start = self.cursor;
         let found = self.find(parse_fn).map_err(|mut err| {
             err.try_push(ThinParseError {
@@ -691,7 +695,7 @@ impl<'a> Parser<'a> {
     /// until the provided parse_fn will succeed, or the input has been exhausted.
     /// Returning the match. Does not step the parser.
     fn find<T: ParsedRange>(&self, parse_fn: ParseFn<'a, T>) -> ThinResult<T> {
-        log::trace!("Parser::find\n{:?}", self);
+        log::trace!("Parser::find\n{self:?}");
         let mut sub_parser = self.clone();
         let mut error = None;
 

@@ -65,8 +65,8 @@ impl Display for Error {
                 git2::ErrorCode::NotFound => f.write_str("No .git found in the current directory"),
                 _ => f.write_fmt(format_args!("Couldn't open repo: {e:?}")),
             },
-            Error::FindGitDir(e) => f.write_fmt(format_args!("Couldn't find git directory: {}", e)),
-            Error::Term(e) => f.write_fmt(format_args!("Terminal error: {}", e)),
+            Error::FindGitDir(e) => f.write_fmt(format_args!("Couldn't find git directory: {e}")),
+            Error::Term(e) => f.write_fmt(format_args!("Terminal error: {e}")),
             Error::GitDirUtf8(_e) => f.write_str("Git directory not valid UTF-8"),
             Error::Config(e) => f.write_fmt(format_args!("Configuration error: {e}")),
             Error::Bindings { bad_key_bindings } => {

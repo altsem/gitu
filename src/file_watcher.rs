@@ -20,7 +20,7 @@ impl FileWatcher {
 
         std::thread::spawn(move || {
             if let Err(e) = watch(&repo_dir_clone, pending_updates_w) {
-                log::error!("File watcher error: {:?}", e)
+                log::error!("File watcher error: {e:?}")
             }
         });
 
