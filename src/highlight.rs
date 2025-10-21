@@ -8,6 +8,8 @@ use crate::syntax_parser::SyntaxTag;
 use cached::{SizedCache, proc_macro::cached};
 use itertools::Itertools;
 use ratatui::style::Style;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::iter;
 use std::iter::Peekable;
 use std::ops::Range;
@@ -18,7 +20,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 #[cached(
     ty = "SizedCache<u64, Arc<HunkHighlights>>",
-    create = "{ SizedCache::with_size(200) }",
+    create = "{ SizedCache::with_size(500) }",
     convert = r#"{ _hunk_hash }"#
 )]
 pub(crate) fn highlight_hunk(
@@ -204,19 +206,35 @@ pub(crate) fn iter_diff_context_highlights<'a>(
     .peekable()
 }
 
+#[cached(
+    ty = "SizedCache<u64, Vec<(Range<usize>, SyntaxTag)>>",
+    create = "{ SizedCache::with_size(100) }",
+    convert = r#"{ {
+        let mut hasher = DefaultHasher::new();
+        path.hash(&mut hasher);
+        content.hash(&mut hasher);
+        hasher.finish()
+    } }"#
+)]
+fn cached_syntax_parse(path: &str, content: &str) -> Vec<(Range<usize>, SyntaxTag)> {
+    syntax_parser::parse(Path::new(path), content)
+}
+
 pub(crate) fn iter_syntax_highlights<'a>(
     config: &'a SyntaxHighlightConfig,
     path: &'a str,
     content: String,
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
-    fill_gaps(
-        0..content.len(),
-        syntax_parser::parse(Path::new(path), &content)
+    let highlights = if !config.enabled || content.len() > 100_000 {
+        vec![]
+    } else {
+        cached_syntax_parse(path, &content)
             .into_iter()
-            .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag))),
-        Style::new(),
-    )
-    .peekable()
+            .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag)))
+            .collect::<Vec<_>>()
+    };
+
+    fill_gaps(0..content.len(), highlights.into_iter(), Style::new()).peekable()
 }
 
 pub(crate) fn fill_gaps<T: Clone + Default>(

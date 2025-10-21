@@ -283,7 +283,7 @@ thread_local! {
     pub static LANG_CONFIGS: RefCell<HashMap<Lang, HighlightConfiguration>> = RefCell::new(HashMap::new());
 }
 
-pub(crate) fn parse<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usize>, SyntaxTag)> {
+pub fn parse<'a>(path: &'a Path, content: &'a str) -> Vec<(Range<usize>, SyntaxTag)> {
     let tags = tags_by_highlight_index();
 
     let Some(lang) = determine_lang(path) else {

@@ -438,9 +438,18 @@ impl App {
     }
 
     /// Runs a `Command` asynchronously with a spinner in the command log.
-    pub fn run_cmd_with_spinner(&mut self, term: &mut Term, input: &[u8], cmd: Command, operation: &str) -> Res<()> {
+    pub fn run_cmd_with_spinner(
+        &mut self,
+        term: &mut Term,
+        input: &[u8],
+        cmd: Command,
+        operation: &str,
+    ) -> Res<()> {
         self.state.current_operation = Some(operation.to_string());
-        self.state.ongoing_operations.insert(operation.to_string(), OperationStatus::InProgress { spinner_frame: 0 });
+        self.state.ongoing_operations.insert(
+            operation.to_string(),
+            OperationStatus::InProgress { spinner_frame: 0 },
+        );
         self.run_cmd_async(term, input, cmd)
     }
 
@@ -474,7 +483,9 @@ impl App {
 
         self.state.pending_cmd = None;
         if let Some(op) = &self.state.current_operation {
-            self.state.ongoing_operations.insert(op.clone(), OperationStatus::Completed { result: output });
+            self.state
+                .ongoing_operations
+                .insert(op.clone(), OperationStatus::Completed { result: output });
             self.state.current_operation = None;
         }
         self.update_screens()?;

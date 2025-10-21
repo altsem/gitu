@@ -10,6 +10,10 @@ repository = "https://github.com/altsem/gitu"
 name = "show"
 harness = false
 
+[[bench]]
+name = "highlight"
+harness = false
+
 [dev-dependencies]
 pretty_assertions = "1.4.1"
 temp-dir = "0.1.16"
