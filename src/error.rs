@@ -41,6 +41,7 @@ pub enum Error {
     FindGitRev(git2::Error),
     NoEditorSet,
     GitStatus(git2::Error),
+    GitRebaseStatus(git2::Error),
     CmdAlreadyRunning,
     StashWorkTreeEmpty,
     CouldntAwaitCmd(io::Error),
@@ -126,6 +127,7 @@ impl Display for Error {
                 crate::ops::show::EDITOR_VARS.join(", ")
             )),
             Error::GitStatus(e) => f.write_fmt(format_args!("Git status error: {e}")),
+            Error::GitRebaseStatus(e) => f.write_fmt(format_args!("Git rebase status error: {e}")),
             Error::CmdAlreadyRunning => f.write_str("A command is already running"),
             Error::StashWorkTreeEmpty => f.write_str("Cannot stash: working tree is empty"),
             Error::CouldntAwaitCmd(e) => f.write_fmt(format_args!("Couldn't await command: {e}")),
