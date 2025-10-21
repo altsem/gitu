@@ -1,5 +1,5 @@
 use diff::Diff;
-use git2::{Branch, Repository};
+use git2::{Branch, DiffFormat, Repository};
 use itertools::Itertools;
 use remote::get_branch_upstream;
 
@@ -124,37 +124,65 @@ fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
 }
 
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--no-ext-diff"])
-            .output()
-            .map_err(Error::GitDiff)?
-            .stdout,
-    )
-    .map_err(Error::GitDiffUtf8)?;
+    let diff = repo
+        .diff_index_to_workdir(None, None)
+        .map_err(Error::GitDiff)?;
 
-    Ok(Diff {
-        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
-        text,
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        let prefix: &[u8] = match line.origin() {
+            ' ' => b" ",
+            '+' => b"+",
+            '-' => b"-",
+            _ => b"",
+        };
+        text.extend_from_slice(prefix);
+        text.extend_from_slice(line.content());
+        true
     })
+    .map_err(Error::GitDiff)?;
+
+    let mut text = String::from_utf8(text).map_err(Error::GitDiffUtf8)?;
+    if !text.ends_with('\n') {
+        text.push('\n');
+    }
+
+    let file_diffs = gitu_diff::Parser::new(&text).parse_diff().unwrap();
+
+    Ok(Diff { file_diffs, text })
 }
 
 pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--no-ext-diff", "--staged"])
-            .output()
-            .map_err(Error::GitDiff)?
-            .stdout,
-    )
-    .map_err(Error::GitDiffUtf8)?;
+    let head_tree = match repo.head() {
+        Ok(head) => Some(head.peel_to_tree().map_err(Error::GitDiff)?),
+        Err(_) => None, // No HEAD yet
+    };
+    let diff = repo
+        .diff_tree_to_index(head_tree.as_ref(), None, None)
+        .map_err(Error::GitDiff)?;
 
-    Ok(Diff {
-        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
-        text,
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        let prefix: &[u8] = match line.origin() {
+            ' ' => b" ",
+            '+' => b"+",
+            '-' => b"-",
+            _ => b"",
+        };
+        text.extend_from_slice(prefix);
+        text.extend_from_slice(line.content());
+        true
     })
+    .map_err(Error::GitDiff)?;
+
+    let mut text = String::from_utf8(text).map_err(Error::GitDiffUtf8)?;
+    if !text.ends_with('\n') {
+        text.push('\n');
+    }
+
+    let file_diffs = gitu_diff::Parser::new(&text).parse_diff().unwrap();
+
+    Ok(Diff { file_diffs, text })
 }
 
 pub(crate) fn status(dir: &Path) -> Res<status::Status> {
@@ -172,15 +200,34 @@ pub(crate) fn status(dir: &Path) -> Res<status::Status> {
 }
 
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["show", reference])
-            .output()
-            .map_err(Error::GitShow)?
-            .stdout,
-    )
-    .map_err(Error::GitShowUtf8)?;
+    let obj = repo.revparse_single(reference).map_err(Error::GitShow)?;
+    let commit = obj.peel_to_commit().map_err(Error::GitShow)?;
+
+    let parent = if commit.parent_count() > 0 {
+        Some(commit.parent(0).map_err(Error::GitShow)?)
+    } else {
+        None
+    };
+
+    let diff = if let Some(parent) = parent {
+        repo.diff_tree_to_tree(
+            Some(&parent.tree().map_err(Error::GitShow)?),
+            Some(&commit.tree().map_err(Error::GitShow)?),
+            None,
+        )
+    } else {
+        repo.diff_tree_to_tree(None, Some(&commit.tree().map_err(Error::GitShow)?), None)
+    }
+    .map_err(Error::GitShow)?;
+
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        text.extend_from_slice(line.content());
+        true
+    })
+    .map_err(Error::GitShow)?;
+
+    let text = String::from_utf8(text).map_err(Error::GitShowUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -189,15 +236,28 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 }
 
 pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["stash", "show", "-p", stash_ref])
-            .output()
-            .map_err(Error::GitShow)?
-            .stdout,
-    )
-    .map_err(Error::GitShowUtf8)?;
+    use git2::DiffFormat;
+
+    let obj = repo.revparse_single(stash_ref).map_err(Error::GitShow)?;
+    let commit = obj.peel_to_commit().map_err(Error::GitShow)?;
+
+    let parent = commit.parent(0).map_err(Error::GitShow)?;
+    let diff = repo
+        .diff_tree_to_tree(
+            Some(&parent.tree().map_err(Error::GitShow)?),
+            Some(&commit.tree().map_err(Error::GitShow)?),
+            None,
+        )
+        .map_err(Error::GitShow)?;
+
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        text.extend_from_slice(line.content());
+        true
+    })
+    .map_err(Error::GitShow)?;
+
+    let text = String::from_utf8(text).map_err(Error::GitShowUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),

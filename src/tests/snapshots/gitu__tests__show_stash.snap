@@ -10,9 +10,6 @@ expression: ctx.redact_buffer()
                                                                                 |
  added      file1.txt                                                           |
 ▌@@ -0,0 +1,2 @@                                                                |
-▌+content                                                                       |
-▌+modified content                                                              |
-▌\ No newline at end of file                                                    |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 15f81f0e4dd370bc
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 4d165209b1443c22

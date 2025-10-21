@@ -4,13 +4,12 @@ expression: ctx.redact_buffer()
 ---
 ▌Merging other-branch                                                           |
                                                                                 |
- Unstaged changes (2)                                                           |
- unmerged   new-file…                                                           |
- unmerged   new-file-2…                                                         |
+ Unstaged changes (1)                                                           |
+ modified   new-file…                                                           |
                                                                                 |
  Staged changes (2)                                                             |
- unmerged   new-file…                                                           |
- unmerged   new-file-2…                                                         |
+ deleted    new-file…                                                           |
+ deleted    new-file-2…                                                         |
                                                                                 |
  Recent commits                                                                 |
  44bb4dc main modify new-file-2                                                 |
@@ -22,4 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 3dd0cab59ed8fc86
+                                                                                |
+styles_hash: 6e2a275d20dd729c

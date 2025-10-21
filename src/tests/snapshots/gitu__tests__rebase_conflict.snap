@@ -5,10 +5,10 @@ expression: ctx.redact_buffer()
 ▌Rebasing other-branch onto main                                                |
                                                                                 |
  Unstaged changes (1)                                                           |
- unmerged   new-file…                                                           |
+ modified   new-file…                                                           |
                                                                                 |
  Staged changes (1)                                                             |
- unmerged   new-file…                                                           |
+ deleted    new-file…                                                           |
                                                                                 |
  Recent commits                                                                 |
  ed5ed59 main modify new-file                                                   |

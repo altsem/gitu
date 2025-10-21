@@ -12,7 +12,6 @@ expression: ctx.redact_buffer()
                                                                                 |
  added      firstfile                                                           |
 ▌@@ -0,0 +1 @@                                                                  |
-▌+This should be visible                                                        |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 4f7a8fcd217ee770
+                                                                                |
+styles_hash: 6ed8bcdbdfe4011e

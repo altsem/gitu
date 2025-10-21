@@ -5,8 +5,11 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
+ Staged changes (1)                                                             |
+▌deleted    new-file…                                                           |
+                                                                                |
  Recent commits                                                                 |
-▌46c81ca main add new-file                                                      |
+ 46c81ca main add new-file                                                      |
  b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
@@ -16,10 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git mv --force moved-file new-file                                            |
-styles_hash: 696d0b50bd2c76de
+$ git rm --force moved-file                                                     |
+rm 'moved-file'                                                                 |
+styles_hash: fee9a367c7198e9

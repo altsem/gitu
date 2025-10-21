@@ -5,6 +5,9 @@ expression: ctx.redact_buffer()
 ▌On branch main                                                                 |
                                                                                 |
  Unstaged changes (1)                                                           |
+ modified   copied-file…                                                        |
+                                                                                |
+ Staged changes (1)                                                             |
  added      copied-file…                                                        |
                                                                                 |
  Recent commits                                                                 |
@@ -19,7 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 4060891829590a
+styles_hash: 902279ed7b7896e1
