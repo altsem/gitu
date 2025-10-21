@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::io::Read;
 use std::io::Write;
 use std::ops::DerefMut;
@@ -41,6 +42,12 @@ use crate::ui;
 
 use super::Res;
 
+#[derive(Clone)]
+pub(crate) enum OperationStatus {
+    InProgress { spinner_frame: usize },
+    Completed { result: String },
+}
+
 pub(crate) struct State {
     pub repo: Rc<Repository>,
     pub config: Rc<Config>,
@@ -55,6 +62,8 @@ pub(crate) struct State {
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
+    pub ongoing_operations: HashMap<String, OperationStatus>,
+    current_operation: Option<String>,
 }
 
 pub(crate) struct App {
@@ -106,6 +115,8 @@ impl App {
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
+                ongoing_operations: HashMap::new(),
+                current_operation: None,
             },
         };
 
@@ -169,6 +180,13 @@ impl App {
 
         let handle_pending_cmd_result = self.handle_pending_cmd();
         self.handle_result(handle_pending_cmd_result)?;
+
+        // Update spinner frames for ongoing operations
+        for status in self.state.ongoing_operations.values_mut() {
+            if let OperationStatus::InProgress { spinner_frame } = status {
+                *spinner_frame = (*spinner_frame + 1) % 4;
+            }
+        }
 
         if self.state.needs_redraw {
             self.redraw_now(term)?;
@@ -419,6 +437,13 @@ impl App {
         Ok(())
     }
 
+    /// Runs a `Command` asynchronously with a spinner in the command log.
+    pub fn run_cmd_with_spinner(&mut self, term: &mut Term, input: &[u8], cmd: Command, operation: &str) -> Res<()> {
+        self.state.current_operation = Some(operation.to_string());
+        self.state.ongoing_operations.insert(operation.to_string(), OperationStatus::InProgress { spinner_frame: 0 });
+        self.run_cmd_async(term, input, cmd)
+    }
+
     fn await_pending_cmd(&mut self) -> Res<()> {
         if let Some((child, _)) = &mut self.state.pending_cmd {
             child.wait().map_err(Error::CouldntAwaitCmd)?;
@@ -439,7 +464,19 @@ impl App {
         log::debug!("pending cmd finished with {status:?}");
 
         let result = write_child_output_to_log(log_rwlock, child, status);
+
+        // Extract output before dropping pending_cmd
+        let output = if let CmdLogEntry::Cmd { out: Some(out), .. } = &*log_rwlock.read().unwrap() {
+            out.to_string()
+        } else {
+            "".to_string()
+        };
+
         self.state.pending_cmd = None;
+        if let Some(op) = &self.state.current_operation {
+            self.state.ongoing_operations.insert(op.clone(), OperationStatus::Completed { result: output });
+            self.state.current_operation = None;
+        }
         self.update_screens()?;
         result?;
 

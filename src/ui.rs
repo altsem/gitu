@@ -29,8 +29,33 @@ impl<W: StatefulWidget> StatefulWidget for SizedWidget<W> {
 }
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let maybe_log = if !state.current_cmd_log.is_empty() {
-        let text: Text = state.current_cmd_log.format_log(&state.config);
+    let maybe_log = if !state.current_cmd_log.is_empty() || !state.ongoing_operations.is_empty() {
+        let mut text: Text = state.current_cmd_log.format_log(&state.config);
+
+        let mut extra_lines = vec![];
+        for (op, status) in &state.ongoing_operations {
+            match status {
+                crate::app::OperationStatus::InProgress { spinner_frame } => {
+                    let spinner = ["|", "/", "-", "\\"][spinner_frame % 4];
+                    extra_lines.push(Line::styled(
+                        format!("{op}ing... {spinner}"),
+                        Style::new().blue(),
+                    ));
+                }
+                crate::app::OperationStatus::Completed { result } => {
+                    extra_lines.push(Line::styled(
+                        format!("{op} completed: {result}"),
+                        Style::new().green(),
+                    ));
+                }
+            }
+        }
+
+        if !extra_lines.is_empty() {
+            let mut all_lines = text.lines;
+            all_lines.extend(extra_lines);
+            text = Text::from(all_lines);
+        }
 
         Some(SizedWidget {
             widget: Paragraph::new(text.clone()).block(popup_block()),

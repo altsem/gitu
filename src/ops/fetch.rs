@@ -24,7 +24,7 @@ impl OpTrait for FetchAll {
             cmd.args(app.state.pending_menu.as_ref().unwrap().args());
 
             app.close_menu();
-            app.run_cmd_async(term, &[], cmd)?;
+            app.run_cmd_with_spinner(term, &[], cmd, "fetch")?;
             Ok(())
         }))
     }
@@ -63,6 +63,6 @@ fn push_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
     cmd.arg(remote);
 
     app.close_menu();
-    app.run_cmd_async(term, &[], cmd)?;
+    app.run_cmd_with_spinner(term, &[], cmd, "fetch")?;
     Ok(())
 }
