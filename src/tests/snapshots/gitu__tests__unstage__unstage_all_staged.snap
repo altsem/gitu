@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git restore --staged two                                                      |
 fatal: could not resolve HEAD                                                   |
-! 'git restore --staged two' exited with code: 128                              |
-styles_hash: ecbc9ac8f4e96987
+! Command 'git restore --staged two' failed with exit code 128. Check the comman|
+styles_hash: 4368f58b70f6ef86

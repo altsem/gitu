@@ -130,7 +130,7 @@ fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
     let diff = repo
         .diff_index_to_workdir(None, None)
-        .map_err(Error::GitDiff)?;
+        .map_err(|e| Error::git_operation("diff unstaged", e))?;
 
     let mut text = Vec::new();
     diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
@@ -242,7 +242,9 @@ fn get_branch_status(repo: &Repository) -> Res<status::BranchStatus> {
 
 fn get_status_files(repo: &Repository) -> Res<Vec<status::StatusFile>> {
     let mut files = Vec::new();
-    let statuses = repo.statuses(None).map_err(Error::GitStatus)?;
+    let statuses = repo
+        .statuses(None)
+        .map_err(|e| Error::git_operation("status", e))?;
     for entry in statuses.iter() {
         let status = entry.status();
         let path = entry.path().unwrap_or("").to_string();

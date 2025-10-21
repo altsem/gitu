@@ -9,7 +9,9 @@ pub enum Error {
     Term(io::Error),
     GitDirUtf8(string::FromUtf8Error),
     Config(Box<figment::Error>),
-    Bindings { bad_key_bindings: Vec<String> },
+    Bindings {
+        bad_key_bindings: Vec<String>,
+    },
     FileWatcher(notify::Error),
     ReadRebaseStatusFile(io::Error),
     ReadBranchName(io::Error),
@@ -53,6 +55,41 @@ pub enum Error {
     OpenLogFile(io::Error),
     PromptAborted,
     NoMoreEvents,
+    GitOperationFailed {
+        operation: String,
+        error: git2::Error,
+    },
+    IoOperationFailed {
+        operation: String,
+        error: io::Error,
+    },
+    ParsingFailed {
+        context: String,
+        error: Box<dyn std::error::Error + Send + Sync>,
+    },
+}
+
+impl Error {
+    pub fn git_operation(operation: &str, error: git2::Error) -> Self {
+        Self::GitOperationFailed {
+            operation: operation.to_string(),
+            error,
+        }
+    }
+
+    pub fn io_operation(operation: &str, error: std::io::Error) -> Self {
+        Self::IoOperationFailed {
+            operation: operation.to_string(),
+            error,
+        }
+    }
+
+    pub fn parsing(context: &str, error: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::ParsingFailed {
+            context: context.to_string(),
+            error: Box::new(error),
+        }
+    }
 }
 
 impl std::error::Error for Error {}
@@ -126,18 +163,18 @@ impl Display for Error {
                 "No editor environment variable set ({})",
                 crate::ops::show::EDITOR_VARS.join(", ")
             )),
-            Error::GitStatus(e) => f.write_fmt(format_args!("Git status error: {e}")),
-            Error::GitRebaseStatus(e) => f.write_fmt(format_args!("Git rebase status error: {e}")),
+            Error::GitStatus(e) => f.write_fmt(format_args!("Failed to get Git status: {e}. Ensure the repository is accessible.")),
+            Error::GitRebaseStatus(e) => f.write_fmt(format_args!("Failed to get Git rebase status: {e}. Check if a rebase is in progress.")),
             Error::CmdAlreadyRunning => f.write_str("A command is already running"),
             Error::StashWorkTreeEmpty => f.write_str("Cannot stash: working tree is empty"),
             Error::CouldntAwaitCmd(e) => f.write_fmt(format_args!("Couldn't await command: {e}")),
             Error::NoRepoWorkdir => f.write_str("No repository working directory"),
             Error::SpawnCmd(e) => f.write_fmt(format_args!("Failed to spawn command: {e}")),
             Error::CmdBadExit(args, code) => f.write_fmt(format_args!(
-                "'{}' exited with code: {}",
+                "Command '{}' failed with exit code {}. Check the command output above for details.",
                 args,
                 code.map(|c| c.to_string())
-                    .unwrap_or_else(|| "".to_string())
+                    .unwrap_or_else(|| "unknown".to_string())
             )),
             Error::CouldntReadCmdOutput(e) => {
                 f.write_fmt(format_args!("Couldn't read command output: {e}"))
@@ -147,7 +184,16 @@ impl Display for Error {
             }
             Error::OpenLogFile(e) => f.write_fmt(format_args!("Couldn't open log file: {e}")),
             Error::PromptAborted => f.write_str("Aborted"),
-            Error::NoMoreEvents => unimplemented!(),
+            Error::NoMoreEvents => f.write_str("No more events available"),
+            Error::GitOperationFailed { operation, error } => f.write_fmt(format_args!(
+                "Git operation '{operation}' failed: {error}. Check your repository state or try again."
+            )),
+            Error::IoOperationFailed { operation, error } => f.write_fmt(format_args!(
+                "I/O operation '{operation}' failed: {error}. Ensure file permissions and paths are correct."
+            )),
+            Error::ParsingFailed { context, error } => f.write_fmt(format_args!(
+                "Parsing failed in {context}: {error}. Verify the input format."
+            )),
         }
     }
 }
