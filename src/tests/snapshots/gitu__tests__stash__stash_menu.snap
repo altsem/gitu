@@ -5,13 +5,13 @@ expression: ctx.redact_buffer()
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Untracked files                                                                |
- file-two                                                                       |
-                                                                                |
  Staged changes (1)                                                             |
  added      file-one…                                                           |
                                                                                 |
  Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Stash                 Arguments                                                 |
 z both                -a Also save untracked and ignored files (--all)          |
@@ -22,4 +22,4 @@ x keeping index                                                                 
 p pop                                                                           |
 k drop                                                                          |
 q/esc Quit/Close                                                                |
-styles_hash: bd7d338934b4927
+styles_hash: e5abe703af300117

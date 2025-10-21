@@ -13,13 +13,12 @@ use std::{
     fs,
     path::Path,
     process::Command,
-    str::{self, FromStr},
+    str,
 };
 
 pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
-mod parse;
 pub(crate) mod rebase_status;
 pub(crate) mod remote;
 pub(crate) mod status;
@@ -185,18 +184,82 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
     Ok(Diff { file_diffs, text })
 }
 
-pub(crate) fn status(dir: &Path) -> Res<status::Status> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(dir)
-            .args(["status", "--porcelain", "--branch"])
-            .output()
-            .unwrap()
-            .stdout,
-    )
-    .map_err(Error::GitDiffUtf8)?;
+pub(crate) fn status(repo: &Repository) -> Res<status::Status> {
+    let branch_status = get_branch_status(repo)?;
+    let files = get_status_files(repo)?;
 
-    Ok(status::Status::from_str(&text).unwrap())
+    Ok(status::Status { branch_status, files })
+}
+
+fn get_branch_status(repo: &Repository) -> Res<status::BranchStatus> {
+    let head = match repo.head() {
+        Ok(head) if head.is_branch() => Branch::wrap(head),
+        _ => return Ok(status::BranchStatus { local: None, remote: None, ahead: 0, behind: 0 }),
+    };
+
+    let local = head.name().ok().flatten().map(|n| n.to_string());
+    let remote = if let Ok(upstream) = head.upstream() {
+        upstream.name().ok().flatten().map(|n| n.to_string())
+    } else {
+        None
+    };
+
+    let (ahead, behind) = if let (Ok(_upstream), Ok(head_commit), Ok(upstream_commit)) = (
+        head.upstream(),
+        head.get().peel_to_commit(),
+        head.upstream().and_then(|u| u.get().peel_to_commit())
+    ) {
+        let (ahead_usize, behind_usize) = repo.graph_ahead_behind(head_commit.id(), upstream_commit.id()).unwrap_or((0, 0));
+        (ahead_usize as u32, behind_usize as u32)
+    } else {
+        (0, 0)
+    };
+
+    Ok(status::BranchStatus { local, remote, ahead, behind })
+}
+
+fn get_status_files(repo: &Repository) -> Res<Vec<status::StatusFile>> {
+    let mut files = Vec::new();
+    let statuses = repo.statuses(None).map_err(Error::GitStatus)?;
+    for entry in statuses.iter() {
+        let status = entry.status();
+        let path = entry.path().unwrap_or("").to_string();
+        let new_path = entry.index_to_workdir().and_then(|diff| diff.new_file().path()).map(|p| p.to_string_lossy().to_string());
+
+        let status_code = [
+            status_char(status, git2::Status::INDEX_NEW | git2::Status::INDEX_MODIFIED | git2::Status::INDEX_DELETED | git2::Status::INDEX_RENAMED | git2::Status::INDEX_TYPECHANGE),
+            status_char(status, git2::Status::WT_NEW | git2::Status::WT_MODIFIED | git2::Status::WT_DELETED | git2::Status::WT_RENAMED | git2::Status::WT_TYPECHANGE),
+        ];
+
+        files.push(status::StatusFile {
+            status_code,
+            path,
+            new_path,
+        });
+    }
+    Ok(files)
+}
+
+fn status_char(status: git2::Status, mask: git2::Status) -> char {
+    if status.intersects(mask) {
+        if mask.contains(git2::Status::INDEX_NEW) || mask.contains(git2::Status::WT_NEW) {
+            'A'
+        } else if mask.contains(git2::Status::INDEX_MODIFIED) || mask.contains(git2::Status::WT_MODIFIED) {
+            'M'
+        } else if mask.contains(git2::Status::INDEX_DELETED) || mask.contains(git2::Status::WT_DELETED) {
+            'D'
+        } else if mask.contains(git2::Status::INDEX_RENAMED) || mask.contains(git2::Status::WT_RENAMED) {
+            'R'
+        } else if mask.contains(git2::Status::INDEX_TYPECHANGE) || mask.contains(git2::Status::WT_TYPECHANGE) {
+            'T'
+        } else {
+            '?'
+        }
+    } else if status.is_empty() {
+        ' '
+    } else {
+        '?'
+    }
 }
 
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {

@@ -4,6 +4,10 @@ expression: ctx.redact_buffer()
 ---
 ▌Merging other-branch                                                           |
                                                                                 |
+ Untracked files                                                                |
+ new-file                                                                       |
+ new-file-2                                                                     |
+                                                                                |
  Unstaged changes (1)                                                           |
  modified   new-file…                                                           |
                                                                                 |
@@ -18,8 +22,4 @@ expression: ctx.redact_buffer()
  46c81ca add new-file                                                           |
  b66a0bf origin/main add initial-file                                           |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 6e2a275d20dd729c
+styles_hash: 49a7096e0e3b391c

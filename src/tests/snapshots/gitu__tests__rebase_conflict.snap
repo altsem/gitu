@@ -4,6 +4,9 @@ expression: ctx.redact_buffer()
 ---
 ▌Rebasing other-branch onto main                                                |
                                                                                 |
+ Untracked files                                                                |
+ new-file                                                                       |
+                                                                                |
  Unstaged changes (1)                                                           |
  modified   new-file…                                                           |
                                                                                 |
@@ -19,7 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 14c8af588de8e27f
+styles_hash: ff63c173e9d7a827

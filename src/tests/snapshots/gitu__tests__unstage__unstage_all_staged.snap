@@ -1,13 +1,12 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/unstage.rs
 expression: ctx.redact_buffer()
 ---
  No branch                                                                      |
                                                                                 |
- Untracked files                                                                |
- one                                                                            |
- two                                                                            |
-▌unaffected                                                                     |
+ Staged changes (2)                                                             |
+ added      one…                                                                |
+▌added      two…                                                                |
                                                                                 |
  Recent commits                                                                 |
                                                                                 |
@@ -19,7 +18,8 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git reset HEAD --                                                             |
-styles_hash: d392b4980ef581b2
+$ git restore --staged two                                                      |
+fatal: could not resolve HEAD                                                   |
+! 'git restore --staged two' exited with code: 128                              |
+styles_hash: ecbc9ac8f4e96987

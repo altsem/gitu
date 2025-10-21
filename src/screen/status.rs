@@ -2,7 +2,6 @@ use super::Screen;
 use crate::{
     Res,
     config::Config,
-    error::Error,
     git::{self, diff::Diff, status::BranchStatus},
     item_data::{ItemData, SectionHeader},
     items::{self, Item, hash},
@@ -46,7 +45,7 @@ pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Re
         Rc::clone(&config),
         size,
         Box::new(move || {
-            let status = git::status(repo.workdir().ok_or(Error::NoRepoWorkdir)?)?;
+            let status = git::status(&repo)?;
             let untracked_files = status
                 .files
                 .iter()
