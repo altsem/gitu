@@ -59,7 +59,7 @@ pub fn cleanup_raw_mode() {
 fn print_err<T, E: Display>(result: Result<T, E>) {
     match result {
         Ok(_) => (),
-        Err(error) => eprintln!("Error: {}", error),
+        Err(error) => eprintln!("Error: {error}",),
     };
 }
 

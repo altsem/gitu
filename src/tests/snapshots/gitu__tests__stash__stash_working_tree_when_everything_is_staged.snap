@@ -5,11 +5,8 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
-▌Staged changes (2)                                                             |
+▌Staged changes (1)                                                             |
 ▌added      file-one…                                                           |
-▌added      file-two                                                            |
-▌@@ -0,0 +1 @@                                                                  |
-▌+blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
  b66a0bf main origin/main add initial-file                                      |
@@ -20,6 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-! Cannot stash: working tree is empty                                           |
-styles_hash: 63b511dc3e3d43c1
+? Stash message: ›                                                              |
+styles_hash: 76ef59ab9e0e5756

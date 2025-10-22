@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 Pull                    Arguments                                               |
 p from origin           -r Rebase local commits (--rebase)                      |
 u from origin/main                                                              |
 e from elsewhere                                                                |
 q/esc Quit/Close                                                                |
-styles_hash: 6224ed56a73be11f
+────────────────────────────────────────────────────────────────────────────────|
+pull completed: From                * branch            main       -> FETCH_HEAD|
+styles_hash: e9151bb42bbf1331

@@ -1,5 +1,5 @@
 use diff::Diff;
-use git2::{Branch, Repository};
+use git2::{Branch, DiffFormat, Repository, RepositoryState};
 use itertools::Itertools;
 use remote::get_branch_upstream;
 
@@ -9,76 +9,80 @@ use crate::{
     error::{Error, Utf8Error},
     gitu_diff,
 };
-use std::{
-    fs,
-    path::Path,
-    process::Command,
-    str::{self, FromStr},
-};
+use std::{fs, path::Path, process::Command, str};
 
 pub(crate) mod commit;
 pub(crate) mod diff;
 pub(crate) mod merge_status;
-mod parse;
 pub(crate) mod rebase_status;
 pub(crate) mod remote;
 pub(crate) mod status;
 
 pub(crate) fn rebase_status(repo: &Repository) -> Res<Option<RebaseStatus>> {
-    let dir = repo.workdir().expect("No workdir");
-    let mut rebase_onto_file = dir.to_path_buf();
-    rebase_onto_file.push(".git/rebase-merge/onto");
-
-    let mut rebase_head_name_file = dir.to_path_buf();
-    rebase_head_name_file.push(".git/rebase-merge/head-name");
-
-    match fs::read_to_string(&rebase_onto_file) {
-        Ok(content) => {
-            let onto_hash = content.trim().to_string();
-            Ok(Some(RebaseStatus {
-                onto: branch_name_lossy(dir, &onto_hash)?
-                    .unwrap_or_else(|| onto_hash[..7].to_string()),
-                head_name: fs::read_to_string(rebase_head_name_file)
-                    .map_err(Error::ReadRebaseStatusFile)?
-                    .trim()
-                    .strip_prefix("refs/heads/")
-                    .unwrap()
-                    .to_string(),
-                // TODO include log of 'done' items
-            }))
-        }
-        Err(err) => {
-            log::warn!(
-                "Couldn't read {}, due to {}",
-                rebase_onto_file.to_string_lossy(),
-                err
-            );
-            Ok(None)
-        }
+    if !matches!(
+        repo.state(),
+        RepositoryState::Rebase | RepositoryState::RebaseMerge | RepositoryState::RebaseInteractive
+    ) {
+        return Ok(None);
     }
+
+    let dir = repo.workdir().expect("No workdir");
+    let mut onto_file = dir.to_path_buf();
+    onto_file.push(".git/rebase-merge/onto");
+
+    let onto_content = fs::read_to_string(&onto_file).map_err(Error::ReadRebaseStatusFile)?;
+    let onto_oid = git2::Oid::from_str(onto_content.trim()).map_err(|_| {
+        Error::ReadRebaseStatusFile(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Invalid OID",
+        ))
+    })?;
+
+    let onto = branch_name_lossy(dir, &onto_oid.to_string())?
+        .unwrap_or_else(|| onto_oid.to_string()[..7].to_string());
+
+    let head_name = if let Ok(rebase) = repo.open_rebase(None) {
+        rebase
+            .orig_head_name()
+            .map(|s| s.strip_prefix("refs/heads/").unwrap_or(s).to_string())
+            .unwrap_or_else(|| "HEAD".to_string())
+    } else {
+        let mut head_name_file = dir.to_path_buf();
+        head_name_file.push(".git/rebase-merge/head-name");
+        fs::read_to_string(&head_name_file)
+            .map(|s| {
+                s.trim()
+                    .strip_prefix("refs/heads/")
+                    .unwrap_or(s.trim())
+                    .to_string()
+            })
+            .unwrap_or_else(|_| "HEAD".to_string())
+    };
+
+    Ok(Some(RebaseStatus { onto, head_name }))
 }
 
 pub(crate) fn merge_status(repo: &Repository) -> Res<Option<MergeStatus>> {
+    if repo.state() != RepositoryState::Merge {
+        return Ok(None);
+    }
+
     let dir = repo.workdir().expect("No workdir");
     let mut merge_head_file = dir.to_path_buf();
     merge_head_file.push(".git/MERGE_HEAD");
 
-    match fs::read_to_string(&merge_head_file) {
-        Ok(content) => {
-            let head = content.trim().to_string();
-            Ok(Some(MergeStatus {
-                head: branch_name_lossy(dir, &head)?.unwrap_or(head[..7].to_string()),
-            }))
-        }
-        Err(err) => {
-            log::warn!(
-                "Couldn't read {}, due to {}",
-                merge_head_file.to_string_lossy(),
-                err
-            );
-            Ok(None)
-        }
-    }
+    let content = fs::read_to_string(&merge_head_file).map_err(Error::ReadRebaseStatusFile)?;
+    let head_oid = git2::Oid::from_str(content.trim()).map_err(|_| {
+        Error::ReadRebaseStatusFile(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Invalid OID",
+        ))
+    })?;
+
+    let head = branch_name_lossy(dir, &head_oid.to_string())?
+        .unwrap_or_else(|| head_oid.to_string()[..7].to_string());
+
+    Ok(Some(MergeStatus { head }))
 }
 
 #[derive(Debug, Clone)]
@@ -87,26 +91,26 @@ pub(crate) struct RevertStatus {
 }
 
 pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
+    if repo.state() != RepositoryState::Revert {
+        return Ok(None);
+    }
+
     let dir = repo.workdir().expect("No workdir");
     let mut revert_head_file = dir.to_path_buf();
     revert_head_file.push(".git/REVERT_HEAD");
 
-    match fs::read_to_string(&revert_head_file) {
-        Ok(content) => {
-            let head = content.trim().to_string();
-            Ok(Some(RevertStatus {
-                head: branch_name_lossy(dir, &head)?.unwrap_or(head[..7].to_string()),
-            }))
-        }
-        Err(err) => {
-            log::warn!(
-                "Couldn't read {}, due to {}",
-                revert_head_file.to_string_lossy(),
-                err
-            );
-            Ok(None)
-        }
-    }
+    let content = fs::read_to_string(&revert_head_file).map_err(Error::ReadRebaseStatusFile)?;
+    let head_oid = git2::Oid::from_str(content.trim()).map_err(|_| {
+        Error::ReadRebaseStatusFile(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Invalid OID",
+        ))
+    })?;
+
+    let head = branch_name_lossy(dir, &head_oid.to_string())?
+        .unwrap_or_else(|| head_oid.to_string()[..7].to_string());
+
+    Ok(Some(RevertStatus { head }))
 }
 
 fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
@@ -124,63 +128,218 @@ fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
 }
 
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--no-ext-diff"])
-            .output()
-            .map_err(Error::GitDiff)?
-            .stdout,
-    )
-    .map_err(Error::GitDiffUtf8)?;
+    let diff = repo
+        .diff_index_to_workdir(None, None)
+        .map_err(|e| Error::git_operation("diff unstaged", e))?;
 
-    Ok(Diff {
-        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
-        text,
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        let prefix: &[u8] = match line.origin() {
+            ' ' => b" ",
+            '+' => b"+",
+            '-' => b"-",
+            _ => b"",
+        };
+        text.extend_from_slice(prefix);
+        text.extend_from_slice(line.content());
+        true
     })
+    .map_err(Error::GitDiff)?;
+
+    let mut text = String::from_utf8(text).map_err(Error::GitDiffUtf8)?;
+    if !text.ends_with('\n') {
+        text.push('\n');
+    }
+
+    let file_diffs = gitu_diff::Parser::new(&text).parse_diff().unwrap();
+
+    Ok(Diff { file_diffs, text })
 }
 
 pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--no-ext-diff", "--staged"])
-            .output()
-            .map_err(Error::GitDiff)?
-            .stdout,
-    )
-    .map_err(Error::GitDiffUtf8)?;
+    let head_tree = match repo.head() {
+        Ok(head) => Some(head.peel_to_tree().map_err(Error::GitDiff)?),
+        Err(_) => None, // No HEAD yet
+    };
+    let diff = repo
+        .diff_tree_to_index(head_tree.as_ref(), None, None)
+        .map_err(Error::GitDiff)?;
 
-    Ok(Diff {
-        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
-        text,
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        let prefix: &[u8] = match line.origin() {
+            ' ' => b" ",
+            '+' => b"+",
+            '-' => b"-",
+            _ => b"",
+        };
+        text.extend_from_slice(prefix);
+        text.extend_from_slice(line.content());
+        true
+    })
+    .map_err(Error::GitDiff)?;
+
+    let mut text = String::from_utf8(text).map_err(Error::GitDiffUtf8)?;
+    if !text.ends_with('\n') {
+        text.push('\n');
+    }
+
+    let file_diffs = gitu_diff::Parser::new(&text).parse_diff().unwrap();
+
+    Ok(Diff { file_diffs, text })
+}
+
+pub(crate) fn status(repo: &Repository) -> Res<status::Status> {
+    let branch_status = get_branch_status(repo)?;
+    let files = get_status_files(repo)?;
+
+    Ok(status::Status {
+        branch_status,
+        files,
     })
 }
 
-pub(crate) fn status(dir: &Path) -> Res<status::Status> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(dir)
-            .args(["status", "--porcelain", "--branch"])
-            .output()
-            .unwrap()
-            .stdout,
-    )
-    .map_err(Error::GitDiffUtf8)?;
+fn get_branch_status(repo: &Repository) -> Res<status::BranchStatus> {
+    let head = match repo.head() {
+        Ok(head) if head.is_branch() => Branch::wrap(head),
+        _ => {
+            return Ok(status::BranchStatus {
+                local: None,
+                remote: None,
+                ahead: 0,
+                behind: 0,
+            });
+        }
+    };
 
-    Ok(status::Status::from_str(&text).unwrap())
+    let local = head.name().ok().flatten().map(|n| n.to_string());
+    let remote = if let Ok(upstream) = head.upstream() {
+        upstream.name().ok().flatten().map(|n| n.to_string())
+    } else {
+        None
+    };
+
+    let (ahead, behind) = if let (Ok(_upstream), Ok(head_commit), Ok(upstream_commit)) = (
+        head.upstream(),
+        head.get().peel_to_commit(),
+        head.upstream().and_then(|u| u.get().peel_to_commit()),
+    ) {
+        let (ahead_usize, behind_usize) = repo
+            .graph_ahead_behind(head_commit.id(), upstream_commit.id())
+            .unwrap_or((0, 0));
+        (ahead_usize as u32, behind_usize as u32)
+    } else {
+        (0, 0)
+    };
+
+    Ok(status::BranchStatus {
+        local,
+        remote,
+        ahead,
+        behind,
+    })
+}
+
+fn get_status_files(repo: &Repository) -> Res<Vec<status::StatusFile>> {
+    let mut files = Vec::new();
+    let statuses = repo
+        .statuses(None)
+        .map_err(|e| Error::git_operation("status", e))?;
+    for entry in statuses.iter() {
+        let status = entry.status();
+        let path = entry.path().unwrap_or("").to_string();
+        let new_path = entry
+            .index_to_workdir()
+            .and_then(|diff| diff.new_file().path())
+            .map(|p| p.to_string_lossy().to_string());
+
+        let status_code = [
+            status_char(
+                status,
+                git2::Status::INDEX_NEW
+                    | git2::Status::INDEX_MODIFIED
+                    | git2::Status::INDEX_DELETED
+                    | git2::Status::INDEX_RENAMED
+                    | git2::Status::INDEX_TYPECHANGE,
+            ),
+            status_char(
+                status,
+                git2::Status::WT_NEW
+                    | git2::Status::WT_MODIFIED
+                    | git2::Status::WT_DELETED
+                    | git2::Status::WT_RENAMED
+                    | git2::Status::WT_TYPECHANGE,
+            ),
+        ];
+
+        files.push(status::StatusFile {
+            status_code,
+            path,
+            new_path,
+        });
+    }
+    Ok(files)
+}
+
+fn status_char(status: git2::Status, mask: git2::Status) -> char {
+    if status.intersects(mask) {
+        if mask.contains(git2::Status::INDEX_NEW) || mask.contains(git2::Status::WT_NEW) {
+            'A'
+        } else if mask.contains(git2::Status::INDEX_MODIFIED)
+            || mask.contains(git2::Status::WT_MODIFIED)
+        {
+            'M'
+        } else if mask.contains(git2::Status::INDEX_DELETED)
+            || mask.contains(git2::Status::WT_DELETED)
+        {
+            'D'
+        } else if mask.contains(git2::Status::INDEX_RENAMED)
+            || mask.contains(git2::Status::WT_RENAMED)
+        {
+            'R'
+        } else if mask.contains(git2::Status::INDEX_TYPECHANGE)
+            || mask.contains(git2::Status::WT_TYPECHANGE)
+        {
+            'T'
+        } else {
+            '?'
+        }
+    } else if status.is_empty() {
+        ' '
+    } else {
+        '?'
+    }
 }
 
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["show", reference])
-            .output()
-            .map_err(Error::GitShow)?
-            .stdout,
-    )
-    .map_err(Error::GitShowUtf8)?;
+    let obj = repo.revparse_single(reference).map_err(Error::GitShow)?;
+    let commit = obj.peel_to_commit().map_err(Error::GitShow)?;
+
+    let parent = if commit.parent_count() > 0 {
+        Some(commit.parent(0).map_err(Error::GitShow)?)
+    } else {
+        None
+    };
+
+    let diff = if let Some(parent) = parent {
+        repo.diff_tree_to_tree(
+            Some(&parent.tree().map_err(Error::GitShow)?),
+            Some(&commit.tree().map_err(Error::GitShow)?),
+            None,
+        )
+    } else {
+        repo.diff_tree_to_tree(None, Some(&commit.tree().map_err(Error::GitShow)?), None)
+    }
+    .map_err(Error::GitShow)?;
+
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        text.extend_from_slice(line.content());
+        true
+    })
+    .map_err(Error::GitShow)?;
+
+    let text = String::from_utf8(text).map_err(Error::GitShowUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -189,15 +348,28 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 }
 
 pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["stash", "show", "-p", stash_ref])
-            .output()
-            .map_err(Error::GitShow)?
-            .stdout,
-    )
-    .map_err(Error::GitShowUtf8)?;
+    use git2::DiffFormat;
+
+    let obj = repo.revparse_single(stash_ref).map_err(Error::GitShow)?;
+    let commit = obj.peel_to_commit().map_err(Error::GitShow)?;
+
+    let parent = commit.parent(0).map_err(Error::GitShow)?;
+    let diff = repo
+        .diff_tree_to_tree(
+            Some(&parent.tree().map_err(Error::GitShow)?),
+            Some(&commit.tree().map_err(Error::GitShow)?),
+            None,
+        )
+        .map_err(Error::GitShow)?;
+
+    let mut text = Vec::new();
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        text.extend_from_slice(line.content());
+        true
+    })
+    .map_err(Error::GitShow)?;
+
+    let text = String::from_utf8(text).map_err(Error::GitShowUtf8)?;
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),

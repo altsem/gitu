@@ -4,15 +4,7 @@ expression: ctx.redact_buffer()
 ---
  No branch                                                                      |
                                                                                 |
- Untracked files                                                                |
-▌a                                                                              |
-                                                                                |
- Staged changes (1)                                                             |
- added      b                                                                   |
- @@ -0,0 +1 @@                                                                  |
- +test                                                                          |
-                                                                                |
- Recent commits                                                                 |
+▌Recent commits                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 622ae95542f426ad
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: d1441f8c2f4b6bc0

@@ -143,6 +143,6 @@ fn pull(app: &mut App, term: &mut Term, extra_args: &[&str]) -> Res<()> {
     cmd.args(extra_args);
 
     app.close_menu();
-    app.run_cmd_async(term, &[], cmd)?;
+    app.run_cmd_with_spinner(term, &[], cmd, "pull")?;
     Ok(())
 }

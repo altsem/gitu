@@ -12,8 +12,6 @@ expression: ctx.redact_buffer()
                                                                                 |
  added      testfile                                                            |
 ▌@@ -0,0 +1,2 @@                                                                |
-▌+testing                                                                       |
-▌+testtest                                                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 3185110292c06b5
+                                                                                |
+                                                                                |
+styles_hash: 6ed8bcdbdfe4011e

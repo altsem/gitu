@@ -4,11 +4,14 @@ expression: ctx.redact_buffer()
 ---
 ▌Rebasing other-branch onto main                                                |
                                                                                 |
+ Untracked files                                                                |
+ new-file                                                                       |
+                                                                                |
  Unstaged changes (1)                                                           |
- unmerged   new-file…                                                           |
+ modified   new-file…                                                           |
                                                                                 |
  Staged changes (1)                                                             |
- unmerged   new-file…                                                           |
+ deleted    new-file…                                                           |
                                                                                 |
  Recent commits                                                                 |
  ed5ed59 main modify new-file                                                   |
@@ -19,7 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 14c8af588de8e27f
+styles_hash: ff63c173e9d7a827

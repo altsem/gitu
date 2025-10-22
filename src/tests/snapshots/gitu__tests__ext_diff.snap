@@ -5,14 +5,15 @@ expression: ctx.redact_buffer()
 ▌No branch                                                                      |
                                                                                 |
  Unstaged changes (1)                                                           |
- added      unstaged.txt                                                        |
+ modified   unstaged.txt                                                        |
  @@ -0,0 +1 @@                                                                  |
  +unstaged                                                                      |
                                                                                 |
- Staged changes (1)                                                             |
+ Staged changes (2)                                                             |
  added      staged.txt                                                          |
  @@ -0,0 +1 @@                                                                  |
  +staged                                                                        |
+ added      unstaged.txt                                                        |
                                                                                 |
  Recent commits                                                                 |
                                                                                 |
@@ -21,5 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-styles_hash: 47fbc587a853da5e
+styles_hash: 72c2bf7e9f90c742

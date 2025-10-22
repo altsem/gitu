@@ -4,8 +4,6 @@ expression: ctx.redact_buffer()
 ---
 ▌On branch main…                                                                |
                                                                                 |
- Untracked files…                                                               |
-                                                                                |
  Recent commits…                                                                |
                                                                                 |
                                                                                 |
@@ -22,4 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: cbfd7594a526d60d
+                                                                                |
+                                                                                |
+styles_hash: bc670d3bb6a7cf9a

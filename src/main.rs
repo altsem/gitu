@@ -23,7 +23,7 @@ pub fn main() -> Res<()> {
         term::cleanup_alternate_screen();
         term::cleanup_raw_mode();
 
-        eprintln!("{}", panic_info);
+        eprintln!("{panic_info}");
         eprintln!("trace: \n{}", Backtrace::force_capture());
     }));
 

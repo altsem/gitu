@@ -5,9 +5,6 @@ expression: ctx.redact_buffer()
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Untracked files                                                                |
- file-two                                                                       |
-                                                                                |
  Stashes                                                                        |
  stash@0 On main: file-two                                                      |
  stash@1 On main: file-one                                                      |
@@ -19,7 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash apply -q 0                                                          |
 Already up to date.                                                             |
-styles_hash: 3fed1151179f36db
+styles_hash: a70f2dfff2870d79
