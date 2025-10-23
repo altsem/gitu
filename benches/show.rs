@@ -1,5 +1,7 @@
+use std::rc::Rc;
+
 use criterion::{Criterion, criterion_group, criterion_main};
-use gitu::{cli::Commands, term::TermBackend};
+use gitu::{cli::Commands, config, term::TermBackend};
 use ratatui::{Terminal, backend::TestBackend};
 
 fn show(c: &mut Criterion) {
@@ -9,18 +11,19 @@ fn show(c: &mut Criterion) {
             events: vec![],
         })
         .unwrap();
+
+        let args = gitu::cli::Args {
+            command: Some(Commands::Show {
+                reference: "f4de01c0a12794d7b42a77b2138aa64119b90ea5".into(),
+            }),
+            print: true,
+            ..Default::default()
+        };
+
+        let config = Rc::new(config::init_config(args.config.clone()).unwrap());
+
         b.iter(|| {
-            gitu::run(
-                &gitu::cli::Args {
-                    command: Some(Commands::Show {
-                        reference: "f4de01c0a12794d7b42a77b2138aa64119b90ea5".into(),
-                    }),
-                    print: true,
-                    ..Default::default()
-                },
-                &mut terminal,
-            )
-            .unwrap();
+            gitu::run(config.clone(), &args, &mut terminal).unwrap();
         })
     });
 }

@@ -8,7 +8,7 @@ use crate::{
 };
 use crossterm::event::{KeyCode, KeyModifiers};
 
-pub(crate) struct Bindings {
+pub struct Bindings {
     vec: Vec<Binding>,
 }
 

@@ -35,6 +35,8 @@ use std::{
 };
 use term::Term;
 
+use crate::config::Config;
+
 pub const LOG_FILE_NAME: &str = "gitu.log";
 
 //                                An overview of Gitu's ui and terminology:
@@ -76,10 +78,9 @@ pub const LOG_FILE_NAME: &str = "gitu.log";
 
 pub type Res<T> = Result<T, Error>;
 
-pub fn run(args: &cli::Args, term: &mut Term) -> Res<()> {
+pub fn run(config: Rc<Config>, args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
-    let config = Rc::new(config::init_config(args.config.clone())?);
 
     if config.general.mouse_support {
         term.backend_mut().enable_mouse_capture()?;

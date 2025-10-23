@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
-pub(crate) struct Config {
+pub struct Config {
     pub general: GeneralConfig,
     pub style: StyleConfig,
     pub bindings: Bindings,
@@ -195,7 +195,7 @@ impl From<&SymbolStyleConfigEntry> for Style {
     }
 }
 
-pub(crate) fn init_config(path: Option<PathBuf>) -> Res<Config> {
+pub fn init_config(path: Option<PathBuf>) -> Res<Config> {
     let config_path = path.unwrap_or_else(config_path);
 
     if config_path.exists() {

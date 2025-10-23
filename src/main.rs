@@ -1,8 +1,14 @@
 use clap::Parser;
-use gitu::{Res, cli::Args, error::Error, term};
+use gitu::{
+    Res,
+    cli::Args,
+    config::{self, Config},
+    error::Error,
+    term,
+};
 use log::LevelFilter;
 use ratatui::Terminal;
-use std::{backtrace::Backtrace, panic};
+use std::{backtrace::Backtrace, panic, rc::Rc};
 
 pub fn main() -> Res<()> {
     let args = Args::parse();
@@ -19,6 +25,8 @@ pub fn main() -> Res<()> {
             .map_err(Error::OpenLogFile)?;
     }
 
+    let config = Rc::new(config::init_config(args.config.clone())?);
+
     panic::set_hook(Box::new(|panic_info| {
         term::cleanup_alternate_screen();
         term::cleanup_raw_mode();
@@ -28,15 +36,15 @@ pub fn main() -> Res<()> {
     }));
 
     if args.print {
-        setup_term_and_run(&args)?;
+        setup_term_and_run(config, &args)?;
     } else {
-        term::alternate_screen(|| term::raw_mode(|| setup_term_and_run(&args)))?
+        term::alternate_screen(|| term::raw_mode(|| setup_term_and_run(config.clone(), &args)))?
     }
 
     Ok(())
 }
 
-fn setup_term_and_run(args: &Args) -> Res<()> {
+fn setup_term_and_run(config: Rc<Config>, args: &Args) -> Res<()> {
     log::debug!("Initializing terminal backend");
     let mut terminal = Terminal::new(term::backend()).map_err(Error::Term)?;
 
@@ -45,5 +53,5 @@ fn setup_term_and_run(args: &Args) -> Res<()> {
     terminal.clear().map_err(Error::Term)?;
 
     log::debug!("Starting app");
-    gitu::run(args, &mut terminal)
+    gitu::run(config, args, &mut terminal)
 }
