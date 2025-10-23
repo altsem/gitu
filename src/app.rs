@@ -483,6 +483,11 @@ impl App {
         .map_err(Error::Term)?;
 
         let status = child.wait().map_err(Error::CouldntAwaitCmd)?;
+
+        term.backend_mut()
+            .setup_term(&self.state.config)
+            .map_err(Error::Term)?;
+
         let out_utf8 = String::from_utf8(strip_ansi_escapes::strip(stderr.clone()))
             .expect("Error turning command output to String")
             .into();
@@ -491,10 +496,6 @@ impl App {
         self.state
             .current_cmd_log
             .push_cmd_with_output(&cmd, out_utf8);
-
-        term.backend_mut()
-            .setup_term(&self.state.config)
-            .map_err(Error::Term)?;
 
         term.clear().map_err(Error::Term)?;
         self.update_screens()?;

@@ -120,7 +120,6 @@ impl TermBackend {
             TermBackend::Test { .. } => {}
         }
 
-        self.clear()?;
         self.flush()
     }
 
