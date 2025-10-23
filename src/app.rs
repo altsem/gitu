@@ -474,9 +474,7 @@ impl App {
         // Drop stdin as `Child::wait_with_output` would
         drop(child.stdin.take());
 
-        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-
-        tee(child.stdout.as_mut(), &mut [&mut stdout]).map_err(Error::Term)?;
+        let mut stderr = Vec::new();
 
         tee(
             child.stderr.as_mut(),
