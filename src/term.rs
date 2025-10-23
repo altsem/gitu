@@ -1,11 +1,8 @@
-use crate::{Res, error::Error};
+use crate::{Res, config::Config, error::Error};
 use crossterm::{
-    ExecutableCommand,
-    event::{EnableMouseCapture, Event},
-    terminal::{
-        EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
-        is_raw_mode_enabled,
-    },
+    ExecutableCommand, cursor,
+    event::{DisableMouseCapture, EnableMouseCapture, Event},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
     Terminal,
@@ -14,54 +11,9 @@ use ratatui::{
     prelude::{Position, backend::WindowSize, buffer::Cell},
 };
 use std::io::{self, Stdout, stdout};
-use std::{fmt::Display, time::Duration};
+use std::time::Duration;
 
 pub type Term = Terminal<TermBackend>;
-
-// TODO It would be more logical if the following top-level functions also were in 'TermBackend'.
-//      However left here for now.
-
-pub fn alternate_screen<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
-    stdout()
-        .execute(EnterAlternateScreen)
-        .map_err(Error::Term)?;
-    let result = fun();
-    stdout()
-        .execute(LeaveAlternateScreen)
-        .map_err(Error::Term)?;
-    result
-}
-
-pub fn raw_mode<T, F: Fn() -> Res<T>>(fun: F) -> Res<T> {
-    let was_raw_mode_enabled = is_raw_mode_enabled().map_err(Error::Term)?;
-
-    if !was_raw_mode_enabled {
-        enable_raw_mode().map_err(Error::Term)?;
-    }
-
-    let result = fun();
-
-    if !was_raw_mode_enabled {
-        disable_raw_mode().map_err(Error::Term)?;
-    }
-
-    result
-}
-
-pub fn cleanup_alternate_screen() {
-    print_err(stdout().execute(LeaveAlternateScreen));
-}
-
-pub fn cleanup_raw_mode() {
-    print_err(disable_raw_mode());
-}
-
-fn print_err<T, E: Display>(result: Result<T, E>) {
-    match result {
-        Ok(_) => (),
-        Err(error) => eprintln!("Error: {}", error),
-    };
-}
 
 pub fn backend() -> TermBackend {
     TermBackend::Crossterm(CrosstermBackend::new(stdout()))
@@ -155,28 +107,55 @@ impl TermBackend {
         }
     }
 
-    pub fn enable_raw_mode(&self) -> Res<()> {
+    pub fn setup_term(&mut self, config: &Config) -> io::Result<()> {
         match self {
-            TermBackend::Crossterm(_) => enable_raw_mode().map_err(Error::Term),
-            TermBackend::Test { .. } => Ok(()),
-        }
-    }
-
-    pub fn disable_raw_mode(&self) -> Res<()> {
-        match self {
-            TermBackend::Crossterm(_) => disable_raw_mode().map_err(Error::Term),
-            TermBackend::Test { .. } => Ok(()),
-        }
-    }
-
-    pub fn enable_mouse_capture(&mut self) -> Res<()> {
-        match self {
-            TermBackend::Crossterm(t) => {
-                t.execute(EnableMouseCapture).map_err(Error::Term)?;
-                Ok(())
+            TermBackend::Crossterm(crossterm_backend) => {
+                enable_raw_mode()?;
+                crossterm_backend.execute(EnterAlternateScreen)?;
+                crossterm_backend.execute(cursor::Hide)?;
+                if config.general.mouse_support {
+                    crossterm_backend.execute(EnableMouseCapture)?;
+                }
             }
-            TermBackend::Test { .. } => Ok(()),
+            TermBackend::Test { .. } => {}
         }
+
+        self.clear()?;
+        self.flush()
+    }
+
+    pub fn reset_term(&mut self, config: &Config) -> io::Result<()> {
+        match self {
+            TermBackend::Crossterm(crossterm_backend) => {
+                if config.general.mouse_support {
+                    crossterm_backend.execute(DisableMouseCapture)?;
+                }
+                crossterm_backend.execute(cursor::Show)?;
+                crossterm_backend.execute(LeaveAlternateScreen)?;
+                disable_raw_mode()?;
+            }
+            TermBackend::Test { .. } => {}
+        }
+
+        self.flush()
+    }
+
+    pub(crate) fn reset_term_stay_on_alt_screeen(
+        &mut self,
+        config: &Config,
+    ) -> Result<(), io::Error> {
+        match self {
+            TermBackend::Crossterm(crossterm_backend) => {
+                if config.general.mouse_support {
+                    crossterm_backend.execute(DisableMouseCapture)?;
+                }
+                crossterm_backend.execute(cursor::Show)?;
+                disable_raw_mode()?;
+            }
+            TermBackend::Test { .. } => {}
+        }
+
+        self.flush()
     }
 
     pub fn poll_event(&self, timeout: Duration) -> Res<bool> {

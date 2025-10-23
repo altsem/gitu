@@ -3,7 +3,7 @@ use ratatui::Frame;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use ratatui::widgets::*;
-use std::rc::Rc;
+use std::sync::Arc;
 use tui_prompts::State as _;
 use tui_prompts::TextPrompt;
 
@@ -50,7 +50,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
             None
         } else {
             Some(menu::MenuWidget::new(
-                Rc::clone(&state.config),
+                Arc::clone(&state.config),
                 menu,
                 state.screens.last().unwrap().get_selected_item(),
                 state,

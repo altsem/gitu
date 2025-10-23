@@ -5,7 +5,7 @@ use crate::{
     screen,
     term::Term,
 };
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 pub(crate) struct ShowRefs;
 impl OpTrait for ShowRefs {
@@ -27,7 +27,7 @@ fn goto_refs_screen(app: &mut App) {
     app.close_menu();
     app.state.screens.push(
         screen::show_refs::create(
-            Rc::clone(&app.state.config),
+            Arc::clone(&app.state.config),
             Rc::clone(&app.state.repo),
             size,
         )

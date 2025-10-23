@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, btree_map::Entry},
     iter,
     rc::Rc,
+    sync::Arc,
 };
 
 use super::Screen;
@@ -15,9 +16,9 @@ use crate::{
 use git2::{Reference, Repository};
 use ratatui::layout::Size;
 
-pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
+pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
     Screen::new(
-        Rc::clone(&config),
+        Arc::clone(&config),
         size,
         Box::new(move || {
             Ok(iter::once(Item {

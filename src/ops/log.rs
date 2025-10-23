@@ -10,7 +10,7 @@ use crate::{
 };
 use git2::Oid;
 use regex::Regex;
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![
@@ -101,7 +101,7 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
 
     app.state.screens.push(
         screen::log::create(
-            Rc::clone(&app.state.config),
+            Arc::clone(&app.state.config),
             Rc::clone(&app.state.repo),
             size,
             limit as usize,

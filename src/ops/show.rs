@@ -7,7 +7,7 @@ use crate::{
     screen,
 };
 use core::str;
-use std::{path::Path, process::Command, rc::Rc};
+use std::{path::Path, process::Command, rc::Rc, sync::Arc};
 
 pub(crate) struct Show;
 impl OpTrait for Show {
@@ -58,7 +58,7 @@ fn goto_show_screen(r: String) -> Option<Action> {
         app.close_menu();
         app.state.screens.push(
             screen::show::create(
-                Rc::clone(&app.state.config),
+                Arc::clone(&app.state.config),
                 Rc::clone(&app.state.repo),
                 term.size().map_err(Error::Term)?,
                 r.clone(),
@@ -74,7 +74,7 @@ fn goto_show_stash_screen(stash_ref: String) -> Option<Action> {
         app.close_menu();
         app.state.screens.push(
             screen::show_stash::create(
-                Rc::clone(&app.state.config),
+                Arc::clone(&app.state.config),
                 Rc::clone(&app.state.repo),
                 term.size().map_err(Error::Term)?,
                 stash_ref.clone(),

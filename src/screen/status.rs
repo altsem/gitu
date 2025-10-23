@@ -9,7 +9,7 @@ use crate::{
 };
 use git2::Repository;
 use ratatui::prelude::Size;
-use std::{hash::Hash, path::PathBuf, rc::Rc};
+use std::{hash::Hash, path::PathBuf, rc::Rc, sync::Arc};
 
 enum SectionID {
     RebaseStatus,
@@ -41,9 +41,9 @@ impl Hash for SectionID {
     }
 }
 
-pub(crate) fn create(config: Rc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
+pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
     Screen::new(
-        Rc::clone(&config),
+        Arc::clone(&config),
         size,
         Box::new(move || {
             let status = git::status(repo.workdir().ok_or(Error::NoRepoWorkdir)?)?;

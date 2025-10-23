@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use gitu::{cli::Commands, config, term::TermBackend};
@@ -20,7 +20,7 @@ fn show(c: &mut Criterion) {
             ..Default::default()
         };
 
-        let config = Rc::new(config::init_config(args.config.clone()).unwrap());
+        let config = Arc::new(config::init_config(args.config.clone()).unwrap());
 
         b.iter(|| {
             gitu::run(config.clone(), &args, &mut terminal).unwrap();

@@ -9,7 +9,7 @@ use ratatui::{
 use crate::{Res, config::Config, items::hash};
 
 use super::Item;
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::HashSet, sync::Arc};
 
 pub(crate) mod log;
 pub(crate) mod show;
@@ -30,7 +30,7 @@ pub(crate) struct Screen {
     pub(crate) size: Size,
     cursor: usize,
     scroll: usize,
-    config: Rc<Config>,
+    config: Arc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
     line_index: Vec<usize>,
@@ -39,7 +39,7 @@ pub(crate) struct Screen {
 
 impl Screen {
     pub(crate) fn new(
-        config: Rc<Config>,
+        config: Arc<Config>,
         size: Size,
         refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     ) -> Res<Self> {
@@ -353,7 +353,7 @@ impl Screen {
                 } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                     *highlight_depth = None;
                 };
-                let display = item.to_line(Rc::clone(&self.config));
+                let display = item.to_line(Arc::clone(&self.config));
 
                 Some(LineView {
                     item_index: *item_index,

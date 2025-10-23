@@ -10,7 +10,7 @@ use crate::{
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
 use ratatui::{Terminal, backend::TestBackend, layout::Size};
-use std::{path::PathBuf, rc::Rc, time::Duration};
+use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
 use temp_dir::TempDir;
 
 use self::buffer::TestBuffer;
@@ -33,7 +33,7 @@ pub struct TestContext {
     pub dir: TempDir,
     pub remote_dir: TempDir,
     pub size: Size,
-    config: Rc<Config>,
+    config: Arc<Config>,
 }
 
 impl TestContext {
@@ -50,7 +50,7 @@ impl TestContext {
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
             size,
-            config: Rc::new(config::init_test_config().unwrap()),
+            config: Arc::new(config::init_test_config().unwrap()),
         }
     }
 
@@ -67,12 +67,12 @@ impl TestContext {
             dir: repo_ctx.dir,
             remote_dir: repo_ctx.remote_dir,
             size,
-            config: Rc::new(config::init_test_config().unwrap()),
+            config: Arc::new(config::init_test_config().unwrap()),
         }
     }
 
     pub fn config(&mut self) -> &mut Config {
-        Rc::get_mut(&mut self.config).unwrap()
+        Arc::get_mut(&mut self.config).unwrap()
     }
 
     pub fn init_app(&mut self) -> App {
@@ -84,7 +84,7 @@ impl TestContext {
             Rc::new(Repository::open(path).unwrap()),
             self.size,
             &Args::default(),
-            Rc::clone(&self.config),
+            Arc::clone(&self.config),
             false,
         )
         .unwrap();

@@ -31,6 +31,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     rc::Rc,
+    sync::Arc,
     time::Duration,
 };
 use term::Term;
@@ -78,13 +79,9 @@ pub const LOG_FILE_NAME: &str = "gitu.log";
 
 pub type Res<T> = Result<T, Error>;
 
-pub fn run(config: Rc<Config>, args: &cli::Args, term: &mut Term) -> Res<()> {
+pub fn run(config: Arc<Config>, args: &cli::Args, term: &mut Term) -> Res<()> {
     let dir = find_git_dir()?;
     let repo = open_repo(&dir)?;
-
-    if config.general.mouse_support {
-        term.backend_mut().enable_mouse_capture()?;
-    }
 
     let mut app = app::App::create(
         Rc::new(repo),

@@ -43,7 +43,7 @@ use super::Res;
 
 pub(crate) struct State {
     pub repo: Rc<Repository>,
-    pub config: Rc<Config>,
+    pub config: Arc<Config>,
     pending_keys: Vec<(KeyModifiers, KeyCode)>,
     pub quit: bool,
     pub screens: Vec<Screen>,
@@ -66,20 +66,20 @@ impl App {
         repo: Rc<Repository>,
         size: Size,
         args: &cli::Args,
-        config: Rc<Config>,
+        config: Arc<Config>,
         enable_async_cmds: bool,
     ) -> Res<Self> {
         let screens = match args.command {
             Some(cli::Commands::Show { ref reference }) => {
                 vec![screen::show::create(
-                    Rc::clone(&config),
+                    Arc::clone(&config),
                     Rc::clone(&repo),
                     size,
                     reference.clone(),
                 )?]
             }
             None => vec![screen::status::create(
-                Rc::clone(&config),
+                Arc::clone(&config),
                 Rc::clone(&repo),
                 size,
             )?],
@@ -465,13 +465,9 @@ impl App {
         // Redirect stderr so we can capture it via `Child::wait_with_output()`
         cmd.stderr(Stdio::piped());
 
-        // git will have staircased output in raw mode (issue #290)
-        // disable raw mode temporarily for the git command
-        term.backend().disable_raw_mode()?;
-
-        // If we don't show the cursor prior spawning (thus restore the default
-        // state), the cursor may be missing in $EDITOR.
-        term.show_cursor().map_err(Error::Term)?;
+        term.backend_mut()
+            .reset_term_stay_on_alt_screeen(&self.state.config)
+            .map_err(Error::Term)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
@@ -498,17 +494,9 @@ impl App {
             .current_cmd_log
             .push_cmd_with_output(&cmd, out_utf8);
 
-        // restore the raw mode
-        term.backend().enable_raw_mode()?;
-        if self.state.config.general.mouse_support {
-            term.backend_mut().enable_mouse_capture()?;
-        }
-
-        // Prevents cursor flash when exiting editor
-        term.hide_cursor().map_err(Error::Term)?;
-
-        // In case the command left the alternate screen (editors would)
-        term.backend_mut().enter_alternate_screen()?;
+        term.backend_mut()
+            .setup_term(&self.state.config)
+            .map_err(Error::Term)?;
 
         term.clear().map_err(Error::Term)?;
         self.update_screens()?;

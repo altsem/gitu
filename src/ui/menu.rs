@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::SizedWidget;
 use crate::{app::State, config::Config, items::Item, menu::PendingMenu, ops::Op};
@@ -17,7 +17,7 @@ pub(crate) struct MenuWidget<'a> {
 
 impl<'a> MenuWidget<'a> {
     pub fn new(
-        config: Rc<Config>,
+        config: Arc<Config>,
         pending: &'a PendingMenu,
         item: &'a Item,
         state: &'a State,
@@ -91,7 +91,7 @@ impl<'a> MenuWidget<'a> {
             .collect::<Vec<_>>();
 
         if !target_binds.is_empty() {
-            right_column.push(item.to_line(Rc::clone(&config)));
+            right_column.push(item.to_line(Arc::clone(&config)));
         }
 
         for bind in target_binds {

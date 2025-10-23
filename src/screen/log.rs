@@ -3,10 +3,10 @@ use crate::{Res, config::Config, items::log};
 use git2::{Oid, Repository};
 use ratatui::layout::Size;
 use regex::Regex;
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 pub(crate) fn create(
-    config: Rc<Config>,
+    config: Arc<Config>,
     repo: Rc<Repository>,
     size: Size,
     limit: usize,
@@ -14,7 +14,7 @@ pub(crate) fn create(
     msg_regex: Option<Regex>,
 ) -> Res<Screen> {
     Screen::new(
-        Rc::clone(&config),
+        Arc::clone(&config),
         size,
         Box::new(move || log(&repo, limit, rev, msg_regex.clone())),
     )

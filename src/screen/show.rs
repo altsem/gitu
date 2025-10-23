@@ -1,4 +1,4 @@
-use std::{iter, rc::Rc};
+use std::{iter, rc::Rc, sync::Arc};
 
 use crate::{
     Res,
@@ -13,13 +13,13 @@ use ratatui::layout::Size;
 use super::Screen;
 
 pub(crate) fn create(
-    config: Rc<Config>,
+    config: Arc<Config>,
     repo: Rc<Repository>,
     size: Size,
     reference: String,
 ) -> Res<Screen> {
     Screen::new(
-        Rc::clone(&config),
+        Arc::clone(&config),
         size,
         Box::new(move || {
             let commit = git::show_summary(repo.as_ref(), &reference)?;
