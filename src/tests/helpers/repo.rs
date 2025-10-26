@@ -125,10 +125,8 @@ fn set_config(path: &Path) {
 pub fn clone_and_commit(remote_dir: &Path, file_name: &str, file_content: &str) {
     let other_dir = TempDir::new().unwrap();
 
-    run(
-        other_dir.path(),
-        &["git", "clone", remote_dir.to_str().unwrap(), "."],
-    );
+    let url = format!("file://{}", remote_dir.to_str().unwrap());
+    run(other_dir.path(), &["git", "clone", &url, "."]);
 
     set_config(other_dir.path());
 
