@@ -3,6 +3,7 @@ source: src/tests/editor.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 3 commit(s).                          |
                                                                                 |
  Unstaged changes (3)                                                           |
  modified   file-1                                                              |
@@ -21,5 +22,4 @@ expression: ctx.redact_buffer()
  +line 12 (file-1)                                                              |
  +line 13 (file-1)                                                              |
  +line 14 (file-1)                                                              |
- +line 15 (file-1)                                                              |
-styles_hash: 70f01855cb5abd9
+styles_hash: 706a4e3dc9f00a8e

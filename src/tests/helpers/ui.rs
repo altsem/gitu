@@ -37,33 +37,11 @@ pub struct TestContext {
 }
 
 #[macro_export]
-macro_rules! setup_init {
-    () => {{ TestContext::setup_init(function_name!()) }};
-}
-
-#[macro_export]
 macro_rules! setup_clone {
     () => {{ TestContext::setup_clone(function_name!()) }};
 }
 
 impl TestContext {
-    pub fn setup_init(test_name: &str) -> Self {
-        let size = Size::new(80, 20);
-        let term = Terminal::new(TermBackend::Test {
-            backend: TestBackend::new(size.width, size.height),
-            events: vec![],
-        })
-        .unwrap();
-        let repo_ctx = RepoTestContext::setup_init(test_name);
-        Self {
-            term,
-            dir: repo_ctx.dir,
-            remote_dir: repo_ctx.remote_dir,
-            size,
-            config: Arc::new(config::init_test_config().unwrap()),
-        }
-    }
-
     pub fn setup_clone(test_name: &str) -> Self {
         let size = Size::new(80, 20);
         let term = Terminal::new(TermBackend::Test {
@@ -120,8 +98,8 @@ impl TestContext {
         };
         let mut debug_output = format!("{:?}", TestBuffer(backend.buffer()));
 
-        redact(&mut debug_output, "From (/.*)\n");
-        redact(&mut debug_output, "To (/.*)\n");
+        redact(&mut debug_output, "From file://(.*)\n");
+        redact(&mut debug_output, "To file://(/.*)\n");
 
         debug_output
     }

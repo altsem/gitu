@@ -38,16 +38,8 @@ use stdext::function_name;
 use crate::tests::helpers::run_ignore_status;
 
 #[test]
-fn no_repo() {
-    let mut ctx = setup_init!();
-
-    ctx.init_app();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
-
-#[test]
 fn help_menu() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
 
     let mut app = ctx.init_app();
     ctx.update(&mut app, keys("h"));
@@ -56,7 +48,10 @@ fn help_menu() {
 
 #[test]
 fn fresh_init() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
+    run(&ctx.dir, &["rm", "-rf", ".git"]);
+    run(&ctx.dir, &["rm", "initial-file"]);
+    run(&ctx.dir, &["git", "init", "--initial-branch=main"]);
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -64,7 +59,7 @@ fn fresh_init() {
 
 #[test]
 fn new_file() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     run(&ctx.dir, &["touch", "new-file"]);
 
     ctx.init_app();
@@ -73,7 +68,7 @@ fn new_file() {
 
 #[test]
 fn deleted_file() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "new-file", "testing\ntesttest\n");
     run(&ctx.dir, &["rm", "new-file"]);
     snapshot!(ctx, "");
@@ -81,7 +76,7 @@ fn deleted_file() {
 
 #[test]
 fn copied_file() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "new-file", "testing\ntesttest\n");
     run(&ctx.dir, &["cp", "new-file", "copied-file"]);
     run(&ctx.dir, &["git", "add", "-N", "."]);
@@ -90,7 +85,7 @@ fn copied_file() {
 
 #[test]
 fn unstaged_changes() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
     fs::write(ctx.dir.join("testfile"), "test\ntesttest\n").expect("error writing to file");
     snapshot!(ctx, "jj<tab>");
@@ -98,7 +93,7 @@ fn unstaged_changes() {
 
 #[test]
 fn binary_file() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     fs::write(ctx.dir.join("binary-file"), [0, 255]).expect("error writing to file");
     run(&ctx.dir, &["git", "add", "."]);
     snapshot!(ctx, "jj<tab>");
@@ -106,7 +101,7 @@ fn binary_file() {
 
 #[test]
 fn non_ascii_filename() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "höhöhö", "hehehe\n");
     fs::write(ctx.dir.join("höhöhö"), "hahaha\n").expect("error writing to file");
     snapshot!(ctx, "jj<tab>");
@@ -328,7 +323,7 @@ mod show_refs {
 
 #[test]
 fn updated_externally() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     fs::write(ctx.dir.join("b"), "test\n").unwrap();
 
     let mut app = ctx.init_app();
@@ -353,7 +348,7 @@ fn stage_last_hunk_of_first_delta() {
 
 #[test]
 fn go_down_past_collapsed() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "file-one", "asdf\nblahonga\n");
     commit(&ctx.dir, "file-two", "FOO\nBAR\n");
     fs::write(ctx.dir.join("file-one"), "blahonga\n").unwrap();
@@ -384,7 +379,7 @@ fn inside_submodule() {
 
 #[test]
 fn syntax_highlighted() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(
         &ctx.dir,
         "syntax-highlighted.rs",
@@ -401,7 +396,7 @@ fn syntax_highlighted() {
 
 #[test]
 fn crlf_diff() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     let mut app = ctx.init_app();
     app.state
         .repo
@@ -419,7 +414,7 @@ fn crlf_diff() {
 
 #[test]
 fn tab_diff() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     let mut app = ctx.init_app();
 
     commit(&ctx.dir, "tab.txt", "this has no tab prefixed\n");
@@ -431,7 +426,7 @@ fn tab_diff() {
 
 #[test]
 fn ext_diff() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     let mut app = ctx.init_app();
 
     fs::write(ctx.dir.join("unstaged.txt"), "unstaged\n").unwrap();
@@ -446,19 +441,19 @@ fn ext_diff() {
 
 #[test]
 fn mouse_select_item() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
 
     let mut app = ctx.init_app();
-    ctx.update(&mut app, vec![mouse_event(0, 4, MouseButton::Left)]);
+    ctx.update(&mut app, vec![mouse_event(0, 5, MouseButton::Left)]);
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn mouse_select_hunk_line() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     fs::write(ctx.dir.join("testfile"), "test\ntesttest\n").expect("error writing to file");
@@ -470,11 +465,11 @@ fn mouse_select_hunk_line() {
         &mut app,
         vec![
             // Select the file with an unstaged change.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
             // Expand the selected file.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
             // Select the hunk line.
-            mouse_event(0, 8, MouseButton::Left),
+            mouse_event(0, 9, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -482,7 +477,7 @@ fn mouse_select_hunk_line() {
 
 #[test]
 fn mouse_select_ignore_empty_lines() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
@@ -493,9 +488,9 @@ fn mouse_select_ignore_empty_lines() {
         &mut app,
         vec![
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButton::Left),
-            // Click the space underneath the last unstaged change.
             mouse_event(0, 5, MouseButton::Left),
+            // Click the space underneath the last unstaged change.
+            mouse_event(0, 6, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -503,7 +498,7 @@ fn mouse_select_ignore_empty_lines() {
 
 #[test]
 fn mouse_select_ignore_empty_region() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
@@ -514,7 +509,7 @@ fn mouse_select_ignore_empty_region() {
         &mut app,
         vec![
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
             // Click the open space at the bottom of the screen.
             mouse_event(0, 10, MouseButton::Left),
         ],
@@ -524,7 +519,7 @@ fn mouse_select_ignore_empty_region() {
 
 #[test]
 fn mouse_toggle_selected_item() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
@@ -535,9 +530,9 @@ fn mouse_toggle_selected_item() {
         &mut app,
         vec![
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
             // Click the last unstaged change.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -545,7 +540,7 @@ fn mouse_toggle_selected_item() {
 
 #[test]
 fn mouse_show_item() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
@@ -555,7 +550,7 @@ fn mouse_show_item() {
         &mut app,
         vec![
             // Right-click the last unstaged change.
-            mouse_event(0, 4, MouseButton::Right),
+            mouse_event(0, 5, MouseButton::Right),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -563,7 +558,7 @@ fn mouse_show_item() {
 
 #[test]
 fn mouse_show_ignore_empty_lines() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
@@ -576,9 +571,9 @@ fn mouse_show_ignore_empty_lines() {
         &mut app,
         vec![
             // Left-click the last stash.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
             // Right-click the space underneath the last stash.
-            mouse_event(0, 5, MouseButton::Right),
+            mouse_event(0, 6, MouseButton::Right),
         ],
     );
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -586,7 +581,7 @@ fn mouse_show_ignore_empty_lines() {
 
 #[test]
 fn mouse_show_ignore_empty_region() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     commit(&ctx.dir, "testfile", "testing\ntesttest\n");
@@ -599,7 +594,7 @@ fn mouse_show_ignore_empty_region() {
         &mut app,
         vec![
             // Left-click the last stash change.
-            mouse_event(0, 4, MouseButton::Left),
+            mouse_event(0, 5, MouseButton::Left),
             // Right-click the open space at the bottom of the screen.
             mouse_event(0, 10, MouseButton::Right),
         ],
@@ -609,7 +604,7 @@ fn mouse_show_ignore_empty_region() {
 
 #[test]
 fn mouse_wheel_scroll_up() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     // Create many files to have something to scroll through
@@ -638,7 +633,7 @@ fn mouse_wheel_scroll_up() {
 
 #[test]
 fn mouse_wheel_scroll_down() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     ctx.config().general.mouse_support = true;
 
     // Create many files to have something to scroll through

@@ -12,7 +12,7 @@ fn commit_menu() {
 
 #[test]
 fn commit_instant_fixup() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     let mut state = ctx.init_app();
 
     commit(&ctx.dir, "instant_fixup.txt", "initial\n");
@@ -26,7 +26,7 @@ fn commit_instant_fixup() {
 
 #[test]
 fn commit_instant_fixup_stashes_changes_and_keeps_empty() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     let mut state = ctx.init_app();
 
     commit(&ctx.dir, "instant_fixup.txt", "initial\n");

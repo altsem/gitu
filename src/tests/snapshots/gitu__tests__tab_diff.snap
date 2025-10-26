@@ -3,6 +3,7 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   tab.txt                                                             |
@@ -11,7 +12,8 @@ expression: ctx.redact_buffer()
  +    this has a tab prefixed                                                   |
                                                                                 |
  Recent commits                                                                 |
- bbba724 main add tab.txt                                                       |
+ 0295453 main add tab.txt                                                       |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: 4c33c9d79050f1a0
+styles_hash: b244c3166dabf67c

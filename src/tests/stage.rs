@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn staged_file() {
-    let mut ctx = setup_init!();
+    let mut ctx = setup_clone!();
     run(&ctx.dir, &["touch", "new-file"]);
     run(&ctx.dir, &["git", "add", "new-file"]);
 
@@ -12,7 +12,7 @@ fn staged_file() {
 
 #[test]
 fn stage_all_unstaged() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "firstfile", "testing\ntesttest\n");
     commit(&ctx.dir, "secondfile", "testing\ntesttest\n");
 
@@ -23,7 +23,7 @@ fn stage_all_unstaged() {
 
 #[test]
 fn stage_all_untracked() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     run(&ctx.dir, &["touch", "file-a"]);
     run(&ctx.dir, &["touch", "file-b"]);
     snapshot!(ctx, "js");
@@ -31,7 +31,7 @@ fn stage_all_untracked() {
 
 #[test]
 fn stage_removed_line() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "firstfile", "testing\ntesttest\n");
     fs::write(ctx.dir.join("firstfile"), "weehooo\nblrergh\n").unwrap();
     snapshot!(ctx, "jj<tab><ctrl+j><ctrl+j>s");
@@ -39,7 +39,7 @@ fn stage_removed_line() {
 
 #[test]
 fn stage_added_line() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "firstfile", "testing\ntesttest\n");
     fs::write(ctx.dir.join("firstfile"), "weehooo\nblrergh\n").unwrap();
 
@@ -48,7 +48,7 @@ fn stage_added_line() {
 
 #[test]
 fn stage_changes_crlf() {
-    let ctx = setup_init!();
+    let ctx = setup_clone!();
     commit(&ctx.dir, "testfile", "testing\r\ntesttest\r\n");
     fs::write(ctx.dir.join("testfile"), "test\r\ntesttest\r\n").expect("error writing to file");
 

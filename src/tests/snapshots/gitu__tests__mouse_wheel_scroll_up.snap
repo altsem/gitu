@@ -2,10 +2,11 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
+ modified   file14…                                                             |
  modified   file15…                                                             |
  modified   file16…                                                             |
- modified   file17…                                                             |
-▌modified   file18…                                                             |
+▌modified   file17…                                                             |
+ modified   file18…                                                             |
  modified   file19…                                                             |
  modified   file20…                                                             |
  modified   file21…                                                             |
@@ -20,6 +21,5 @@ expression: ctx.redact_buffer()
  modified   file30…                                                             |
                                                                                 |
  Recent commits                                                                 |
- 45183e5 main add file30                                                        |
- d823a8b add file29                                                             |
-styles_hash: f22bfab8ba35bcab
+ ae744cc main add file30                                                        |
+styles_hash: f4a20c3f7a22b228

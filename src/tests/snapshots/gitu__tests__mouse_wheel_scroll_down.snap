@@ -2,6 +2,7 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
+ Unstaged changes (30)                                                          |
  modified   file01…                                                             |
  modified   file02…                                                             |
  modified   file03…                                                             |
@@ -11,8 +12,8 @@ expression: ctx.redact_buffer()
  modified   file07…                                                             |
  modified   file08…                                                             |
  modified   file09…                                                             |
- modified   file10…                                                             |
-▌modified   file11…                                                             |
+▌modified   file10…                                                             |
+ modified   file11…                                                             |
  modified   file12…                                                             |
  modified   file13…                                                             |
  modified   file14…                                                             |
@@ -21,5 +22,4 @@ expression: ctx.redact_buffer()
  modified   file17…                                                             |
  modified   file18…                                                             |
  modified   file19…                                                             |
- modified   file20…                                                             |
-styles_hash: da4075784874982a
+styles_hash: 568f3653bfca7d79

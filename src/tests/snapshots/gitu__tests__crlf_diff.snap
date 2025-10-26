@@ -3,6 +3,7 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   crlf.txt                                                            |
@@ -12,7 +13,8 @@ expression: ctx.redact_buffer()
  +changed                                                                       |
                                                                                 |
  Recent commits                                                                 |
- ebb4990 main add crlf.txt                                                      |
+ 13d662a main add crlf.txt                                                      |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: b4da2716f1730956
+styles_hash: 75c0c0779835909d

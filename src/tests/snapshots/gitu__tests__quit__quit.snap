@@ -1,10 +1,12 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/quit.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: bc670d3bb6a7cf9a
+styles_hash: 59b42b473ea2086a

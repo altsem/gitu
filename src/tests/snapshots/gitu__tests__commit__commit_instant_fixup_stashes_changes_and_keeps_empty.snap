@@ -2,7 +2,6 @@
 source: src/tests/commit.rs
 expression: ctx.redact_buffer()
 ---
- On branch main                                                                 |
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   instant_fixup.txt                                                   |
@@ -11,15 +10,16 @@ expression: ctx.redact_buffer()
  +unstaged                                                                      |
                                                                                 |
  Recent commits                                                                 |
- 77cc537 main empty commit                                                      |
- 108474f modify instant_fixup.txt                                               |
-▌f05ea1d add instant_fixup.txt                                                  |
+ bada738 main empty commit                                                      |
+ 2809bd7 modify instant_fixup.txt                                               |
+ fa09c62 add instant_fixup.txt                                                  |
+▌b66a0bf origin/main add initial-file                                           |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git commit --fixup b6eadadbf0b746c00135b317fab80d9801c2d7bb                   |
-[main c0f1150] fixup! modify instant_fixup.txt                                  |
+$ git commit --fixup efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f                   |
+[main bec1be7] fixup! modify instant_fixup.txt                                  |
  Author: Author Name <author@email.com>                                         |
  1 file changed, 1 insertion(+), 1 deletion(-)                                  |
-$ git rebase -i -q --autostash --keep-empty --autosquash b6eadadbf0b746c00135b31|
+$ git rebase -i -q --autostash --keep-empty --autosquash efc77f3bea683ce4ea27f2e|
 Applied autostash.                                                              |
-Created autostash: bc5bcfb                                                      |
-styles_hash: e862947c002fddb3
+Created autostash: d682ced                                                      |
+styles_hash: 9261bcce695e4986
