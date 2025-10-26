@@ -3,12 +3,12 @@ source: src/tests/commit.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 108474f main modify instant_fixup.txt                                          |
-▌f05ea1d add instant_fixup.txt                                                  |
-                                                                                |
-                                                                                |
+ 2809bd7 main modify instant_fixup.txt                                          |
+ fa09c62 add instant_fixup.txt                                                  |
+▌b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -17,9 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git commit --fixup b6eadadbf0b746c00135b317fab80d9801c2d7bb                   |
-[main aa71b64] fixup! modify instant_fixup.txt                                  |
+$ git commit --fixup efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f                   |
+[main eac3fc0] fixup! modify instant_fixup.txt                                  |
  Author: Author Name <author@email.com>                                         |
  1 file changed, 1 insertion(+), 1 deletion(-)                                  |
-$ git rebase -i -q --autostash --keep-empty --autosquash b6eadadbf0b746c00135b31|
-styles_hash: 775b3fc3b27812e8
+$ git rebase -i -q --autostash --keep-empty --autosquash efc77f3bea683ce4ea27f2e|
+styles_hash: c2c1aca698ebd0d3

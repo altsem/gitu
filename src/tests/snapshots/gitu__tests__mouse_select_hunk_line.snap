@@ -2,7 +2,8 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- No branch                                                                      |
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   testfile                                                            |
@@ -15,11 +16,10 @@ expression: ctx.redact_buffer()
  added      testfile…                                                           |
                                                                                 |
  Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: 5265bcb857a5c4d8
+styles_hash: 60ab1900920b4419

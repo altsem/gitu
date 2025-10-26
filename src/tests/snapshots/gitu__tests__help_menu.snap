@@ -2,11 +2,11 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌No branch                                                                      |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
-                                                                                |
-                                                                                |
+ b66a0bf main origin/main add initial-file                                      |
 ────────────────────────────────────────────────────────────────────────────────|
 Help                            Submenu                                         |
 Y Show Refs                     b Branch                                        |
@@ -22,4 +22,4 @@ ctrl+u Half page up             r Rebase                                        
 ctrl+d Half page down           X Reset                                         |
 g Refresh                       V Revert                                        |
 q/esc Quit/Close                z Stash                                         |
-styles_hash: cf1ec8ee0a53f111
+styles_hash: 5d3d73f836cc425b

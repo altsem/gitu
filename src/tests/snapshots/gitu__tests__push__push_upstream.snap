@@ -20,6 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git push origin refs/heads/main:refs/heads/main                               |
-To                                                                               
+To file://                                                                       
    b66a0bf..e7eb2bd  main -> main                                               |
 styles_hash: 4281674f50fbf56f

@@ -3,6 +3,7 @@ source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Unstaged changes (1)                                                           |
 ▌modified   höhöhö                                                              |
@@ -11,7 +12,8 @@ expression: ctx.redact_buffer()
 ▌+hahaha                                                                        |
                                                                                 |
  Recent commits                                                                 |
- 95a754f main add höhöhö                                                        |
+ 8efa733 main add höhöhö                                                        |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: 94a898211851f229
+styles_hash: bb9ed5a655f91028

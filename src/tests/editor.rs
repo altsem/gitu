@@ -22,45 +22,45 @@ fn setup_scroll(mut ctx: TestContext) -> (TestContext, crate::app::App) {
 
 #[test]
 fn scroll_down() {
-    let (mut ctx, mut app) = setup_scroll(setup_init!());
+    let (mut ctx, mut app) = setup_scroll(setup_clone!());
     ctx.update(&mut app, keys("<ctrl+d>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn scroll_past_selection() {
-    let (mut ctx, mut app) = setup_scroll(setup_init!());
+    let (mut ctx, mut app) = setup_scroll(setup_clone!());
     ctx.update(&mut app, keys("<ctrl+d><ctrl+d><ctrl+d>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_prev_sibling() {
-    let (mut ctx, mut app) = setup_scroll(setup_init!());
+    let (mut ctx, mut app) = setup_scroll(setup_clone!());
     ctx.update(&mut app, keys("<alt+k><alt+k>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_next_sibling() {
-    let (mut ctx, mut app) = setup_scroll(setup_init!());
+    let (mut ctx, mut app) = setup_scroll(setup_clone!());
     ctx.update(&mut app, keys("<alt+j>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn move_next_then_parent_section() {
-    let (mut ctx, mut app) = setup_scroll(setup_init!());
+    let (mut ctx, mut app) = setup_scroll(setup_clone!());
     ctx.update(&mut app, keys("<alt+j><alt+h>"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn exit_from_prompt_exits_menu() {
-    snapshot!(setup_init!(), "bb<esc>");
+    snapshot!(setup_clone!(), "bb<esc>");
 }
 
 #[test]
 fn re_enter_prompt_from_menu() {
-    snapshot!(setup_init!(), "bb<esc>bb");
+    snapshot!(setup_clone!(), "bb<esc>bb");
 }

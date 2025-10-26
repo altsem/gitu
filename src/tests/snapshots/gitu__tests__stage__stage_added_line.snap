@@ -3,6 +3,7 @@ source: src/tests/stage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   firstfile                                                           |
@@ -19,7 +20,6 @@ expression: ctx.redact_buffer()
   testtest                                                                      |
  +weehooo                                                                       |
                                                                                 |
- Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --recount                                                  |
-styles_hash: eca2ccd8f37da412
+styles_hash: a66d38a1027e36cc

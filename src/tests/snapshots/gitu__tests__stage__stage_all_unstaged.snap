@@ -3,16 +3,16 @@ source: src/tests/stage.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
 ▌Staged changes (2)                                                             |
 ▌modified   firstfile…                                                          |
 ▌modified   secondfile…                                                         |
                                                                                 |
  Recent commits                                                                 |
- a735817 main add secondfile                                                    |
- 95a979d add firstfile                                                          |
-                                                                                |
-                                                                                |
+ 0c2c6c3 main add secondfile                                                    |
+ 223428c add firstfile                                                          |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add -u .                                                                  |
-styles_hash: da5cd136a9bf8912
+styles_hash: 14ecc9c042c43798

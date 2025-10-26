@@ -17,45 +17,11 @@ fn open_repo(dir: &Path) -> git2::Repository {
 }
 
 #[macro_export]
-macro_rules! repo_setup_init {
-    () => {{ RepoTestContext::setup_init(function_name!()) }};
-}
-
-#[macro_export]
 macro_rules! repo_setup_clone {
     () => {{ RepoTestContext::setup_clone(function_name!()) }};
 }
 
 impl RepoTestContext {
-    pub fn setup_init(test_name: &str) -> Self {
-        fs::create_dir_all("testfiles").unwrap();
-        let testfiles = fs::canonicalize("testfiles").unwrap();
-        let dir = &testfiles.join(test_name.replace(":", "_"));
-        fs::create_dir_all(dir).unwrap();
-        fs::remove_dir_all(dir).unwrap();
-
-        let local_dir = dir.join("local");
-        fs::create_dir_all(&local_dir).unwrap();
-        let remote_dir = dir.join("remote");
-        fs::create_dir_all(&remote_dir).unwrap();
-
-        set_env_vars();
-        run(&local_dir, &["git", "init", "--initial-branch=main"]);
-        run(&remote_dir, &["git", "init", "--initial-branch=main"]);
-        set_config(&local_dir);
-        set_config(&remote_dir);
-
-        let local_repo = open_repo(&local_dir);
-        assert_repo_commit_count(&local_dir, 0);
-        assert_repo_commit_count(&remote_dir, 0);
-
-        Self {
-            local_repo,
-            dir: local_dir,
-            remote_dir,
-        }
-    }
-
     pub fn setup_clone(test_name: &str) -> Self {
         fs::create_dir_all("testfiles").unwrap();
         let testfiles = fs::canonicalize("testfiles").unwrap();
@@ -76,16 +42,13 @@ impl RepoTestContext {
         set_config(&remote_dir);
         clone_and_commit(&remote_dir, "initial-file", "hello");
 
-        run(
-            &local_dir,
-            &["git", "clone", remote_dir.to_str().unwrap(), "."],
-        );
+        let url = format!("file://{}", remote_dir.to_str().unwrap());
+        run(&local_dir, &["git", "clone", &url, "."]);
         set_config(&local_dir);
 
         let local_repo = open_repo(&local_dir);
-        assert_eq!(local_repo.revwalk().unwrap().count(), 0);
-        assert_repo_commit_count(&local_dir, 1);
-        assert_repo_commit_count(&remote_dir, 1);
+        assert_local_test_repo(&local_dir);
+        assert_remote_test_repo(&remote_dir);
 
         Self {
             local_repo,
@@ -96,14 +59,20 @@ impl RepoTestContext {
 }
 
 /// Just to make sure we're not accidentally modifying gitu's repo
-fn assert_repo_commit_count(remote_dir: &Path, expected_commit_count: usize) {
-    let repo = open_repo(remote_dir);
-    let mut revwalk = repo.revwalk().unwrap();
-    if revwalk.push_head().is_ok() {
-        assert_eq!(revwalk.count(), expected_commit_count);
-    } else {
-        assert!(repo.is_empty().unwrap());
-    }
+fn assert_local_test_repo(dir: &Path) {
+    assert_eq!(
+        run(dir, &["git", "log", "--oneline", "--graph", "--all"]),
+        "* b66a0bf add initial-file\n"
+    );
+    assert!(run(dir, &["git", "remote", "get-url", "origin"]).contains("gitu/testfiles"));
+}
+
+fn assert_remote_test_repo(dir: &Path) {
+    assert_eq!(
+        run(dir, &["git", "log", "--oneline", "--graph", "--all"]),
+        "* b66a0bf add initial-file\n"
+    );
+    assert_eq!(run(dir, &["git", "remote"]), "");
 }
 
 pub fn set_env_vars() {
@@ -140,12 +109,12 @@ pub fn run(dir: &Path, cmd: &[&str]) -> String {
         .output()
         .unwrap_or_else(|_| panic!("failed to execute {:?}", cmd));
 
-    let stderr = String::from_utf8(output.stderr).unwrap();
     if !output.status.success() {
+        let stderr = String::from_utf8(output.stderr).unwrap();
         panic!("failed to execute {:?}. Output: {}", cmd, stderr)
     }
 
-    stderr
+    String::from_utf8(output.stdout).unwrap()
 }
 
 fn set_config(path: &Path) {
