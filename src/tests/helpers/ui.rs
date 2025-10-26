@@ -10,8 +10,8 @@ use crate::{
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
 use ratatui::{Terminal, backend::TestBackend, layout::Size};
+use regex::Regex;
 use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
-use temp_dir::TempDir;
 
 use self::buffer::TestBuffer;
 
@@ -30,21 +30,31 @@ macro_rules! snapshot {
 
 pub struct TestContext {
     pub term: Term,
-    pub dir: TempDir,
-    pub remote_dir: TempDir,
+    pub dir: PathBuf,
+    pub remote_dir: PathBuf,
     pub size: Size,
     config: Arc<Config>,
 }
 
+#[macro_export]
+macro_rules! setup_init {
+    () => {{ TestContext::setup_init(function_name!()) }};
+}
+
+#[macro_export]
+macro_rules! setup_clone {
+    () => {{ TestContext::setup_clone(function_name!()) }};
+}
+
 impl TestContext {
-    pub fn setup_init() -> Self {
+    pub fn setup_init(test_name: &str) -> Self {
         let size = Size::new(80, 20);
         let term = Terminal::new(TermBackend::Test {
             backend: TestBackend::new(size.width, size.height),
             events: vec![],
         })
         .unwrap();
-        let repo_ctx = RepoTestContext::setup_init();
+        let repo_ctx = RepoTestContext::setup_init(test_name);
         Self {
             term,
             dir: repo_ctx.dir,
@@ -54,14 +64,14 @@ impl TestContext {
         }
     }
 
-    pub fn setup_clone() -> Self {
+    pub fn setup_clone(test_name: &str) -> Self {
         let size = Size::new(80, 20);
         let term = Terminal::new(TermBackend::Test {
             backend: TestBackend::new(size.width, size.height),
             events: vec![],
         })
         .unwrap();
-        let repo_ctx = RepoTestContext::setup_clone();
+        let repo_ctx = RepoTestContext::setup_clone(test_name);
         Self {
             term,
             dir: repo_ctx.dir,
@@ -76,7 +86,7 @@ impl TestContext {
     }
 
     pub fn init_app(&mut self) -> App {
-        self.init_app_at_path(self.dir.path().to_path_buf())
+        self.init_app_at_path(self.dir.to_path_buf())
     }
 
     pub fn init_app_at_path(&mut self, path: PathBuf) -> App {
@@ -110,16 +120,19 @@ impl TestContext {
         };
         let mut debug_output = format!("{:?}", TestBuffer(backend.buffer()));
 
-        redact_temp_dir(&self.dir, &mut debug_output);
-        redact_temp_dir(&self.remote_dir, &mut debug_output);
+        redact(&mut debug_output, "From (/.*)\n");
+        redact(&mut debug_output, "To (/.*)\n");
 
         debug_output
     }
 }
 
-fn redact_temp_dir(temp_dir: &TempDir, debug_output: &mut String) {
-    let text = temp_dir.path().to_str().unwrap();
-    *debug_output = debug_output.replace(text, &" ".repeat(text.len()));
+fn redact(debug_output: &mut String, regex: &str) {
+    let re = Regex::new(regex).unwrap();
+    if let Some(caps) = re.captures(debug_output) {
+        let c = caps.get(1).unwrap();
+        debug_output.replace_range(c.range(), &" ".repeat(c.len()));
+    }
 }
 
 pub fn keys(input: &str) -> Vec<Event> {

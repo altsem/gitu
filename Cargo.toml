@@ -17,6 +17,7 @@ criterion = "0.5.1"
 insta = "1.43.2"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
+stdext = "0.3.3"
 
 [profile.profiling]
 inherits = "dev"

@@ -2,32 +2,31 @@ use temp_env::with_var;
 
 use super::*;
 
-fn setup() -> TestContext {
-    let ctx = TestContext::setup_clone();
-    run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
-    commit(ctx.dir.path(), "new-file", "hello");
-    run(ctx.dir.path(), &["git", "checkout", "main"]);
+fn setup(ctx: TestContext) -> TestContext {
+    run(&ctx.dir, &["git", "checkout", "-b", "other-branch"]);
+    commit(&ctx.dir, "new-file", "hello");
+    run(&ctx.dir, &["git", "checkout", "main"]);
     ctx
 }
 
 #[test]
 fn merge_menu() {
-    snapshot!(setup(), "m");
+    snapshot!(setup(setup_clone!()), "m");
 }
 
 #[test]
 fn merge_prompt() {
-    snapshot!(setup(), "mm");
+    snapshot!(setup(setup_clone!()), "mm");
 }
 
 #[test]
 fn merge_ff_only() {
-    snapshot!(setup(), "m-fmother-branch<enter>");
+    snapshot!(setup(setup_clone!()), "m-fmother-branch<enter>");
 }
 
 #[test]
 fn merge_no_ff() {
     with_var("GIT_MERGE_AUTOEDIT", Some("no"), || {
-        snapshot!(setup(), "m-nmother-branch<enter>");
+        snapshot!(setup(setup_clone!()), "m-nmother-branch<enter>");
     });
 }

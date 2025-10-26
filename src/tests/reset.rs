@@ -1,32 +1,31 @@
 use super::*;
 
-fn setup() -> TestContext {
-    let ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "unwanted-file", "");
+fn setup(ctx: TestContext) -> TestContext {
+    commit(&ctx.dir, "unwanted-file", "");
     ctx
 }
 
 #[test]
 pub(crate) fn reset_menu() {
-    snapshot!(setup(), "lljX");
+    snapshot!(setup(setup_clone!()), "lljX");
 }
 
 #[test]
 pub(crate) fn reset_soft_prompt() {
-    snapshot!(setup(), "lljXsq");
+    snapshot!(setup(setup_clone!()), "lljXsq");
 }
 
 #[test]
 pub(crate) fn reset_soft() {
-    snapshot!(setup(), "lljXs<enter>q");
+    snapshot!(setup(setup_clone!()), "lljXs<enter>q");
 }
 
 #[test]
 pub(crate) fn reset_mixed() {
-    snapshot!(setup(), "lljXm<enter>q");
+    snapshot!(setup(setup_clone!()), "lljXm<enter>q");
 }
 
 #[test]
 fn reset_hard() {
-    snapshot!(setup(), "lljXh<enter>q");
+    snapshot!(setup(setup_clone!()), "lljXh<enter>q");
 }

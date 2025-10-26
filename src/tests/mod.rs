@@ -5,10 +5,7 @@
 //! - asserts the output (`cargo insta` is used a lot https://insta.rs)
 //! - cleans up the temporary directory
 //!
-//! It is useful when debugging to sometimes manually inspect a test-case.
-//! ```rust`
-//! dbg!(&ctx.dir.path());
-//! ctx.dir.leak();
+//! Each test typically sets up its own git repo under `testfiles/`
 //! ````
 //!
 
@@ -36,10 +33,13 @@ mod unstage;
 
 use crossterm::event::MouseButton;
 use helpers::{TestContext, clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run};
+use stdext::function_name;
+
+use crate::tests::helpers::run_ignore_status;
 
 #[test]
 fn no_repo() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -47,7 +47,7 @@ fn no_repo() {
 
 #[test]
 fn help_menu() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
 
     let mut app = ctx.init_app();
     ctx.update(&mut app, keys("h"));
@@ -56,7 +56,7 @@ fn help_menu() {
 
 #[test]
 fn fresh_init() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -64,8 +64,8 @@ fn fresh_init() {
 
 #[test]
 fn new_file() {
-    let mut ctx = TestContext::setup_init();
-    run(ctx.dir.path(), &["touch", "new-file"]);
+    let mut ctx = setup_init!();
+    run(&ctx.dir, &["touch", "new-file"]);
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -73,130 +73,130 @@ fn new_file() {
 
 #[test]
 fn deleted_file() {
-    let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "new-file", "testing\ntesttest\n");
-    run(ctx.dir.path(), &["rm", "new-file"]);
+    let ctx = setup_init!();
+    commit(&ctx.dir, "new-file", "testing\ntesttest\n");
+    run(&ctx.dir, &["rm", "new-file"]);
     snapshot!(ctx, "");
 }
 
 #[test]
 fn copied_file() {
-    let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "new-file", "testing\ntesttest\n");
-    run(ctx.dir.path(), &["cp", "new-file", "copied-file"]);
-    run(ctx.dir.path(), &["git", "add", "-N", "."]);
+    let ctx = setup_init!();
+    commit(&ctx.dir, "new-file", "testing\ntesttest\n");
+    run(&ctx.dir, &["cp", "new-file", "copied-file"]);
+    run(&ctx.dir, &["git", "add", "-N", "."]);
     snapshot!(ctx, "");
 }
 
 #[test]
 fn unstaged_changes() {
-    let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
-    fs::write(ctx.dir.child("testfile"), "test\ntesttest\n").expect("error writing to file");
+    let ctx = setup_init!();
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.join("testfile"), "test\ntesttest\n").expect("error writing to file");
     snapshot!(ctx, "jj<tab>");
 }
 
 #[test]
 fn binary_file() {
-    let ctx = TestContext::setup_init();
-    fs::write(ctx.dir.child("binary-file"), [0, 255]).expect("error writing to file");
-    run(ctx.dir.path(), &["git", "add", "."]);
+    let ctx = setup_init!();
+    fs::write(ctx.dir.join("binary-file"), [0, 255]).expect("error writing to file");
+    run(&ctx.dir, &["git", "add", "."]);
     snapshot!(ctx, "jj<tab>");
 }
 
 #[test]
 fn non_ascii_filename() {
-    let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "höhöhö", "hehehe\n");
-    fs::write(ctx.dir.child("höhöhö"), "hahaha\n").expect("error writing to file");
+    let ctx = setup_init!();
+    commit(&ctx.dir, "höhöhö", "hehehe\n");
+    fs::write(ctx.dir.join("höhöhö"), "hahaha\n").expect("error writing to file");
     snapshot!(ctx, "jj<tab>");
 }
 
 #[test]
 fn collapsed_sections_config() {
-    let mut ctx = TestContext::setup_clone();
+    let mut ctx = setup_clone!();
     ctx.config().general.collapsed_sections = vec![
         "untracked".into(),
         "recent_commits".into(),
         "branch_status".into(),
         // TODO rebase / revert/ merge conlict?
     ];
-    fs::write(ctx.dir.child("untracked_file.txt"), "").unwrap();
+    fs::write(ctx.dir.join("untracked_file.txt"), "").unwrap();
 
     snapshot!(ctx, "");
 }
 
 #[test]
 fn stash_list_with_limit() {
-    let mut ctx = TestContext::setup_clone();
+    let mut ctx = setup_clone!();
     ctx.config().general.stash_list_limit = 2;
 
-    fs::write(ctx.dir.child("file1.txt"), "content").unwrap();
-    run(ctx.dir.path(), &["git", "add", "."]);
-    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
-    fs::write(ctx.dir.child("file2.txt"), "content").unwrap();
-    run(ctx.dir.path(), &["git", "add", "."]);
-    run(ctx.dir.path(), &["git", "stash", "save", "secondstash"]);
-    fs::write(ctx.dir.child("file3.txt"), "content").unwrap();
-    run(ctx.dir.path(), &["git", "add", "."]);
-    run(ctx.dir.path(), &["git", "stash", "save", "thirdstash"]);
+    fs::write(ctx.dir.join("file1.txt"), "content").unwrap();
+    run(&ctx.dir, &["git", "add", "."]);
+    run(&ctx.dir, &["git", "stash", "save", "firststash"]);
+    fs::write(ctx.dir.join("file2.txt"), "content").unwrap();
+    run(&ctx.dir, &["git", "add", "."]);
+    run(&ctx.dir, &["git", "stash", "save", "secondstash"]);
+    fs::write(ctx.dir.join("file3.txt"), "content").unwrap();
+    run(&ctx.dir, &["git", "add", "."]);
+    run(&ctx.dir, &["git", "stash", "save", "thirdstash"]);
 
     snapshot!(ctx, "");
 }
 
 #[test]
 fn recent_commits_with_limit() {
-    let mut ctx = TestContext::setup_clone();
+    let mut ctx = setup_clone!();
     ctx.config().general.recent_commits_limit = 2;
-    commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
-    commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
-    commit(ctx.dir.path(), "thirdfile", "testing\ntesttest\n");
+    commit(&ctx.dir, "firstfile", "testing\ntesttest\n");
+    commit(&ctx.dir, "secondfile", "testing\ntesttest\n");
+    commit(&ctx.dir, "thirdfile", "testing\ntesttest\n");
     snapshot!(ctx, "");
 }
 
 #[test]
 fn log() {
-    let ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "firstfile", "testing\ntesttest\n");
-    run(ctx.dir.path(), &["git", "tag", "-am", ".", "annotated"]);
-    commit(ctx.dir.path(), "secondfile", "testing\ntesttest\n");
-    run(ctx.dir.path(), &["git", "tag", "a-tag"]);
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "firstfile", "testing\ntesttest\n");
+    run(&ctx.dir, &["git", "tag", "-am", ".", "annotated"]);
+    commit(&ctx.dir, "secondfile", "testing\ntesttest\n");
+    run(&ctx.dir, &["git", "tag", "a-tag"]);
     snapshot!(ctx, "ll");
 }
 
 #[test]
 fn show() {
-    let ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "firstfile", "This should be visible\n");
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "firstfile", "This should be visible\n");
     snapshot!(ctx, "ll<enter>");
 }
 
 #[test]
 fn show_stash() {
-    let ctx = TestContext::setup_clone();
+    let ctx = setup_clone!();
 
-    fs::write(ctx.dir.child("file1.txt"), "content").unwrap();
-    run(ctx.dir.path(), &["git", "add", "file1.txt"]);
+    fs::write(ctx.dir.join("file1.txt"), "content").unwrap();
+    run(&ctx.dir, &["git", "add", "file1.txt"]);
     // Unstaged changes to "file1.txt"
-    fs::write(ctx.dir.child("file1.txt"), "content\nmodified content").unwrap();
-    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+    fs::write(ctx.dir.join("file1.txt"), "content\nmodified content").unwrap();
+    run(&ctx.dir, &["git", "stash", "save", "firststash"]);
 
     snapshot!(ctx, "jj<enter>");
 }
 
 #[test]
 fn rebase_conflict() {
-    let mut ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "new-file", "hello");
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "new-file", "hello");
 
-    run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
-    commit(ctx.dir.path(), "new-file", "hey");
+    run(&ctx.dir, &["git", "checkout", "-b", "other-branch"]);
+    commit(&ctx.dir, "new-file", "hey");
 
-    run(ctx.dir.path(), &["git", "checkout", "main"]);
-    commit(ctx.dir.path(), "new-file", "hi");
+    run(&ctx.dir, &["git", "checkout", "main"]);
+    commit(&ctx.dir, "new-file", "hi");
 
-    run(ctx.dir.path(), &["git", "checkout", "other-branch"]);
-    run(ctx.dir.path(), &["git", "rebase", "main"]);
+    run(&ctx.dir, &["git", "checkout", "other-branch"]);
+    run_ignore_status(&ctx.dir, &["git", "rebase", "main"]);
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -204,19 +204,19 @@ fn rebase_conflict() {
 
 #[test]
 fn merge_conflict() {
-    let mut ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "new-file", "hello");
-    commit(ctx.dir.path(), "new-file-2", "hello");
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "new-file", "hello");
+    commit(&ctx.dir, "new-file-2", "hello");
 
-    run(ctx.dir.path(), &["git", "checkout", "-b", "other-branch"]);
-    commit(ctx.dir.path(), "new-file", "hey");
-    commit(ctx.dir.path(), "new-file-2", "hey");
+    run(&ctx.dir, &["git", "checkout", "-b", "other-branch"]);
+    commit(&ctx.dir, "new-file", "hey");
+    commit(&ctx.dir, "new-file-2", "hey");
 
-    run(ctx.dir.path(), &["git", "checkout", "main"]);
-    commit(ctx.dir.path(), "new-file", "hi");
-    commit(ctx.dir.path(), "new-file-2", "hi");
+    run(&ctx.dir, &["git", "checkout", "main"]);
+    commit(&ctx.dir, "new-file", "hi");
+    commit(&ctx.dir, "new-file-2", "hi");
 
-    run(ctx.dir.path(), &["git", "merge", "other-branch"]);
+    run_ignore_status(&ctx.dir, &["git", "merge", "other-branch"]);
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -224,11 +224,11 @@ fn merge_conflict() {
 
 #[test]
 fn revert_conflict() {
-    let mut ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "new-file", "hey");
-    commit(ctx.dir.path(), "new-file", "hi");
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "new-file", "hey");
+    commit(&ctx.dir, "new-file", "hi");
 
-    run(ctx.dir.path(), &["git", "revert", "HEAD~1"]);
+    run_ignore_status(&ctx.dir, &["git", "revert", "HEAD~1"]);
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -236,38 +236,38 @@ fn revert_conflict() {
 
 #[test]
 fn revert_abort() {
-    let ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "new-file", "hey");
-    commit(ctx.dir.path(), "new-file", "hi");
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "new-file", "hey");
+    commit(&ctx.dir, "new-file", "hi");
 
-    run(ctx.dir.path(), &["git", "revert", "HEAD~1"]);
+    run_ignore_status(&ctx.dir, &["git", "revert", "HEAD~1"]);
 
     snapshot!(ctx, "Va");
 }
 
 #[test]
 fn revert_menu() {
-    let ctx = TestContext::setup_clone();
+    let ctx = setup_clone!();
     snapshot!(ctx, "llV");
 }
 
 #[test]
 fn revert_commit_prompt() {
-    let ctx = TestContext::setup_clone();
+    let ctx = setup_clone!();
     snapshot!(ctx, "llVV");
 }
 
 #[test]
 fn revert_commit() {
-    let ctx = TestContext::setup_clone();
+    let ctx = setup_clone!();
     snapshot!(ctx, "llV-EV<enter>");
 }
 
 #[test]
 fn moved_file() {
-    let mut ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "new-file", "hello");
-    run(ctx.dir.path(), &["git", "mv", "new-file", "moved-file"]);
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "new-file", "hello");
+    run(&ctx.dir, &["git", "mv", "new-file", "moved-file"]);
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -275,8 +275,8 @@ fn moved_file() {
 
 #[test]
 fn hide_untracked() {
-    let mut ctx = TestContext::setup_clone();
-    run(ctx.dir.path(), &["touch", "i-am-untracked"]);
+    let mut ctx = setup_clone!();
+    run(&ctx.dir, &["touch", "i-am-untracked"]);
 
     let mut app = ctx.init_app();
     let mut config = app.state.repo.config().unwrap();
@@ -288,8 +288,8 @@ fn hide_untracked() {
 
 #[test]
 fn new_commit() {
-    let mut ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "new-file", "");
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "new-file", "");
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -297,7 +297,7 @@ fn new_commit() {
 
 #[test]
 fn fetch_all() {
-    let ctx = TestContext::setup_clone();
+    let ctx = setup_clone!();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
     snapshot!(ctx, "fa");
 }
@@ -307,34 +307,34 @@ mod show_refs {
 
     #[test]
     fn show_refs_at_local_branch() {
-        let ctx = TestContext::setup_clone();
-        run(ctx.dir.path(), &["git", "tag", "main"]);
+        let ctx = setup_clone!();
+        run(&ctx.dir, &["git", "tag", "main"]);
         snapshot!(ctx, "Y");
     }
 
     #[test]
     fn show_refs_at_remote_branch() {
-        let ctx = TestContext::setup_clone();
+        let ctx = setup_clone!();
         snapshot!(ctx, "Yjjjjbb<enter>Y");
     }
 
     #[test]
     fn show_refs_at_tag() {
-        let ctx = TestContext::setup_clone();
-        run(ctx.dir.path(), &["git", "tag", "v1.0"]);
+        let ctx = setup_clone!();
+        run(&ctx.dir, &["git", "tag", "v1.0"]);
         snapshot!(ctx, "Yjjjjjjbb<enter>Y");
     }
 }
 
 #[test]
 fn updated_externally() {
-    let mut ctx = TestContext::setup_init();
-    fs::write(ctx.dir.child("b"), "test\n").unwrap();
+    let mut ctx = setup_init!();
+    fs::write(ctx.dir.join("b"), "test\n").unwrap();
 
     let mut app = ctx.init_app();
     ctx.update(&mut app, keys("jjsj"));
 
-    fs::write(ctx.dir.child("a"), "test\n").unwrap();
+    fs::write(ctx.dir.join("a"), "test\n").unwrap();
 
     ctx.update(&mut app, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -342,56 +342,56 @@ fn updated_externally() {
 
 #[test]
 fn stage_last_hunk_of_first_delta() {
-    let ctx = TestContext::setup_clone();
-    commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
-    commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
-    fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
-    fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "file-one", "asdf\nblahonga\n");
+    commit(&ctx.dir, "file-two", "FOO\nBAR\n");
+    fs::write(ctx.dir.join("file-one"), "blahonga\n").unwrap();
+    fs::write(ctx.dir.join("file-two"), "blahonga\n").unwrap();
 
     snapshot!(ctx, "jj<tab>js");
 }
 
 #[test]
 fn go_down_past_collapsed() {
-    let ctx = TestContext::setup_init();
-    commit(ctx.dir.path(), "file-one", "asdf\nblahonga\n");
-    commit(ctx.dir.path(), "file-two", "FOO\nBAR\n");
-    fs::write(ctx.dir.child("file-one"), "blahonga\n").unwrap();
-    fs::write(ctx.dir.child("file-two"), "blahonga\n").unwrap();
+    let ctx = setup_init!();
+    commit(&ctx.dir, "file-one", "asdf\nblahonga\n");
+    commit(&ctx.dir, "file-two", "FOO\nBAR\n");
+    fs::write(ctx.dir.join("file-one"), "blahonga\n").unwrap();
+    fs::write(ctx.dir.join("file-two"), "blahonga\n").unwrap();
 
     snapshot!(ctx, "jjj");
 }
 
 #[test]
 fn inside_submodule() {
-    let mut ctx = TestContext::setup_clone();
+    let mut ctx = setup_clone!();
     run(
-        ctx.dir.path(),
+        &ctx.dir,
         &[
             "git",
             "-c",
             "protocol.file.allow=always",
             "submodule",
             "add",
-            ctx.remote_dir.path().to_str().unwrap(),
+            ctx.remote_dir.to_str().unwrap(),
             "test-submodule",
         ],
     );
 
-    let _app = ctx.init_app_at_path(ctx.dir.child("test-submodule"));
+    let _app = ctx.init_app_at_path(ctx.dir.join("test-submodule"));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn syntax_highlighted() {
-    let ctx = TestContext::setup_init();
+    let ctx = setup_init!();
     commit(
-        ctx.dir.path(),
+        &ctx.dir,
         "syntax-highlighted.rs",
         "fn main() {\n    println!(\"Hey\");\n}\n",
     );
     fs::write(
-        ctx.dir.child("syntax-highlighted.rs"),
+        ctx.dir.join("syntax-highlighted.rs"),
         "fn main() {\n    println!(\"Bye\");\n}\n",
     )
     .unwrap();
@@ -401,7 +401,7 @@ fn syntax_highlighted() {
 
 #[test]
 fn crlf_diff() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     let mut app = ctx.init_app();
     app.state
         .repo
@@ -410,8 +410,8 @@ fn crlf_diff() {
         .set_bool("core.autocrlf", true)
         .unwrap();
 
-    commit(ctx.dir.path(), "crlf.txt", "unchanged\r\nunchanged\r\n");
-    fs::write(ctx.dir.child("crlf.txt"), "unchanged\r\nchanged\r\n").unwrap();
+    commit(&ctx.dir, "crlf.txt", "unchanged\r\nunchanged\r\n");
+    fs::write(ctx.dir.join("crlf.txt"), "unchanged\r\nchanged\r\n").unwrap();
     ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -419,11 +419,11 @@ fn crlf_diff() {
 
 #[test]
 fn tab_diff() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     let mut app = ctx.init_app();
 
-    commit(ctx.dir.path(), "tab.txt", "this has no tab prefixed\n");
-    fs::write(ctx.dir.child("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
+    commit(&ctx.dir, "tab.txt", "this has no tab prefixed\n");
+    fs::write(ctx.dir.join("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
     ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -431,17 +431,14 @@ fn tab_diff() {
 
 #[test]
 fn ext_diff() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     let mut app = ctx.init_app();
 
-    fs::write(ctx.dir.child("unstaged.txt"), "unstaged\n").unwrap();
-    fs::write(ctx.dir.child("staged.txt"), "staged\n").unwrap();
-    run(ctx.dir.path(), &["git", "add", "-N", "unstaged.txt"]);
-    run(ctx.dir.path(), &["git", "add", "staged.txt"]);
-    run(
-        ctx.dir.path(),
-        &["git", "config", "diff.external", "/dev/null"],
-    );
+    fs::write(ctx.dir.join("unstaged.txt"), "unstaged\n").unwrap();
+    fs::write(ctx.dir.join("staged.txt"), "staged\n").unwrap();
+    run(&ctx.dir, &["git", "add", "-N", "unstaged.txt"]);
+    run(&ctx.dir, &["git", "add", "staged.txt"]);
+    run(&ctx.dir, &["git", "config", "diff.external", "/dev/null"]);
     ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());
@@ -449,10 +446,10 @@ fn ext_diff() {
 
 #[test]
 fn mouse_select_item() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
 
     let mut app = ctx.init_app();
     ctx.update(&mut app, vec![mouse_event(0, 4, MouseButton::Left)]);
@@ -461,12 +458,12 @@ fn mouse_select_item() {
 
 #[test]
 fn mouse_select_hunk_line() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    fs::write(ctx.dir.child("testfile"), "test\ntesttest\n").expect("error writing to file");
-    run(ctx.dir.path(), &["git", "add", "."]);
-    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+    fs::write(ctx.dir.join("testfile"), "test\ntesttest\n").expect("error writing to file");
+    run(&ctx.dir, &["git", "add", "."]);
+    fs::write(ctx.dir.join("testfile"), "test\nmoretest\n").expect("error writing to file");
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -485,11 +482,11 @@ fn mouse_select_hunk_line() {
 
 #[test]
 fn mouse_select_ignore_empty_lines() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
-    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.join("testfile"), "test\nmoretest\n").expect("error writing to file");
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -506,11 +503,11 @@ fn mouse_select_ignore_empty_lines() {
 
 #[test]
 fn mouse_select_ignore_empty_region() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
-    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.join("testfile"), "test\nmoretest\n").expect("error writing to file");
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -527,11 +524,11 @@ fn mouse_select_ignore_empty_region() {
 
 #[test]
 fn mouse_toggle_selected_item() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
-    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.join("testfile"), "test\nmoretest\n").expect("error writing to file");
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -548,10 +545,10 @@ fn mouse_toggle_selected_item() {
 
 #[test]
 fn mouse_show_item() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -566,13 +563,13 @@ fn mouse_show_item() {
 
 #[test]
 fn mouse_show_ignore_empty_lines() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
-    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
-    run(ctx.dir.path(), &["git", "add", "."]);
-    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.join("testfile"), "test\nmoretest\n").expect("error writing to file");
+    run(&ctx.dir, &["git", "add", "."]);
+    run(&ctx.dir, &["git", "stash", "save", "firststash"]);
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -589,13 +586,13 @@ fn mouse_show_ignore_empty_lines() {
 
 #[test]
 fn mouse_show_ignore_empty_region() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
-    commit(ctx.dir.path(), "testfile", "testing\ntesttest\n");
-    fs::write(ctx.dir.child("testfile"), "test\nmoretest\n").expect("error writing to file");
-    run(ctx.dir.path(), &["git", "add", "."]);
-    run(ctx.dir.path(), &["git", "stash", "save", "firststash"]);
+    commit(&ctx.dir, "testfile", "testing\ntesttest\n");
+    fs::write(ctx.dir.join("testfile"), "test\nmoretest\n").expect("error writing to file");
+    run(&ctx.dir, &["git", "add", "."]);
+    run(&ctx.dir, &["git", "stash", "save", "firststash"]);
 
     let mut app = ctx.init_app();
     ctx.update(
@@ -612,19 +609,16 @@ fn mouse_show_ignore_empty_region() {
 
 #[test]
 fn mouse_wheel_scroll_up() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
     // Create many files to have something to scroll through
     for i in 1..=30 {
         let filename = format!("file{:02}", i);
         let content = "line 1\nline 2\nline 3\nline 4\nline 5\n".to_string();
-        commit(ctx.dir.path(), &filename, &content);
-        fs::write(
-            ctx.dir.child(&filename),
-            format!("modified content {}\n", i),
-        )
-        .expect("error writing to file");
+        commit(&ctx.dir, &filename, &content);
+        fs::write(ctx.dir.join(&filename), format!("modified content {}\n", i))
+            .expect("error writing to file");
     }
 
     let mut app = ctx.init_app();
@@ -644,19 +638,16 @@ fn mouse_wheel_scroll_up() {
 
 #[test]
 fn mouse_wheel_scroll_down() {
-    let mut ctx = TestContext::setup_init();
+    let mut ctx = setup_init!();
     ctx.config().general.mouse_support = true;
 
     // Create many files to have something to scroll through
     for i in 1..=30 {
         let filename = format!("file{:02}", i);
         let content = "line 1\nline 2\nline 3\nline 4\nline 5\n".to_string();
-        commit(ctx.dir.path(), &filename, &content);
-        fs::write(
-            ctx.dir.child(&filename),
-            format!("modified content {}\n", i),
-        )
-        .expect("error writing to file");
+        commit(&ctx.dir, &filename, &content);
+        fs::write(ctx.dir.join(&filename), format!("modified content {}\n", i))
+            .expect("error writing to file");
     }
 
     let mut app = ctx.init_app();

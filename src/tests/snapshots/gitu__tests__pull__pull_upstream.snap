@@ -14,7 +14,7 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git pull origin refs/heads/main                                               |
-From                                                                            |
+From                                                                             
  * branch            main       -> FETCH_HEAD                                   |
    b66a0bf..d07f2d3  main       -> origin/main                                  |
 Updating b66a0bf..d07f2d3                                                       |
