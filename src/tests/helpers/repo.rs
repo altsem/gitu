@@ -28,6 +28,7 @@ macro_rules! repo_setup_clone {
 
 impl RepoTestContext {
     pub fn setup_init(test_name: &str) -> Self {
+        fs::create_dir_all("testfiles").unwrap();
         let testfiles = fs::canonicalize("testfiles").unwrap();
         let dir = &testfiles.join(test_name.replace(":", "_"));
         fs::create_dir_all(dir).unwrap();
@@ -56,6 +57,7 @@ impl RepoTestContext {
     }
 
     pub fn setup_clone(test_name: &str) -> Self {
+        fs::create_dir_all("testfiles").unwrap();
         let testfiles = fs::canonicalize("testfiles").unwrap();
         let dir = &testfiles.join(test_name.replace(":", "_"));
         fs::create_dir_all(dir).unwrap();
