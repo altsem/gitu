@@ -48,3 +48,16 @@ fn delete_unmerged_branch() {
     let ctx = setup(setup_clone!());
     snapshot!(ctx, "bKunmerged<enter>nbKunmerged<enter>y");
 }
+
+#[test]
+fn spinoff_branch() {
+    snapshot!(setup(setup_clone!()), "bsnew<enter>");
+}
+
+#[test]
+fn spinoff_branch_with_unmerged_commits() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "first commit", "");
+
+    snapshot!(ctx, "bsnew<enter>");
+}

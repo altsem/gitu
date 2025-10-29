@@ -2,12 +2,10 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌On branch new                                                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main merged origin/main add initial-file                               |
-                                                                                |
+ b66a0bf main merged new origin/main add initial-file                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +19,7 @@ s Spinoff branch                                                                
 K Delete branch                                                                 |
 q/esc Quit/Close                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-! Branch name required                                                          |
-styles_hash: af0156b5f1926c99
+$ git checkout -b new                                                           |
+Switched to a new branch 'new'                                                  |
+> Branch main not changed                                                       |
+styles_hash: 9245ec6bce254d5c
