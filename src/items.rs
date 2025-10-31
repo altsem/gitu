@@ -32,8 +32,8 @@ pub(crate) struct Item {
 }
 
 impl Item {
-    pub fn to_line<'a>(&'a self, config: Arc<Config>) -> Line<'a> {
-        match &self.data {
+    pub fn to_line(&'_ self, config: Arc<Config>) -> Line<'_> {
+        match self.data.clone() {
             ItemData::Raw(content) => Line::raw(content),
             ItemData::AllUnstaged(count) => Line::from(vec![
                 Span::styled("Unstaged changes", &config.style.section_header),
@@ -53,7 +53,7 @@ impl Item {
                     RefKind::Remote(remote) => (remote, &config.style.remote),
                 };
 
-                Line::from(vec![Span::raw(*prefix), Span::styled(reference, style)])
+                Line::from(vec![Span::raw(prefix), Span::styled(reference, style)])
             }
             ItemData::Commit {
                 short_id,
@@ -64,7 +64,7 @@ impl Item {
                 iter::once(Span::styled(short_id, &config.style.hash))
                     .chain(
                         associated_references
-                            .iter()
+                            .into_iter()
                             .map(|reference| match reference {
                                 RefKind::Tag(tag) => Span::styled(tag, &config.style.tag),
                                 RefKind::Branch(branch) => {
@@ -78,9 +78,12 @@ impl Item {
                     .chain([Span::raw(summary)]),
                 Span::raw(" "),
             )),
-            ItemData::File(path) => Line::styled(path.to_string_lossy(), &config.style.file_header),
+            ItemData::File(path) => Line::styled(
+                path.to_string_lossy().into_owned(),
+                &config.style.file_header,
+            ),
             ItemData::Delta { diff, file_i } => {
-                let file_diff = &diff.file_diffs[*file_i];
+                let file_diff = &diff.file_diffs[file_i];
 
                 let content = format!(
                     "{:8}   {}",
@@ -105,12 +108,11 @@ impl Item {
                 file_i,
                 hunk_i,
             } => {
-                let file_diff = &diff.file_diffs[*file_i];
-                let hunk = &file_diff.hunks[*hunk_i];
-
+                let file_diff = &diff.file_diffs[file_i];
+                let hunk = &file_diff.hunks[hunk_i];
                 let content = &diff.text[hunk.header.range.clone()];
 
-                Line::styled(content, &config.style.hunk_header)
+                Line::styled(content.to_string(), &config.style.hunk_header)
             }
             ItemData::HunkLine {
                 diff,
@@ -120,12 +122,12 @@ impl Item {
                 line_i,
             } => {
                 let hunk_highlights =
-                    highlight::highlight_hunk(self.id, &config, &Rc::clone(diff), *file_i, *hunk_i);
+                    highlight::highlight_hunk(self.id, &config, &Rc::clone(&diff), file_i, hunk_i);
 
-                let hunk_content = &diff.hunk_content(*file_i, *hunk_i);
+                let hunk_content = &diff.hunk_content(file_i, hunk_i);
                 let hunk_line = &hunk_content[line_range.clone()];
 
-                let line_highlights = hunk_highlights.get_line_highlights(*line_i);
+                let line_highlights = hunk_highlights.get_line_highlights(line_i);
 
                 Line::from_iter(line_highlights.iter().map(|(highlight_range, style)| {
                     Span::styled(
@@ -156,11 +158,11 @@ impl Item {
                 Line::styled(content, &config.style.section_header)
             }
             ItemData::BranchStatus(upstream, ahead, behind) => {
-                let content = if *ahead == 0 && *behind == 0 {
+                let content = if ahead == 0 && behind == 0 {
                     format!("Your branch is up to date with '{upstream}'.")
-                } else if *ahead > 0 && *behind == 0 {
+                } else if ahead > 0 && behind == 0 {
                     format!("Your branch is ahead of '{upstream}' by {ahead} commit(s).",)
-                } else if *ahead == 0 && *behind > 0 {
+                } else if ahead == 0 && behind > 0 {
                     format!("Your branch is behind '{upstream}' by {behind} commit(s).",)
                 } else {
                     format!(
