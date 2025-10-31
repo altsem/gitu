@@ -1,7 +1,9 @@
-use crate::ui::layout::{LayoutTree, OPTS};
-use crate::ui::layout_span;
+use crate::config::StyleConfig;
+use crate::ui::layout::OPTS;
+use crate::ui::{UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
 use ratatui::{layout::Size, style::Style, text::Line};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Res, config::Config, items::hash};
 
@@ -370,31 +372,44 @@ struct LineView<'a> {
     highlighted: bool,
 }
 
-pub(crate) fn layout_screen<'a>(
-    layout: &mut LayoutTree<(Cow<'a, str>, Style)>,
-    size: Size,
-    screen: &'a Screen,
-) {
+const PADDING: &str = "                                                                ";
+
+pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a Screen) {
     let style = &screen.config.style;
 
     layout.vertical(OPTS, |layout| {
         for line in screen.line_views(size) {
             layout.horizontal(OPTS, |layout| {
-                let selected_line = screen.line_index[screen.cursor] == line.item_index;
-                let area_highlight = area_selection_highlgiht(style, &line);
-                let line_highlight = line_selection_highlight(style, &line, selected_line);
+                let is_line_sel = screen.line_index[screen.cursor] == line.item_index;
+                let area_sel = area_selection_highlgiht(style, &line);
+                let line_sel = line_selection_highlight(style, &line, is_line_sel);
+
                 let gutter_char = if line.highlighted {
-                    gutter_char(style, selected_line, area_highlight, line_highlight)
+                    gutter_char(style, is_line_sel, area_sel, line_sel)
                 } else {
                     (" ".into(), Style::new())
                 };
 
                 layout_span(layout, gutter_char);
 
+                let mut line_end = 0;
                 line.display.spans.into_iter().for_each(|span| {
-                    let style = span.style.patch(area_highlight).patch(line_highlight);
+                    let style = line
+                        .display
+                        .style
+                        .patch(span.style)
+                        .patch(area_sel)
+                        .patch(line_sel);
+
+                    line_end += span.content.graphemes(true).count();
                     ui::layout_span(layout, (span.content, style));
                 });
+
+                // Style the rest of the line's empty space
+                if line.highlighted {
+                    let style = if is_line_sel { line_sel } else { area_sel };
+                    pad_rem_of_line(size, layout, line_end, style);
+                }
 
                 // TODO Do something about this
                 // if screen.is_collapsed(line.item) && line_width > 0 || overflow {
@@ -406,32 +421,40 @@ pub(crate) fn layout_screen<'a>(
     });
 }
 
+fn pad_rem_of_line(size: Size, layout: &mut UiTree, line_end: usize, style: Style) {
+    let rem_space = (size.width as usize).saturating_sub(1 + line_end);
+    let full = rem_space / PADDING.len();
+    let partial = rem_space % PADDING.len();
+
+    for _ in 0..full {
+        ui::layout_span(layout, (PADDING.into(), style));
+    }
+
+    if partial > 0 {
+        ui::layout_span(layout, (PADDING[..partial].into(), style));
+    }
+}
+
 fn gutter_char<'a>(
-    style: &'a crate::config::StyleConfig,
-    selected_line: bool,
-    area_highlight: Style,
-    line_highlight: Style,
+    style: &'a StyleConfig,
+    is_line_sel: bool,
+    area_sel: Style,
+    line_sel: Style,
 ) -> (Cow<'a, str>, Style) {
-    if selected_line {
+    if is_line_sel {
         (
             style.cursor.symbol.to_string().into(),
-            Style::from(&style.cursor)
-                .patch(area_highlight)
-                .patch(line_highlight),
+            Style::from(&style.cursor).patch(area_sel).patch(line_sel),
         )
     } else {
         (
             style.selection_bar.symbol.to_string().into(),
-            area_highlight,
+            Style::from(&style.selection_bar),
         )
     }
 }
 
-fn line_selection_highlight(
-    style: &crate::config::StyleConfig,
-    line: &LineView,
-    selected_line: bool,
-) -> Style {
+fn line_selection_highlight(style: &StyleConfig, line: &LineView, selected_line: bool) -> Style {
     if line.highlighted && selected_line {
         Style::from(&style.selection_line)
     } else {
@@ -439,7 +462,7 @@ fn line_selection_highlight(
     }
 }
 
-fn area_selection_highlgiht(style: &crate::config::StyleConfig, line: &LineView) -> Style {
+fn area_selection_highlgiht(style: &StyleConfig, line: &LineView) -> Style {
     if line.highlighted {
         Style::from(&style.selection_area)
     } else {

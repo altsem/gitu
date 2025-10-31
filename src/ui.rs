@@ -16,7 +16,7 @@ mod menu;
 
 const CARET: &str = "\u{2588}";
 
-type UiTree<'a> = LayoutTree<(Cow<'a, str>, Style)>;
+pub(crate) type UiTree<'a> = LayoutTree<(Cow<'a, str>, Style)>;
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     let mut layout = UiTree::new();
