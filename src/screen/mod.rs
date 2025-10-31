@@ -377,9 +377,9 @@ const PADDING: &str = "                                                         
 pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a Screen) {
     let style = &screen.config.style;
 
-    layout.vertical(OPTS, |layout| {
+    layout.vertical(None, OPTS, |layout| {
         for line in screen.line_views(size) {
-            layout.horizontal(OPTS, |layout| {
+            layout.horizontal(None, OPTS, |layout| {
                 let is_line_sel = screen.line_index[screen.cursor] == line.item_index;
                 let area_sel = area_selection_highlgiht(style, &line);
                 let line_sel = line_selection_highlight(style, &line, is_line_sel);

@@ -126,44 +126,68 @@ impl LayoutTree<&'static str> {
 impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
     pub fn horizontal<F: FnOnce(&mut LayoutTree<T>)>(
         &mut self,
+        data: Option<T>,
         opts: Opts,
         layout_fn: F,
     ) -> &mut Self {
-        self.nest(
-            Opts {
-                dir: Direction::Horizontal,
-                ..opts
-            },
-            layout_fn,
-        )
+        {
+            let ode = node::Node {
+                data,
+                opts: Opts {
+                    dir: Direction::Horizontal,
+                    ..opts
+                },
+                size: Vec2(0, 0),
+                pos: None,
+            };
+
+            self.add_with_children(ode, layout_fn);
+            self
+        }
     }
 
     pub fn vertical<F: FnOnce(&mut LayoutTree<T>)>(
         &mut self,
+        data: Option<T>,
         opts: Opts,
         layout_fn: F,
     ) -> &mut Self {
-        self.nest(
-            Opts {
-                dir: Direction::Vertical,
-                ..opts
-            },
-            layout_fn,
-        )
+        {
+            let node = node::Node {
+                data,
+                opts: Opts {
+                    dir: Direction::Vertical,
+                    ..opts
+                },
+                size: Vec2(0, 0),
+                pos: None,
+            };
+
+            self.add_with_children(node, layout_fn);
+            self
+        }
     }
 
     pub fn stacked<F: FnOnce(&mut LayoutTree<T>)>(
         &mut self,
+        data: Option<T>,
         opts: Opts,
         layout_fn: F,
     ) -> &mut Self {
-        self.nest(
-            Opts {
-                dir: Direction::Stacked,
-                ..opts
-            },
-            layout_fn,
-        )
+        {
+            let node = node::Node {
+                data,
+                opts: Opts {
+                    dir: Direction::Stacked,
+                    ..opts
+                },
+                size: Vec2(0, 0),
+                pos: None,
+            };
+
+            self.add_with_children(node, layout_fn);
+            self
+        }
     }
 
     pub fn leaf(&mut self, data: T) -> &mut Self {
@@ -177,23 +201,6 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
             size: size.into(),
             pos: None,
         });
-
-        self
-    }
-
-    fn nest<F>(&mut self, options: Opts, layout_fn: F) -> &mut Self
-    where
-        F: FnOnce(&mut LayoutTree<T>),
-    {
-        self.add_with_children(
-            node::Node {
-                data: None,
-                opts: options,
-                size: Vec2(0, 0),
-                pos: None,
-            },
-            layout_fn,
-        );
 
         self
     }
@@ -328,7 +335,7 @@ mod tests {
     fn single_text() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(OPTS, |layout| {
+        layout.vertical(None, OPTS, |layout| {
             layout.text("Hello");
             layout.text("lol");
         });
@@ -341,7 +348,7 @@ mod tests {
     fn horizontal_layout() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS, |layout| {
+        layout.horizontal(None, OPTS, |layout| {
             layout.text("A");
             layout.text("BB");
             layout.text("CCC");
@@ -355,7 +362,7 @@ mod tests {
     fn vertical_layout() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(OPTS, |layout| {
+        layout.vertical(None, OPTS, |layout| {
             layout.text("First");
             layout.text("Second");
             layout.text("Third");
@@ -369,14 +376,14 @@ mod tests {
     fn nested_layouts() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS, |layout| {
+        layout.horizontal(None, OPTS, |layout| {
             // 0
-            layout.vertical(OPTS, |layout| {
+            layout.vertical(None, OPTS, |layout| {
                 // 1
                 layout.text("A"); // 2
                 layout.text("B"); // 3
             });
-            layout.vertical(OPTS, |layout| {
+            layout.vertical(None, OPTS, |layout| {
                 // 4
                 layout.text("C"); // 5
                 layout.text("D"); // 6
@@ -401,12 +408,12 @@ mod tests {
     fn out_of_bounds_horizontal() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(OPTS, |layout| {
-            layout.horizontal(OPTS, |layout| {
+        layout.vertical(None, OPTS, |layout| {
+            layout.horizontal(None, OPTS, |layout| {
                 layout.text("12345");
                 layout.text("The very start of this will be visible (a T)");
             });
-            layout.horizontal(OPTS, |layout| {
+            layout.horizontal(None, OPTS, |layout| {
                 layout.text("123456");
                 layout.text("This is completely outside of the layout and ignored");
             });
@@ -420,12 +427,12 @@ mod tests {
     fn out_of_bounds_vertical() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS, |layout| {
-            layout.vertical(OPTS, |layout| {
+        layout.horizontal(None, OPTS, |layout| {
+            layout.vertical(None, OPTS, |layout| {
                 layout.text("1");
                 layout.text("2");
             });
-            layout.vertical(OPTS, |layout| {
+            layout.vertical(None, OPTS, |layout| {
                 layout.text("1");
                 layout.text("2");
                 layout.text("X");
@@ -440,12 +447,12 @@ mod tests {
     fn out_of_bounds_horizontal_align_end() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(OPTS, |layout| {
-            layout.horizontal(OPTS.align_end(), |layout| {
+        layout.vertical(None, OPTS, |layout| {
+            layout.horizontal(None, OPTS.align_end(), |layout| {
                 layout.text("12345");
                 layout.text("The very start of this will be visible (a T)");
             });
-            layout.horizontal(OPTS.align_end(), |layout| {
+            layout.horizontal(None, OPTS.align_end(), |layout| {
                 layout.text("123456");
                 layout.text("This is completely outside of the layout and ignored");
             });
@@ -459,8 +466,8 @@ mod tests {
     fn out_of_bounds_vertical_align_end() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS, |layout| {
-            layout.vertical(OPTS.align_end(), |layout| {
+        layout.horizontal(None, OPTS, |layout| {
+            layout.vertical(None, OPTS.align_end(), |layout| {
                 layout.text("1");
                 layout.text("2");
                 layout.text("X");
@@ -475,7 +482,7 @@ mod tests {
     fn unicode_text_width() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS, |layout| {
+        layout.horizontal(None, OPTS, |layout| {
             layout.text("café").text("naïve");
         });
 
@@ -488,7 +495,7 @@ mod tests {
     fn horizontal_gap() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS.gap(2), |layout| {
+        layout.horizontal(None, OPTS.gap(2), |layout| {
             layout.text("one");
             layout.text("two");
         });
@@ -501,7 +508,7 @@ mod tests {
     fn vertical_gap() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(OPTS.gap(1), |layout| {
+        layout.vertical(None, OPTS.gap(1), |layout| {
             layout.text("one");
             layout.text("two");
         });
@@ -514,7 +521,7 @@ mod tests {
     fn stacked() {
         let mut layout = LayoutTree::new();
 
-        layout.stacked(OPTS, |layout| {
+        layout.stacked(None, OPTS, |layout| {
             layout.text("This is under. (leftovers here)");
             layout.text("This is on top");
         });
@@ -527,12 +534,12 @@ mod tests {
     fn align_bottom() {
         let mut layout = LayoutTree::new();
 
-        layout.stacked(OPTS, |layout| {
-            layout.vertical(OPTS, |layout| {
+        layout.stacked(None, OPTS, |layout| {
+            layout.vertical(None, OPTS, |layout| {
                 layout.text("Stack 1");
             });
 
-            layout.vertical(OPTS.align_end(), |layout| {
+            layout.vertical(None, OPTS.align_end(), |layout| {
                 layout.text("Stack 2, bottom aligned");
             });
         });
@@ -545,7 +552,7 @@ mod tests {
     fn align_right() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(OPTS.align_end().gap(1), |layout| {
+        layout.horizontal(None, OPTS.align_end().gap(1), |layout| {
             layout.text("Aligned");
             layout.text("to");
             layout.text("the");
@@ -560,18 +567,18 @@ mod tests {
     fn gitu_mockup() {
         let mut layout = LayoutTree::new();
 
-        layout.stacked(OPTS, |layout| {
-            layout.vertical(OPTS.gap(1), |layout| {
-                layout.vertical(OPTS, |layout| {
+        layout.stacked(None, OPTS, |layout| {
+            layout.vertical(None, OPTS.gap(1), |layout| {
+                layout.vertical(None, OPTS, |layout| {
                     layout.text("On branch master");
-                    layout.vertical(OPTS, |layout| {
+                    layout.vertical(None, OPTS, |layout| {
                         layout.text("Your branch is up to date with 'origin/master'");
                     });
                 });
 
-                layout.vertical(OPTS, |layout| {
+                layout.vertical(None, OPTS, |layout| {
                     layout.text("Recent commits");
-                    layout.vertical(OPTS, |layout| {
+                    layout.vertical(None, OPTS, |layout| {
                         layout.text("b3492a8 master origin/master chore: update dependencies");
                         layout.text("013844c refactor: appease linter");
                         layout.text("5536ea3 feat: Show the diff on the stash detail screen");
@@ -579,11 +586,11 @@ mod tests {
                 });
             });
 
-            layout.vertical(OPTS.align_end(), |layout| {
+            layout.vertical(None, OPTS.align_end(), |layout| {
                 layout.text("───────────────────────────────────────────────────────────────");
 
-                layout.horizontal(OPTS.gap(2), |layout| {
-                    layout.vertical(OPTS, |layout| {
+                layout.horizontal(None, OPTS.gap(2), |layout| {
+                    layout.vertical(None, OPTS, |layout| {
                         layout.text("Help");
                         layout.text("Y Show Refs");
                         layout.text("<tab> Toggle section");
@@ -599,7 +606,7 @@ mod tests {
                         layout.text("g Refresh");
                         layout.text("q/<esc> Quit/Close");
                     });
-                    layout.vertical(OPTS, |layout| {
+                    layout.vertical(None, OPTS, |layout| {
                         layout.text("Submenu");
                         layout.text("b Branch");
                         layout.text("c Commit");
@@ -615,7 +622,7 @@ mod tests {
                         layout.text("z Stash");
                         layout.text("");
                     });
-                    layout.vertical(OPTS, |layout| {
+                    layout.vertical(None, OPTS, |layout| {
                         layout.text("@@ -271,7 +271,7");
                         layout.text("s Stage");
                         layout.text("u Unstage");

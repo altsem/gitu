@@ -51,8 +51,8 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State) {
 
     let line = item.to_line(Arc::clone(&config));
 
-    layout.horizontal(OPTS.gap(3), |layout| {
-        layout.vertical(OPTS, |layout| {
+    layout.horizontal(None, OPTS.gap(3), |layout| {
+        layout.vertical(None, OPTS, |layout| {
             layout_line(
                 layout,
                 Line::styled(format!("{}", pending.menu), &style.command),
@@ -80,7 +80,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State) {
             }
         });
 
-        layout.vertical(OPTS, |layout| {
+        layout.vertical(None, OPTS, |layout| {
             super::layout_line(layout, Line::styled("Submenu", &style.command));
 
             for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
@@ -101,7 +101,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State) {
             }
         });
 
-        layout.vertical(OPTS, |layout| {
+        layout.vertical(None, OPTS, |layout| {
             if !target_binds.is_empty() {
                 super::layout_line(layout, line);
             }
