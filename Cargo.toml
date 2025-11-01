@@ -31,7 +31,7 @@ arboard = { version = "3.6.1", default-features = false, features = [
     "windows-sys",
 ] }
 chrono = "0.4.42"
-clap = { version = "4.5.47", features = ["derive"] }
+clap = { version = "4.5.51", features = ["derive"] }
 crossterm = "0.28.1"
 etcetera = "0.10.0"
 figment = { version = "0.10.19", features = ["toml"] }
@@ -70,7 +70,7 @@ tree-sitter-scala = "=0.23.4"
 tree-sitter-ocaml = "=0.24.2"
 tree-sitter-html = "=0.23.2"
 tree-sitter-elixir = "=0.3.4"
-regex = "1.11.2"
+regex = "1.12.2"
 strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
 cached = "0.55.1"
