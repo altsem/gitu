@@ -64,7 +64,7 @@ jobs:
         "$BUILD_NAME/gitu" --version
 
     - name: Upload asset
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: ${{ env.BUILD_NAME }}
         path: ${{ env.BUILD_NAME }}
