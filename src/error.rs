@@ -53,6 +53,7 @@ pub enum Error {
     PromptAborted,
     NoMoreEvents,
     CannotSpinoffCurrentBranch,
+    SpinoffBranchExists(String),
     DoesBranchExist(git2::Error),
     GetBranchName(git2::Error),
 }
@@ -150,6 +151,9 @@ impl Display for Error {
             Error::PromptAborted => f.write_str("Aborted"),
             Error::NoMoreEvents => unimplemented!(),
             Error::CannotSpinoffCurrentBranch => f.write_str("Cannot spin-off current branch"),
+            Error::SpinoffBranchExists(new_branch_name) => f.write_fmt(format_args!(
+                "Cannot spin off {new_branch_name}. It already exists"
+            )),
             Error::DoesBranchExist(e) => {
                 f.write_fmt(format_args!("Couldn't check if branch exists: {}", e))
             }

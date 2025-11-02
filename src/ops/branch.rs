@@ -165,9 +165,7 @@ impl OpTrait for Spinoff {
             }
 
             if does_branch_exist(&app.state.repo, &new_branch_name).unwrap_or(false) {
-                app.display_error(format!(
-                    "Cannot spin off {new_branch_name}. It already exists"
-                ));
+                return Err(Error::SpinoffBranchExists(new_branch_name.to_string()));
             }
 
             let Ok(current_branch) = get_current_branch(&app.state.repo) else {
