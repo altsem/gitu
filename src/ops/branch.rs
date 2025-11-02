@@ -197,6 +197,8 @@ impl OpTrait for Spinoff {
 
             drop(current_branch);
 
+            app.close_menu();
+
             // Checkout new branch
             let mut cmd = Command::new("git");
             cmd.args(["checkout", "-b", &new_branch_name]);

@@ -10,16 +10,16 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-s Spinoff branch                                                                |
-K Delete branch                                                                 |
-q/esc Quit/Close                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout -b new                                                           |
 Switched to a new branch 'new'                                                  |
 $ git update-ref -m "reset: moving to b66a0bf82020d6a386e94d0fceedec1f817d20c7" |
 > Branch main was reset to b66a0bf82020d6a386e94d0fceedec1f817d20c7             |
-styles_hash: 10f4e2a83bdba319
+styles_hash: d3d6e4d4bf225b45

@@ -11,15 +11,15 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-s Spinoff branch                                                                |
-K Delete branch                                                                 |
-q/esc Quit/Close                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout -b new                                                           |
 Switched to a new branch 'new'                                                  |
 > Branch main not changed                                                       |
-styles_hash: 9245ec6bce254d5c
+styles_hash: 45f8ee0a90f99b49
