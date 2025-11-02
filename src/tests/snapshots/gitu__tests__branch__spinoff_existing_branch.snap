@@ -1,0 +1,25 @@
+---
+source: src/tests/branch.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main merged origin/main add initial-file                               |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+! Cannot spin off unmerged. It already exists                                   |
+$ git checkout -b unmerged                                                      |
+fatal: a branch named 'unmerged' already exists                                 |
+! 'git checkout -b unmerged' exited with code: 128                              |
+styles_hash: 9265805e693557b2

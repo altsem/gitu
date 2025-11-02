@@ -61,3 +61,8 @@ fn spinoff_branch_with_unmerged_commits() {
 
     snapshot!(ctx, "bsnew<enter>");
 }
+
+#[test]
+fn spinoff_existing_branch() {
+    snapshot!(setup(setup_clone!()), "bsunmerged<enter>");
+}
