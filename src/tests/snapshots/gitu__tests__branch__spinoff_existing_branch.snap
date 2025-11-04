@@ -21,5 +21,5 @@ s Spinoff branch                                                                
 K Delete branch                                                                 |
 q/esc Quit/Close                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-! Branch name required                                                          |
-styles_hash: af0156b5f1926c99
+! Cannot spin off unmerged. It already exists                                   |
+styles_hash: 3c3c4182f48eccb6
