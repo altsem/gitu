@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-Push                               Arguments                                    |
-p error: Head is not a branch      -n Dry run (--dry-run)                       |
-u error: Head is not a branch      -F Force (--force)                           |
-e to elsewhere                     -f Force with lease (--force-with-lease)     |
-q/esc Quit/Close                   -h Disable hooks (--no-verify)               |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Head is not a branch                                                          |
-styles_hash: ada447567a38e09d
+styles_hash: c7567d04a81a5d8e

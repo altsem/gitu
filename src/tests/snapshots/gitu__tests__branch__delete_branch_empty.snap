@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-s Spinoff branch                                                                |
-K Delete branch                                                                 |
-q/esc Quit/Close                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Branch name required                                                          |
-styles_hash: af0156b5f1926c99
+styles_hash: 9d05aa77b6eb9bc0

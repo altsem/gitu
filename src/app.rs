@@ -337,6 +337,7 @@ impl App {
             Err(Error::NoMoreEvents) => Err(Error::NoMoreEvents),
             Err(Error::PromptAborted) => Ok(()),
             Err(error) => {
+                self.close_menu();
                 self.state
                     .current_cmd_log
                     .push(CmdLogEntry::Error(error.to_string()));

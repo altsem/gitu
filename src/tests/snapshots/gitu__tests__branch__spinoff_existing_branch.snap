@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-────────────────────────────────────────────────────────────────────────────────|
-Branch                                                                          |
-b Checkout branch/revision                                                      |
-c Checkout new branch                                                           |
-s Spinoff branch                                                                |
-K Delete branch                                                                 |
-q/esc Quit/Close                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Cannot spin-off unmerged. It already exists                                   |
-styles_hash: 3c3c4182f48eccb6
+styles_hash: 9aed6daf88137469
