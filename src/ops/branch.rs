@@ -164,24 +164,12 @@ impl OpTrait for Spinoff {
                 return Err(Error::BranchNameRequired);
             }
 
-            if does_branch_exist(&app.state.repo, &new_branch_name).unwrap_or(false) {
+            if does_branch_exist(&app.state.repo, &new_branch_name)? {
                 return Err(Error::SpinoffBranchExists(new_branch_name.to_string()));
             }
 
-            let Ok(current_branch) = get_current_branch(&app.state.repo) else {
-                app.display_error("No branch checked out");
-                return Ok(());
-            };
-
-            let Some(current_branch_name) = current_branch
-                .name()
-                .map_err(Error::GetBranchName)?
-                .map(|n| n.to_string())
-            else {
-                drop(current_branch);
-                app.display_error("Checked out branch does not have a name");
-                return Ok(());
-            };
+            let current_branch = get_current_branch(&app.state.repo)?;
+            let current_branch_name = get_current_branch_name(&app.state.repo)?;
 
             if current_branch_name == new_branch_name {
                 return Err(Error::CannotSpinoffCurrentBranch);
@@ -212,16 +200,8 @@ impl OpTrait for Spinoff {
                 return Ok(());
             }
 
-            let Some(base_oid) = base_commit_oid else {
-                app.display_error("Could not resolve OID of base commit");
-                return Ok(());
-            };
-
-            let Some(upstream_oid) = upstream_branch_commit_oid else {
-                app.display_error("Could not resolve OID of upstream branch commit");
-                return Ok(());
-            };
-
+            let base_oid = base_commit_oid.ok_or(Error::BaseCommitOid)?;
+            let upstream_oid = upstream_branch_commit_oid.ok_or(Error::UpstreamCommitOid)?;
             let merge_base = &app.state.repo.merge_base(base_oid, upstream_oid).unwrap();
 
             let mut cmd = Command::new("git");
