@@ -153,6 +153,7 @@ fn parse_special_key(input: &str) -> IResult<&str, KeyCode> {
             map(tag("end"), |_| KeyCode::End),
             map(tag("pageup"), |_| KeyCode::PageUp),
             map(tag("pagedown"), |_| KeyCode::PageDown),
+            map(tag("space"), |_| KeyCode::Char(' ')),
             map(tag("tab"), |_| KeyCode::Tab),
             map(tag("delete"), |_| KeyCode::Delete),
             map(tag("insert"), |_| KeyCode::Insert),
@@ -208,6 +209,10 @@ mod tests {
         assert_eq!(
             parse_key_combo("enter"),
             Ok(("", (KeyModifiers::NONE, vec![KeyCode::Enter])))
+        );
+        assert_eq!(
+            parse_key_combo("space"),
+            Ok(("", (KeyModifiers::NONE, vec![KeyCode::Char(' ')])))
         );
     }
 
