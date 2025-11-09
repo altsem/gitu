@@ -1,13 +1,17 @@
 use std::borrow::Cow;
 
+use crate::Res;
 use crate::app::State;
+use crate::error::Error;
 use crate::screen;
+use crate::term::TermBackend;
 use crate::ui::layout::LayoutItem;
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::OPTS;
-use ratatui::Frame;
-use ratatui::prelude::*;
+use ratatui::backend::Backend;
+use ratatui::layout::Size;
+use ratatui::style::Style;
 use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -18,6 +22,7 @@ pub mod picker;
 
 const CARET: &str = "\u{2588}";
 const DASHES: &str = "────────────────────────────────────────────────────────────────";
+const BLANKS: &str = "                                                                ";
 
 #[derive(Debug, Clone)]
 pub(crate) enum UiItem<'a> {
@@ -26,8 +31,8 @@ pub(crate) enum UiItem<'a> {
 }
 pub(crate) type UiTree<'a> = LayoutTree<UiItem<'a>>;
 
-pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let size = frame.area().as_size();
+pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
+    let size = term.size().unwrap();
     let mut layout = UiTree::new();
 
     layout.vertical(None, OPTS, |layout| {
@@ -53,17 +58,19 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         });
     });
 
-    layout.compute([frame.area().width, frame.area().height]);
+    layout.compute([size.width, size.height]);
 
-    for item in layout.iter() {
-        let LayoutItem { data, pos, size } = item;
-        let area = Rect::new(pos[0], pos[1], size[0], size[1]);
-        frame.render_widget(data, area);
-    }
+    let mut items = layout.iter().collect::<Vec<_>>();
+    items.sort_by_key(|item| [item.pos[1], item.pos[0]]);
 
+    clear_blanks(term, size, items)?;
+
+    term.flush().map_err(Error::Term)?;
     layout.clear();
 
-    state.screens.last_mut().unwrap().size = frame.area().as_size();
+    state.screens.last_mut().unwrap().size = size;
+
+    Ok(())
 }
 
 impl<'a> Widget for &UiItem<'a> {
@@ -174,4 +181,77 @@ pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static st
             layout_span(layout, (chars[..end].into(), style));
         }
     });
+}
+
+fn clear_blanks(
+    term: &mut TermBackend,
+    size: Size,
+    items: Vec<LayoutItem<&UiItem<'_>>>,
+) -> Result<(), Error> {
+    let mut at = [0, 0];
+    let mut bg = Style::new();
+    let mut bg_end = 0;
+    for item in items {
+        let LayoutItem {
+            data,
+            pos,
+            size: item_size,
+        } = item;
+
+        blank_until(term, &mut at, [0, pos[1]], size.width, bg, bg_end)?;
+
+        match data {
+            UiItem::Span(text, style) => {
+                blank_until(term, &mut at, pos, size.width, bg, bg_end)?;
+                term.queue_move_cursor(pos[0], pos[1])?;
+                term.queue_print(text, style)?;
+
+                at[0] = pos[0].saturating_add(item_size[0]);
+            }
+            UiItem::Style(style) => {
+                bg = *style;
+                bg_end = pos[1].saturating_add(item_size[1]);
+            }
+        }
+    }
+    blank_until(term, &mut at, [0, size.height], size.width, bg, bg_end)?;
+    Ok(())
+}
+
+fn blank_until(
+    term: &mut TermBackend,
+    at: &mut [u16; 2],
+    to: [u16; 2],
+    width: u16,
+    bg: Style,
+    bg_end: u16,
+) -> Res<()> {
+    let row_bg = |y| if y < bg_end { bg } else { Style::new() };
+
+    while at[1] < to[1] {
+        queue_blanks(term, *at, width.saturating_sub(at[0]), &row_bg(at[1]))?;
+        *at = [0, at[1] + 1];
+    }
+
+    queue_blanks(term, *at, to[0].saturating_sub(at[0]), &row_bg(at[1]))?;
+    at[0] = at[0].max(to[0]);
+
+    Ok(())
+}
+
+fn queue_blanks(term: &mut TermBackend, at: [u16; 2], width: u16, style: &Style) -> Res<()> {
+    if width == 0 {
+        return Ok(());
+    }
+
+    term.queue_move_cursor(at[0], at[1])?;
+
+    let mut left = width as usize;
+    while left > 0 {
+        let blanks = left.min(BLANKS.len());
+        term.queue_print(&BLANKS[..blanks], style)?;
+        left -= blanks;
+    }
+
+    Ok(())
 }
