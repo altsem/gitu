@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Pull                            Arguments                                       |
-p pushRemote, setting that      -r Rebase local commits (--rebase)              |
-u upstream, setting that                                                        |
-e from elsewhere                                                                |
-q/esc Quit/Close                                                                |
+ Pull                            Arguments                                      |
+ p pushRemote, setting that      -r Rebase local commits (--rebase)             |
+ u upstream, setting that                                                       |
+ e from elsewhere                                                               |
+ q/esc Quit/Close                                                               |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |
-styles_hash: e439852a8290f159
+styles_hash: 49634e3b8d5b5460

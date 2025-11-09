@@ -18,8 +18,6 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
         return;
     }
 
-    ui::repeat_chars(layout, width, ui::DASHES, ui::STYLE);
-
     let config = Arc::clone(&state.config);
     let item = state.screens.last().unwrap().get_selected_item();
     let style = &config.style;
@@ -53,106 +51,110 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
 
     let line = item.to_line(Arc::clone(&config));
 
-    layout.horizontal(None, OPTS.gap(3), |layout| {
-        layout.vertical(None, OPTS, |layout| {
-            layout_line(
-                layout,
-                Line::styled(format!("{}", pending.menu), &style.command),
-            );
+    layout.vertical(None, OPTS, |layout| {
+        ui::repeat_chars(layout, width, ui::DASHES, ui::STYLE);
 
-            for (op, binds) in non_target_binds
-                .iter()
-                .chunk_by(|bind| &bind.op)
-                .into_iter()
-                .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
-            {
-                super::layout_line(
+        layout.horizontal(None, OPTS.gap(3).pad(1), |layout| {
+            layout.vertical(None, OPTS, |layout| {
+                layout_line(
                     layout,
-                    Line::from(vec![
-                        Span::styled(
-                            binds.into_iter().map(|bind| &bind.raw).join("/"),
-                            &style.hotkey,
-                        ),
-                        Span::styled(
-                            format!(" {}", op.clone().implementation().display(state)),
-                            Style::new(),
-                        ),
-                    ]),
+                    Line::styled(format!("{}", pending.menu), &style.command),
                 );
-            }
-        });
 
-        layout.vertical(None, OPTS, |layout| {
-            if !menus.is_empty() {
-                super::layout_line(layout, Line::styled("Submenu", &style.command));
-            }
+                for (op, binds) in non_target_binds
+                    .iter()
+                    .chunk_by(|bind| &bind.op)
+                    .into_iter()
+                    .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
+                {
+                    super::layout_line(
+                        layout,
+                        Line::from(vec![
+                            Span::styled(
+                                binds.into_iter().map(|bind| &bind.raw).join("/"),
+                                &style.hotkey,
+                            ),
+                            Span::styled(
+                                format!(" {}", op.clone().implementation().display(state)),
+                                Style::new(),
+                            ),
+                        ]),
+                    );
+                }
+            });
 
-            for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
-                let Op::OpenMenu(menu) = op else {
-                    unreachable!();
-                };
+            layout.vertical(None, OPTS, |layout| {
+                if !menus.is_empty() {
+                    super::layout_line(layout, Line::styled("Submenu", &style.command));
+                }
 
-                super::layout_line(
-                    layout,
-                    Line::from(vec![
-                        Span::styled(
-                            binds.into_iter().map(|bind| &bind.raw).join("/"),
-                            &style.hotkey,
-                        ),
-                        Span::styled(format!(" {menu}"), Style::new()),
-                    ]),
-                );
-            }
-        });
+                for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
+                    let Op::OpenMenu(menu) = op else {
+                        unreachable!();
+                    };
 
-        layout.vertical(None, OPTS, |layout| {
-            if !target_binds.is_empty() {
-                super::layout_line(layout, line);
-            }
+                    super::layout_line(
+                        layout,
+                        Line::from(vec![
+                            Span::styled(
+                                binds.into_iter().map(|bind| &bind.raw).join("/"),
+                                &style.hotkey,
+                            ),
+                            Span::styled(format!(" {menu}"), Style::new()),
+                        ]),
+                    );
+                }
+            });
 
-            for bind in target_binds {
-                super::layout_line(
-                    layout,
-                    Line::from(vec![
-                        Span::styled(bind.raw.clone(), &style.hotkey),
-                        Span::styled(
-                            format!(" {}", bind.op.clone().implementation().display(state)),
-                            Style::new(),
-                        ),
-                    ]),
-                );
-            }
+            layout.vertical(None, OPTS, |layout| {
+                if !target_binds.is_empty() {
+                    super::layout_line(layout, line);
+                }
 
-            if !arg_binds.is_empty() {
-                super::layout_line(layout, Line::styled("Arguments", &style.command));
-            }
+                for bind in target_binds {
+                    super::layout_line(
+                        layout,
+                        Line::from(vec![
+                            Span::styled(bind.raw.clone(), &style.hotkey),
+                            Span::styled(
+                                format!(" {}", bind.op.clone().implementation().display(state)),
+                                Style::new(),
+                            ),
+                        ]),
+                    );
+                }
 
-            for bind in arg_binds {
-                let Op::ToggleArg(name) = &bind.op else {
-                    unreachable!();
-                };
+                if !arg_binds.is_empty() {
+                    super::layout_line(layout, Line::styled("Arguments", &style.command));
+                }
 
-                let arg = pending.args.get(name.as_str()).unwrap();
+                for bind in arg_binds {
+                    let Op::ToggleArg(name) = &bind.op else {
+                        unreachable!();
+                    };
 
-                super::layout_line(
-                    layout,
-                    Line::from(vec![
-                        Span::styled(bind.raw.clone(), &style.hotkey),
-                        Span::raw(" "),
-                        Span::raw(arg.display),
-                        Span::raw(" ("),
-                        Span::styled(
-                            arg.get_cli_token().to_string(),
-                            if arg.is_active() {
-                                Style::from(&style.active_arg)
-                            } else {
-                                Style::new()
-                            },
-                        ),
-                        Span::raw(")"),
-                    ]),
-                );
-            }
+                    let arg = pending.args.get(name.as_str()).unwrap();
+
+                    super::layout_line(
+                        layout,
+                        Line::from(vec![
+                            Span::styled(bind.raw.clone(), &style.hotkey),
+                            Span::raw(" "),
+                            Span::raw(arg.display),
+                            Span::raw(" ("),
+                            Span::styled(
+                                arg.get_cli_token().to_string(),
+                                if arg.is_active() {
+                                    Style::from(&style.active_arg)
+                                } else {
+                                    Style::new()
+                                },
+                            ),
+                            Span::raw(")"),
+                        ]),
+                    );
+                }
+            });
         });
     });
 }

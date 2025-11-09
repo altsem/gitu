@@ -213,11 +213,15 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
         };
 
         let Opts {
-            dir, gap, sizing, ..
+            dir,
+            gap,
+            pad,
+            sizing,
+            ..
         } = self.data[parent].opts;
 
         let mut current_child = Some(child);
-        let mut cursor = Vec2(0, 0);
+        let mut cursor = Vec2(pad, pad) * dir.axis();
         let mut size = Vec2(0, 0);
         let mut grow_iter = self.iter_distribute_size(parent, parent_grow, dir);
 
@@ -263,6 +267,8 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
 
             current_child = self.index.iter_siblings_after(child).next();
         }
+
+        size += Vec2(pad, pad) * dir.axis();
 
         if pass == Sizing::Flex && sizing == Sizing::Flex {
             self.data[parent].size += parent_grow;

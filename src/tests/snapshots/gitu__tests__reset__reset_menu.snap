@@ -17,9 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-Reset                                                                           |
-s soft                                                                          |
-m mixed                                                                         |
-h hard                                                                          |
-q/esc Quit/Close                                                                |
-styles_hash: 3c73d8c180901c8b
+ Reset                                                                          |
+ s soft                                                                         |
+ m mixed                                                                        |
+ h hard                                                                         |
+ q/esc Quit/Close                                                               |
+styles_hash: f58c5db415ea65fc

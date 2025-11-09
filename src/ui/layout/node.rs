@@ -11,6 +11,7 @@ pub enum Sizing {
 pub const OPTS: Opts = Opts {
     dir: Direction::Horizontal,
     gap: 0,
+    pad: 0,
     sizing: Sizing::Fit,
 };
 
@@ -21,6 +22,7 @@ pub struct Opts {
     /// The space between each direct child of this node.
     pub(crate) gap: u16,
     pub(crate) sizing: Sizing,
+    pub(crate) pad: u16,
 }
 
 impl Default for Opts {
@@ -39,6 +41,10 @@ impl Opts {
             sizing: Sizing::Flex,
             ..self
         }
+    }
+
+    pub(crate) fn pad(self, pad: u16) -> Opts {
+        Self { pad, ..self }
     }
 }
 
