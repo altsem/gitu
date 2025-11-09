@@ -269,6 +269,16 @@ fn moved_file() {
 }
 
 #[test]
+fn chmod_file() {
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "test-file", "hello\nworld\n");
+    run(&ctx.dir, &["chmod", "+x", "test-file"]);
+
+    ctx.init_app();
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn hide_untracked() {
     let mut ctx = setup_clone!();
     run(&ctx.dir, &["touch", "i-am-untracked"]);
