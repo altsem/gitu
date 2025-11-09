@@ -250,9 +250,7 @@ impl App {
 
     pub fn redraw_now(&mut self, term: &mut Term) -> Res<()> {
         if self.state.screens.last_mut().is_some() {
-            term.draw(|frame| ui::ui(frame, &mut self.state))
-                .map_err(Error::Term)?;
-
+            ui::ui(term.backend_mut(), &mut self.state)?;
             self.state.needs_redraw = false;
         };
 
@@ -431,8 +429,7 @@ impl App {
 
         let log_entry = self.state.current_cmd_log.push_cmd(&cmd);
 
-        term.draw(|frame| ui::ui(frame, &mut self.state))
-            .map_err(Error::Term)?;
+        ui::ui(term.backend_mut(), &mut self.state)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
