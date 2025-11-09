@@ -1,0 +1,25 @@
+---
+source: src/tests/discard.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   initial-file                                                        |
+ @@ -1 +1 @@                                                                    |
+ -added                                                                         |
+ +modified                                                                      |
+                                                                                |
+ Staged changes (1)                                                             |
+ modified   initial-file                                                        |
+▌@@ -1 +1 @@                                                                    |
+▌-hello                                                                         |
+▌\ No ne\ No newline at end of file                                             |
+▌+added                                                                         |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --reverse --index --recount                                         |
+error: initial-file: does not match index                                       |
+! 'git apply --reverse --index --recount' exited with code: 1                   |
+styles_hash: 9ba3e14ef2ea314

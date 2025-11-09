@@ -2,12 +2,12 @@ use super::OpTrait;
 use crate::{
     Action,
     app::{App, State},
-    git::diff::PatchMode,
+    git::{self, diff::PatchMode},
     gitu_diff::Status,
     item_data::ItemData,
     term::Term,
 };
-use std::{ffi::OsString, process::Command, rc::Rc};
+use std::{path::PathBuf, process::Command, rc::Rc};
 
 pub(crate) struct Unstage;
 impl OpTrait for Unstage {
@@ -67,14 +67,10 @@ fn unstage_staged() -> Action {
     })
 }
 
-fn unstage_file(file: OsString) -> Action {
+fn unstage_file(file: PathBuf) -> Action {
     Rc::new(move |app: &mut App, term: &mut Term| {
-        let mut cmd = Command::new("git");
-        cmd.args(["restore", "--staged"]);
-        cmd.arg(&file);
-
         app.close_menu();
-        app.run_cmd(term, &[], cmd)
+        app.run_cmd(term, &[], git::restore_index(&file))
     })
 }
 

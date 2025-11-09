@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git mv --force moved-file new-file                                            |
+$ git apply --reverse --index --recount                                         |
 styles_hash: eb6a652a52e5107d

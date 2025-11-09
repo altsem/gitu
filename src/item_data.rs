@@ -18,7 +18,7 @@ pub(crate) enum ItemData {
         associated_references: Vec<RefKind>,
         summary: String,
     },
-    File(PathBuf),
+    Untracked(PathBuf),
     Delta {
         diff: Rc<Diff>,
         file_i: usize,

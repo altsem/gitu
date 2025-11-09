@@ -1,12 +1,11 @@
-use gitu_diff::Status;
-
 use super::{Action, OpTrait, confirm};
 use crate::{
-    app::State,
+    Res,
+    app::{App, State},
     config::ConfirmDiscardOption,
-    git::diff::{Diff, PatchMode},
-    gitu_diff,
+    git::diff::{DiffType, PatchMode},
     item_data::{ItemData, RefKind},
+    term::Term,
 };
 use std::{path::PathBuf, process::Command, rc::Rc};
 
@@ -18,37 +17,47 @@ impl OpTrait for Discard {
                 kind: RefKind::Branch(branch),
                 ..
             } => discard_branch(branch.clone()),
-            ItemData::File(file) => clean_file(file.clone()),
-            ItemData::Delta { diff, file_i } => match diff.file_diffs[*file_i].header.status {
-                Status::Added => {
-                    let new_file = &diff.file_diffs[*file_i].header.new_file;
-                    remove_file(new_file.fmt(&diff.text).into_owned().into())
+            ItemData::Untracked(file) => clean_file(file.clone()),
+            ItemData::Delta { diff, file_i } => {
+                let patch = diff.format_file_patch(*file_i);
+                match diff.diff_type {
+                    DiffType::WorkdirToIndex => reverse_worktree(patch),
+                    DiffType::IndexToTree => reverse_index_and_worktree(patch),
+                    DiffType::TreeToTree => reverse_index_and_worktree(patch),
                 }
-                Status::Renamed => {
-                    let new_file = &diff.file_diffs[*file_i].header.new_file;
-                    let old_file = &diff.file_diffs[*file_i].header.old_file;
-                    rename_file(
-                        new_file.fmt(&diff.text).into_owned().into(),
-                        old_file.fmt(&diff.text).into_owned().into(),
-                    )
-                }
-                _ => {
-                    let old_file = &diff.file_diffs[*file_i].header.old_file;
-                    checkout_file(old_file.fmt(&diff.text).into_owned().into())
-                }
-            },
+            }
             ItemData::Hunk {
                 diff,
                 file_i,
                 hunk_i,
-            } => discard_unstaged_patch(Rc::clone(diff), *file_i, *hunk_i),
+            } => {
+                let patch = diff.format_hunk_patch(*file_i, *hunk_i);
+                match diff.diff_type {
+                    DiffType::WorkdirToIndex => reverse_worktree(patch),
+                    DiffType::IndexToTree => reverse_index_and_worktree(patch),
+                    DiffType::TreeToTree => reverse_index_and_worktree(patch),
+                }
+            }
             ItemData::HunkLine {
                 diff,
                 file_i,
                 hunk_i,
                 line_i,
                 ..
-            } => discard_unstaged_line(Rc::clone(diff), *file_i, *hunk_i, *line_i),
+            } => {
+                let patch = diff.format_line_patch(
+                    *file_i,
+                    *hunk_i,
+                    *line_i..(line_i + 1),
+                    PatchMode::Reverse,
+                );
+
+                match diff.diff_type {
+                    DiffType::WorkdirToIndex => reverse_worktree(patch),
+                    DiffType::IndexToTree => reverse_index_and_worktree(patch),
+                    DiffType::TreeToTree => reverse_index_and_worktree(patch),
+                }
+            }
             _ => return None,
         };
 
@@ -73,9 +82,7 @@ fn discard_branch(branch: String) -> Action {
 
 fn clean_file(file: PathBuf) -> Action {
     Rc::new(move |app, term| {
-        if app.state.config.general.confirm_discard <= ConfirmDiscardOption::File {
-            confirm(app, term, "Really discard? (y or n)")?;
-        }
+        confirm_discard(app, term)?;
 
         let mut cmd = Command::new("git");
         cmd.args(["clean", "--force"]);
@@ -86,84 +93,37 @@ fn clean_file(file: PathBuf) -> Action {
     })
 }
 
-fn rename_file(src: PathBuf, dest: PathBuf) -> Action {
+fn reverse_worktree(patch: String) -> Action {
+    let patch_bytes = patch.into_bytes();
+
     Rc::new(move |app, term| {
-        if app.state.config.general.confirm_discard <= ConfirmDiscardOption::File {
-            confirm(app, term, "Really discard? (y or n)")?;
-        }
-
-        let mut cmd = Command::new("git");
-        cmd.args(["mv", "--force"]);
-        cmd.arg(&src);
-        cmd.arg(&dest);
-
-        app.close_menu();
-        app.run_cmd(term, &[], cmd)
-    })
-}
-
-fn remove_file(file: PathBuf) -> Action {
-    Rc::new(move |app, term| {
-        if app.state.config.general.confirm_discard <= ConfirmDiscardOption::File {
-            confirm(app, term, "Really discard? (y or n)")?;
-        }
-
-        let mut cmd = Command::new("git");
-        cmd.args(["rm", "--force"]);
-        cmd.arg(&file);
-
-        app.close_menu();
-        app.run_cmd(term, &[], cmd)
-    })
-}
-
-fn checkout_file(file: PathBuf) -> Action {
-    Rc::new(move |app, term| {
-        if app.state.config.general.confirm_discard <= ConfirmDiscardOption::File {
-            confirm(app, term, "Really discard? (y or n)")?;
-        }
-
-        let mut cmd = Command::new("git");
-        cmd.args(["checkout", "HEAD", "--"]);
-        cmd.arg(&file);
-
-        app.close_menu();
-        app.run_cmd(term, &[], cmd)
-    })
-}
-
-fn discard_unstaged_patch(diff: Rc<Diff>, file_i: usize, hunk_i: usize) -> Action {
-    Rc::new(move |app, term| {
-        if app.state.config.general.confirm_discard <= ConfirmDiscardOption::Hunk {
-            confirm(app, term, "Really discard? (y or n)")?;
-        }
-
-        let mut cmd = Command::new("git");
-        cmd.args(["apply", "--reverse"]);
-
-        app.close_menu();
-        app.run_cmd(
-            term,
-            &diff.format_hunk_patch(file_i, hunk_i).into_bytes(),
-            cmd,
-        )
-    })
-}
-
-fn discard_unstaged_line(diff: Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> Action {
-    Rc::new(move |app, term| {
-        if app.state.config.general.confirm_discard <= ConfirmDiscardOption::Line {
-            confirm(app, term, "Really discard? (y or n)")?;
-        }
+        confirm_discard(app, term)?;
 
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse", "--recount"]);
 
-        let input = diff
-            .format_line_patch(file_i, hunk_i, line_i..(line_i + 1), PatchMode::Reverse)
-            .into_bytes();
+        app.close_menu();
+        app.run_cmd(term, &patch_bytes, cmd)
+    })
+}
+
+fn reverse_index_and_worktree(patch: String) -> Action {
+    let patch_bytes = patch.into_bytes();
+
+    Rc::new(move |app, term| {
+        confirm_discard(app, term)?;
+
+        let mut cmd = Command::new("git");
+        cmd.args(["apply", "--reverse", "--index", "--recount"]);
 
         app.close_menu();
-        app.run_cmd(term, &input, cmd)
+        app.run_cmd(term, &patch_bytes, cmd)
     })
+}
+
+fn confirm_discard(app: &mut App, term: &mut Term) -> Res<()> {
+    if app.state.config.general.confirm_discard <= ConfirmDiscardOption::File {
+        confirm(app, term, "Really discard? (y or n)")?;
+    }
+    Ok(())
 }

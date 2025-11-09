@@ -45,6 +45,48 @@ pub(crate) fn discard_untracked_staged_file() {
 }
 
 #[test]
+pub(crate) fn discard_staged_file_while_unstaged_changes() {
+    let ctx = setup_clone!();
+
+    // added staged
+    fs::write(ctx.dir.join("initial-file"), "added\n").unwrap();
+    run(&ctx.dir, &["git", "add", "initial-file"]);
+
+    // modified unstaged
+    fs::write(ctx.dir.join("initial-file"), "modified\n").unwrap();
+
+    snapshot!(ctx, "jj<tab>jjj<tab>Ky");
+}
+
+#[test]
+pub(crate) fn discard_staged_hunk_while_unstaged_changes() {
+    let ctx = setup_clone!();
+
+    // added staged
+    fs::write(ctx.dir.join("initial-file"), "added\n").unwrap();
+    run(&ctx.dir, &["git", "add", "initial-file"]);
+
+    // modified unstaged
+    fs::write(ctx.dir.join("initial-file"), "modified\n").unwrap();
+
+    snapshot!(ctx, "jj<tab>jjj<tab>jKy");
+}
+
+#[test]
+pub(crate) fn discard_staged_line_while_unstaged_changes() {
+    let ctx = setup_clone!();
+
+    // added staged
+    fs::write(ctx.dir.join("initial-file"), "added\n").unwrap();
+    run(&ctx.dir, &["git", "add", "initial-file"]);
+
+    // modified unstaged
+    fs::write(ctx.dir.join("initial-file"), "modified\n").unwrap();
+
+    snapshot!(ctx, "jj<tab>jjj<tab>j<ctrl+j>Ky");
+}
+
+#[test]
 pub(crate) fn discard_file_move() {
     let ctx = setup_clone!();
     commit(&ctx.dir, "new-file", "hello");
@@ -75,15 +117,6 @@ pub(crate) fn discard_unstaged_line() {
     commit(&ctx.dir, "file-one", "FOO\nBAR\n");
     fs::write(ctx.dir.join("file-one"), "blahonga\n").unwrap();
     snapshot!(ctx, "jj<tab>j<ctrl+j>Ky<ctrl+j><ctrl+j>Ky");
-}
-
-#[test]
-pub(crate) fn discard_staged_file() {
-    let ctx = setup_clone!();
-    commit(&ctx.dir, "file-one", "FOO\nBAR\n");
-    fs::write(ctx.dir.join("file-one"), "blahonga\n").unwrap();
-    run(&ctx.dir, &["git", "add", "."]);
-    snapshot!(ctx, "jjKy");
 }
 
 #[test]

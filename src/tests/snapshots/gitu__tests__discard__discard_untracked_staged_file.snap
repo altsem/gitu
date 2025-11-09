@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git rm --force some-file                                                      |
-rm 'some-file'                                                                  |
-styles_hash: 83ef0215d59acb6b
+$ git apply --reverse --index --recount                                         |
+styles_hash: b4021123586bc29b

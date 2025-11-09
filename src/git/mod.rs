@@ -7,6 +7,7 @@ use self::{commit::Commit, merge_status::MergeStatus, rebase_status::RebaseStatu
 use crate::{
     Res,
     error::{Error, Utf8Error},
+    git::diff::DiffType,
     gitu_diff,
 };
 use std::{
@@ -136,6 +137,7 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+        diff_type: DiffType::WorkdirToIndex,
         text,
     })
 }
@@ -153,6 +155,7 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+        diff_type: DiffType::IndexToTree,
         text,
     })
 }
@@ -184,6 +187,7 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+        diff_type: DiffType::TreeToTree,
         text,
     })
 }
@@ -201,6 +205,7 @@ pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+        diff_type: DiffType::TreeToTree,
         text,
     })
 }
@@ -307,4 +312,11 @@ pub(crate) fn does_branch_exist(repo: &git2::Repository, name: &str) -> Res<bool
     } else {
         Err(Error::DoesBranchExist(err))
     }
+}
+
+pub(crate) fn restore_index(file: &Path) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.args(["restore", "--staged"]);
+    cmd.arg(file);
+    cmd
 }

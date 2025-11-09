@@ -54,7 +54,7 @@ pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> R
                 .map(|status| &status.path)
                 .collect::<Vec<_>>();
 
-            let untracked = items_list(&untracked_files);
+            let untracked = untracked_list(&untracked_files);
 
             let items = if let Some(rebase) = git::rebase_status(&repo)? {
                 vec![Item {
@@ -120,13 +120,13 @@ pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> R
     )
 }
 
-fn items_list(files: &[&String]) -> Vec<Item> {
+fn untracked_list(files: &[&String]) -> Vec<Item> {
     files
         .iter()
         .map(|path| Item {
             id: hash(path),
             depth: 1,
-            data: ItemData::File(PathBuf::from(path)),
+            data: ItemData::Untracked(PathBuf::from(path)),
             ..Default::default()
         })
         .collect::<Vec<_>>()
