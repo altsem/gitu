@@ -22,4 +22,4 @@ Log                   Arguments                                                 
 l current             -F Search messages (--grep)                               |
 o other               -n Limit number of commits (-n=10)                        |
 q/esc Quit/Close                                                                |
-styles_hash: 504c06534b64018d
+styles_hash: 8fce59f78927d9d8

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash drop 1                                                              |
 Dropped refs/stash@{1} (6e4ee08a012b0675b1f27465f158930aa1088b7a)               |
-styles_hash: dfd2a495b8602e3f
+styles_hash: 64b7b1b4e5d072b3

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git push --force-with-lease origin refs/heads/main:refs/heads/main            |
 To file://                                                                       
    b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 346b2eb0e6fdb3f3
+styles_hash: d5b0d5a9c89ccdad

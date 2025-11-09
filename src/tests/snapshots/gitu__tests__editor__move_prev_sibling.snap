@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  +line 12 (file-1)                                                              |
  +line 13 (file-1)                                                              |
  +line 14 (file-1)                                                              |
-styles_hash: 706a4e3dc9f00a8e
+styles_hash: b8977a09f6b87dab

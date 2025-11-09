@@ -22,4 +22,4 @@ e extend              -n Disable hooks (--no-verify)                            
 q/esc Quit/Close      -R Claim authorship and reset author date (--reset-author)|
                       -s Add Signed-off-by line (--signoff)                     |
                       -v Show diff of changes to be committed (--verbose)       |
-styles_hash: 41104da05d2a0c8c
+styles_hash: b7834279d4aa5e1

@@ -1,0 +1,34 @@
+---
+source: src/lib.rs
+expression: render_to_string(layout)
+---
+On branch master
+Your branch is up to date with 'origin/master'
+
+Recent commits
+b3492a8 master origin/master chore: update dependencies
+013844c refactor: appease linter
+5536ea3 feat: Show the diff on the stash detail screen
+
+
+
+
+
+
+
+
+───────────────────────────────────────────────────────────────
+Help                               Submenu   @@ -271,7 +271,7
+Y Show Refs                        b Branch  s Stage
+<tab> Toggle section               c Commit  u Unstage
+k/<up> Up                          f Fetch   <enter> Show
+j/<down> Down                      h/? Help  K Discard
+<ctrl+k>/<ctrl+up> Up line         l Log
+<ctrl+j>/<ctrl+down> Down line     M Remote
+<alt+k>/<alt+up> Prev section      F Pull
+<alt+j>/<alt+down> Next section    P Push
+<alt+h>/<alt+left> Parent section  r Rebase
+<ctrl+u> Half page up              X Reset
+<ctrl+d> Half page down            V Revert
+g Refresh                          z Stash
+q/<esc> Quit/Close

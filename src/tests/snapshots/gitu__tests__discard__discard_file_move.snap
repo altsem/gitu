@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git mv --force moved-file new-file                                            |
-styles_hash: 696d0b50bd2c76de
+styles_hash: eb6a652a52e5107d

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git remote rename origin origin2                                              |
-styles_hash: b8f048b49ddbac3f
+styles_hash: 2326b8c7f666716

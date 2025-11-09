@@ -22,4 +22,4 @@ q/esc Quit/Close                -h Disable hooks (--no-verify)                  
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |
-styles_hash: 87c187e06393231b
+styles_hash: f2be455641044708

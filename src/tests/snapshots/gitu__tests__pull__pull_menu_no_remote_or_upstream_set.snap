@@ -22,4 +22,4 @@ p pushRemote, setting that      -r Rebase local commits (--rebase)              
 u upstream, setting that                                                        |
 e from elsewhere                                                                |
 q/esc Quit/Close                                                                |
-styles_hash: 9ca8480d57b593bd
+styles_hash: 6a144bb31128aeb1

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Head is not a branch                                                          |
-styles_hash: c7567d04a81a5d8e
+styles_hash: 9b3c7e4618819d11

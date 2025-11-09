@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  223428c main add firstfile                                                     |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --reverse --recount                                        |
-styles_hash: 6603406d0ed9d8ed
+styles_hash: 84c84973f043dd86

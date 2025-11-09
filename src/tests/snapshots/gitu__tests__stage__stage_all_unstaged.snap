@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add -u .                                                                  |
-styles_hash: 14ecc9c042c43798
+styles_hash: c0dabf2567795f89

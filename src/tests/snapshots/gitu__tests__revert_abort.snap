@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git revert --abort                                                            |
-styles_hash: 8a22cddba91f2be
+styles_hash: 49d2be3918e808a2

@@ -22,4 +22,4 @@ q/esc Quit/Close      -i Interactive (--interactive)                            
                       -k Keep empty commits (--keep-empty)                      |
                       -h Disable hooks (--no-verify)                            |
                       -p Preserve merges (--preserve-merges)                    |
-styles_hash: 571d8ea0d3ed08fa
+styles_hash: 7891169c73fa64db
