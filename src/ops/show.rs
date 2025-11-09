@@ -22,7 +22,7 @@ impl OpTrait for Show {
                 kind: RefKind::Branch(oid),
                 ..
             } => goto_show_screen(oid.clone()),
-            ItemData::File(u) => editor(u.as_path(), None),
+            ItemData::Untracked(u) => editor(u.as_path(), None),
             ItemData::Delta { diff, file_i } => {
                 let file_path = &diff.file_diffs[*file_i].header.new_file;
                 let path: &str = &file_path.fmt(&diff.text);

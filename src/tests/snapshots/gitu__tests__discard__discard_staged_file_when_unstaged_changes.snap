@@ -3,16 +3,16 @@ source: src/tests/discard.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
- Your branch is ahead of 'origin/main' by 1 commit(s).                          |
+ Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   initial-file                                                        |
+ @@ -1 +1 @@                                                                    |
+ -hello                                                                         |
+ +modified                                                                      |
                                                                                 |
  Recent commits                                                                 |
-▌4f3ed19 main add file-one                                                      |
- b66a0bf origin/main add initial-file                                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+▌85f3b96 main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git apply --reverse --recount                                                 |
-styles_hash: eb6a652a52e5107d
+$ git restore --staged initial-file                                             |
+styles_hash: 22fa4ad45b1c9037

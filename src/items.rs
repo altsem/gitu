@@ -78,7 +78,7 @@ impl Item {
                     .chain([Span::raw(summary)]),
                 Span::raw(" "),
             )),
-            ItemData::File(path) => Line::styled(
+            ItemData::Untracked(path) => Line::styled(
                 path.to_string_lossy().into_owned(),
                 &config.style.file_header,
             ),

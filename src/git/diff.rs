@@ -4,7 +4,15 @@ use std::ops::Range;
 #[derive(Debug, Clone)]
 pub(crate) struct Diff {
     pub text: String,
+    pub diff_type: DiffType,
     pub file_diffs: Vec<FileDiff>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum DiffType {
+    WorkdirToIndex, // i.e. Unstaged
+    IndexToTree,    // i.e. Staged
+    TreeToTree,
 }
 
 #[derive(Debug)]
@@ -24,12 +32,20 @@ impl Diff {
         mask_hunk_content(content, '+', '-')
     }
 
+    pub(crate) fn format_file_patch(&self, file_i: usize) -> String {
+        let mut patch = String::new();
+        patch.push_str(self.file_diff_header(file_i));
+        for hunk in &self.file_diffs[file_i].hunks {
+            patch.push_str(&self.text[hunk.range.clone()]);
+        }
+        patch
+    }
+
     pub(crate) fn format_hunk_patch(&self, file_i: usize, hunk_i: usize) -> String {
-        format!(
-            "{}{}",
-            self.file_diff_header(file_i),
-            self.hunk(file_i, hunk_i)
-        )
+        let mut patch = String::new();
+        patch.push_str(self.file_diff_header(file_i));
+        patch.push_str(self.hunk(file_i, hunk_i));
+        patch
     }
 
     pub(crate) fn file_diff_header(&self, file_i: usize) -> &str {
