@@ -1,12 +1,14 @@
 use std::borrow::Cow;
 
+use crate::Res;
 use crate::app::State;
+use crate::error::Error;
 use crate::screen;
+use crate::term::TermBackend;
 use crate::ui::layout::LayoutItem;
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::OPTS;
-use ratatui::Frame;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use tui_prompts::State as _;
@@ -27,8 +29,8 @@ const STYLE: Style = Style {
 
 pub(crate) type UiTree<'a> = LayoutTree<(Cow<'a, str>, Style)>;
 
-pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
-    let size = frame.area().as_size();
+pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
+    let size = term.size().unwrap();
     let mut layout = UiTree::new();
 
     layout.vertical(None, OPTS, |layout| {
@@ -43,18 +45,22 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
         });
     });
 
-    layout.compute([frame.area().width, frame.area().height]);
+    layout.compute([size.width, size.height]);
+
+    term.queue_clear()?;
 
     for item in layout.iter() {
-        let LayoutItem { data, pos, size } = item;
-        let area = Rect::new(pos[0], pos[1], size[0], size[1]);
-        let (text, style) = data;
-        frame.render_widget(SpanRef(text, *style), area);
+        let LayoutItem { data, pos, size: _ } = item;
+        term.queue_move_cursor(pos[0], pos[1])?;
+        term.queue_print(data)?;
     }
 
+    term.flush().map_err(Error::Term)?;
     layout.clear();
 
-    state.screens.last_mut().unwrap().size = frame.area().as_size();
+    state.screens.last_mut().unwrap().size = size;
+
+    Ok(())
 }
 
 struct SpanRef<'a>(&'a Cow<'a, str>, Style);
