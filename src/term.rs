@@ -1,17 +1,26 @@
 use crate::{Res, config::Config, error::Error};
 use crossterm::{
-    ExecutableCommand, cursor,
+    QueueableCommand,
+    cursor::{self, MoveTo},
     event::{DisableMouseCapture, EnableMouseCapture, Event},
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    style::{Colors, Print, SetColors},
+    terminal::{
+        Clear, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    },
 };
 use ratatui::{
     Terminal,
     backend::{Backend, CrosstermBackend, TestBackend},
+    buffer::Cell,
     layout::Size,
-    prelude::{Position, backend::WindowSize, buffer::Cell},
+    prelude::{Position, backend::WindowSize},
+    style::{Color, Style},
 };
-use std::io::{self, Stdout, stdout};
 use std::time::Duration;
+use std::{
+    borrow::Cow,
+    io::{self, Stdout, stdout},
+};
 
 pub type Term = Terminal<TermBackend>;
 
@@ -26,6 +35,42 @@ pub enum TermBackend {
         backend: TestBackend,
         events: Vec<Event>,
     },
+}
+
+impl TermBackend {
+    pub(crate) fn queue_move_cursor(&mut self, x: u16, y: u16) -> Res<()> {
+        match self {
+            TermBackend::Crossterm(t) => crossterm::queue!(t, MoveTo(x, y)).map_err(Error::Term),
+            TermBackend::Test { backend, events } => todo!(),
+        }
+    }
+
+    pub(crate) fn queue_clear(&mut self) -> Res<()> {
+        match self {
+            TermBackend::Crossterm(t) => {
+                crossterm::queue!(t, Clear(crossterm::terminal::ClearType::All))
+                    .map_err(Error::Term)
+            }
+            TermBackend::Test { backend, events } => todo!(),
+        }
+    }
+
+    pub fn queue_print<'a>(&mut self, (text, style): &(Cow<'a, str>, Style)) -> Res<()> {
+        match self {
+            TermBackend::Crossterm(t) => {
+                let fg = style.fg.unwrap_or(Color::Reset);
+                let bg = style.bg.unwrap_or(Color::Reset);
+
+                crossterm::queue!(t, SetColors(Colors::new(fg.into(), bg.into())))
+                    .map_err(Error::Term)?;
+
+                crossterm::queue!(t, Print(text)).map_err(Error::Term)?;
+
+                Ok(())
+            }
+            TermBackend::Test { backend, events } => todo!(),
+        }
+    }
 }
 
 impl Backend for TermBackend {
@@ -97,24 +142,14 @@ impl Backend for TermBackend {
 }
 
 impl TermBackend {
-    pub fn enter_alternate_screen(&mut self) -> Res<()> {
-        match self {
-            TermBackend::Crossterm(c) => c
-                .execute(EnterAlternateScreen)
-                .map_err(Error::Term)
-                .map(|_| ()),
-            TermBackend::Test { .. } => Ok(()),
-        }
-    }
-
     pub fn setup_term(&mut self, config: &Config) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(crossterm_backend) => {
                 enable_raw_mode()?;
-                crossterm_backend.execute(EnterAlternateScreen)?;
-                crossterm_backend.execute(cursor::Hide)?;
+                crossterm_backend.queue(EnterAlternateScreen)?;
+                crossterm_backend.queue(cursor::Hide)?;
                 if config.general.mouse_support {
-                    crossterm_backend.execute(EnableMouseCapture)?;
+                    crossterm_backend.queue(EnableMouseCapture)?;
                 }
             }
             TermBackend::Test { .. } => {}
@@ -127,10 +162,10 @@ impl TermBackend {
         match self {
             TermBackend::Crossterm(crossterm_backend) => {
                 if config.general.mouse_support {
-                    crossterm_backend.execute(DisableMouseCapture)?;
+                    crossterm_backend.queue(DisableMouseCapture)?;
                 }
-                crossterm_backend.execute(cursor::Show)?;
-                crossterm_backend.execute(LeaveAlternateScreen)?;
+                crossterm_backend.queue(cursor::Show)?;
+                crossterm_backend.queue(LeaveAlternateScreen)?;
                 disable_raw_mode()?;
             }
             TermBackend::Test { .. } => {}
@@ -146,9 +181,9 @@ impl TermBackend {
         match self {
             TermBackend::Crossterm(crossterm_backend) => {
                 if config.general.mouse_support {
-                    crossterm_backend.execute(DisableMouseCapture)?;
+                    crossterm_backend.queue(DisableMouseCapture)?;
                 }
-                crossterm_backend.execute(cursor::Show)?;
+                crossterm_backend.queue(cursor::Show)?;
                 disable_raw_mode()?;
             }
             TermBackend::Test { .. } => {}
