@@ -1,0 +1,25 @@
+---
+source: src/tests/stage.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 1 commit(s).                          |
+                                                                                |
+ Staged changes (1)                                                             |
+▌deleted    to-delete…                                                          |
+                                                                                |
+ Recent commits                                                                 |
+ 0341425 main add to-delete                                                     |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git add to-delete                                                             |
+styles_hash: d1878e5d1dd9d9ea

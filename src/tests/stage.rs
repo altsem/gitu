@@ -54,3 +54,22 @@ fn stage_changes_crlf() {
 
     snapshot!(ctx, "jj<tab>");
 }
+
+#[test]
+fn stage_deleted_file() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "to-delete", "testing\ntesttest\n");
+    run(&ctx.dir, &["rm", "to-delete"]);
+    snapshot!(ctx, "jjs");
+}
+
+#[test]
+fn stage_deleted_executable_file() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "script.sh", "#!/bin/bash\necho hello\n");
+    run(&ctx.dir, &["chmod", "+x", "script.sh"]);
+    run(&ctx.dir, &["git", "add", "script.sh"]);
+    run(&ctx.dir, &["git", "commit", "-m", "add executable script"]);
+    run(&ctx.dir, &["rm", "script.sh"]);
+    snapshot!(ctx, "jjs");
+}

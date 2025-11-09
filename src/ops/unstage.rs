@@ -3,6 +3,7 @@ use crate::{
     Action,
     app::{App, State},
     git::diff::PatchMode,
+    gitu_diff::Status,
     item_data::ItemData,
     term::Term,
 };
@@ -14,7 +15,12 @@ impl OpTrait for Unstage {
         let action = match target {
             ItemData::AllStaged(_) => unstage_staged(),
             ItemData::Delta { diff, file_i } => {
-                let file_path = &diff.file_diffs[*file_i].header.new_file;
+                let diff_header = &diff.file_diffs[*file_i].header;
+                let file_path = match diff_header.status {
+                    Status::Deleted => &diff_header.old_file,
+                    _ => &diff_header.new_file,
+                };
+
                 unstage_file(file_path.fmt(&diff.text).into_owned().into())
             }
             ItemData::Hunk {
