@@ -1,0 +1,25 @@
+---
+source: src/tests/unstage.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 2 commit(s).                          |
+                                                                                |
+ Unstaged changes (1)                                                           |
+▌deleted    script.sh…                                                          |
+                                                                                |
+ Recent commits                                                                 |
+ af83421 main add executable script                                             |
+ 289f1e5 add script.sh                                                          |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git restore --staged script.sh                                                |
+styles_hash: 1db3439394c7596

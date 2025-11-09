@@ -25,3 +25,22 @@ fn unstage_added_line() {
     run(&ctx.dir, &["git", "add", "."]);
     snapshot!(ctx, "jj<tab><ctrl+j><ctrl+j><ctrl+j><ctrl+j>u");
 }
+
+#[test]
+fn unstage_deleted_file() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "to-delete", "testing\ntesttest\n");
+    run(&ctx.dir, &["git", "rm", "to-delete"]);
+    snapshot!(ctx, "jju");
+}
+
+#[test]
+fn unstage_deleted_executable_file() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, "script.sh", "#!/bin/bash\necho hello\n");
+    run(&ctx.dir, &["chmod", "+x", "script.sh"]);
+    run(&ctx.dir, &["git", "add", "script.sh"]);
+    run(&ctx.dir, &["git", "commit", "-m", "add executable script"]);
+    run(&ctx.dir, &["git", "rm", "script.sh"]);
+    snapshot!(ctx, "jju");
+}
