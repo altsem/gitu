@@ -319,7 +319,12 @@ impl<'a> Parser<'a> {
         }
 
         if self.peek("index") {
-        } else if self.peek("old mode") || self.peek("new mode") {
+        } else if self.peek("old mode") {
+            self.consume_until(Self::newline)?;
+            if self.peek("new mode") {
+                self.consume_until(Self::newline)?;
+            }
+        } else if self.peek("new mode") {
             self.consume_until(Self::newline)?;
         } else if self.peek("deleted file mode") {
             diff_type = Status::Deleted;
@@ -966,6 +971,41 @@ mod tests {
         let diffs = parser.parse_diff().unwrap();
         assert_eq!(diffs.len(), 1, "Expected two diff blocks for new files");
         assert_eq!(diffs[0].header.status, Status::Deleted);
+    }
+
+    #[test]
+    fn mode_change() {
+        let input = "diff --git a/test-file b/test-file\n\
+            old mode 100644\n\
+            new mode 100755\n\
+            index 1234567..1234567 100644\n\
+            --- a/test-file\n\
+            +++ b/test-file\n";
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(diffs.len(), 1, "Expected one diff block for mode change");
+        assert_eq!(diffs[0].header.status, Status::Modified);
+    }
+
+    #[test]
+    fn mode_change_only() {
+        // Mode change without any content changes (no hunks)
+        let input = "diff --git a/script.sh b/script.sh\n\
+            old mode 100644\n\
+            new mode 100755\n";
+        let mut parser = Parser::new(input);
+        let diffs = parser.parse_diff().unwrap();
+        assert_eq!(
+            diffs.len(),
+            1,
+            "Expected one diff block for mode-only change"
+        );
+        assert_eq!(diffs[0].header.status, Status::Modified);
+        assert_eq!(
+            diffs[0].hunks.len(),
+            0,
+            "Expected no hunks for mode-only change"
+        );
     }
 
     #[test]
