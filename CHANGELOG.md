@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.39.0] - 2025-11-12
+
+### 🚀 Features
+
+- Gitu now boosts its own - more flexible layout module.
+- *(config)* Recognize "space" special character in key parser (#449)
+- Implement spinoff branch command (#445)
+
+### 🐛 Bug Fixes
+
+- Discarding files/hunks/lines now covers more cases
+- [un]staging of deleted files did not work
+- Crash when file mode changed
+- Close menu when errors occur
+- Potential cause of terminal codes being printed after exit
+- Parse filenames w.o. prefix, quoted unicode. Improve parse errors
+
+### ⚡ Performance
+
+- Replace `similar` dep with the more performant `imara_diff`
+- *(file-watcher)* Start the watcher without blocking the main thread
+
+### 🎨 Styling
+
+- Add some padding to the menu
+
 ## [0.38.0] - 2025-10-10
 
 ### 🚀 Features
