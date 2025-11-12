@@ -133,43 +133,45 @@ pub(crate) fn iter_diff_highlights<'a>(
             .map(|(index, content)| (index + new_range.start, content))
             .unzip();
 
-        let (old, new): (Vec<_>, Vec<_>) =
-            similar::capture_diff_slices(similar::Algorithm::Patience, &old_tokens, &new_tokens)
-                .into_iter()
-                .map(|op| {
-                    let old_range = {
-                        if op.old_range().is_empty() {
-                            op.old_range()
-                        } else {
-                            let old_start = old_indices[op.old_range().start];
-                            let old_end = old_start
-                                + op.old_range().map(|i| old_tokens[i].len()).sum::<usize>();
-                            old_start..old_end
-                        }
-                    };
+        let mut interner = imara_diff::Interner::new(old_tokens.len() + new_tokens.len());
+        let old_token_ids: Vec<imara_diff::Token> = old_tokens
+            .iter()
+            .map(|&token| interner.intern(token))
+            .collect();
 
-                    let new_range = {
-                        if op.new_range().is_empty() {
-                            op.new_range()
-                        } else {
-                            let new_start = new_indices[op.new_range().start];
-                            let new_end = new_start
-                                + op.new_range().map(|i| new_tokens[i].len()).sum::<usize>();
-                            new_start..new_end
-                        }
-                    };
+        let new_token_ids: Vec<imara_diff::Token> = new_tokens
+            .iter()
+            .map(|&token| interner.intern(token))
+            .collect();
 
-                    let (old_style_config, new_style_config) = match op.tag() {
-                        similar::DiffTag::Equal => (&config.unchanged_old, &config.unchanged_new),
-                        _ => (&config.changed_old, &config.changed_new),
-                    };
+        let mut diff = imara_diff::Diff::default();
+        diff.compute_with(
+            imara_diff::Algorithm::Histogram,
+            &old_token_ids,
+            &new_token_ids,
+            interner.num_tokens(),
+        );
 
-                    (
-                        (old_range, Style::from(old_style_config)),
-                        (new_range, Style::from(new_style_config)),
-                    )
-                })
-                .unzip();
+        let mut old = Vec::new();
+        let mut new = Vec::new();
+
+        for hunk in diff.hunks() {
+            if !hunk.before.is_empty() {
+                let old_start = old_indices[hunk.before.start as usize];
+                let old_end = old_indices[hunk.before.end as usize - 1]
+                    + old_tokens[hunk.before.end as usize - 1].len();
+                old.push((old_start..old_end, Style::from(&config.changed_old)));
+            }
+        }
+
+        for hunk in diff.hunks() {
+            if !hunk.after.is_empty() {
+                let new_start = new_indices[hunk.after.start as usize];
+                let new_end = new_indices[hunk.after.end as usize - 1]
+                    + new_tokens[hunk.after.end as usize - 1].len();
+                new.push((new_start..new_end, Style::from(&config.changed_new)));
+            }
+        }
 
         old.into_iter()
             .chain(new)

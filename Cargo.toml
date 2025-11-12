@@ -43,7 +43,6 @@ nom = "8.0.0"
 notify = "8.0.0"
 serde = { version = "1.0.225", features = ["derive"] }
 ratatui = { version = "0.29.0", features = ["serde"] }
-similar = { version = "2.7.0", features = ["unicode", "inline"] }
 simple-logging = "2.0.2"
 toml = "0.8.23"
 tui-prompts = "0.5.0"
@@ -75,3 +74,4 @@ cached = "0.55.1"
 strum = { version = "0.26.3", features = ["strum_macros"] }
 tinyvec = "1.10.0"
 smashquote = "0.1.2"
+imara-diff = { version = "0.2.0", default-features = false }
