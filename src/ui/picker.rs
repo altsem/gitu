@@ -176,7 +176,10 @@ mod tests {
             let x0 = item.pos[0] as usize;
             let y0 = item.pos[1] as usize;
             let item_width = item.size[0] as usize;
-            let text = &item.data.0;
+            let text = match item.data {
+                crate::ui::UiItem::Span(cow, _) => cow,
+                crate::ui::UiItem::Style(_) => "",
+            };
 
             for (i, c) in text.chars().take(item_width).enumerate() {
                 if y0 < height && x0 + i < width {

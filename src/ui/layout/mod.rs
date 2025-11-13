@@ -81,6 +81,12 @@ impl TreeIndex {
     }
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Pass {
+    Fit,
+    Fill,
+}
+
 impl<T> LayoutTree<T> {
     pub fn new() -> Self {
         LayoutTree {
@@ -142,6 +148,7 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
                     ..opts
                 },
                 size: Vec2(0, 0),
+                content: Vec2(0, 0),
                 pos: None,
             };
 
@@ -164,6 +171,7 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
                     ..opts
                 },
                 size: Vec2(0, 0),
+                content: Vec2(0, 0),
                 pos: None,
             };
 
@@ -182,6 +190,7 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
             data: Some(data),
             opts: OPTS,
             size: size.into(),
+            content: size.into(),
             pos: None,
         });
 
@@ -194,113 +203,174 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
         };
 
         let size = Vec2::from(avail_size);
-        self.compute_subtree(root, Vec2(0, 0), size, Vec2(0, 0), Sizing::Fit);
+        self.data[root].pos = Some(Vec2(0, 0));
 
-        let grow = Vec2::from(avail_size).saturating_sub(self.data[root].size);
-        self.compute_subtree(root, Vec2(0, 0), avail_size.into(), grow, Sizing::Flex);
+        for pass in [Pass::Fit, Pass::Fill] {
+            if let Some(root_size) = self.compute_subtree(root, Vec2(0, 0), size, pass) {
+                self.data[root].size = root_size;
+            }
+        }
     }
 
     fn compute_subtree(
         &mut self,
         parent: usize,
-        start: Vec2,
-        avail_size: Vec2,
-        parent_grow: Vec2,
-        pass: Sizing,
-    ) {
-        let Some(child) = self.index.iter_children(parent).next() else {
-            return;
-        };
-
-        let Opts {
-            dir,
-            gap,
-            pad,
-            sizing,
-            ..
-        } = self.data[parent].opts;
+        outer_start: Vec2,
+        outer_avail_size: Vec2,
+        pass: Pass,
+    ) -> Option<Vec2> {
+        let child = self.index.iter_children(parent).next()?;
+        let parent_opts = self.data[parent].opts;
+        let main_axis = parent_opts.dir.axis();
+        let cross_axis = main_axis.flip();
+        let padding = Vec2(parent_opts.pad, parent_opts.pad) * main_axis;
+        let avail_size = outer_avail_size
+            .saturating_sub(padding)
+            .saturating_sub(padding);
 
         let mut current_child = Some(child);
-        let mut cursor = Vec2(pad, pad) * dir.axis();
+        let mut cursor = Vec2(0, 0);
         let mut size = Vec2(0, 0);
-        let mut grow_iter = self.iter_distribute_size(parent, parent_grow, dir);
+        // Intrinsic extent, accumulated independently of any fill shrinking.
+        let mut content_cursor = Vec2(0, 0);
+        let mut content = Vec2(0, 0);
+
+        let fill_avail = match pass {
+            Pass::Fit => Vec2(0, 0),
+            Pass::Fill => avail_size.saturating_sub(self.data[parent].size),
+        };
+
+        let mut main_fill_iter = self.dist_main_fill(parent, fill_avail);
+        let cross_fill = avail_size * cross_axis;
 
         while let Some(child) = current_child {
-            let child_grow = grow_iter.next().unwrap();
-            let child_avail_size =
-                if pass == Sizing::Flex && self.data[child].opts.sizing == Sizing::Flex {
-                    self.data[child].size + child_grow
-                } else {
-                    avail_size.saturating_sub(cursor)
-                };
+            let child_start = outer_start + padding + cursor;
+            let is_main_fill = self.data[child].opts.is_main_fill(&parent_opts);
+            let is_cross_fill = self.data[child].opts.is_cross_fill(&parent_opts);
 
-            self.compute_subtree(child, start + cursor, child_avail_size, child_grow, pass);
+            let mut child_size = match pass {
+                Pass::Fit => {
+                    let child_avail_size = avail_size.saturating_sub(cursor);
 
-            let child_data = &mut self.data[child];
+                    // `flow` is the shrinkable extent, `child_content` the intrinsic one.
+                    // They only differ where a descendant fills an axis.
+                    let (flow, child_content) =
+                        match self.compute_subtree(child, child_start, child_avail_size, pass) {
+                            Some(flow) => (flow, self.data[child].content),
+                            None => (self.data[child].size, self.data[child].size),
+                        };
 
-            if (cursor + child_data.size).fits(avail_size) {
-                child_data.pos = Some(start + cursor);
+                    self.data[child].content = child_content;
+                    content = content.max(content_cursor + child_content);
+                    content_cursor +=
+                        main_axis * (Vec2(parent_opts.gap, parent_opts.gap) + child_content);
+
+                    // On an axis this child fills it may shrink, so take the flow
+                    // extent. On an axis it does not fill, its size is its content.
+                    let fill_mask = self.data[child].opts.fill;
+                    let content_mask = Vec2(1, 1).saturating_sub(fill_mask);
+                    let resolved = flow * fill_mask + child_content * content_mask;
+
+                    if is_main_fill {
+                        // Zero-out the main axis that this child will later fill,
+                        // this enables it to shrink.
+                        resolved * cross_axis
+                    } else {
+                        resolved
+                    }
+                }
+                Pass::Fill => {
+                    let fill = {
+                        let mut sum = Vec2(0, 0);
+                        if is_main_fill {
+                            sum += main_fill_iter.next().unwrap()
+                        }
+                        if is_cross_fill {
+                            sum += cross_fill
+                        }
+                        sum
+                    };
+
+                    let child_avail_size = avail_size
+                        .saturating_sub(cursor)
+                        .min(self.data[child].size + fill);
+
+                    if self
+                        .compute_subtree(child, child_start, child_avail_size, pass)
+                        .is_some()
+                    {
+                        child_avail_size
+                    } else {
+                        self.data[child].size
+                    }
+                }
+            };
+
+            let mut child_pos = None;
+
+            if (cursor + child_size).fits(avail_size) {
+                child_pos = Some(outer_start + padding + cursor);
             } else {
                 // Child doesn't fit where cursor currently is
-                // TODO Uncomment to include wrapping (tests below)
-                // // Try wrapping to next line/column first
-                // let next_line = size * dir.axis().flip();
+                let next_line = size * cross_axis;
 
-                // if (next_line + child_data.size).fits(avail_size) {
-                //     // Fits completely on next line
-                //     cursor = next_line;
-                //     child_data.pos = Some(start + cursor);
-                // } else
-
-                if (cursor + Vec2(1, 1)).fits(avail_size) {
+                if (next_line + child_size).fits(avail_size) {
+                    // Fits completely on next line
+                    cursor = next_line;
+                    child_pos = Some(outer_start + padding + cursor);
+                } else if (cursor + Vec2(1, 1)).fits(avail_size) {
                     // Can't wrap, but we can fit at least one cell where the cursor currently is
-                    child_data.pos = Some(start + cursor);
-                    child_data.size = child_data.size.min(avail_size.saturating_sub(cursor));
-                } else {
-                    // There's absolutely no room left anywhere
-                    child_data.pos = None;
+                    child_pos = Some(outer_start + padding + cursor);
+                    child_size = child_size.min(avail_size.saturating_sub(cursor));
                 }
             }
 
-            size = size.max(cursor + child_data.size);
-            cursor += dir.axis() * (Vec2(gap, gap) + child_data.size);
+            if child_pos.is_some() {
+                size = size.max(cursor + child_size);
+                cursor += main_axis * (Vec2(parent_opts.gap, parent_opts.gap) + child_size);
+            }
+
+            self.data[child].pos = child_pos;
+            self.data[child].size = child_size;
 
             current_child = self.index.iter_siblings_after(child).next();
         }
 
-        size += Vec2(pad, pad) * dir.axis();
+        // Content is accumulated without wrapping, so it can come out smaller on
+        // the cross axis than what was actually laid out. Never report less than
+        // the placed extent.
+        let content = content.max(size);
 
-        if pass == Sizing::Flex && sizing == Sizing::Flex {
-            self.data[parent].size += parent_grow;
-        } else if pass == Sizing::Fit && sizing == Sizing::Flex {
-            // Zero-out the axis that is supposed to grow
-            self.data[parent].size = size * dir.axis().flip();
-        } else {
-            self.data[parent].size = size;
-        }
+        size += padding + padding;
+        self.data[parent].content = content + padding + padding;
+
+        Some(size)
     }
 
-    fn iter_distribute_size(
+    fn dist_main_fill(
         &self,
         parent: usize,
         size_to_distribute: Vec2,
-        dir: Direction,
     ) -> impl Iterator<Item = Vec2> + use<T> {
-        let along_axis = size_to_distribute * dir.axis();
-        let div = if along_axis != Vec2(0, 0) {
-            self.index
-                .iter_children(parent)
-                .filter(|&child| self.data[child].opts.sizing == Sizing::Flex)
-                .count()
-                .max(1) as u16
+        let axis = self.data[parent].opts.dir.axis();
+        let along_axis = size_to_distribute * axis;
+        let count = self
+            .index
+            .iter_children(parent)
+            .filter(|&child| self.data[child].opts.is_main_fill(&self.data[parent].opts))
+            .count() as u16;
+
+        let (quot, rem) = if count > 0 {
+            let quot = along_axis / Vec2(count, count);
+            let rem = along_axis % Vec2(count, count);
+            (quot, rem)
         } else {
-            1
+            (Vec2(0, 0), Vec2(0, 0))
         };
 
-        let quot = along_axis / Vec2(div, div);
-        let rem = along_axis % Vec2(div, div);
-        let off_axis_amount = size_to_distribute * dir.axis().flip();
-        iter::once(quot + rem + off_axis_amount).chain(iter::once(quot + off_axis_amount).cycle())
+        iter::once(quot + rem)
+            .chain(iter::once(quot).cycle())
+            .take(count as usize)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = LayoutItem<&T>> {
@@ -309,11 +379,16 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
                 data: Some(data),
                 opts: _,
                 size,
+                content: _,
                 pos,
             } = &self.data[index]
             else {
                 return None;
             };
+
+            if size.0 == 0 || size.1 == 0 {
+                return None;
+            }
 
             Some(LayoutItem {
                 data,
@@ -363,6 +438,55 @@ mod tests {
         grid.chunks(width)
             .map(|row| row.iter().collect::<String>().trim_end().to_string())
             .join("\n")
+    }
+
+    #[test]
+    fn test_iter_distribute_size_no_flex() {
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, OPTS, |layout| {
+            // Neither should grow
+            layout.text("Hello");
+            layout.text("Hello");
+        });
+
+        let mut iter = layout.dist_main_fill(0, Vec2(10, 3));
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn test_iter_distribute_size_one_flex() {
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, OPTS, |layout| {
+            layout.horizontal(None, OPTS, |layout| {
+                layout.text("One");
+            });
+            // This should shrink to 0 vertically and then grow to 3
+            layout.horizontal(None, OPTS.fill_y(), |layout| {
+                layout.text("Two");
+            });
+        });
+
+        let mut iter = layout.dist_main_fill(0, Vec2(10, 3));
+        assert_eq!(Some(Vec2(0, 3)), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn test_iter_distribute_size_all_flex() {
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, OPTS, |layout| {
+            // Both should grow, favoring the first
+            layout.horizontal(None, OPTS.fill_y(), |layout| {
+                layout.text("One");
+            });
+            layout.horizontal(None, OPTS.fill_y(), |layout| {
+                layout.text("Two");
+            });
+        });
+
+        let mut iter = layout.dist_main_fill(0, Vec2(10, 5));
+        assert_eq!(Some(Vec2(0, 3)), iter.next());
+        assert_eq!(Some(Vec2(0, 2)), iter.next());
     }
 
     #[test]
@@ -457,42 +581,62 @@ mod tests {
         insta::assert_snapshot!(render_to_string(layout));
     }
 
-    // TODO wrapping test (code commented above)
-    // #[test]
-    // fn test_horizontal_wrap() {
-    //     let mut layout = LayoutTree::new();
+    #[test]
+    fn test_horizontal_wrap() {
+        let mut layout = LayoutTree::new();
 
-    //     layout.horizontal(None, OPTS, |layout| {
-    //         layout.text("AAA");
-    //         layout.text("BBB");
-    //         layout.text("CCC");
-    //     });
+        layout.horizontal(None, OPTS, |layout| {
+            layout.text("AAA");
+            layout.text("BBB");
+            layout.text("CCC");
+        });
 
-    //     layout.compute([6, 2]);
-    //     let result = render_to_string(layout);
-    //     println!("Result:\n{}", result);
-    //     // Should wrap: "AAABBB" on first line, "CCC" on second line
-    //     assert_eq!(result, "AAABBB\nCCC");
-    // }
+        layout.compute([6, 2]);
+        let result = render_to_string(layout);
+        println!("Result:\n{}", result);
+        // Should wrap: "AAABBB" on first line, "CCC" on second line
+        assert_eq!(result, "AAABBB\nCCC");
+    }
 
-    // TODO wrapping test (code commented above)
-    // #[test]
-    // fn test_wrap_before_truncate() {
-    //     let mut layout = LayoutTree::new();
+    #[test]
+    fn test_wrap_before_truncate() {
+        let mut layout = LayoutTree::new();
 
-    //     layout.horizontal(None, OPTS, |layout| {
-    //         layout.text("AAAA");
-    //         layout.text("BBBB");
-    //     });
+        layout.horizontal(None, OPTS, |layout| {
+            layout.text("AAAA");
+            layout.text("BBBB");
+        });
 
-    //     layout.compute([6, 2]);
-    //     let result = render_to_string(layout);
-    //     println!("Result:\n{}", result);
-    //     // With 6 chars width and 2 rows:
-    //     // "AAAA" fits (4 chars), then "BBBB" doesn't fit in remaining 2 chars
-    //     // Should wrap "BBBB" to next line rather than truncating to "BB"
-    //     assert_eq!(result, "AAAA\nBBBB");
-    // }
+        layout.compute([6, 2]);
+        let result = render_to_string(layout);
+        println!("Result:\n{}", result);
+        // With 6 chars width and 2 rows:
+        // "AAAA" fits (4 chars), then "BBBB" doesn't fit in remaining 2 chars
+        // Should wrap "BBBB" to next line rather than truncating to "BB"
+        assert_eq!(result, "AAAA\nBBBB");
+    }
+
+    #[test]
+    fn nested_grow_wrap() {
+        let mut layout = LayoutTree::new();
+
+        layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, OPTS.fill_y(), |layout| {
+                layout.horizontal(None, OPTS, |layout| {
+                    layout.text("word1");
+                    layout.text("word2");
+                    layout.text("word3");
+                });
+            });
+        });
+
+        layout.compute([10, 2]);
+        let mut iter = layout.iter().map(|e| (*e.data, e.pos, e.size));
+        assert_eq!(Some(("word1", [0, 0], [5, 1])), iter.next());
+        assert_eq!(Some(("word2", [5, 0], [5, 1])), iter.next());
+        assert_eq!(Some(("word3", [0, 1], [5, 1])), iter.next());
+        assert_eq!(None, iter.next());
+    }
 
     #[test]
     fn test_no_trailing_newline() {
@@ -576,7 +720,7 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.grow(), |layout| {
+            layout.vertical(None, OPTS.fill_y(), |layout| {
                 layout.text("flex");
             });
             layout.text("actual");
@@ -587,15 +731,36 @@ mod tests {
     }
 
     #[test]
+    fn nested_grow_preserves_cross_axis() {
+        let mut layout = LayoutTree::new();
+
+        layout.vertical(Some("root"), OPTS, |layout| {
+            layout.horizontal(Some("grow"), OPTS.fill_xy(), |layout| {
+                layout.text("hello");
+            });
+        });
+
+        layout.compute([20, 10]);
+
+        let mut iter = layout.iter().map(|e| (*e.data, e.pos, e.size));
+
+        assert_eq!(Some(("root", [0, 0], [20, 10])), iter.next());
+        assert_eq!(Some(("grow", [0, 0], [20, 10])), iter.next());
+        assert_eq!(Some(("hello", [0, 0], [5, 1])), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
     fn overflow() {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
             layout.text("one");
             layout.text("twoooo");
+            layout.text("three");
         });
 
-        layout.compute([20, 1]);
+        layout.compute([6, 1]);
         insta::assert_snapshot!(render_to_string(layout));
     }
 
@@ -604,15 +769,62 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.grow(), |layout| {
+            layout.vertical(None, OPTS.fill_y(), |layout| {
                 layout.text("flex 1");
                 layout.text("flex 2");
             });
             layout.text("actual");
         });
 
-        layout.compute([20, 2]);
+        layout.compute([6, 2]);
         insta::assert_snapshot!(render_to_string(layout));
+    }
+
+    #[test]
+    fn shrinks_nested() {
+        let mut layout = LayoutTree::new();
+
+        layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, OPTS.fill_y(), |layout| {
+                layout.vertical(None, OPTS, |layout| {
+                    layout.text("This should not be visible'");
+                });
+            });
+
+            layout.vertical(None, OPTS, |layout| {
+                layout.text("WEEEEE");
+            });
+        });
+
+        layout.compute([40, 1]);
+        let mut iter = layout.iter().map(|e| (*e.data, e.pos, e.size));
+        assert_eq!(Some(("WEEEEE", [0, 0], [6, 1])), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn nested_horizontal_fill_does_not_hide_siblings() {
+        let mut layout = LayoutTree::new();
+
+        layout.vertical(None, OPTS, |layout| {
+            // 0,0 -> 0,5
+            layout.vertical(None, OPTS.fill_y(), |layout| {
+                // 0,1 -> 0,1
+                layout.horizontal(None, OPTS.fill_x(), |layout| {
+                    // 0,1 -> 0,1
+                    layout.horizontal(None, OPTS.fill_x(), |layout| {
+                        layout.text("visible");
+                    });
+                });
+            });
+        });
+
+        layout.compute([20, 5]);
+        let mut iter = layout.iter().map(|e| (*e.data, e.pos, e.size));
+        assert_eq!(Some(("visible", [0, 0], [7, 1])), iter.next());
+        assert_eq!(None, iter.next());
+
+        // insta::assert_snapshot!(render_to_string(layout));
     }
 
     #[test]
@@ -620,35 +832,34 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.grow().gap(1), |layout| {
-                layout.vertical(None, OPTS, |layout| {
-                    layout.text("On branch master");
-                    layout.vertical(None, OPTS, |layout| {
-                        layout.text("Your branch is up to date with 'origin/master'");
+            layout.vertical(None, OPTS.fill_xy(), |layout| {
+                // Screen
+                layout.vertical(None, OPTS.fill_x(), |layout| {
+                    layout.horizontal(Some(""), OPTS.fill_x(), |layout| {
+                        layout.text("On branch master");
                     });
+                    layout.text("Your branch is up to date with 'origin/master'");
                 });
 
-                layout.vertical(None, OPTS, |layout| {
-                    layout.text("Recent commits");
-                    layout.vertical(None, OPTS, |layout| {
-                        layout.text(
-                            "9eb6a63 refactor/ui origin/refactor/ui fix more rendering issues",
-                        );
-                        layout.text("b5fffd4 fix styling issues in Screen");
-                        layout.text("61e6c1b refactor: extract type of LayoutTree");
-                        layout.text("df3bcb5 get rid of frequent clone() in LayoutTree");
-                        layout.text("9864859 refactor(ui): less allocs");
-                        layout.text(
-                            "aa2811e refactor: new LayoutTree module to improve on ui headaches",
-                        );
-                        layout.text("5374ab3 master origin/master test: add file:// in clone_and_commit fn as well");
-                        layout.text("7a66235 test: get rid of setup_init, and try fix test-repo assertion");
-                        layout.text("75463c8 test/fix-ci test: forgot to create testfiles/ when running tests");
-                    });
-                });
+                layout.text("");
+                layout.text("Recent commits");
+                layout.text("9eb6a63 refactor/ui origin/refactor/ui fix more rendering issues");
+                layout.text("b5fffd4 fix styling issues in Screen");
+                layout.text("61e6c1b refactor: extract type of LayoutTree");
+                layout.text("df3bcb5 get rid of frequent clone() in LayoutTree");
+                layout.text("9864859 refactor(ui): less allocs");
+                layout.text("aa2811e refactor: new LayoutTree module to improve on ui headaches");
+                layout.text(
+                    "5374ab3 master origin/master test: add file:// in clone_and_commit fn as well",
+                );
+                layout.text("7a66235 test: get rid of setup_init, and try fix test-repo assertion");
+                layout.text(
+                    "75463c8 test/fix-ci test: forgot to create testfiles/ when running tests",
+                );
             });
 
             layout.vertical(None, OPTS, |layout| {
+                // Menu
                 layout.text("───────────────────────────────────────────────────────────────");
 
                 layout.horizontal(None, OPTS.gap(2), |layout| {
@@ -705,17 +916,6 @@ mod tests {
         });
 
         layout.compute([80, 25]);
-        let root = layout.index.iter_roots().next().unwrap();
-        let root_size = layout.data[root].size;
-        eprintln!("Root size: {:?}", root_size);
-        let result = render_to_string(layout);
-        eprintln!("Result has {} lines", result.lines().count());
-        eprintln!("Result ends with newline: {}", result.ends_with('\n'));
-        eprintln!("Result len: {}", result.len());
-        eprintln!(
-            "Last 3 bytes: {:?}",
-            &result.as_bytes()[result.len().saturating_sub(3)..]
-        );
-        insta::assert_snapshot!(result);
+        insta::assert_snapshot!(render_to_string(layout));
     }
 }

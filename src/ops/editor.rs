@@ -133,7 +133,7 @@ impl OpTrait for ToggleSection {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         if target.is_section() {
             Some(Rc::new(|app, _term| {
-                app.screen_mut().toggle_section();
+                app.screen_mut().toggle_section()?;
                 Ok(())
             }))
         } else {

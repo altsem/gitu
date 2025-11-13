@@ -7,8 +7,8 @@ expression: ctx.redact_buffer()
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   file-one                                                            |
- @@ -1,2 +1 @@                                                                  |
-  FOO                                                                           |
+▌@@ -1,2 +1 @@                                                                  |
+▌ FOO                                                                           |
 ▌-BAR                                                                           |
                                                                                 |
  Recent commits                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: baa3baebf7866985
+styles_hash: 6795b03f13817018

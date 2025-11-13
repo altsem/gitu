@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::ui::layout::OPTS;
-use crate::ui::{self, UiTree};
+use crate::ui::{self, UiTree, repeat_chars};
 use crate::{app::State, ops::Op, ui::layout_line};
 use itertools::Itertools;
 use ratatui::{
@@ -52,7 +52,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
         })
         .partition(|(op, _binds)| matches!(op, Op::OpenMenu(_)));
 
-    let line = item.to_line(Arc::clone(&config));
+    let line = item.to_line(&config);
     let separator_style = Style::from(&style.separator);
 
     layout.vertical(None, OPTS, |layout| {
@@ -170,17 +170,16 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
 }
 
 fn layout_keybinds_table<'a>(layout: &mut UiTree<'a>, items: Vec<(Line<'a>, Line<'a>)>) {
-    layout.horizontal(None, OPTS.gap(1), |layout| {
-        layout.vertical(None, OPTS, |layout| {
-            for (key, _) in items.iter() {
-                layout_line(layout, key.clone());
-            }
-        });
+    const SPACES: &str = "                                                                ";
+    let max_width = items.iter().fold(0, |acc, (x, _)| acc.max(x.width())) + 1;
 
-        layout.vertical(None, OPTS, |layout| {
-            for (_, value) in items {
-                layout_line(layout, value);
-            }
-        });
+    layout.vertical(None, OPTS, |layout| {
+        for (key, value) in items.iter() {
+            layout.horizontal(None, OPTS, |layout| {
+                layout_line(layout, key.clone());
+                repeat_chars(layout, max_width - key.width(), SPACES, Style::new());
+                layout_line(layout, value.clone());
+            });
+        }
     });
 }

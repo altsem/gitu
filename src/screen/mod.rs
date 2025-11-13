@@ -1,15 +1,15 @@
 use crate::config::StyleConfig;
-use crate::ui::layout::OPTS;
-use crate::ui::{UiTree, layout_span};
+use crate::ui::layout::{LayoutTree, OPTS};
+use crate::ui::{UiItem, UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
-use ratatui::{layout::Size, style::Style, text::Line};
-use unicode_segmentation::UnicodeSegmentation;
+use itertools::Itertools;
+use ratatui::{layout::Size, style::Style};
 
 use crate::{Res, config::Config, items::hash};
 
 use super::Item;
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::Arc;
 
 pub(crate) mod blame;
@@ -35,7 +35,13 @@ pub(crate) struct Screen {
     config: Arc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
+    /// Set of item (by their index in `items`) that are not collapsed
+    expanded_items: BTreeSet<usize>,
+    /// Maps line -> item, items spanning multiple lines appear as duplicates
     line_index: Vec<usize>,
+    /// Maps line -> item, but only their first line
+    unique_line_index: BTreeMap<usize, usize>,
+    item_heights: Vec<u16>,
     collapsed: HashSet<u64>,
 }
 
@@ -60,11 +66,14 @@ impl Screen {
             config,
             refresh_items,
             items: vec![],
+            expanded_items: BTreeSet::new(),
             line_index: vec![],
+            unique_line_index: BTreeMap::new(),
+            item_heights: vec![],
             collapsed,
         };
 
-        screen.update()?;
+        screen.refresh()?;
 
         // TODO Maybe this should be done on update. Better keep track of toggled sections rather than collapsed then.
         screen
@@ -74,25 +83,18 @@ impl Screen {
             .for_each(|item| {
                 screen.collapsed.insert(item.id);
             });
-        screen.update_line_index();
+        screen.update_indices()?;
 
         screen.cursor = screen
             .find_first_hunk()
-            .or_else(|| screen.find_first_selectable())
+            .or_else(|| screen.find_item(|item| !item.unselectable))
             .unwrap_or(0);
 
         Ok(screen)
     }
 
     fn find_first_hunk(&mut self) -> Option<usize> {
-        (0..self.line_index.len()).find(|&line_i| {
-            !self.at_line(line_i).unselectable
-                && matches!(self.at_line(line_i).data, ItemData::Hunk { .. })
-        })
-    }
-
-    fn find_first_selectable(&mut self) -> Option<usize> {
-        (0..self.line_index.len()).find(|&line_i| !self.at_line(line_i).unselectable)
+        self.find_item(|item| !item.unselectable && matches!(item.data, ItemData::Hunk { .. }))
     }
 
     fn at_line(&self, line_i: usize) -> &Item {
@@ -106,28 +108,40 @@ impl Screen {
     }
 
     fn scroll_fit_start(&mut self) {
-        if self.items.is_empty() {
+        if self.line_index.is_empty() {
             return;
         }
-
-        let top = self.cursor.saturating_sub(self.get_selected_item().depth);
+        let Some(line_of_item) = self.line_of_item(self.cursor) else {
+            return;
+        };
+        let top = line_of_item.saturating_sub(self.get_selected_item().depth);
         if top < self.scroll {
             self.scroll = top;
         }
     }
 
     fn scroll_fit_end(&mut self) {
-        if self.items.is_empty() {
+        if self.line_index.is_empty() {
             return;
         }
 
         let depth = self.get_selected_item().depth;
+        let current_item_i = self.cursor;
 
-        let last = BOTTOM_CONTEXT_LINES
-            + (self.cursor..self.line_index.len())
-                .take_while(|&line_i| line_i == self.cursor || depth < self.at_line(line_i).depth)
-                .last()
-                .unwrap();
+        let Some(line_of_item) = self.line_of_item(self.cursor) else {
+            return;
+        };
+
+        let Some(last_item_line) = (line_of_item..self.line_index.len())
+            .take_while(|&line_i| {
+                self.line_index[line_i] == current_item_i || depth < self.at_line(line_i).depth
+            })
+            .last()
+        else {
+            return;
+        };
+
+        let last = BOTTOM_CONTEXT_LINES + last_item_line;
 
         let end_line = self.size.height.saturating_sub(1) as usize;
         if last > end_line + self.scroll {
@@ -136,14 +150,18 @@ impl Screen {
     }
 
     pub(crate) fn find_next(&mut self, nav_mode: NavMode) -> usize {
-        (self.cursor..self.line_index.len())
+        (self.cursor..self.items.len())
             .skip(1)
-            .find(|&line_i| self.nav_filter(line_i, nav_mode))
+            .find(|&item_i| self.nav_filter(item_i, nav_mode))
             .unwrap_or(self.cursor)
     }
 
-    fn nav_filter(&self, line_i: usize, nav_mode: NavMode) -> bool {
-        let item = self.at_line(line_i);
+    fn nav_filter(&self, item_i: usize, nav_mode: NavMode) -> bool {
+        if !self.expanded_items.contains(&item_i) {
+            return false;
+        }
+
+        let item = &self.items[item_i];
         match nav_mode {
             NavMode::Normal => {
                 let is_sub_line = matches!(
@@ -166,8 +184,7 @@ impl Screen {
 
     fn find_previous(&mut self, nav_mode: NavMode) -> usize {
         (0..self.cursor)
-            .rev()
-            .find(|&line_i| self.nav_filter(line_i, nav_mode))
+            .rfind(|&item_i| self.nav_filter(item_i, nav_mode))
             .unwrap_or(self.cursor)
     }
 
@@ -191,8 +208,8 @@ impl Screen {
         self.clamp_scroll();
     }
 
-    pub(crate) fn toggle_section(&mut self) {
-        let selected = &self.items[self.line_index[self.cursor]];
+    pub(crate) fn toggle_section(&mut self) -> Res<()> {
+        let selected = &self.items[self.cursor];
 
         if selected.data.is_section() {
             if self.collapsed.contains(&selected.id) {
@@ -202,18 +219,25 @@ impl Screen {
             }
         }
 
-        self.update_line_index();
-    }
-
-    pub(crate) fn update(&mut self) -> Res<()> {
-        let nav_mode = self.selected_item_nav_mode();
-        self.items = (self.refresh_items)()?;
-        self.update_line_index();
-        self.update_cursor(nav_mode);
+        self.update_indices()?;
         Ok(())
     }
 
-    fn update_cursor(&mut self, nav_mode: NavMode) {
+    pub(crate) fn refresh(&mut self) -> Res<()> {
+        self.items = (self.refresh_items)()?;
+        self.update_indices()?;
+        self.update_cursor();
+        Ok(())
+    }
+
+    pub(crate) fn resize(&mut self, w: u16, h: u16) -> Res<()> {
+        self.size = Size::new(w, h);
+        self.update_indices()?;
+        self.update_cursor();
+        Ok(())
+    }
+
+    fn update_cursor(&mut self) {
         // Nothing is selectable (e.g. the log of a branch with no commits).
         // Reset the cursor to a valid sentinel rather than positioning it,
         // which would index into an empty `line_index` and panic (#262).
@@ -229,6 +253,7 @@ impl Screen {
         }
 
         self.clamp_cursor();
+        let nav_mode = self.selected_item_nav_mode();
         self.move_from_unselectable(nav_mode);
     }
 
@@ -243,9 +268,63 @@ impl Screen {
         }
     }
 
-    fn update_line_index(&mut self) {
+    pub(crate) fn update_indices(&mut self) -> Res<()> {
+        self.update_item_heights();
+
+        assert_eq!(
+            self.items.len(),
+            self.item_heights.len(),
+            "items and item_heights should have equal len"
+        );
+
         self.line_index = self
-            .items
+            .filter_collapsed_items(&self.items)
+            .flat_map(|(i, _item)| [i].repeat(self.item_heights[i] as usize))
+            .collect();
+
+        self.unique_line_index = self
+            .line_index
+            .iter()
+            .cloned()
+            .enumerate()
+            .unique_by(|&(_, v)| v)
+            .collect();
+
+        self.expanded_items = self
+            .filter_collapsed_items(&self.items)
+            .map(|(i, _)| i)
+            .collect();
+
+        self.clamp_scroll();
+        Ok(())
+    }
+
+    fn update_item_heights(&mut self) {
+        self.item_heights = (0..self.items.len())
+            .map(|item_index| {
+                let mut layout = LayoutTree::new();
+                let view = ItemView {
+                    item_index,
+                    highlighted: false,
+                };
+                layout_item(&mut layout, self, false, view);
+                layout.compute([self.size.width, self.size.height]);
+
+                layout
+                    .iter()
+                    .map(|item| item.pos[1] + item.size[1])
+                    .max()
+                    .unwrap_or(0)
+            })
+            .collect()
+    }
+
+    // FIXME Need to consider this when navigating
+    fn filter_collapsed_items<'a>(
+        &'a self,
+        items: &'a [Item],
+    ) -> impl Iterator<Item = (usize, &'a Item)> {
+        items
             .iter()
             .enumerate()
             .scan(None, |collapse_depth, (i, next)| {
@@ -262,24 +341,19 @@ impl Screen {
                 Some(Some((i, next)))
             })
             .flatten()
-            .map(|(i, _item)| i)
-            .collect();
-        self.clamp_scroll();
     }
 
     fn is_cursor_off_screen(&self) -> bool {
-        !self.line_views(self.size).any(|line| line.highlighted)
+        !self.item_views(self.size).any(|item| item.highlighted)
     }
 
     fn move_cursor_to_screen_center(&mut self) {
         let half_screen = self.size.height as usize / 2;
-        self.cursor = self.scroll + half_screen;
+        self.cursor = self.line_index[self.scroll + half_screen];
     }
 
     fn clamp_cursor(&mut self) {
-        self.cursor = self
-            .cursor
-            .clamp(0, self.line_index.len().saturating_sub(1));
+        self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1));
     }
 
     fn clamp_scroll(&mut self) {
@@ -312,12 +386,10 @@ impl Screen {
     }
 
     pub(crate) fn move_cursor_to_screen_line(&mut self, screen_line: usize) {
-        if self.line_index.is_empty() {
+        let Some(&new_cursor) = self.line_index.get(screen_line + self.scroll) else {
             return;
-        }
-
-        let new_cursor = screen_line + self.scroll;
-        if new_cursor >= self.line_index.len() || self.cursor == new_cursor {
+        };
+        if self.cursor == new_cursor {
             return;
         }
 
@@ -337,27 +409,23 @@ impl Screen {
     }
 
     pub(crate) fn move_cursor_to_top(&mut self) {
-        if self.line_index.is_empty() {
+        if self.unique_line_index.is_empty() {
             return;
         }
-        if let Some(first) = self.find_first_selectable() {
+        if let Some(first) = self.find_item(|item| !item.unselectable) {
             self.cursor = first;
             self.scroll = 0;
         }
     }
 
     pub(crate) fn move_cursor_to_bottom(&mut self) {
-        if self.line_index.is_empty() {
+        if self.unique_line_index.is_empty() {
             return;
         }
-        if let Some(last) = self.find_last_selectable() {
+        if let Some(last) = self.rfind_item(|item| !item.unselectable) {
             self.cursor = last;
             self.scroll_fit_end();
         }
-    }
-
-    fn find_last_selectable(&self) -> Option<usize> {
-        (0..self.line_index.len()).rfind(|&line_i| !self.at_line(line_i).unselectable)
     }
 
     pub(crate) fn is_collapsed(&self, item: &Item) -> bool {
@@ -365,20 +433,24 @@ impl Screen {
     }
 
     pub(crate) fn get_selected_item(&self) -> &Item {
-        &self.items[self.line_index[self.cursor]]
+        &self.items[self.cursor]
     }
 
     pub(crate) fn select_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
-        if let Some(line_i) = (0..self.line_index.len()).find(|&line_i| {
-            !self.at_line(line_i).unselectable && predicate(&self.at_line(line_i).data)
-        }) {
-            self.cursor = line_i;
+        if let Some(item_i) = self.find_item(|item| !item.unselectable && predicate(&item.data)) {
+            self.cursor = item_i;
             let half_screen = self.size.height as usize / 2;
-            if self.cursor >= half_screen {
-                self.scroll = self.cursor - half_screen;
+            let Some(line_of_item) = self.line_of_item(self.cursor) else {
+                return false;
+            };
+
+            if line_of_item >= half_screen {
+                self.scroll = line_of_item - half_screen;
             }
+
             self.scroll_fit_end();
             self.scroll_fit_start();
+
             true
         } else {
             false
@@ -386,130 +458,132 @@ impl Screen {
     }
 
     pub(crate) fn select_last_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
-        if let Some(line_i) = (0..self.line_index.len()).rev().find(|&line_i| {
-            !self.at_line(line_i).unselectable && predicate(&self.at_line(line_i).data)
-        }) {
-            self.cursor = line_i;
+        if let Some(item_i) = self.rfind_item(|item| !item.unselectable && predicate(&item.data)) {
+            self.cursor = item_i;
             let half_screen = self.size.height as usize / 2;
-            if self.cursor >= half_screen {
-                self.scroll = self.cursor - half_screen;
+            let Some(line_of_item) = self.line_of_item(self.cursor) else {
+                return false;
+            };
+
+            if line_of_item >= half_screen {
+                self.scroll = line_of_item - half_screen;
             } else {
                 self.scroll_fit_start();
             }
+
             true
         } else {
             false
         }
     }
 
-    pub(crate) fn is_valid_screen_line(&self, screen_line: usize) -> bool {
-        let target_line_i = screen_line + self.scroll;
-        if self.line_index.is_empty() || target_line_i >= self.line_index.len() {
-            return false;
-        }
-        self.nav_filter(target_line_i, NavMode::IncludeSubLines)
+    fn find_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
+        self.unique_line_index
+            .iter()
+            .find(|&(_, &item_i)| predicate(&self.items[item_i]))
+            .map(|(_, &item_i)| item_i)
     }
 
-    fn line_views(&'_ self, area: Size) -> impl Iterator<Item = LineView<'_>> {
-        let scan_start = self.scroll.min(self.cursor);
-        let scan_end = (self.scroll + area.height as usize).min(self.line_index.len());
-        let scan_highlight_range = scan_start..(scan_end);
-        let context_lines = self.scroll - scan_start;
-
-        self.line_index[scan_highlight_range]
+    fn rfind_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
+        self.unique_line_index
             .iter()
-            .scan(None, |highlight_depth, item_index| {
-                let item = &self.items[*item_index];
-                if self.line_index[self.cursor] == *item_index {
+            .rfind(|&(_, &item_i)| predicate(&self.items[item_i]))
+            .map(|(_, &item_i)| item_i)
+    }
+
+    pub(crate) fn is_valid_screen_line(&self, screen_line: usize) -> bool {
+        let Some(target_item_i) = self.line_of_item(screen_line + self.scroll) else {
+            return false;
+        };
+        self.nav_filter(target_item_i, NavMode::IncludeSubLines)
+    }
+
+    fn line_of_item(&self, item_i: usize) -> Option<usize> {
+        self.unique_line_index
+            .iter()
+            .find(|&(_, &i)| item_i == i)
+            .map(|(&line_i, _)| line_i)
+    }
+
+    fn item_views(&'_ self, area: Size) -> impl Iterator<Item = ItemView> {
+        let first_visible_item = self
+            .line_index
+            .get(self.scroll)
+            .cloned()
+            .unwrap_or(self.items.len().saturating_sub(1));
+
+        let scan_start_item = first_visible_item.min(self.cursor);
+        let scan_end_line = (self.scroll + area.height as usize).min(self.line_index.len());
+        let scan_end_item = self
+            .line_index
+            .get(scan_end_line)
+            .cloned()
+            .unwrap_or(self.items.len());
+
+        let scan_highlight_range = scan_start_item..(scan_end_item);
+        let context_offset = self
+            .expanded_items
+            .range(scan_start_item..first_visible_item)
+            .count();
+
+        self.filter_collapsed_items(&self.items[scan_highlight_range])
+            .scan(None, move |highlight_depth, (offset_item_index, item)| {
+                let item_index = scan_start_item + offset_item_index;
+                if self.cursor == item_index {
                     *highlight_depth = Some(item.depth);
                 } else if highlight_depth.is_some_and(|s| s >= item.depth) {
                     *highlight_depth = None;
                 };
-                let display = item.to_line(Arc::clone(&self.config));
 
-                Some(LineView {
-                    item_index: *item_index,
-                    display,
+                Some(ItemView {
+                    item_index,
                     highlighted: highlight_depth.is_some(),
                 })
             })
-            .skip(context_lines)
+            .skip(context_offset)
     }
 }
 
-struct LineView<'a> {
+struct ItemView {
     item_index: usize,
-    display: Line<'a>,
     highlighted: bool,
 }
 
-const SPACES: &str = "                                                                ";
+pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: bool) {
+    layout.vertical(None, OPTS.fill_x(), |layout| {
+        for view in screen.item_views(screen.size) {
+            layout_item(layout, screen, hide_cursor, view);
+        }
+    });
+}
 
-pub(crate) fn layout_screen<'a>(
-    layout: &mut UiTree<'a>,
-    size: Size,
-    screen: &'a Screen,
-    hide_cursor: bool,
-) {
+fn layout_item<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: bool, line: ItemView) {
     let style = &screen.config.style;
+    let is_line_sel = screen.cursor == line.item_index;
 
-    layout.vertical(None, OPTS, |layout| {
-        for line in screen.line_views(size) {
-            layout.horizontal(None, OPTS, |layout| {
-                let is_line_sel = screen.line_index[screen.cursor] == line.item_index;
-                let area_sel = area_selection_highlight(style, &line);
-                let line_sel = line_selection_highlight(style, &line, is_line_sel);
-                let bg = area_sel.patch(line_sel);
+    let area_sel = area_selection_highlight(style, &line);
+    let line_sel = line_selection_highlight(style, &line, is_line_sel);
+    let bg = area_sel.patch(line_sel);
 
-                let mut line_end = 1;
-                let gutter_char = if !hide_cursor && line.highlighted {
-                    gutter_char(style, is_line_sel, bg)
-                } else {
-                    (" ".into(), Style::new())
-                };
+    layout.horizontal(Some(UiItem::Style(bg)), OPTS.fill_x(), |layout| {
+        let gutter_char = if !hide_cursor && line.highlighted {
+            gutter_char(style, is_line_sel, bg)
+        } else {
+            (" ".into(), Style::new())
+        };
 
-                layout_span(layout, gutter_char);
+        layout_span(layout, gutter_char);
 
-                line.display.spans.into_iter().for_each(|span| {
-                    let style = bg.patch(line.display.style).patch(span.style);
+        let item_line = screen.items[line.item_index].to_line(&screen.config);
+        item_line.spans.into_iter().for_each(|span| {
+            let style = bg.patch(item_line.style).patch(span.style);
+            ui::layout_span(layout, (span.content, style));
+        });
 
-                    let span_width = span.content.graphemes(true).count();
-
-                    if line_end + span_width >= size.width as usize {
-                        // Truncate the span and insert an ellipsis to indicate overflow
-                        let overflow = line_end + span_width - size.width as usize;
-                        line_end = size.width as usize;
-                        ui::layout_span(
-                            layout,
-                            (
-                                span.content
-                                    .graphemes(true)
-                                    .take(span_width.saturating_sub(overflow + 1))
-                                    .collect::<String>()
-                                    .into(),
-                                style,
-                            ),
-                        );
-                        layout_span(layout, ("…".into(), bg));
-                    } else {
-                        // Insert the span as normal
-                        line_end += span_width;
-                        ui::layout_span(layout, (span.content, style));
-                    }
-                });
-
-                // Add ellipsis indicator for collapsed sections
-                let item = &screen.items[line.item_index];
-                if screen.is_collapsed(item) {
-                    line_end += 1;
-                    layout_span(layout, ("…".into(), bg));
-                }
-
-                // Style the rest of the line's empty space
-                let style = if is_line_sel { line_sel } else { area_sel };
-                let padding_width = (size.width as usize).saturating_sub(line_end);
-                ui::repeat_chars(layout, padding_width, SPACES, style);
-            });
+        // Add ellipsis indicator for collapsed sections
+        let item = &screen.items[line.item_index];
+        if screen.is_collapsed(item) {
+            layout_span(layout, ("…".into(), bg));
         }
     });
 }
@@ -528,7 +602,7 @@ fn gutter_char<'a>(style: &'a StyleConfig, is_line_sel: bool, bg: Style) -> (Cow
     }
 }
 
-fn line_selection_highlight(style: &StyleConfig, line: &LineView, selected_line: bool) -> Style {
+fn line_selection_highlight(style: &StyleConfig, line: &ItemView, selected_line: bool) -> Style {
     if line.highlighted && selected_line {
         Style::from(&style.selection_line)
     } else {
@@ -536,7 +610,7 @@ fn line_selection_highlight(style: &StyleConfig, line: &LineView, selected_line:
     }
 }
 
-fn area_selection_highlight(style: &StyleConfig, line: &LineView) -> Style {
+fn area_selection_highlight(style: &StyleConfig, line: &ItemView) -> Style {
     if line.highlighted {
         Style::from(&style.selection_area)
     } else {

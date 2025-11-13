@@ -195,7 +195,7 @@ impl App {
 
     pub fn update_screens(&mut self) -> Res<()> {
         for screen in &mut self.state.screens {
-            screen.update()?;
+            screen.refresh()?;
         }
 
         self.stage_redraw();
@@ -206,7 +206,7 @@ impl App {
         match event {
             Event::Resize(w, h) => {
                 for screen in self.state.screens.iter_mut() {
-                    screen.size = Size::new(w, h);
+                    screen.resize(w, h)?;
                 }
 
                 self.stage_redraw();
