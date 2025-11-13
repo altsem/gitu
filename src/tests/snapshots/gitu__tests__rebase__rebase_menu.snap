@@ -7,19 +7,19 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
  b66a0bf other-branch origin/main add initial-file                              |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
  Rebase                 Arguments                                               |
  a     abort            -a Autosquash (--autosquash)                            |
  c     continue         -A Autostash (--autostash)                              |
- e     onto elsewhere   -d Lie about committer date (--committer-date-is-author-|
- q/esc Quit/Close       -i Interactive (--interactive)                          |
+ e     onto elsewhere   -d Lie about committer date (--committer-date-is-author |
+ q/esc Quit/Close          -date)                                               |
+                        -i Interactive (--interactive)                          |
                         -k Keep empty commits (--keep-empty)                    |
                         -h Disable hooks (--no-verify)                          |
                         -p Preserve merges (--preserve-merges)                  |
-styles_hash: c2a795da9f9636c1
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 3f2fe756e501a308

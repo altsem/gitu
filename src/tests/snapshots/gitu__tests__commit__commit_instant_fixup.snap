@@ -15,11 +15,11 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git commit --fixup efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f                   |
 [main eac3fc0] fixup! modify instant_fixup.txt                                  |
  Author: Author Name <author@email.com>                                         |
  1 file changed, 1 insertion(+), 1 deletion(-)                                  |
-$ git rebase -i -q --autostash --keep-empty --autosquash efc77f3bea683ce4ea27f2e|
-styles_hash: 6969ae121e8e1f63
+$ git rebase -i -q --autostash --keep-empty --autosquash                        |
+efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f^                                       |
+styles_hash: 6fb28ebf48baeb5e

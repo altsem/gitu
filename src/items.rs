@@ -18,7 +18,6 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::iter;
 use std::rc::Rc;
-use std::sync::Arc;
 
 pub type ItemId = u64;
 
@@ -32,7 +31,7 @@ pub(crate) struct Item {
 }
 
 impl Item {
-    pub fn to_line(&'_ self, config: Arc<Config>) -> Line<'_> {
+    pub fn to_line(&'_ self, config: &Config) -> Line<'_> {
         match self.data.clone() {
             ItemData::Raw(content) => Line::raw(content),
             ItemData::AllUnstaged(count) => Line::from(vec![
@@ -118,7 +117,7 @@ impl Item {
                 line_i,
             } => {
                 let hunk_highlights =
-                    highlight::highlight_hunk(self.id, &config, &Rc::clone(&diff), file_i, hunk_i);
+                    highlight::highlight_hunk(self.id, config, &Rc::clone(&diff), file_i, hunk_i);
 
                 let hunk_content = &diff.hunk_content(file_i, hunk_i);
                 let hunk_line = &hunk_content[line_range.clone()];

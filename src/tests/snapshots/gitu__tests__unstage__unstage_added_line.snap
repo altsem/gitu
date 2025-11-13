@@ -7,9 +7,9 @@ expression: ctx.redact_buffer()
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   firstfile                                                           |
- @@ -1 +1,2 @@                                                                  |
+▌@@ -1 +1,2 @@                                                                  |
 ▌+weehooo                                                                       |
-  blrergh                                                                       |
+▌ blrergh                                                                       |
                                                                                 |
  Staged changes (1)                                                             |
  modified   firstfile                                                           |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  223428c main add firstfile                                                     |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --reverse --recount                                        |
-styles_hash: da335a72680b4013
+styles_hash: 61980d64f9b4d1c2

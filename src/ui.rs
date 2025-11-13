@@ -18,16 +18,21 @@ pub mod picker;
 const CARET: &str = "\u{2588}";
 const DASHES: &str = "────────────────────────────────────────────────────────────────";
 
-pub(crate) type UiTree<'a> = LayoutTree<(Cow<'a, str>, Style)>;
+#[derive(Debug, Clone)]
+pub(crate) enum UiItem<'a> {
+    Span(Cow<'a, str>, Style),
+    Style(Style),
+}
+pub(crate) type UiTree<'a> = LayoutTree<UiItem<'a>>;
 
 pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     let size = frame.area().as_size();
     let mut layout = UiTree::new();
 
     layout.vertical(None, OPTS, |layout| {
-        layout.vertical(None, OPTS.grow(), |layout| {
+        layout.vertical(None, OPTS.fill_xy(), |layout| {
             let hide_cursor = state.picker.is_some();
-            screen::layout_screen(layout, size, state.screens.last().unwrap(), hide_cursor);
+            screen::layout_screen(layout, state.screens.last().unwrap(), hide_cursor);
         });
 
         layout.vertical(None, OPTS, |layout| {
@@ -52,8 +57,7 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     for item in layout.iter() {
         let LayoutItem { data, pos, size } = item;
         let area = Rect::new(pos[0], pos[1], size[0], size[1]);
-        let (text, style) = data;
-        frame.render_widget(SpanRef(text, *style), area);
+        frame.render_widget(data, area);
     }
 
     layout.clear();
@@ -61,12 +65,12 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
     state.screens.last_mut().unwrap().size = frame.area().as_size();
 }
 
-struct SpanRef<'a>(&'a Cow<'a, str>, Style);
-
-impl<'a> Widget for SpanRef<'a> {
+impl<'a> Widget for &UiItem<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let SpanRef(text, style) = self;
-        buf.set_string(area.x, area.y, text, style);
+        match self {
+            UiItem::Span(text, style) => buf.set_string(area.x, area.y, text, *style),
+            UiItem::Style(style) => buf.set_style(area, *style),
+        }
     }
 }
 
@@ -127,8 +131,24 @@ pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, line: Line<'a>) {
 }
 
 pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Style)) {
-    let width = span.0.graphemes(true).count() as u16;
-    layout.leaf_with_size(span, [width, 1]);
+    match span.0 {
+        Cow::Borrowed(s) => {
+            for word in s.split_word_bounds() {
+                layout.leaf_with_size(
+                    UiItem::Span(Cow::Borrowed(word), span.1),
+                    [word.graphemes(true).count() as u16, 1],
+                );
+            }
+        }
+        Cow::Owned(s) => {
+            for word in s.split_word_bounds() {
+                layout.leaf_with_size(
+                    UiItem::Span(Cow::Owned(word.into()), span.1),
+                    [word.graphemes(true).count() as u16, 1],
+                );
+            }
+        }
+    }
 }
 
 pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static str, style: Style) {
