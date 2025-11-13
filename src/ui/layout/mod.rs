@@ -242,17 +242,13 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
                 child_data.pos = Some(start + cursor);
             } else {
                 // Child doesn't fit where cursor currently is
-                // TODO Uncomment to include wrapping (tests below)
-                // // Try wrapping to next line/column first
-                // let next_line = size * dir.axis().flip();
+                let next_line = size * dir.axis().flip();
 
-                // if (next_line + child_data.size).fits(avail_size) {
-                //     // Fits completely on next line
-                //     cursor = next_line;
-                //     child_data.pos = Some(start + cursor);
-                // } else
-
-                if (cursor + Vec2(1, 1)).fits(avail_size) {
+                if (next_line + child_data.size).fits(avail_size) {
+                    // Fits completely on next line
+                    cursor = next_line;
+                    child_data.pos = Some(start + cursor);
+                } else if (cursor + Vec2(1, 1)).fits(avail_size) {
                     // Can't wrap, but we can fit at least one cell where the cursor currently is
                     child_data.pos = Some(start + cursor);
                     child_data.size = child_data.size.min(avail_size.saturating_sub(cursor));

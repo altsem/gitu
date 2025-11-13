@@ -111,8 +111,24 @@ pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, line: Line<'a>) {
 }
 
 pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Style)) {
-    let width = span.0.graphemes(true).count() as u16;
-    layout.leaf_with_size(span, [width, 1]);
+    match span.0 {
+        Cow::Borrowed(s) => {
+            for word in s.split_word_bounds() {
+                layout.leaf_with_size(
+                    (Cow::Borrowed(word), span.1),
+                    [word.graphemes(true).count() as u16, 1],
+                );
+            }
+        }
+        Cow::Owned(s) => {
+            for word in s.split_word_bounds() {
+                layout.leaf_with_size(
+                    (Cow::Owned(word.into()), span.1),
+                    [word.graphemes(true).count() as u16, 1],
+                );
+            }
+        }
+    }
 }
 
 pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static str, style: Style) {
