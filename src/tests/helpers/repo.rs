@@ -6,6 +6,27 @@ use std::{
 
 use temp_dir::TempDir;
 
+/// Convert a file path to a proper file:// URL that git can understand.
+/// On Windows, this handles the `\\?\` prefix and ensures forward slashes.
+fn path_to_file_url(path: &Path) -> String {
+    let path_str = path.to_str().unwrap();
+    
+    #[cfg(windows)]
+    {
+        // Remove Windows verbatim path prefix `\\?\` if present
+        let normalized = path_str
+            .strip_prefix(r"\\?\")
+            .unwrap_or(path_str)
+            .replace('\\', "/");
+        format!("file:///{}", normalized)
+    }
+    
+    #[cfg(not(windows))]
+    {
+        format!("file://{}", path_str)
+    }
+}
+
 pub struct RepoTestContext {
     pub dir: PathBuf,
     pub remote_dir: PathBuf,
@@ -42,7 +63,7 @@ impl RepoTestContext {
         set_config(&remote_dir);
         clone_and_commit(&remote_dir, "initial-file", "hello");
 
-        let url = format!("file://{}", remote_dir.to_str().unwrap());
+        let url = path_to_file_url(&remote_dir);
         run(&local_dir, &["git", "clone", &url, "."]);
         set_config(&local_dir);
 
@@ -125,7 +146,7 @@ fn set_config(path: &Path) {
 pub fn clone_and_commit(remote_dir: &Path, file_name: &str, file_content: &str) {
     let other_dir = TempDir::new().unwrap();
 
-    let url = format!("file://{}", remote_dir.to_str().unwrap());
+    let url = path_to_file_url(remote_dir);
     run(other_dir.path(), &["git", "clone", &url, "."]);
 
     set_config(other_dir.path());
