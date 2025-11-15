@@ -11,35 +11,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v5
-
-    - name: Cache
-      uses: actions/cache@v4.3.0
-      with:
-        path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Setup
-      run: |
-        cargo install cargo-deny || true
-        cargo install git-cliff || true
-
-    - run: make test
-
   test:
     strategy:
       matrix:
         os:
+          - ubuntu-latest
           - windows-latest
           - macos-latest
+          - macos-15-intel
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -47,6 +26,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
+    - name: Setup
+      run: |
+        cargo install git-cliff || true
+
     - name: Cache
       uses: actions/cache@v4.3.0
       with:
@@ -57,4 +40,4 @@ jobs:
             target
         key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - run: cargo test
+    - run: make test
