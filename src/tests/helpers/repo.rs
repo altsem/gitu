@@ -42,8 +42,10 @@ impl RepoTestContext {
         set_config(&remote_dir);
         clone_and_commit(&remote_dir, "initial-file", "hello");
 
-        let url = format!("file://{}", remote_dir.to_str().unwrap());
-        run(&local_dir, &["git", "clone", &url, "."]);
+        run(
+            &local_dir,
+            &["git", "clone", "--local", remote_dir.to_str().unwrap(), "."],
+        );
         set_config(&local_dir);
 
         let local_repo = open_repo(&local_dir);
@@ -125,8 +127,10 @@ fn set_config(path: &Path) {
 pub fn clone_and_commit(remote_dir: &Path, file_name: &str, file_content: &str) {
     let other_dir = TempDir::new().unwrap();
 
-    let url = format!("file://{}", remote_dir.to_str().unwrap());
-    run(other_dir.path(), &["git", "clone", &url, "."]);
+    run(
+        other_dir.path(),
+        &["git", "clone", "--local", remote_dir.to_str().unwrap(), "."],
+    );
 
     set_config(other_dir.path());
 

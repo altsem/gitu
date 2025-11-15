@@ -98,8 +98,8 @@ impl TestContext {
         };
         let mut debug_output = format!("{:?}", TestBuffer(backend.buffer()));
 
-        redact(&mut debug_output, "From file://(.*)\n");
-        redact(&mut debug_output, "To file://(/.*)\n");
+        redact(&mut debug_output, "From (.*)\n");
+        redact(&mut debug_output, "To (.*)\n");
 
         debug_output
     }
