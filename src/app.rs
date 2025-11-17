@@ -286,7 +286,7 @@ impl App {
                     if old_selected_item_id == new_selected_item.id {
                         // If the item clicked was already the current item, then try to
                         // toggle it if it's a section or show it.
-                        if new_selected_item.section {
+                        if new_selected_item.data.is_section() {
                             self.handle_op(Op::ToggleSection, term)?;
                         } else {
                             self.handle_op(Op::Show, term)?;

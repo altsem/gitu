@@ -24,7 +24,6 @@ pub type ItemId = u64;
 #[derive(Default, Clone, Debug)]
 pub(crate) struct Item {
     pub(crate) id: ItemId,
-    pub(crate) section: bool,
     pub(crate) default_collapsed: bool,
     pub(crate) depth: usize,
     pub(crate) unselectable: bool,
@@ -188,7 +187,6 @@ pub(crate) fn create_diff_items(
         .flat_map(move |(file_i, file_diff)| {
             iter::once(Item {
                 id: hash(diff.file_diff_header(file_i)),
-                section: true,
                 default_collapsed,
                 depth,
                 data: ItemData::Delta {
@@ -214,7 +212,6 @@ fn create_hunk_items(
     let hunk_hash = hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]);
     iter::once(Item {
         id: hunk_hash,
-        section: true,
         depth,
         data: ItemData::Hunk {
             diff: Rc::clone(&diff),

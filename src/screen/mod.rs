@@ -150,7 +150,7 @@ impl Screen {
                 !item.unselectable && !is_hunk_line
             }
             NavMode::Siblings { depth } => {
-                !item.unselectable && item.section && item.depth <= depth
+                !item.unselectable && item.data.is_section() && item.depth <= depth
             }
             NavMode::IncludeHunkLines => !item.unselectable,
         }
@@ -211,7 +211,7 @@ impl Screen {
     pub(crate) fn toggle_section(&mut self) {
         let selected = &self.items[self.line_index[self.cursor]];
 
-        if selected.section {
+        if selected.data.is_section() {
             if self.collapsed.contains(&selected.id) {
                 self.collapsed.remove(&selected.id);
             } else {
@@ -261,7 +261,7 @@ impl Screen {
                     return Some(None);
                 }
 
-                *collapse_depth = if next.section && self.is_collapsed(next) {
+                *collapse_depth = if next.data.is_section() && self.is_collapsed(next) {
                     Some(next.depth)
                 } else {
                     None
@@ -323,7 +323,7 @@ impl Screen {
         }
     }
 
-    fn is_collapsed(&self, item: &Item) -> bool {
+    pub(crate) fn is_collapsed(&self, item: &Item) -> bool {
         self.collapsed.contains(&item.id)
     }
 

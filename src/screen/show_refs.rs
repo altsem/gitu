@@ -24,7 +24,6 @@ pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> R
             Ok(iter::once(Item {
                 id: hash("local_branches"),
                 data: ItemData::Header(SectionHeader::Branches),
-                section: true,
                 depth: 0,
                 ..Default::default()
             })
@@ -59,7 +58,6 @@ fn create_remotes_sections<'a>(repo: &'a Repository) -> Res<impl Iterator<Item =
             items::blank_line(),
             Item {
                 id: hash(&name),
-                section: true,
                 depth: 0,
                 data: ItemData::Header(SectionHeader::Remote(name)),
                 ..Default::default()
@@ -77,7 +75,6 @@ fn create_tags_section<'a>(repo: &'a Repository) -> Res<impl Iterator<Item = Ite
             items::blank_line(),
             Item {
                 id: hash("tags"),
-                section: true,
                 depth: 0,
                 data: ItemData::Header(SectionHeader::Tags),
                 ..Default::default()

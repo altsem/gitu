@@ -134,16 +134,29 @@ impl OpTrait for ToggleArg {
 
 pub(crate) struct ToggleSection;
 impl OpTrait for ToggleSection {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
-        Some(Rc::new(|app, _term| {
-            app.close_menu();
-            app.screen_mut().toggle_section();
-            Ok(())
-        }))
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        if target.is_section() {
+            Some(Rc::new(|app, _term| {
+                app.close_menu();
+                app.screen_mut().toggle_section();
+                Ok(())
+            }))
+        } else {
+            None
+        }
     }
 
-    fn display(&self, _state: &State) -> String {
-        "Toggle section".into()
+    fn is_target_op(&self) -> bool {
+        true
+    }
+
+    fn display(&self, state: &State) -> String {
+        let item = state.screens.last().unwrap().get_selected_item();
+        if state.screens.last().unwrap().is_collapsed(item) {
+            "Unfold".into()
+        } else {
+            "Fold".into()
+        }
     }
 }
 

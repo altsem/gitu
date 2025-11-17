@@ -8,18 +8,18 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
  b66a0bf main origin/main add initial-file                                      |
 ────────────────────────────────────────────────────────────────────────────────|
- Help                            Submenu                                        |
- Y Show Refs                     b Branch                                       |
- tab Toggle section              c Commit                                       |
- k/up Up                         f Fetch                                        |
- j/down Down                     h/? Help                                       |
- ctrl+k/ctrl+up Up line          l Log                                          |
- ctrl+j/ctrl+down Down line      m Merge                                        |
- alt+k/alt+up Prev section       M Remote                                       |
- alt+j/alt+down Next section     F Pull                                         |
- alt+h/alt+left Parent section   P Push                                         |
- ctrl+u Half page up             r Rebase                                       |
- ctrl+d Half page down           X Reset                                        |
- g Refresh                       V Revert                                       |
- q/esc Quit/Close                z Stash                                        |
-styles_hash: 4e0cfb3860ad3de2
+ Help                            Submenu    On branch main                      |
+ Y Show Refs                     b Branch   tab Fold                            |
+ k/up Up                         c Commit                                       |
+ j/down Down                     f Fetch                                        |
+ ctrl+k/ctrl+up Up line          h/? Help                                       |
+ ctrl+j/ctrl+down Down line      l Log                                          |
+ alt+k/alt+up Prev section       m Merge                                        |
+ alt+j/alt+down Next section     M Remote                                       |
+ alt+h/alt+left Parent section   F Pull                                         |
+ ctrl+u Half page up             P Push                                         |
+ ctrl+d Half page down           r Rebase                                       |
+ g Refresh                       X Reset                                        |
+ q/esc Quit/Close                V Revert                                       |
+                                 z Stash                                        |
+styles_hash: f74c6b31abe71f25

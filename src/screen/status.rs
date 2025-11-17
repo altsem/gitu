@@ -87,7 +87,6 @@ pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> R
                     items::blank_line(),
                     Item {
                         id: hash(SectionID::Untracked),
-                        section: true,
                         depth: 0,
                         data: ItemData::AllUntracked(
                             untracked_files.iter().map(PathBuf::from).collect(),
@@ -136,7 +135,6 @@ fn branch_status_items(status: &BranchStatus) -> Res<Vec<Item>> {
     let Some(ref head) = status.local else {
         return Ok(vec![Item {
             id: hash(SectionID::BranchStatus),
-            section: true,
             depth: 0,
             data: ItemData::Header(SectionHeader::NoBranch),
             ..Default::default()
@@ -145,7 +143,6 @@ fn branch_status_items(status: &BranchStatus) -> Res<Vec<Item>> {
 
     let mut items = vec![Item {
         id: hash(SectionID::BranchStatus),
-        section: true,
         depth: 0,
         data: ItemData::Header(SectionHeader::OnBranch(head.clone())),
         ..Default::default()
@@ -184,7 +181,6 @@ fn create_status_section_items<'a>(
             items::blank_line(),
             Item {
                 id: hash(section),
-                section: true,
                 depth: 0,
                 data: item_data,
                 ..Default::default()
@@ -207,7 +203,6 @@ fn create_stash_list_section_items<'a>(
             items::blank_line(),
             Item {
                 id: hash(SectionID::Stashes),
-                section: true,
                 depth: 0,
                 data: ItemData::Header(SectionHeader::Stashes),
                 ..Default::default()
@@ -230,7 +225,6 @@ fn create_log_section_items<'a>(
         },
         Item {
             id: hash(SectionID::RecentCommits),
-            section: true,
             depth: 0,
             data: ItemData::Header(SectionHeader::RecentCommits),
             ..Default::default()

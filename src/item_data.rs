@@ -45,6 +45,22 @@ pub(crate) enum ItemData {
     Error(String),
 }
 
+impl ItemData {
+    pub(crate) fn is_section(&self) -> bool {
+        matches!(
+            self,
+            ItemData::AllUnstaged(_)
+                | ItemData::AllStaged(_)
+                | ItemData::AllUntracked(_)
+                | ItemData::Untracked(_)
+                | ItemData::Delta { .. }
+                | ItemData::Hunk { .. }
+                | ItemData::Header(_)
+                | ItemData::BranchStatus(_, _, _)
+        )
+    }
+}
+
 impl Default for ItemData {
     fn default() -> Self {
         ItemData::Raw(String::new())

@@ -28,7 +28,6 @@ pub(crate) fn create(
 
             Ok(iter::once(Item {
                 id: hash(["stash_section", &commit.hash]),
-                section: true,
                 depth: 0,
                 data: ItemData::Header(SectionHeader::Commit(commit.hash.clone())),
                 ..Default::default()
