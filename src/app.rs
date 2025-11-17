@@ -46,7 +46,8 @@ pub(crate) struct State {
     pub config: Arc<Config>,
     pending_keys: Vec<(KeyModifiers, KeyCode)>,
     pub quit: bool,
-    pub screens: Vec<Screen>,
+    focused_screen: usize,
+    screens: Vec<Screen>,
     pub pending_menu: Option<PendingMenu>,
     pending_cmd: Option<(Child, Arc<RwLock<CmdLogEntry>>)>,
     enable_async_cmds: bool,
@@ -99,6 +100,7 @@ impl App {
                 enable_async_cmds,
                 quit: false,
                 screens,
+                focused_screen: 0,
                 pending_cmd: None,
                 pending_menu,
                 current_cmd_log: CmdLog::new(),
@@ -169,6 +171,17 @@ impl App {
 
         let handle_pending_cmd_result = self.handle_pending_cmd();
         self.handle_result(handle_pending_cmd_result)?;
+
+        if self.state.is_preview_screen_open() {
+            // TODO Make this cleaner, don't need to update so often too
+            let item_data = &self.state.get_focused_screen().get_selected_item().data;
+            if let Some(mut action) = Op::Preview.clone().implementation().get_action(item_data) {
+                let result = Rc::get_mut(&mut action).unwrap()(self, term);
+                self.handle_result(result)?;
+            } else {
+                self.state.pop_screen();
+            }
+        }
 
         if self.state.needs_redraw {
             self.redraw_now(term)?;
@@ -278,10 +291,15 @@ impl App {
         match mouse.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 let click_y = mouse.row as usize;
-                if self.screen().is_valid_screen_line(click_y) {
-                    let old_selected_item_id = self.screen().get_selected_item().id;
+                if self
+                    .state
+                    .get_focused_screen()
+                    .is_valid_screen_line(click_y)
+                {
+                    let old_selected_item_id =
+                        self.state.get_focused_screen().get_selected_item().id;
                     self.handle_op(Op::MoveToScreenLine(click_y), term)?;
-                    let new_selected_item = self.screen().get_selected_item();
+                    let new_selected_item = self.state.get_focused_screen().get_selected_item();
 
                     if old_selected_item_id == new_selected_item.id {
                         // If the item clicked was already the current item, then try to
@@ -296,7 +314,11 @@ impl App {
             }
             MouseEventKind::Down(MouseButton::Right) => {
                 let click_y = mouse.row as usize;
-                if self.screen().is_valid_screen_line(click_y) {
+                if self
+                    .state
+                    .get_focused_screen()
+                    .is_valid_screen_line(click_y)
+                {
                     self.handle_op(Op::MoveToScreenLine(click_y), term)?;
                     self.handle_op(Op::Show, term)?;
                 }
@@ -304,13 +326,15 @@ impl App {
             MouseEventKind::ScrollUp => {
                 let scroll_lines = self.state.config.general.mouse_scroll_lines;
                 if scroll_lines > 0 {
-                    self.screen_mut().scroll_up(scroll_lines);
+                    self.state.get_mut_focused_screen().scroll_up(scroll_lines);
                 }
             }
             MouseEventKind::ScrollDown => {
                 let scroll_lines = self.state.config.general.mouse_scroll_lines;
                 if scroll_lines > 0 {
-                    self.screen_mut().scroll_down(scroll_lines);
+                    self.state
+                        .get_mut_focused_screen()
+                        .scroll_down(scroll_lines);
                 }
             }
             _ => return Ok(false),
@@ -320,8 +344,7 @@ impl App {
     }
 
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
-        let screen_ref = self.screen();
-        let item_data = &screen_ref.get_selected_item().data;
+        let item_data = &self.state.get_focused_screen().get_selected_item().data;
 
         if let Some(mut action) = op.clone().implementation().get_action(item_data) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
@@ -349,14 +372,6 @@ impl App {
 
     pub fn close_menu(&mut self) {
         self.state.pending_menu = root_menu(&self.state.config).map(PendingMenu::init)
-    }
-
-    pub fn screen_mut(&mut self) -> &mut Screen {
-        self.state.screens.last_mut().expect("No screen")
-    }
-
-    pub fn screen(&self) -> &Screen {
-        self.state.screens.last().expect("No screen")
     }
 
     /// Displays an `Info` message to the CmdLog.
@@ -531,7 +546,7 @@ impl App {
     }
 
     pub fn selected_rev(&self) -> Option<String> {
-        match &self.screen().get_selected_item().data {
+        match &self.state.get_focused_screen().get_selected_item().data {
             ItemData::Reference { kind, .. } => match kind {
                 RefKind::Tag(tag) => Some(tag.to_owned()),
                 RefKind::Branch(branch) => Some(branch.to_owned()),
@@ -617,6 +632,56 @@ impl App {
 
             self.redraw_now(term)?;
         }
+    }
+}
+
+impl State {
+    pub fn get_focused_screen(&self) -> &Screen {
+        &self.screens[self.focused_screen]
+    }
+
+    pub fn get_mut_focused_screen(&mut self) -> &mut Screen {
+        &mut self.screens[self.focused_screen]
+    }
+
+    pub fn get_screen_count(&self) -> usize {
+        self.screens.len()
+    }
+
+    pub fn return_to_main_screen(&mut self) {
+        self.screens.drain(1..);
+        self.focused_screen = 0;
+    }
+
+    pub fn push_screen(&mut self, screen: Screen) {
+        self.screens.push(screen);
+        self.focused_screen = self.screens.len() - 1;
+    }
+
+    pub fn pop_screen(&mut self) {
+        self.screens.pop();
+        self.focused_screen = self.screens.len() - 1;
+    }
+
+    pub fn set_preview_screen(&mut self, screen: Screen) {
+        if self.is_preview_screen_open() {
+            let last_i = self.screens.len() - 1;
+            self.screens[last_i] = screen;
+        } else {
+            self.screens.push(screen);
+        }
+    }
+
+    pub fn focus_preview_screen(&mut self) {
+        self.focused_screen = self.screens.len() - 1;
+    }
+
+    pub fn is_preview_screen_open(&self) -> bool {
+        self.focused_screen < self.screens.len() - 1
+    }
+
+    pub fn get_screens(&self) -> &[Screen] {
+        &self.screens
     }
 }
 

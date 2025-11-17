@@ -56,15 +56,19 @@ impl OpTrait for Show {
 fn goto_show_screen(r: String) -> Option<Action> {
     Some(Rc::new(move |app, term| {
         app.close_menu();
-        app.state.screens.push(
-            screen::show::create(
-                Arc::clone(&app.state.config),
-                Rc::clone(&app.state.repo),
-                term.size().map_err(Error::Term)?,
-                r.clone(),
-            )
-            .expect("Couldn't create screen"),
-        );
+        if app.state.is_preview_screen_open() {
+            app.state.focus_preview_screen();
+        } else {
+            app.state.push_screen(
+                screen::show::create(
+                    Arc::clone(&app.state.config),
+                    Rc::clone(&app.state.repo),
+                    term.size().map_err(Error::Term)?,
+                    r.clone(),
+                )
+                .expect("Couldn't create screen"),
+            );
+        }
         Ok(())
     }))
 }
@@ -72,15 +76,19 @@ fn goto_show_screen(r: String) -> Option<Action> {
 fn goto_show_stash_screen(stash_ref: String) -> Option<Action> {
     Some(Rc::new(move |app, term| {
         app.close_menu();
-        app.state.screens.push(
-            screen::show_stash::create(
-                Arc::clone(&app.state.config),
-                Rc::clone(&app.state.repo),
-                term.size().map_err(Error::Term)?,
-                stash_ref.clone(),
-            )
-            .expect("Couldn't create stash screen"),
-        );
+        if app.state.is_preview_screen_open() {
+            app.state.focus_preview_screen();
+        } else {
+            app.state.push_screen(
+                screen::show_stash::create(
+                    Arc::clone(&app.state.config),
+                    Rc::clone(&app.state.repo),
+                    term.size().map_err(Error::Term)?,
+                    stash_ref.clone(),
+                )
+                .expect("Couldn't create stash screen"),
+            );
+        }
         Ok(())
     }))
 }

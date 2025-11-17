@@ -320,7 +320,7 @@ fn stash_drop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
 }
 
 fn selected_stash(app: &App) -> Option<String> {
-    match app.screen().get_selected_item().data {
+    match app.state.get_focused_screen().get_selected_item().data {
         ItemData::Stash { id, .. } => Some(id.to_string()),
         _ => Some("0".to_string()),
     }

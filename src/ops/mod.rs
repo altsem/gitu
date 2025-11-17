@@ -17,6 +17,7 @@ pub(crate) mod editor;
 pub(crate) mod fetch;
 pub(crate) mod log;
 pub(crate) mod merge;
+pub(crate) mod preview;
 pub(crate) mod pull;
 pub(crate) mod push;
 pub(crate) mod rebase;
@@ -60,6 +61,7 @@ pub(crate) enum Op {
     FetchAll,
     FetchElsewhere,
     LogCurrent,
+    Preview,
     PullFromPushRemote,
     PullFromUpstream,
     PullFromElsewhere,
@@ -150,6 +152,7 @@ impl Op {
             Op::FetchAll => Box::new(fetch::FetchAll),
             Op::FetchElsewhere => Box::new(fetch::FetchElsewhere),
             Op::LogCurrent => Box::new(log::LogCurrent),
+            Op::Preview => Box::new(preview::Preview),
             Op::PullFromPushRemote => Box::new(pull::PullFromPushRemote),
             Op::PullFromUpstream => Box::new(pull::PullFromUpstream),
             Op::PullFromElsewhere => Box::new(pull::PullFromElsewhere),

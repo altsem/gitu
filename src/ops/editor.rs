@@ -19,14 +19,21 @@ impl OpTrait for Quit {
                 .map(|pending_menu| pending_menu.menu);
 
             if menu == root_menu(&app.state.config) {
-                if app.state.screens.len() == 1 {
+                if ({
+                    let this = &mut *app;
+                    this.state.get_screen_count()
+                }) == 1
+                {
                     if app.state.config.general.confirm_quit.enabled {
                         app.confirm(term, "Really quit? (y or n)")?;
                     };
 
                     app.state.quit = true;
                 } else {
-                    app.state.screens.pop();
+                    {
+                        let this = &mut *app;
+                        this.state.pop_screen();
+                    };
                 }
             } else {
                 app.close_menu();
@@ -137,7 +144,7 @@ impl OpTrait for ToggleSection {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().toggle_section();
+            app.state.get_mut_focused_screen().toggle_section();
             Ok(())
         }))
     }
@@ -152,7 +159,9 @@ impl OpTrait for MoveUp {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().select_previous(NavMode::Normal);
+            app.state
+                .get_mut_focused_screen()
+                .select_previous(NavMode::Normal);
             Ok(())
         }))
     }
@@ -167,7 +176,9 @@ impl OpTrait for MoveDown {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().select_next(NavMode::Normal);
+            app.state
+                .get_mut_focused_screen()
+                .select_next(NavMode::Normal);
             Ok(())
         }))
     }
@@ -182,7 +193,9 @@ impl OpTrait for MoveDownLine {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().select_next(NavMode::IncludeHunkLines);
+            app.state
+                .get_mut_focused_screen()
+                .select_next(NavMode::IncludeHunkLines);
             Ok(())
         }))
     }
@@ -197,7 +210,9 @@ impl OpTrait for MoveUpLine {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().select_previous(NavMode::IncludeHunkLines);
+            app.state
+                .get_mut_focused_screen()
+                .select_previous(NavMode::IncludeHunkLines);
             Ok(())
         }))
     }
@@ -213,7 +228,9 @@ impl OpTrait for MoveToScreenLine {
         let screen_line = self.0;
         Some(Rc::new(move |app, _term| {
             app.close_menu();
-            app.screen_mut().move_cursor_to_screen_line(screen_line);
+            app.state
+                .get_mut_focused_screen()
+                .move_cursor_to_screen_line(screen_line);
             Ok(())
         }))
     }
@@ -228,8 +245,10 @@ impl OpTrait for MoveNextSection {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            let depth = app.screen().get_selected_item().depth;
-            app.screen_mut().select_next(NavMode::Siblings { depth });
+            let depth = app.state.get_focused_screen().get_selected_item().depth;
+            app.state
+                .get_mut_focused_screen()
+                .select_next(NavMode::Siblings { depth });
             Ok(())
         }))
     }
@@ -244,8 +263,9 @@ impl OpTrait for MovePrevSection {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            let depth = app.screen().get_selected_item().depth;
-            app.screen_mut()
+            let depth = app.state.get_focused_screen().get_selected_item().depth;
+            app.state
+                .get_mut_focused_screen()
                 .select_previous(NavMode::Siblings { depth });
             Ok(())
         }))
@@ -261,8 +281,14 @@ impl OpTrait for MoveParentSection {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            let depth = app.screen().get_selected_item().depth.saturating_sub(1);
-            app.screen_mut()
+            let depth = app
+                .state
+                .get_focused_screen()
+                .get_selected_item()
+                .depth
+                .saturating_sub(1);
+            app.state
+                .get_mut_focused_screen()
                 .select_previous(NavMode::Siblings { depth });
             Ok(())
         }))
@@ -278,7 +304,7 @@ impl OpTrait for HalfPageUp {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().scroll_half_page_up();
+            app.state.get_mut_focused_screen().scroll_half_page_up();
             Ok(())
         }))
     }
@@ -293,7 +319,7 @@ impl OpTrait for HalfPageDown {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().scroll_half_page_down();
+            app.state.get_mut_focused_screen().scroll_half_page_down();
             Ok(())
         }))
     }
