@@ -33,6 +33,7 @@ pub struct GeneralConfig {
     pub refresh_on_file_change: BoolConfigEntry,
     pub confirm_discard: ConfirmDiscardOption,
     pub collapsed_sections: Vec<String>,
+    pub split_view: BoolConfigEntry,
     pub stash_list_limit: usize,
     pub recent_commits_limit: usize,
     pub mouse_support: bool,

@@ -19,7 +19,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
     }
 
     let config = Arc::clone(&state.config);
-    let item = state.screens.last().unwrap().get_selected_item();
+    let item = state.get_focused_screen().get_selected_item();
     let style = &config.style;
 
     let arg_binds = config.bindings.arg_list(pending).collect::<Vec<_>>();

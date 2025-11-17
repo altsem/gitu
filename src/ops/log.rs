@@ -79,8 +79,8 @@ fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
 }
 
 fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
-    app.state.screens.drain(1..);
-    let size = app.state.screens.last().unwrap().size;
+    app.state.return_to_main_screen();
+    let size = app.state.get_focused_screen().size;
     let limit = *app
         .state
         .pending_menu
@@ -99,7 +99,7 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
 
     app.close_menu();
 
-    app.state.screens.push(
+    app.state.push_screen(
         screen::log::create(
             Arc::clone(&app.state.config),
             Rc::clone(&app.state.repo),

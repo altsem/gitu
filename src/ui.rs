@@ -33,7 +33,26 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
     layout.vertical(None, OPTS, |layout| {
         layout.vertical(None, OPTS.grow(), |layout| {
-            screen::layout_screen(layout, size, state.screens.last().unwrap());
+            layout.horizontal(None, OPTS, |layout| {
+                if state.get_screen_count() > 1 && state.config.general.split_view.enabled {
+                    let half_size = Size {
+                        width: size.width / 2,
+                        height: size.height,
+                    };
+
+                    let last = state.get_screens().iter().nth_back(0).unwrap();
+                    let second_to_last = state.get_screens().iter().nth_back(1).unwrap();
+                    if state.get_screen_count().is_multiple_of(2) {
+                        screen::layout_screen(layout, half_size, second_to_last);
+                        screen::layout_screen(layout, half_size, last);
+                    } else {
+                        screen::layout_screen(layout, half_size, last);
+                        screen::layout_screen(layout, half_size, second_to_last);
+                    };
+                } else {
+                    screen::layout_screen(layout, size, state.get_focused_screen());
+                }
+            });
         });
 
         layout.vertical(None, OPTS, |layout| {
@@ -54,7 +73,8 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
     layout.clear();
 
-    state.screens.last_mut().unwrap().size = frame.area().as_size();
+    // TODO
+    state.get_mut_focused_screen().size = frame.area().as_size();
 }
 
 struct SpanRef<'a>(&'a Cow<'a, str>, Style);
