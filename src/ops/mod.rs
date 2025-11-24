@@ -78,6 +78,7 @@ pub(crate) enum Op {
     StashKeepIndex,
     StashPop,
     StashDrop,
+    StashClear,
     CommitFixup,
     CommitInstantFixup,
     LogOther,
@@ -165,6 +166,7 @@ impl Op {
             Op::StashKeepIndex => Box::new(stash::StashKeepIndex),
             Op::StashPop => Box::new(stash::StashPop),
             Op::StashDrop => Box::new(stash::StashDrop),
+            Op::StashClear => Box::new(stash::StashClear),
 
             Op::CommitFixup => Box::new(commit::CommitFixup),
             Op::CommitInstantFixup => Box::new(commit::CommitInstantFixup),
