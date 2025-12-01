@@ -18,7 +18,7 @@ expression: ctx.redact_buffer()
  p pushRemote, setting that      -r Rebase local commits (--rebase)             |
  u upstream, setting that                                                       |
  e from elsewhere                                                               |
- q/esc Quit/Close                                                               |
+ q/esc Cancel/Quit                                                              |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |

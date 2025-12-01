@@ -55,6 +55,7 @@ pub(crate) struct State {
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
+    pub search_pattern: Option<String>,
 }
 
 pub(crate) struct App {
@@ -106,6 +107,7 @@ impl App {
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
+                search_pattern: None,
             },
         };
 
@@ -565,6 +567,28 @@ impl App {
         result
     }
 
+    pub(crate) fn search_prompt(
+        &mut self,
+        term: &mut Term,
+        prompt_text: &str,
+        on_change: &mut dyn FnMut(&mut Self, &str),
+    ) -> Res<String> {
+        self.hide_menu();
+
+        self.state.prompt.set(prompt::PromptData {
+            prompt_text: format!("{}:", prompt_text).into(),
+        });
+        let result = self.handle_search_prompt(term, on_change);
+
+        self.unhide_menu();
+        if result.is_err() {
+            self.close_menu();
+        }
+        self.state.prompt.reset(term)?;
+
+        result
+    }
+
     fn handle_prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
         self.redraw_now(term)?;
 
@@ -574,6 +598,34 @@ impl App {
 
             if self.state.prompt.state.status().is_done() {
                 return get_prompt_result(params, self);
+            } else if self.state.prompt.state.status().is_aborted() {
+                return Err(Error::PromptAborted);
+            }
+
+            self.redraw_now(term)?;
+        }
+    }
+
+    fn handle_search_prompt(
+        &mut self,
+        term: &mut Term,
+        on_change: &mut dyn FnMut(&mut Self, &str),
+    ) -> Res<String> {
+        self.redraw_now(term)?;
+        let mut last_value = String::new();
+
+        loop {
+            let event = term.backend_mut().read_event()?;
+            self.handle_event(term, event)?;
+
+            let current_value = self.state.prompt.state.value().to_string();
+            if current_value != last_value {
+                on_change(self, &current_value);
+                last_value = current_value;
+            }
+
+            if self.state.prompt.state.status().is_done() {
+                return Ok(self.state.prompt.state.value().to_string());
             } else if self.state.prompt.state.status().is_aborted() {
                 return Err(Error::PromptAborted);
             }
