@@ -46,7 +46,7 @@ impl OpTrait for FetchElsewhere {
                 },
             )?;
 
-            push_elsewhere(app, term, &remote)?;
+            fetch_elsewhere(app, term, &remote)?;
             Ok(())
         }))
     }
@@ -56,7 +56,7 @@ impl OpTrait for FetchElsewhere {
     }
 }
 
-fn push_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
+fn fetch_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["fetch"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
