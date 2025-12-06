@@ -18,6 +18,21 @@ pub(crate) fn get_branch_upstream<'repo>(branch: &Branch<'repo>) -> Res<Option<B
     }
 }
 
+pub(crate) fn get_remote_name(repo: &Repository, upstream: &Branch) -> Res<String> {
+    let branch_full = str::from_utf8(upstream.get().name_bytes())
+        .map_err(Utf8Error::Str)
+        .map_err(Error::BranchNameUtf8)?;
+
+    String::from_utf8(
+        repo.branch_remote_name(branch_full)
+            .map_err(Error::GetRemote)?
+            .deref()
+            .to_vec(),
+    )
+    .map_err(Utf8Error::String)
+    .map_err(Error::RemoteNameUtf8)
+}
+
 /// If the branch has an upstream, returns the remote name and branch name in that order.
 /// Returns "." as remote if the current branch has no remote upstream.
 ///
@@ -42,20 +57,9 @@ pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, 
         .map_err(Error::BranchNameUtf8)?;
 
     if upstream.get().is_remote() {
-        let branch_full = str::from_utf8(upstream.get().name_bytes())
-            .map_err(Utf8Error::Str)
-            .map_err(Error::BranchNameUtf8)?;
-        let remote = String::from_utf8(
-            repo.branch_remote_name(branch_full)
-                .map_err(Error::GetRemote)?
-                .deref()
-                .to_vec(),
-        )
-        .map_err(Utf8Error::String)
-        .map_err(Error::RemoteNameUtf8)?;
-
-        let remote_prefix = format!("{remote}/");
-        Ok(Some((remote, branch.replace(&remote_prefix, ""))))
+        let remote_name = get_remote_name(repo, &upstream)?;
+        let remote_prefix = format!("{remote_name}/");
+        Ok(Some((remote_name, branch.replace(&remote_prefix, ""))))
     } else {
         Ok(Some((".".into(), branch)))
     }
@@ -70,6 +74,19 @@ pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {
             .map_err(Utf8Error::String)
             .map_err(Error::GetCurrentBranchUpstreamUtf8)?,
     ))
+}
+
+pub(crate) fn get_upstream_remote(repo: &Repository) -> Res<Option<String>> {
+    let Some(upstream) = get_upstream(repo)? else {
+        return Ok(None);
+    };
+
+    if upstream.get().is_remote() {
+        let remote_name = get_remote_name(repo, &upstream)?;
+        Ok(Some(remote_name))
+    } else {
+        Ok(None)
+    }
 }
 
 pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {

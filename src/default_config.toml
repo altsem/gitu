@@ -136,6 +136,8 @@ fetch_menu.--tags = ["-t"]
 fetch_menu.fetch_all = ["a"]
 fetch_menu.quit = ["q", "esc"]
 fetch_menu.fetch_elsewhere = ["e"]
+fetch_menu.fetch_push_remote = ["p"]
+fetch_menu.fetch_upstream = ["u"]
 
 root.log_menu = ["l"]
 log_menu.log_current = ["l"]
