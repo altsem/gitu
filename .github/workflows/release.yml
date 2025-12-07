@@ -9,7 +9,7 @@ jobs:
     uses: ./.github/workflows/build-artifacts.yml
 
   verify:
-    needs: ['build-artifact']
+    needs: ['build-artifacts']
     runs-on: ubuntu-latest
     environment: release
     steps:
@@ -28,7 +28,7 @@ jobs:
           cargo publish --dry-run
 
   cargo-publish:
-    needs: ['build-artifact', 'verify']
+    needs: ['build-artifacts', 'verify']
     runs-on: ubuntu-latest
     environment: release
     steps:
@@ -47,7 +47,7 @@ jobs:
         cargo publish
 
   create-github-release:
-    needs: ['build-artifact', 'verify']
+    needs: ['build-artifacts', 'verify']
     runs-on: ubuntu-latest
     environment: release
     permissions:
