@@ -120,6 +120,7 @@ pub fn run(dir: &Path, cmd: &[&str]) -> String {
 fn set_config(path: &Path) {
     run(path, &["git", "config", "user.email", "ci@example.com"]);
     run(path, &["git", "config", "user.name", "CI"]);
+    run(path, &["git", "config", "core.longpaths", "true"]); // Windows quirk
 }
 
 pub fn clone_and_commit(remote_dir: &Path, file_name: &str, file_content: &str) {
