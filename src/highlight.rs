@@ -211,9 +211,15 @@ pub(crate) fn iter_syntax_highlights<'a>(
     path: &'a str,
     content: String,
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
+    let highlights = if config.enabled {
+        syntax_parser::parse(Path::new(path), &content)
+    } else {
+        Vec::new()
+    };
+
     fill_gaps(
         0..content.len(),
-        syntax_parser::parse(Path::new(path), &content)
+        highlights
             .into_iter()
             .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag))),
         Style::new(),
