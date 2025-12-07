@@ -5,7 +5,7 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  build-artifcats:
+  build-artifacts:
     uses: ./.github/workflows/build-artifacts.yml
 
   verify:
