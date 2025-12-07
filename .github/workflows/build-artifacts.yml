@@ -1,0 +1,74 @@
+name: build-artifact
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-artifacts:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    env:
+      BUILD_NAME: "gitu-${{ github.ref_name }}-${{ matrix.target }}"
+    strategy:
+      matrix:
+        build: [linux-x64, linux-x64-musl, windows-x64, macos-x64, macos-arm64]
+        include:
+        - build: linux-x64
+          os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+        - build: linux-x64-musl
+          os: ubuntu-latest
+          target: x86_64-unknown-linux-musl
+        - build: windows-x64
+          os: windows-2022
+          target: x86_64-pc-windows-msvc
+        - build: macos-x64
+          os: macos-15-intel
+          target: x86_64-apple-darwin
+        - build: macos-arm64
+          os: macos-latest
+          target: aarch64-apple-darwin
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 50
+
+    - name: Fetch tags
+      run: git fetch --tags --force
+
+    - name: Install cross
+      run: cargo install cross
+
+    - name: Cache
+      uses: actions/cache@v4.3.0
+      with:
+        path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build release binary
+      run: cross build --verbose --release --locked --target ${{ matrix.target }}
+
+    - name: Bundle release
+      shell: bash
+      run: |
+        mkdir -p "$BUILD_NAME"
+        cp {README.md,LICENSE} "$BUILD_NAME/"
+        cp "target/${{ matrix.target }}/release/gitu" "$BUILD_NAME/"
+
+    - name: Run smoke test
+      shell: bash
+      run: |
+        "$BUILD_NAME/gitu" --version
+
+    - name: Upload asset
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.BUILD_NAME }}
+        path: ${{ env.BUILD_NAME }}
