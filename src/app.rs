@@ -33,6 +33,8 @@ use crate::item_data::RefKind;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
+use crate::picker::PickerData;
+use crate::picker::PickerState;
 use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
@@ -52,6 +54,7 @@ pub(crate) struct State {
     enable_async_cmds: bool,
     pub current_cmd_log: CmdLog,
     pub prompt: prompt::Prompt,
+    pub picker: Option<PickerState>,
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
@@ -103,6 +106,7 @@ impl App {
                 pending_menu,
                 current_cmd_log: CmdLog::new(),
                 prompt: prompt::Prompt::new(),
+                picker: None,
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
@@ -213,7 +217,9 @@ impl App {
                     self.state.current_cmd_log.clear();
                 }
 
-                if self.state.prompt.state.is_focused() {
+                if self.state.picker.is_some() {
+                    self.handle_picker_input(key);
+                } else if self.state.prompt.state.is_focused() {
                     self.state.prompt.state.handle_key_event(key);
                 } else {
                     self.handle_key_input(term, key)?;
@@ -616,6 +622,101 @@ impl App {
             }
 
             self.redraw_now(term)?;
+        }
+    }
+
+    /// Show a picker and wait for user to select an item or cancel.
+    ///
+    /// Returns:
+    /// - `Ok(Some(data))` - User selected an item
+    /// - `Ok(None)` - User cancelled (Esc or Ctrl-C)
+    /// - `Err(e)` - An error occurred
+    ///
+    /// # Example
+    /// ```ignore
+    /// let items = vec![
+    ///     PickerItem::new("main", PickerData::Revision("main".to_string())),
+    ///     PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+    /// ];
+    /// let picker = PickerState::new("Select branch", items, false);
+    ///
+    /// match app.picker(term, picker)? {
+    ///     Some(PickerData::Revision(name)) => {
+    ///         // User selected a branch
+    ///         println!("Selected: {}", name);
+    ///     }
+    ///     Some(PickerData::CustomInput(_)) => {
+    ///         // Should not happen when allow_custom_input is false
+    ///     }
+    ///     None => {
+    ///         // User cancelled
+    ///         println!("Cancelled");
+    ///     }
+    /// }
+    /// ```
+    #[allow(dead_code)]
+    pub fn picker(
+        &mut self,
+        term: &mut Term,
+        picker_state: PickerState,
+    ) -> Res<Option<PickerData>> {
+        self.state.picker = Some(picker_state);
+        let result = self.handle_picker(term);
+
+        self.state.picker = None;
+
+        result
+    }
+
+    fn handle_picker(&mut self, term: &mut Term) -> Res<Option<PickerData>> {
+        self.redraw_now(term)?;
+
+        loop {
+            let event = term.backend_mut().read_event()?;
+            self.handle_event(term, event)?;
+
+            if let Some(ref picker) = self.state.picker {
+                if picker.is_done() {
+                    // User selected an item
+                    return Ok(picker.selected().map(|item| item.data.clone()));
+                } else if picker.is_cancelled() {
+                    // User cancelled - this is not an error
+                    return Ok(None);
+                }
+            }
+
+            self.redraw_now(term)?;
+        }
+    }
+
+    fn handle_picker_input(&mut self, key: event::KeyEvent) {
+        if let Some(ref mut picker) = self.state.picker {
+            use crossterm::event::KeyCode;
+            use crossterm::event::KeyModifiers;
+
+            match (key.code, key.modifiers) {
+                // Navigation
+                (KeyCode::Down, KeyModifiers::NONE)
+                | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+                    picker.next();
+                }
+                (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+                    picker.previous();
+                }
+                // Select
+                (KeyCode::Enter, _) => {
+                    picker.done();
+                }
+                // Cancel
+                (KeyCode::Esc, _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
+                    picker.cancel();
+                }
+                // Text input - delegate to text state
+                _ => {
+                    picker.input_state.handle_key_event(key);
+                    picker.update_filter();
+                }
+            }
         }
     }
 }

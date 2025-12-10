@@ -14,6 +14,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 pub(crate) mod layout;
 mod menu;
+pub mod picker;
 
 const CARET: &str = "\u{2588}";
 const DASHES: &str = "────────────────────────────────────────────────────────────────";
@@ -33,13 +34,15 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
     layout.vertical(None, OPTS, |layout| {
         layout.vertical(None, OPTS.grow(), |layout| {
-            screen::layout_screen(layout, size, state.screens.last().unwrap());
+            let hide_cursor = state.picker.is_some();
+            screen::layout_screen(layout, size, state.screens.last().unwrap(), hide_cursor);
         });
 
         layout.vertical(None, OPTS, |layout| {
             menu::layout_menu(layout, state, size.width as usize);
             layout_command_log(layout, state, size.width as usize);
             layout_prompt(layout, state, size.width as usize);
+            layout_picker(layout, state, size.width as usize);
         });
     });
 
@@ -92,6 +95,12 @@ fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
         layout_span(layout, (state.prompt.state.value().into(), Style::new()));
         layout_span(layout, (CARET.into(), Style::new()));
     });
+}
+
+fn layout_picker<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
+    if let Some(ref picker_state) = state.picker {
+        picker::layout_picker(layout, picker_state, &state.config, width);
+    }
 }
 
 pub(crate) fn layout_text<'a>(layout: &mut UiTree<'a>, text: Text<'a>) {

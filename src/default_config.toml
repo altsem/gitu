@@ -70,6 +70,11 @@ syntax_highlight.type_builtin = { fg = "yellow" }
 syntax_highlight.variable_builtin = {}
 syntax_highlight.variable_parameter = {}
 
+picker.prompt = { fg = "cyan" }
+picker.info = { mods = "DIM" }
+picker.selection_line = { mods = "BOLD" }
+picker.matched = { fg = "yellow", mods = "BOLD" }
+
 cursor = { symbol = "▌", fg = "blue" }
 selection_bar = { symbol = "▌", fg = "blue", mods = "DIM" }
 selection_line = { mods = "BOLD" }

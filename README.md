@@ -29,6 +29,20 @@ A help-menu can be shown by pressing the `h` key, or by configuring `general.alw
 
 <img style="width: 720px" src="vhs/help.png"/>
 
+#### Picker Keybinds
+When using the interactive picker (for branch/commit selection):
+
+| Key | Action |
+|-----|--------|
+| `↓` or `Ctrl-n` | Next item |
+| `↑` or `Ctrl-p` | Previous item |
+| `Enter` | Select current item |
+| `Esc` or `Ctrl-c` | Cancel |
+| Any text | Filter items (fuzzy matching) |
+
+> [!NOTE]
+> Picker keybinds will be configurable in a future release.
+
 ### Configuration
 The environment variables `VISUAL`, `EDITOR` or `GIT_EDITOR` (checked in this order) dictate which editor Gitu will open. This means that e. g. commit messages will be opened in the `GIT_EDITOR` by Git, but if the user wishes to do edits to the actual files in a different editor, `VISUAL` or `EDITOR` can be set accordingly.
 
@@ -38,6 +52,19 @@ Configuration is also loaded from:
 - Windows: `%USERPROFILE%\AppData\Roaming\gitu\config.toml`
 
 , refer to the [default configuration](src/default_config.toml).
+
+#### Picker Style Customization
+
+You can customize the appearance of the interactive picker by adding the following to your config:
+
+```toml
+[style.picker]
+prompt = { fg = "cyan" }                    # Prompt text color
+info = { mods = "DIM" }                     # Status line style (e.g., "3/10 matches")
+selection_line = { mods = "BOLD" }               # Selected item style
+matched = { fg = "yellow", mods = "BOLD" }  # Fuzzy-matched characters highlight
+```
+
 ### Installing Gitu
 Follow the install instructions: [Installing Gitu](docs/installing.md)\
 Or install from your package manager:
