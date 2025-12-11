@@ -9,6 +9,7 @@ use crate::{
     error::{Error, Utf8Error},
     git::diff::DiffType,
     gitu_diff,
+    item_data::{Ref, Rev},
 };
 use std::{
     fs,
@@ -315,4 +316,48 @@ pub(crate) fn restore_index(file: &Path) -> Command {
     cmd.args(["restore", "--staged"]);
     cmd.arg(file);
     cmd
+}
+
+pub(crate) fn head(repo: &git2::Repository) -> Res<Rev> {
+    let head = repo.head().map_err(Error::GetHead)?;
+    Rev::from_reference(&head)
+}
+
+pub(crate) fn head_ref(repo: &git2::Repository) -> Res<Option<Ref>> {
+    match head(repo)? {
+        Rev::Ref(r) => Ok(Some(r)),
+        Rev::Commit(_) => Ok(None),
+    }
+}
+
+pub(crate) fn branches_tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    Ok(branches(repo, None)?
+        .into_iter()
+        .chain(tags(repo)?)
+        .collect::<Vec<_>>())
+}
+
+pub(crate) fn branches(repo: &git2::Repository, filter: Option<git2::BranchType>) -> Res<Vec<Ref>> {
+    Ok(repo
+        .branches(filter)
+        .map_err(Error::ListGitReferences)?
+        .filter_map(|branch| {
+            let (branch, _) = branch.ok()?;
+            let Ok(Rev::Ref(r)) = Rev::from_reference(branch.get()) else {
+                return None;
+            };
+
+            Some(r)
+        })
+        .collect())
+}
+
+pub(crate) fn tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    Ok(repo
+        .tag_names(None)
+        .map_err(Error::ListGitReferences)?
+        .into_iter()
+        .flatten()
+        .map(|tag_name| Ref::Tag(tag_name.to_string()))
+        .collect())
 }

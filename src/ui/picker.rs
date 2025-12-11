@@ -159,17 +159,11 @@ mod tests {
 
     fn create_test_items() -> Vec<PickerItem> {
         vec![
-            PickerItem::new("main", PickerData::Revision("main".to_string())),
-            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
-            PickerItem::new(
-                "feature/test",
-                PickerData::Revision("feature/test".to_string()),
-            ),
-            PickerItem::new(
-                "feature/new",
-                PickerData::Revision("feature/new".to_string()),
-            ),
-            PickerItem::new("bugfix/123", PickerData::Revision("bugfix/123".to_string())),
+            PickerItem::new("main", PickerData::Item("main".to_string())),
+            PickerItem::new("develop", PickerData::Item("develop".to_string())),
+            PickerItem::new("feature/test", PickerData::Item("feature/test".to_string())),
+            PickerItem::new("feature/new", PickerData::Item("feature/new".to_string())),
+            PickerItem::new("bugfix/123", PickerData::Item("bugfix/123".to_string())),
         ]
     }
 
@@ -266,7 +260,7 @@ mod tests {
             .map(|i| {
                 PickerItem::new(
                     format!("branch-{:02}", i),
-                    PickerData::Revision(format!("branch-{:02}", i)),
+                    PickerData::Item(format!("branch-{:02}", i)),
                 )
             })
             .collect();
@@ -295,7 +289,7 @@ mod tests {
             .map(|i| {
                 PickerItem::new(
                     format!("branch-{:02}", i),
-                    PickerData::Revision(format!("branch-{:02}", i)),
+                    PickerData::Item(format!("branch-{:02}", i)),
                 )
             })
             .collect();

@@ -5,7 +5,7 @@ use crate::git::diff::Diff;
 use crate::gitu_diff::Status;
 use crate::highlight;
 use crate::item_data::ItemData;
-use crate::item_data::RefKind;
+use crate::item_data::Ref;
 use crate::item_data::SectionHeader;
 use git2::Oid;
 use git2::Repository;
@@ -47,9 +47,9 @@ impl Item {
             }
             ItemData::Reference { kind, prefix } => {
                 let (reference, style) = match kind {
-                    RefKind::Tag(tag) => (tag, &config.style.tag),
-                    RefKind::Branch(branch) => (branch, &config.style.branch),
-                    RefKind::Remote(remote) => (remote, &config.style.remote),
+                    Ref::Tag(tag) => (tag, &config.style.tag),
+                    Ref::Head(branch) => (branch, &config.style.branch),
+                    Ref::Remote(remote) => (remote, &config.style.remote),
                 };
 
                 Line::from(vec![Span::raw(prefix), Span::styled(reference, style)])
@@ -65,13 +65,9 @@ impl Item {
                         associated_references
                             .into_iter()
                             .map(|reference| match reference {
-                                RefKind::Tag(tag) => Span::styled(tag, &config.style.tag),
-                                RefKind::Branch(branch) => {
-                                    Span::styled(branch, &config.style.branch)
-                                }
-                                RefKind::Remote(remote) => {
-                                    Span::styled(remote, &config.style.remote)
-                                }
+                                Ref::Tag(tag) => Span::styled(tag, &config.style.tag),
+                                Ref::Head(branch) => Span::styled(branch, &config.style.branch),
+                                Ref::Remote(remote) => Span::styled(remote, &config.style.remote),
                             }),
                     )
                     .chain([Span::raw(summary)]),
@@ -321,11 +317,11 @@ pub(crate) fn log(
                     let name = name.to_owned();
 
                     let ref_kind = if reference.is_remote() {
-                        RefKind::Remote(name)
+                        Ref::Remote(name)
                     } else if reference.is_tag() {
-                        RefKind::Tag(name)
+                        Ref::Tag(name)
                     } else {
-                        RefKind::Branch(name)
+                        Ref::Head(name)
                     };
 
                     Some((target, ref_kind))

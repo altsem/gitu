@@ -5,26 +5,22 @@ use std::collections::HashMap;
 use tui_prompts::State as _;
 use tui_prompts::TextState;
 
-use crate::item_data::RefKind;
+use crate::item_data::Ref;
+use crate::item_data::Rev;
 
 /// Data that can be selected in a picker
 #[derive(Debug, Clone, PartialEq)]
 pub enum PickerData {
-    /// Revision (branch, commit, reference, etc.)
-    Revision(String),
-    /// Remote name
-    Remote(String),
+    /// A selected item value
+    Item(String),
     /// Custom user input (literal text from input field)
     CustomInput(String),
 }
 
 impl PickerData {
-    /// Get the display string for this data
     pub fn display(&self) -> &str {
         match self {
-            PickerData::Revision(s) => s,
-            PickerData::Remote(s) => s,
-            PickerData::CustomInput(s) => s,
+            PickerData::Item(s) | PickerData::CustomInput(s) => s,
         }
     }
 }
@@ -87,6 +83,14 @@ pub struct PickerState {
     custom_input_item: Option<PickerItem>,
 }
 
+pub(crate) struct PickerParams<'a> {
+    pub(crate) prompt: Cow<'static, str>,
+    pub(crate) refs: &'a [Ref],
+    pub(crate) exclude_ref: Option<Ref>,
+    pub(crate) default: Option<Rev>,
+    pub(crate) allow_custom_input: bool,
+}
+
 impl PickerState {
     /// Create a new picker with items
     pub fn new(
@@ -114,13 +118,7 @@ impl PickerState {
     /// Items are sorted as: default (if provided) -> branches -> tags -> remotes
     /// Duplicate shorthands are displayed with their full refname
     /// The exclude_ref is excluded from the picker options
-    pub(crate) fn with_refs(
-        prompt: impl Into<Cow<'static, str>>,
-        refs: Vec<RefKind>,
-        exclude_ref: Option<RefKind>,
-        default: Option<RefKind>,
-        allow_custom_input: bool,
-    ) -> Self {
+    pub(crate) fn with_refs(params: PickerParams) -> Self {
         let mut items = Vec::new();
         let mut shorthand_count: HashMap<String, usize> = HashMap::new();
         let mut branches = Vec::new();
@@ -128,66 +126,66 @@ impl PickerState {
         let mut remotes = Vec::new();
 
         // Count shorthands for duplicate detection (before filtering)
-        for ref_kind in &refs {
-            let shorthand = ref_kind.shorthand();
-            match ref_kind {
-                RefKind::Branch(_) | RefKind::Tag(_) => {
+        for r#ref in params.refs {
+            let shorthand = r#ref.shorthand();
+            match r#ref {
+                Ref::Head(_) | Ref::Tag(_) => {
                     *shorthand_count.entry(shorthand.to_string()).or_insert(0) += 1;
                 }
-                RefKind::Remote(_) => {
-                    // Remotes have unique names (include remote/ prefix)
+                Ref::Remote(_) => {
+                    // Remote-tracking branches have unique names (include remote/ prefix)
                 }
             }
         }
 
         // Categorize and filter refs
-        for ref_kind in refs {
+        for ref_kind in params.refs {
             // Skip excluded ref
-            if exclude_ref
+            if params
+                .exclude_ref
                 .as_ref()
-                .is_some_and(|excluded| excluded.to_full_refname() == ref_kind.to_full_refname())
+                .is_some_and(|excluded| excluded == ref_kind)
             {
                 continue;
             }
 
             match ref_kind {
-                RefKind::Branch(_) => branches.push(ref_kind),
-                RefKind::Tag(_) => tags.push(ref_kind),
-                RefKind::Remote(_) => remotes.push(ref_kind),
+                Ref::Head(_) => branches.push(ref_kind),
+                Ref::Tag(_) => tags.push(ref_kind),
+                Ref::Remote(_) => remotes.push(ref_kind),
             }
         }
 
         // Add default ref first if it exists
-        if let Some(ref default) = default {
-            let shorthand = default.shorthand();
-            let (display, refname) = match default {
-                RefKind::Remote(_) => (shorthand.to_string(), shorthand.to_string()),
-                _ => {
-                    let is_duplicate = shorthand_count.get(shorthand).is_some_and(|&c| c > 1);
+        if let Some(default) = &params.default {
+            let display = match default {
+                Rev::Ref(Ref::Remote(name)) => name.clone(),
+                Rev::Ref(r) => {
+                    let is_duplicate = shorthand_count.get(r.shorthand()).is_some_and(|&c| c > 1);
                     if is_duplicate {
-                        let full_refname = default.to_full_refname();
-                        (full_refname.clone(), full_refname)
+                        r.to_full_refname()
                     } else {
-                        (shorthand.to_string(), shorthand.to_string())
+                        r.shorthand().to_string()
                     }
                 }
+                Rev::Commit(c) => c.clone(),
             };
-            items.push(PickerItem::new(display, PickerData::Revision(refname)));
+            items.push(PickerItem::new(display.clone(), PickerData::Item(display)));
         }
 
         // Add all refs (branches, then tags, then remotes)
         for ref_kind in branches.into_iter().chain(tags).chain(remotes) {
             // Skip if it's the same as default
-            if default
-                .as_ref()
-                .is_some_and(|d| d.to_full_refname() == ref_kind.to_full_refname())
-            {
+            if params.default.as_ref().is_some_and(|d| match d {
+                Rev::Ref(d) => d == ref_kind,
+                _ => false,
+            }) {
                 continue;
             }
 
             let shorthand = ref_kind.shorthand();
             let (display, refname) = match &ref_kind {
-                RefKind::Remote(_) => (shorthand.to_string(), shorthand.to_string()),
+                Ref::Remote(_) => (shorthand.to_string(), shorthand.to_string()),
                 _ => {
                     let is_duplicate = shorthand_count.get(shorthand).is_some_and(|&c| c > 1);
                     if is_duplicate {
@@ -198,10 +196,10 @@ impl PickerState {
                     }
                 }
             };
-            items.push(PickerItem::new(display, PickerData::Revision(refname)));
+            items.push(PickerItem::new(display, PickerData::Item(refname)));
         }
 
-        Self::new(prompt, items, allow_custom_input)
+        Self::new(params.prompt, items, params.allow_custom_input)
     }
 
     /// Get current input pattern
@@ -379,23 +377,17 @@ mod tests {
 
     fn create_test_items() -> Vec<PickerItem> {
         vec![
-            PickerItem::new("main", PickerData::Revision("main".to_string())),
-            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
-            PickerItem::new(
-                "feature/test",
-                PickerData::Revision("feature/test".to_string()),
-            ),
-            PickerItem::new(
-                "feature/new",
-                PickerData::Revision("feature/new".to_string()),
-            ),
-            PickerItem::new("bugfix/123", PickerData::Revision("bugfix/123".to_string())),
+            PickerItem::new("main", PickerData::Item("main".to_string())),
+            PickerItem::new("develop", PickerData::Item("develop".to_string())),
+            PickerItem::new("feature/test", PickerData::Item("feature/test".to_string())),
+            PickerItem::new("feature/new", PickerData::Item("feature/new".to_string())),
+            PickerItem::new("bugfix/123", PickerData::Item("bugfix/123".to_string())),
         ]
     }
 
     #[test]
     fn test_picker_data_display() {
-        let revision = PickerData::Revision("main".to_string());
+        let revision = PickerData::Item("main".to_string());
         assert_eq!(revision.display(), "main");
 
         let custom = PickerData::CustomInput("custom".to_string());
@@ -404,7 +396,7 @@ mod tests {
 
     #[test]
     fn test_picker_item_new() {
-        let item = PickerItem::new("main", PickerData::Revision("main".to_string()));
+        let item = PickerItem::new("main", PickerData::Item("main".to_string()));
         assert_eq!(item.display.as_ref(), "main");
         assert_eq!(item.data.display(), "main");
     }
@@ -476,16 +468,10 @@ mod tests {
     fn test_fuzzy_filtering_sorts_by_score() {
         // Create items with varying match quality for pattern "feat"
         let items = vec![
-            PickerItem::new("feat", PickerData::Revision("feat".to_string())), // Exact match
-            PickerItem::new("feature", PickerData::Revision("feature".to_string())), // Prefix match
-            PickerItem::new(
-                "feature/test",
-                PickerData::Revision("feature/test".to_string()),
-            ), // Prefix with more chars
-            PickerItem::new(
-                "fix-eat-bug",
-                PickerData::Revision("fix-eat-bug".to_string()),
-            ), // Scattered match
+            PickerItem::new("feat", PickerData::Item("feat".to_string())), // Exact match
+            PickerItem::new("feature", PickerData::Item("feature".to_string())), // Prefix match
+            PickerItem::new("feature/test", PickerData::Item("feature/test".to_string())), // Prefix with more chars
+            PickerItem::new("fix-eat-bug", PickerData::Item("fix-eat-bug".to_string())), // Scattered match
         ];
         let mut state = PickerState::new("Select", items, false);
 
@@ -521,9 +507,9 @@ mod tests {
     #[test]
     fn test_case_insensitive_matching() {
         let items = vec![
-            PickerItem::new("Feature", PickerData::Revision("Feature".to_string())),
-            PickerItem::new("feature", PickerData::Revision("feature".to_string())),
-            PickerItem::new("FEATURE", PickerData::Revision("FEATURE".to_string())),
+            PickerItem::new("Feature", PickerData::Item("Feature".to_string())),
+            PickerItem::new("feature", PickerData::Item("feature".to_string())),
+            PickerItem::new("FEATURE", PickerData::Item("FEATURE".to_string())),
         ];
 
         let mut state = PickerState::new("Select item", items, false);
@@ -719,8 +705,8 @@ mod tests {
     #[test]
     fn test_navigation_with_custom_input_at_end() {
         let items = vec![
-            PickerItem::new("feature/a", PickerData::Revision("feature/a".to_string())),
-            PickerItem::new("feature/b", PickerData::Revision("feature/b".to_string())),
+            PickerItem::new("feature/a", PickerData::Item("feature/a".to_string())),
+            PickerItem::new("feature/b", PickerData::Item("feature/b".to_string())),
         ];
 
         let mut state = PickerState::new("Select", items, true);
@@ -747,7 +733,7 @@ mod tests {
         // Navigate to first match
         let selected = state.selected().unwrap();
         match &selected.data {
-            PickerData::Revision(_) => {}
+            PickerData::Item(_) => {}
             _ => panic!("Expected first item to be a revision"),
         }
 
@@ -797,7 +783,7 @@ mod tests {
             .map(|i| {
                 PickerItem::new(
                     format!("branch-{:02}", i),
-                    PickerData::Revision(format!("branch-{:02}", i)),
+                    PickerData::Item(format!("branch-{:02}", i)),
                 )
             })
             .collect();
@@ -831,10 +817,10 @@ mod tests {
     #[test]
     fn test_navigation_after_filtering() {
         let items = vec![
-            PickerItem::new("feature/a", PickerData::Revision("feature/a".to_string())),
-            PickerItem::new("feature/b", PickerData::Revision("feature/b".to_string())),
-            PickerItem::new("main", PickerData::Revision("main".to_string())),
-            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+            PickerItem::new("feature/a", PickerData::Item("feature/a".to_string())),
+            PickerItem::new("feature/b", PickerData::Item("feature/b".to_string())),
+            PickerItem::new("main", PickerData::Item("main".to_string())),
+            PickerItem::new("develop", PickerData::Item("develop".to_string())),
         ];
 
         let mut state = PickerState::new("Select", items, false);
@@ -1088,7 +1074,7 @@ mod tests {
     fn test_single_item_navigation() {
         let items = vec![PickerItem::new(
             "only",
-            PickerData::Revision("only".to_string()),
+            PickerData::Item("only".to_string()),
         )];
         let mut state = PickerState::new("Select", items, false);
 
@@ -1101,19 +1087,24 @@ mod tests {
         assert_eq!(state.cursor(), 0); // Wraps to same item
     }
 
-    // Tests for with_refs method
     #[test]
     fn test_with_refs_basic_sorting() {
         // Test that items are sorted as: default -> branches -> tags -> remotes
-        let refs = vec![
-            RefKind::Tag("v1.0.0".to_string()),
-            RefKind::Remote("origin/main".to_string()),
-            RefKind::Branch("feature".to_string()),
-            RefKind::Branch("main".to_string()),
-            RefKind::Tag("v2.0.0".to_string()),
+        let refs = &[
+            Ref::Tag("v1.0.0".to_string()),
+            Ref::Remote("origin/main".to_string()),
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+            Ref::Tag("v2.0.0".to_string()),
         ];
 
-        let state = PickerState::with_refs("Select", refs, None, None, false);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1121,16 +1112,21 @@ mod tests {
             .collect();
 
         // Should be sorted: branches first, then tags, then remotes
-        assert_eq!(items[0], "feature");
-        assert_eq!(items[1], "main");
-        assert_eq!(items[2], "v1.0.0");
-        assert_eq!(items[3], "v2.0.0");
-        assert_eq!(items[4], "origin/main");
+        assert_eq!(
+            items,
+            &["feature", "main", "v1.0.0", "v2.0.0", "origin/main"]
+        )
     }
 
     #[test]
     fn test_with_refs_empty_list() {
-        let state = PickerState::with_refs("Select", vec![], None, None, false);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs: &[],
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: false,
+        });
 
         assert_eq!(state.total_items(), 0);
         assert_eq!(state.filtered_count(), 0);
@@ -1140,14 +1136,20 @@ mod tests {
     #[test]
     fn test_with_refs_with_default() {
         // Test that default ref is shown first
-        let refs = vec![
-            RefKind::Branch("feature".to_string()),
-            RefKind::Branch("main".to_string()),
-            RefKind::Tag("v1.0.0".to_string()),
+        let refs = &[
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
         ];
 
-        let default = Some(RefKind::Branch("main".to_string()));
-        let state = PickerState::with_refs("Select", refs, None, default, false);
+        let default = Some(Rev::Ref(Ref::Head("main".to_string())));
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default,
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1155,22 +1157,25 @@ mod tests {
             .collect();
 
         // Default should be first, then remaining branches, then tags
-        assert_eq!(items[0], "main"); // default first
-        assert_eq!(items[1], "feature");
-        assert_eq!(items[2], "v1.0.0");
+        assert_eq!(&items, &["main", "feature", "v1.0.0"]);
     }
 
     #[test]
     fn test_with_refs_exclude_ref() {
         // Test that excluded ref is not shown
-        let refs = vec![
-            RefKind::Branch("feature".to_string()),
-            RefKind::Branch("main".to_string()),
-            RefKind::Tag("v1.0.0".to_string()),
+        let refs = &[
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
         ];
 
-        let exclude = Some(RefKind::Branch("main".to_string()));
-        let state = PickerState::with_refs("Select", refs, exclude, None, false);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: Some(Ref::Head("main".to_string())),
+            default: None,
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1178,21 +1183,25 @@ mod tests {
             .collect();
 
         // main should be excluded
-        assert_eq!(items.len(), 2);
-        assert_eq!(items[0], "feature");
-        assert_eq!(items[1], "v1.0.0");
+        assert_eq!(&items, &["feature", "v1.0.0"])
     }
 
     #[test]
     fn test_with_refs_duplicate_names() {
         // Test that duplicates show full refname
-        let refs = vec![
-            RefKind::Branch("v1.0.0".to_string()),
-            RefKind::Tag("v1.0.0".to_string()),
-            RefKind::Branch("main".to_string()),
+        let refs = &[
+            Ref::Head("v1.0.0".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+            Ref::Head("main".to_string()),
         ];
 
-        let state = PickerState::with_refs("Select", refs, None, None, false);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1201,22 +1210,25 @@ mod tests {
 
         // Order is preserved from input: branches first (in order), then tags
         // Duplicates should show full refname
-        assert_eq!(items[0], "refs/heads/v1.0.0"); // duplicate - full refname
-        assert_eq!(items[1], "main"); // no duplicate
-        assert_eq!(items[2], "refs/tags/v1.0.0"); // duplicate - full refname
+        assert_eq!(&items, &["refs/heads/v1.0.0", "main", "refs/tags/v1.0.0"])
     }
 
     #[test]
     fn test_with_refs_duplicate_with_default() {
         // Test duplicates with default ref
-        let refs = vec![
-            RefKind::Branch("v1.0.0".to_string()),
-            RefKind::Tag("v1.0.0".to_string()),
-            RefKind::Branch("main".to_string()),
+        let refs = &[
+            Ref::Head("v1.0.0".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+            Ref::Head("main".to_string()),
         ];
 
-        let default = Some(RefKind::Tag("v1.0.0".to_string()));
-        let state = PickerState::with_refs("Select", refs, None, default, false);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: Some(Rev::Ref(Ref::Tag("v1.0.0".to_string()))),
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1224,9 +1236,7 @@ mod tests {
             .collect();
 
         // Default (tag) should be first with full refname, then other items in order
-        assert_eq!(items[0], "refs/tags/v1.0.0"); // default first - duplicate name
-        assert_eq!(items[1], "refs/heads/v1.0.0"); // duplicate - full refname
-        assert_eq!(items[2], "main"); // no duplicate
+        assert_eq!(items, &["refs/tags/v1.0.0", "refs/heads/v1.0.0", "main"])
     }
 
     #[test]
@@ -1234,19 +1244,18 @@ mod tests {
         // Test when exclude and default are the same
         // The implementation adds default first, then filters exclude from remaining items
         // So if default == exclude, default is still added, then exclude filters it from the rest
-        let refs = vec![
-            RefKind::Branch("feature".to_string()),
-            RefKind::Branch("main".to_string()),
+        let refs = &[
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
         ];
 
-        let main_ref = RefKind::Branch("main".to_string());
-        let state = PickerState::with_refs(
-            "Select",
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
             refs,
-            Some(main_ref.clone()),
-            Some(main_ref),
-            false,
-        );
+            exclude_ref: Some(Ref::Head("main".to_string())),
+            default: Some(Rev::Ref(Ref::Head("main".to_string()))),
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1255,19 +1264,23 @@ mod tests {
 
         // Default is added first, then exclude filters remaining items
         // So we get: main (default) + feature (not excluded)
-        assert_eq!(items.len(), 2);
-        assert_eq!(items[0], "main"); // default
-        assert_eq!(items[1], "feature");
+        assert_eq!(&items, &["main", "feature"])
     }
 
     #[test]
     fn test_with_refs_with_custom_input() {
-        let refs = vec![
-            RefKind::Branch("main".to_string()),
-            RefKind::Tag("v1.0.0".to_string()),
+        let refs = &[
+            Ref::Head("main".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
         ];
 
-        let state = PickerState::with_refs("Select", refs, None, None, true);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: true,
+        });
 
         // Custom input should be allowed
         assert!(state.allow_custom_input);
@@ -1281,13 +1294,18 @@ mod tests {
         // Test that duplicate detection happens before exclusion
         // If we have branch "v1.0.0" and tag "v1.0.0", and we exclude the branch,
         // the tag should still show full refname because the duplicate existed
-        let refs = vec![
-            RefKind::Branch("v1.0.0".to_string()),
-            RefKind::Tag("v1.0.0".to_string()),
+        let refs = &[
+            Ref::Head("v1.0.0".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
         ];
 
-        let exclude = Some(RefKind::Branch("v1.0.0".to_string()));
-        let state = PickerState::with_refs("Select", refs, exclude, None, false);
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: Some(Ref::Head("v1.0.0".to_string())),
+            default: None,
+            allow_custom_input: false,
+        });
 
         let items: Vec<_> = state
             .filtered_items()
@@ -1295,7 +1313,31 @@ mod tests {
             .collect();
 
         // Only tag remains, but should show full refname because duplicate existed
-        assert_eq!(items.len(), 1);
-        assert_eq!(items[0], "refs/tags/v1.0.0");
+        assert_eq!(&items, &["refs/tags/v1.0.0"]);
+    }
+
+    #[test]
+    fn test_with_refs_remote_tracking_default() {
+        let refs = &[
+            Ref::Head("main".to_string()),
+            Ref::Remote("origin/main".to_string()),
+            Ref::Remote("origin/feature".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: Some(Rev::Ref(Ref::Remote("origin/main".to_string()))),
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        // Default remote-tracking branch shown first as shorthand, then remaining
+        assert_eq!(&items, &["origin/main", "main", "origin/feature"]);
     }
 }

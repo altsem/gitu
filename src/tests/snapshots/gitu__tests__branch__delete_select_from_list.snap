@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main merged origin/main add initial-file                               |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-! Branch name required                                                          |
-styles_hash: e1391c67392b2270
+? Branch is not fully merged. Really delete? (y or n) › █                       |
+styles_hash: 34185cd7d71d1f27

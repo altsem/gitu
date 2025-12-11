@@ -3,7 +3,7 @@ use std::{process::Command, rc::Rc};
 use crate::{
     Res,
     app::{App, PromptParams, State},
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::arg::Arg,
     term::Term,
 };
@@ -64,7 +64,12 @@ impl OpTrait for RevertCommit {
                 term,
                 &PromptParams {
                     prompt: "Revert commit",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;

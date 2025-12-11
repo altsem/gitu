@@ -2,7 +2,7 @@ use super::{OpTrait, selected_rev};
 use crate::{
     Action, Res,
     app::{App, PromptParams, State},
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::arg::Arg,
     term::Term,
 };
@@ -20,7 +20,12 @@ impl OpTrait for ResetSoft {
                 term,
                 &PromptParams {
                     prompt: "Soft reset to",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -53,7 +58,12 @@ impl OpTrait for ResetMixed {
                 term,
                 &PromptParams {
                     prompt: "Mixed reset to",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -86,7 +96,12 @@ impl OpTrait for ResetHard {
                 term,
                 &PromptParams {
                     prompt: "Hard reset to",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;

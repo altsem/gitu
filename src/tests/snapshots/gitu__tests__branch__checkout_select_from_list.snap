@@ -2,11 +2,11 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌On branch feature-a                                                            |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ 3b23a7d feature-a add feature-a commit                                         |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git branch -d merged                                                          |
-Deleted branch merged (was b66a0bf).                                            |
-styles_hash: dce6312dfc6aa477
+$ git checkout feature-a                                                        |
+Switched to branch 'feature-a'                                                  |
+styles_hash: ed07bb3ef72d6e56

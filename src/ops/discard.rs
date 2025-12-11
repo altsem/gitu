@@ -4,7 +4,7 @@ use crate::{
     app::{App, State},
     config::ConfirmDiscardOption,
     git::diff::{DiffType, PatchMode},
-    item_data::{ItemData, RefKind},
+    item_data::{ItemData, Ref},
     term::Term,
 };
 use std::{path::PathBuf, process::Command, rc::Rc};
@@ -14,7 +14,7 @@ impl OpTrait for Discard {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
             ItemData::Reference {
-                kind: RefKind::Branch(branch),
+                kind: Ref::Head(branch),
                 ..
             } => discard_branch(branch.clone()),
             ItemData::Untracked(file) => clean_file(file.clone()),

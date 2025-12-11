@@ -1,0 +1,25 @@
+---
+source: src/tests/branch.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf branch-01 branch-02 branch-03 branch-04 branch-05 branch-06 branch-07 …|
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+ 22/22   Checkout ›                                                             |
+ branch-06                                                                      |
+ branch-07                                                                      |
+ branch-08                                                                      |
+ branch-09                                                                      |
+ branch-10                                                                      |
+▌branch-11                                                                      |
+ branch-12                                                                      |
+ branch-13                                                                      |
+ branch-14                                                                      |
+ branch-15                                                                      |
+styles_hash: 58b0321e6ec28469

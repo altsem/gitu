@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     Res,
     app::{App, State},
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::Menu,
     term::Term,
 };
@@ -225,6 +225,6 @@ pub(crate) fn confirm(app: &mut App, term: &mut Term, prompt: &'static str) -> R
     app.confirm(term, prompt)
 }
 
-pub(crate) fn selected_rev(state: &App) -> Option<String> {
-    state.selected_rev()
+pub(crate) fn selected_rev(app: &App) -> Option<Rev> {
+    app.selected_rev()
 }
