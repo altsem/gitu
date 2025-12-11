@@ -47,7 +47,7 @@ impl RepoTestContext {
         set_config(&local_dir);
 
         let local_repo = open_repo(&local_dir);
-        assert_local_test_repo(&local_dir);
+        assert_local_test_repo(&local_dir, &remote_dir);
         assert_remote_test_repo(&remote_dir);
 
         Self {
@@ -59,12 +59,17 @@ impl RepoTestContext {
 }
 
 /// Just to make sure we're not accidentally modifying gitu's repo
-fn assert_local_test_repo(dir: &Path) {
+fn assert_local_test_repo(local_dir: &Path, remote_dir: &Path) {
     assert_eq!(
-        run(dir, &["git", "log", "--oneline", "--graph", "--all"]),
+        run(local_dir, &["git", "log", "--oneline", "--graph", "--all"]),
         "* b66a0bf add initial-file\n"
     );
-    assert!(run(dir, &["git", "remote", "get-url", "origin"]).contains("gitu/testfiles"));
+
+    let origin = run(local_dir, &["git", "remote", "get-url", "origin"]);
+    let origin = origin.trim();
+    let expected = format!("file://{}", remote_dir.to_str().unwrap());
+
+    assert_eq!(origin, expected, "unexpected origin URL for test repo");
 }
 
 fn assert_remote_test_repo(dir: &Path) {
