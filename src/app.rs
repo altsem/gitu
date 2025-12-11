@@ -654,7 +654,6 @@ impl App {
     ///     }
     /// }
     /// ```
-    #[allow(dead_code)]
     pub fn picker(
         &mut self,
         term: &mut Term,
