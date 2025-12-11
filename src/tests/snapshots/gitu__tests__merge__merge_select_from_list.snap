@@ -3,11 +3,11 @@ source: src/tests/merge.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
-                                                                                |
+ 3b23a7d feature-a main v1.0.0 add feature-a commit                             |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-? Merge: › █                                                                    |
-styles_hash: 60de28e06c7442d8
+$ git merge feature-a                                                           |
+styles_hash: 994114f03d7a9c3c
