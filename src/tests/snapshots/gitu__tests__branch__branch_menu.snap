@@ -2,14 +2,14 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
- Branches                                                                       |
-▌* main                                                                         |
-   merged                                                                       |
-   unmerged                                                                     |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Remote origin                                                                  |
-   origin/HEAD                                                                  |
-   origin/main                                                                  |
+ Recent commits                                                                 |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  s     Spinoff branch                                                           |
  K     Delete branch                                                            |
  q/esc Quit/Close                                                               |
-styles_hash: a06534dee707ba43
+styles_hash: 2b3559858c649dec

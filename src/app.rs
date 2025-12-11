@@ -28,8 +28,7 @@ use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::error::Error;
 use crate::file_watcher::FileWatcher;
-use crate::item_data::ItemData;
-use crate::item_data::RefKind;
+use crate::item_data::Rev;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
@@ -541,16 +540,8 @@ impl App {
         }
     }
 
-    pub fn selected_rev(&self) -> Option<String> {
-        match &self.screen().get_selected_item().data {
-            ItemData::Reference { kind, .. } => match kind {
-                RefKind::Tag(tag) => Some(tag.to_owned()),
-                RefKind::Branch(branch) => Some(branch.to_owned()),
-                RefKind::Remote(remote) => Some(remote.to_owned()),
-            },
-            ItemData::Commit { oid, .. } => Some(oid.to_owned()),
-            _ => None,
-        }
+    pub fn selected_rev(&self) -> Option<Rev> {
+        self.screen().get_selected_item().data.rev()
     }
 
     pub fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
@@ -640,13 +631,13 @@ impl App {
     /// # Example
     /// ```ignore
     /// let items = vec![
-    ///     PickerItem::new("main", PickerData::Revision("main".to_string())),
-    ///     PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+    ///     PickerItem::new("main", PickerData::Item("main".to_string())),
+    ///     PickerItem::new("develop", PickerData::Item("develop".to_string())),
     /// ];
     /// let picker = PickerState::new("Select branch", items, false);
     ///
-    /// match app.picker(term, picker)? {
-    ///     Some(PickerData::Revision(name)) => {
+    /// match app.pick(term, picker)? {
+    ///     Some(PickerData::Item(name)) => {
     ///         // User selected a branch
     ///         println!("Selected: {}", name);
     ///     }
@@ -659,12 +650,7 @@ impl App {
     ///     }
     /// }
     /// ```
-    #[allow(dead_code)]
-    pub fn picker(
-        &mut self,
-        term: &mut Term,
-        picker_state: PickerState,
-    ) -> Res<Option<PickerData>> {
+    pub fn pick(&mut self, term: &mut Term, picker_state: PickerState) -> Res<Option<PickerData>> {
         self.state.picker = Some(picker_state);
         let result = self.handle_picker(term);
 

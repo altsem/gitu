@@ -2,13 +2,14 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
- Branches                                                                       |
- * main                                                                         |
-▌  unmerged                                                                     |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Remote origin                                                                  |
-   origin/HEAD                                                                  |
-   origin/main                                                                  |
+ Recent commits                                                                 |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git branch -d merged                                                          |
-Deleted branch merged (was b66a0bf).                                            |
-styles_hash: dd0c306c9b4c03e8
+? Branch is not fully merged. Really delete? (y or n) › █                       |
+styles_hash: 34185cd7d71d1f27

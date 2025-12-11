@@ -2,7 +2,7 @@ use super::{Action, OpTrait, selected_rev};
 use crate::{
     Res,
     app::{App, PromptParams, State},
-    item_data::{ItemData, RefKind},
+    item_data::{ItemData, Ref, Rev},
     menu::arg::Arg,
     term::Term,
 };
@@ -72,7 +72,12 @@ impl OpTrait for RebaseElsewhere {
                 term,
                 &PromptParams {
                     prompt: "Rebase onto",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -104,11 +109,11 @@ impl OpTrait for RebaseInteractive {
         let action = match target {
             ItemData::Commit { oid, .. }
             | ItemData::Reference {
-                kind: RefKind::Tag(oid),
+                kind: Ref::Tag(oid),
                 ..
             }
             | ItemData::Reference {
-                kind: RefKind::Branch(oid),
+                kind: Ref::Head(oid),
                 ..
             } => {
                 let rev = OsString::from(oid);
@@ -152,11 +157,11 @@ impl OpTrait for RebaseAutosquash {
         let action = match target {
             ItemData::Commit { oid, .. }
             | ItemData::Reference {
-                kind: RefKind::Tag(oid),
+                kind: Ref::Tag(oid),
                 ..
             }
             | ItemData::Reference {
-                kind: RefKind::Branch(oid),
+                kind: Ref::Head(oid),
                 ..
             } => {
                 let rev = OsString::from(oid);
