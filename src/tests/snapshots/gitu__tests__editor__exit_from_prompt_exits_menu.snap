@@ -15,11 +15,11 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: f47a6512af0aca26
+────────────────────────────────────────────────────────────────────────────────|
+ Branch                                                                         |
+ b     Checkout branch/revision                                                 |
+ c     Checkout new branch                                                      |
+ s     Spinoff branch                                                           |
+ K     Delete branch                                                            |
+ q/esc Quit/Close                                                               |
+styles_hash: 7ec5204ca252dbc6

@@ -2,14 +2,15 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
- Branches                                                                       |
-   main                                                                         |
-▌* merged                                                                       |
-   unmerged                                                                     |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Remote origin                                                                  |
-   origin/HEAD                                                                  |
-   origin/main                                                                  |
+ Recent commits                                                                 |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git checkout merged                                                           |
-Switched to branch 'merged'                                                     |
-styles_hash: c4b788b765812f1b
+? Branch is not fully merged. Really delete? (y or n) › █                       |
+styles_hash: 34185cd7d71d1f27

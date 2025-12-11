@@ -1,57 +1,141 @@
 use super::*;
 
-fn setup(ctx: TestContext) -> TestContext {
-    run(&ctx.dir, &["git", "checkout", "-b", "merged"]);
-    run(&ctx.dir, &["git", "checkout", "-b", "unmerged"]);
-    commit(&ctx.dir, "first commit", "");
+fn setup_picker(ctx: TestContext) -> TestContext {
+    // Create multiple branches and tags for comprehensive testing
+    run(&ctx.dir, &["git", "checkout", "-b", "feature-a"]);
+    commit(&ctx.dir, "feature-a commit", "");
     run(&ctx.dir, &["git", "checkout", "main"]);
+
+    run(&ctx.dir, &["git", "checkout", "-b", "feature-b"]);
+    commit(&ctx.dir, "feature-b commit", "");
+    run(&ctx.dir, &["git", "checkout", "main"]);
+
+    run(&ctx.dir, &["git", "checkout", "-b", "bugfix-123"]);
+    commit(&ctx.dir, "bugfix commit", "");
+    run(&ctx.dir, &["git", "checkout", "main"]);
+
+    // Create some tags
+    run(&ctx.dir, &["git", "tag", "v1.0.0"]);
+    run(&ctx.dir, &["git", "tag", "v2.0.0"]);
+
     ctx
 }
 
+fn setup_many_branches(ctx: TestContext) -> TestContext {
+    // Create many branches to test scrolling
+    for i in 1..=20 {
+        run(
+            &ctx.dir,
+            &["git", "checkout", "-b", &format!("branch-{:02}", i)],
+        );
+        run(&ctx.dir, &["git", "checkout", "main"]);
+    }
+    ctx
+}
+
+// ==================== Checkout Tests ====================
+
 #[test]
-fn branch_menu() {
-    snapshot!(setup(setup_clone!()), "Yjb");
+fn checkout_picker() {
+    snapshot!(setup_picker(setup_clone!()), "bb");
 }
 
 #[test]
-fn switch_branch_selected() {
-    snapshot!(setup(setup_clone!()), "Yjjbb<enter>");
+fn checkout_picker_filter() {
+    snapshot!(setup_picker(setup_clone!()), "bbfeat");
 }
 
 #[test]
-fn switch_branch_input() {
-    snapshot!(setup(setup_clone!()), "Ybbmerged<enter>");
+fn checkout_picker_navigate() {
+    snapshot!(setup_picker(setup_clone!()), "bb<down><down>");
 }
 
 #[test]
-fn checkout_new_branch() {
-    snapshot!(setup(setup_clone!()), "bcnew<enter>");
+fn checkout_picker_scroll() {
+    snapshot!(
+        setup_many_branches(setup_clone!()),
+        "bb<down><down><down><down><down><down><down><down><down><down>"
+    );
 }
 
 #[test]
-fn delete_branch_selected() {
-    snapshot!(setup(setup_clone!()), "YjjbK<enter>");
+fn checkout_picker_cancel() {
+    snapshot!(setup_picker(setup_clone!()), "bb<esc>");
 }
 
 #[test]
-fn delete_branch_input() {
-    snapshot!(setup(setup_clone!()), "bKmerged<enter>");
+fn checkout_select_from_list() {
+    snapshot!(setup_picker(setup_clone!()), "bbfeature-a<enter>");
 }
 
 #[test]
-fn delete_branch_empty() {
-    snapshot!(setup(setup_clone!()), "bK<enter>");
+fn checkout_use_custom_input() {
+    let ctx = setup_picker(setup_clone!());
+    // Get the commit hash of the first commit
+    let output = run(&ctx.dir, &["git", "rev-parse", "HEAD"]);
+    let commit_hash = output.trim();
+
+    snapshot!(ctx, &format!("bb{}<enter>", commit_hash));
+}
+
+// ==================== Delete Tests ====================
+
+#[test]
+fn delete_picker() {
+    snapshot!(setup_picker(setup_clone!()), "bK");
+}
+
+#[test]
+fn delete_picker_filter() {
+    snapshot!(setup_picker(setup_clone!()), "bKfeat");
+}
+
+#[test]
+fn delete_picker_navigate() {
+    snapshot!(setup_picker(setup_clone!()), "bK<down><down>");
+}
+
+#[test]
+fn delete_picker_scroll() {
+    snapshot!(
+        setup_many_branches(setup_clone!()),
+        "bK<down><down><down><down><down><down><down><down><down><down>"
+    );
+}
+
+#[test]
+fn delete_picker_cancel() {
+    snapshot!(setup_picker(setup_clone!()), "bK<esc>");
+}
+
+#[test]
+fn delete_select_from_list() {
+    snapshot!(setup_picker(setup_clone!()), "bKfeature-a<enter>");
+}
+
+#[test]
+fn delete_use_custom_input() {
+    snapshot!(setup_picker(setup_clone!()), "bKfeature-b<enter>");
 }
 
 #[test]
 fn delete_unmerged_branch() {
-    let ctx = setup(setup_clone!());
-    snapshot!(ctx, "bKunmerged<enter>nbKunmerged<enter>y");
+    let ctx = setup_picker(setup_clone!());
+    snapshot!(ctx, "bKbugfix-123<enter>nbKbugfix-123<enter>y");
 }
+
+// ==================== CheckoutNewBranch Tests ====================
+
+#[test]
+fn checkout_new_branch() {
+    snapshot!(setup_clone!(), "bcnew<enter>");
+}
+
+// ==================== Spinoff Tests ====================
 
 #[test]
 fn spinoff_branch() {
-    snapshot!(setup(setup_clone!()), "bsnew<enter>");
+    snapshot!(setup_picker(setup_clone!()), "bsnew<enter>");
 }
 
 #[test]
@@ -64,5 +148,12 @@ fn spinoff_branch_with_unmerged_commits() {
 
 #[test]
 fn spinoff_existing_branch() {
-    snapshot!(setup(setup_clone!()), "bsunmerged<enter>");
+    snapshot!(setup_picker(setup_clone!()), "bsfeature-a<enter>");
+}
+
+// ==================== Branch Menu Test ====================
+
+#[test]
+fn branch_menu() {
+    snapshot!(setup_picker(setup_clone!()), "b");
 }
