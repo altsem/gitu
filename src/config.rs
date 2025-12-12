@@ -80,6 +80,9 @@ pub struct StyleConfig {
     pub command: StyleConfigEntry,
     pub active_arg: StyleConfigEntry,
     pub hotkey: StyleConfigEntry,
+
+    pub search_match: StyleConfigEntry,
+    pub current_search_match: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]

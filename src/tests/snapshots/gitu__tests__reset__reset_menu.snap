@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
  s soft                                                                         |
  m mixed                                                                        |
  h hard                                                                         |
- q/esc Quit/Close                                                               |
+ q/esc Cancel/Quit                                                              |
 styles_hash: f58c5db415ea65fc

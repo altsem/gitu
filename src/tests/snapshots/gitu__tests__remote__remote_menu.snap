@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
  a add remote                                                                   |
  K remove remote                                                                |
  r rename remote                                                                |
- q/esc Quit/Close                                                               |
+ q/esc Cancel/Quit                                                              |
 styles_hash: 21e7ca3132665503
