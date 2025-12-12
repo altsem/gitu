@@ -21,6 +21,7 @@ mod editor;
 mod fetch;
 mod log;
 mod merge;
+mod picker;
 mod pull;
 mod push;
 mod quit;
@@ -215,47 +216,6 @@ fn merge_conflict() {
 
     ctx.init_app();
     insta::assert_snapshot!(ctx.redact_buffer());
-}
-
-#[test]
-fn revert_conflict() {
-    let mut ctx = setup_clone!();
-    commit(&ctx.dir, "new-file", "hey");
-    commit(&ctx.dir, "new-file", "hi");
-
-    run_ignore_status(&ctx.dir, &["git", "revert", "HEAD~1"]);
-
-    ctx.init_app();
-    insta::assert_snapshot!(ctx.redact_buffer());
-}
-
-#[test]
-fn revert_abort() {
-    let ctx = setup_clone!();
-    commit(&ctx.dir, "new-file", "hey");
-    commit(&ctx.dir, "new-file", "hi");
-
-    run_ignore_status(&ctx.dir, &["git", "revert", "HEAD~1"]);
-
-    snapshot!(ctx, "Va");
-}
-
-#[test]
-fn revert_menu() {
-    let ctx = setup_clone!();
-    snapshot!(ctx, "llV");
-}
-
-#[test]
-fn revert_commit_prompt() {
-    let ctx = setup_clone!();
-    snapshot!(ctx, "llVV");
-}
-
-#[test]
-fn revert_commit() {
-    let ctx = setup_clone!();
-    snapshot!(ctx, "llV-EV<enter>");
 }
 
 #[test]

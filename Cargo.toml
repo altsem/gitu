@@ -75,3 +75,4 @@ strum = { version = "0.26.3", features = ["strum_macros"] }
 tinyvec = "1.10.0"
 smashquote = "0.1.2"
 imara-diff = { version = "0.2.0", default-features = false }
+fuzzy-matcher = "0.3.7"
