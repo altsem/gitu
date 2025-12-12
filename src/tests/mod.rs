@@ -21,6 +21,7 @@ mod editor;
 mod fetch;
 mod log;
 mod merge;
+mod picker;
 mod pull;
 mod push;
 mod quit;
