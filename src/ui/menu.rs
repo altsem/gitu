@@ -61,23 +61,28 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                     Line::styled(format!("{}", pending.menu), &style.command),
                 );
 
+                let max_key_width = non_target_binds
+                    .iter()
+                    .filter(|bind| !matches!(bind.op, Op::OpenMenu(_)))
+                    .chunk_by(|bind| &bind.op)
+                    .into_iter()
+                    .map(|(_op, binds)| binds.into_iter().map(|bind| &bind.raw).join("/").len())
+                    .max()
+                    .unwrap_or(0);
+
                 for (op, binds) in non_target_binds
                     .iter()
                     .chunk_by(|bind| &bind.op)
                     .into_iter()
                     .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
                 {
+                    let key_str = binds.into_iter().map(|bind| &bind.raw).join("/");
+                    let padding = " ".repeat(max_key_width.saturating_sub(key_str.len()));
                     super::layout_line(
                         layout,
                         Line::from(vec![
-                            Span::styled(
-                                binds.into_iter().map(|bind| &bind.raw).join("/"),
-                                &style.hotkey,
-                            ),
-                            Span::styled(
-                                format!(" {}", op.clone().implementation().display(state)),
-                                Style::new(),
-                            ),
+                            Span::styled(key_str, &style.hotkey),
+                            Span::raw(format!("{} {}", padding, op.clone().implementation().display(state))),
                         ]),
                     );
                 }
@@ -88,19 +93,26 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                     super::layout_line(layout, Line::styled("Submenu", &style.command));
                 }
 
+                let max_menu_key_width = menus
+                    .iter()
+                    .chunk_by(|bind| &bind.op)
+                    .into_iter()
+                    .map(|(_op, binds)| binds.into_iter().map(|bind| &bind.raw).join("/").len())
+                    .max()
+                    .unwrap_or(0);
+
                 for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
                     let Op::OpenMenu(menu) = op else {
                         unreachable!();
                     };
 
+                    let key_str = binds.into_iter().map(|bind| &bind.raw).join("/");
+                    let padding = " ".repeat(max_menu_key_width.saturating_sub(key_str.len()));
                     super::layout_line(
                         layout,
                         Line::from(vec![
-                            Span::styled(
-                                binds.into_iter().map(|bind| &bind.raw).join("/"),
-                                &style.hotkey,
-                            ),
-                            Span::styled(format!(" {menu}"), Style::new()),
+                            Span::styled(key_str, &style.hotkey),
+                            Span::raw(format!("{} {}", padding, menu)),
                         ]),
                     );
                 }

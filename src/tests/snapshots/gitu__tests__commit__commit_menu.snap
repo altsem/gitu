@@ -16,9 +16,9 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
  Commit                Arguments                                                |
- c Commit              -a Stage all modified and deleted files (--all)          |
- a amend               -e Allow empty commit (--allow-empty)                    |
- e extend              -n Disable hooks (--no-verify)                           |
+ c     Commit          -a Stage all modified and deleted files (--all)          |
+ a     amend           -e Allow empty commit (--allow-empty)                    |
+ e     extend          -n Disable hooks (--no-verify)                           |
  q/esc Quit/Close      -R Claim authorship and reset author date (--reset-author|
                        -s Add Signed-off-by line (--signoff)                    |
                        -v Show diff of changes to be committed (--verbose)      |

@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Fetch                                Arguments                                 |
- a from all remotes                   -p Prune deleted branches (--prune)       |
- p from pushRemote, setting that      -t Fetch all tags (--tags)                |
- u from upstream, setting that                                                  |
- e from elsewhere                                                               |
+ Fetch                                    Arguments                             |
+ a     from all remotes                   -p Prune deleted branches (--prune)   |
+ p     from pushRemote, setting that      -t Fetch all tags (--tags)            |
+ u     from upstream, setting that                                              |
+ e     from elsewhere                                                           |
  q/esc Quit/Close                                                               |
-styles_hash: 8c3b4a8b2a481b3d
+styles_hash: fc4cfe7311891ca2

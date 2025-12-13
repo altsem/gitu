@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Push                            Arguments                                      |
- p pushRemote, setting that      -n Dry run (--dry-run)                         |
- u upstream, setting that        -F Force (--force)                             |
- e to elsewhere                  -f Force with lease (--force-with-lease)       |
- q/esc Quit/Close                -h Disable hooks (--no-verify)                 |
+ Push                                Arguments                                  |
+ p     pushRemote, setting that      -n Dry run (--dry-run)                     |
+ u     upstream, setting that        -F Force (--force)                         |
+ e     to elsewhere                  -f Force with lease (--force-with-lease)   |
+ q/esc Quit/Close                    -h Disable hooks (--no-verify)             |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |
-styles_hash: ef6876e9e999e2dc
+styles_hash: 34a6f540aca73543

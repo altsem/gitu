@@ -17,9 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Push                            Arguments                                      |
- p pushRemote, setting that      -n Dry run (--dry-run)                         |
- u upstream, setting that        -F Force (--force)                             |
- e to elsewhere                  -f Force with lease (--force-with-lease)       |
- q/esc Quit/Close                -h Disable hooks (--no-verify)                 |
-styles_hash: e59aeca8620fea8a
+ Push                                Arguments                                  |
+ p     pushRemote, setting that      -n Dry run (--dry-run)                     |
+ u     upstream, setting that        -F Force (--force)                         |
+ e     to elsewhere                  -f Force with lease (--force-with-lease)   |
+ q/esc Quit/Close                    -h Disable hooks (--no-verify)             |
+styles_hash: 483278c072d86cfc
