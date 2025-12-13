@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Really quit? (y or n) › █                                                     |
-styles_hash: c44975cc30a257c2
+styles_hash: 635af03980970fcf

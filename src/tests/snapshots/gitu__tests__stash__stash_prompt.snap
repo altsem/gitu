@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Stash message: › █                                                            |
-styles_hash: 13c0fe61177c7d7a
+styles_hash: 84962ae13e37fe04

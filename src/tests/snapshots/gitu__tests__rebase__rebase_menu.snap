@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                        -k Keep empty commits (--keep-empty)                     |
                        -h Disable hooks (--no-verify)                           |
                        -p Preserve merges (--preserve-merges)                   |
-styles_hash: d2d8fcdcc0101234
+styles_hash: d478154e8488a758

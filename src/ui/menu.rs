@@ -50,15 +50,16 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
         .collect::<Vec<_>>();
 
     let line = item.to_line(Arc::clone(&config));
+    let separator_style = Style::from(&style.separator);
 
     layout.vertical(None, OPTS, |layout| {
-        ui::repeat_chars(layout, width, ui::DASHES, ui::STYLE);
+        ui::repeat_chars(layout, width, ui::DASHES, separator_style);
 
         layout.horizontal(None, OPTS.gap(3).pad(1), |layout| {
             layout.vertical(None, OPTS, |layout| {
                 layout_line(
                     layout,
-                    Line::styled(format!("{}", pending.menu), &style.command),
+                    Line::styled(format!("{}", pending.menu), &style.menu.heading),
                 );
 
                 for (op, binds) in non_target_binds
@@ -72,7 +73,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                         Line::from(vec![
                             Span::styled(
                                 binds.into_iter().map(|bind| &bind.raw).join("/"),
-                                &style.hotkey,
+                                &style.menu.key,
                             ),
                             Span::styled(
                                 format!(" {}", op.clone().implementation().display(state)),
@@ -85,7 +86,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
 
             layout.vertical(None, OPTS, |layout| {
                 if !menus.is_empty() {
-                    super::layout_line(layout, Line::styled("Submenu", &style.command));
+                    super::layout_line(layout, Line::styled("Submenu", &style.menu.heading));
                 }
 
                 for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
@@ -98,7 +99,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                         Line::from(vec![
                             Span::styled(
                                 binds.into_iter().map(|bind| &bind.raw).join("/"),
-                                &style.hotkey,
+                                &style.menu.key,
                             ),
                             Span::styled(format!(" {menu}"), Style::new()),
                         ]),
@@ -115,7 +116,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                     super::layout_line(
                         layout,
                         Line::from(vec![
-                            Span::styled(bind.raw.clone(), &style.hotkey),
+                            Span::styled(bind.raw.clone(), &style.menu.key),
                             Span::styled(
                                 format!(" {}", bind.op.clone().implementation().display(state)),
                                 Style::new(),
@@ -125,7 +126,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                 }
 
                 if !arg_binds.is_empty() {
-                    super::layout_line(layout, Line::styled("Arguments", &style.command));
+                    super::layout_line(layout, Line::styled("Arguments", &style.menu.heading));
                 }
 
                 for bind in arg_binds {
@@ -138,16 +139,14 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                     super::layout_line(
                         layout,
                         Line::from(vec![
-                            Span::styled(bind.raw.clone(), &style.hotkey),
-                            Span::raw(" "),
-                            Span::raw(arg.display),
-                            Span::raw(" ("),
+                            Span::styled(bind.raw.clone(), &style.menu.key),
+                            Span::raw(format!(" {} (", arg.display)),
                             Span::styled(
                                 arg.get_cli_token().to_string(),
                                 if arg.is_active() {
-                                    Style::from(&style.active_arg)
+                                    Style::from(&style.menu.active_arg)
                                 } else {
-                                    Style::new()
+                                    Style::from(&style.menu.inactive_arg)
                                 },
                             ),
                             Span::raw(")"),

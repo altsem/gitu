@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  q/esc Quit/Close      -R Claim authorship and reset author date (--reset-author|
                        -s Add Signed-off-by line (--signoff)                    |
                        -v Show diff of changes to be committed (--verbose)      |
-styles_hash: 88fc50d8209449af
+styles_hash: ba02efdf8fdd8ed9

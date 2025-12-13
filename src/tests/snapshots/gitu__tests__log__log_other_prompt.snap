@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Log rev (default 6c08cf78a4544ae4dda8e6161a61070867c60246): › █               |
-styles_hash: 97b0fe4b8b1ae83b
+styles_hash: 3bf733ac5c610d53

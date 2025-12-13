@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Really discard? (y or n) › █                                                  |
-styles_hash: 67e0f1857fe702bb
+styles_hash: 71ca860e8eb65c2

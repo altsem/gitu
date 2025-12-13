@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Soft reset to (default b66a0bf82020d6a386e94d0fceedec1f817d20c7): › q█        |
-styles_hash: 98151016956b3b09
+styles_hash: d47848d48dafbf60
