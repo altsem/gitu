@@ -79,7 +79,10 @@ fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
     layout.horizontal(None, OPTS, |layout| {
         layout_span(layout, (prompt_symbol.content, prompt_symbol.style));
         layout_span(layout, (" ".into(), Style::new()));
-        layout_span(layout, (prompt_data.prompt_text.as_ref().into(), prompt_style));
+        layout_span(
+            layout,
+            (prompt_data.prompt_text.as_ref().into(), prompt_style),
+        );
         layout_span(layout, (" › ".into(), prompt_style));
         layout_span(layout, (state.prompt.state.value().into(), Style::new()));
         layout_span(layout, (CARET.into(), Style::new()));

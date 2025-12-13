@@ -1,7 +1,7 @@
 use crate::config::Config;
 use itertools::Itertools;
-use ratatui::text::{Line, Span};
 use ratatui::text::Text;
+use ratatui::text::{Line, Span};
 use std::borrow::Cow;
 use std::iter;
 use std::process::Command;
