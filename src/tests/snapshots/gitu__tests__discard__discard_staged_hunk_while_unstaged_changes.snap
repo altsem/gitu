@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git apply --reverse --index --recount                                         |
 error: initial-file: does not match index                                       |
 ! 'git apply --reverse --index --recount' exited with code: 1                   |
-styles_hash: 9ba3e14ef2ea314
+styles_hash: 54c0348634637395

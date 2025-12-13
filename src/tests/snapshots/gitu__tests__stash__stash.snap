@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --include-untracked --message test                             |
 Saved working directory and index state On main: test                           |
-styles_hash: 64b7b1b4e5d072b3
+styles_hash: bcbcf199b8695dfb

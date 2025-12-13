@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add to-delete                                                             |
-styles_hash: d1878e5d1dd9d9ea
+styles_hash: 84a141f1f6e2bd78

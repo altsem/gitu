@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git clean --force some-file                                                   |
 Removing some-file                                                              |
-styles_hash: 83ef0215d59acb6b
+styles_hash: de5ea30727b5fd7c

@@ -103,9 +103,12 @@ pub(crate) fn layout_text<'a>(layout: &mut UiTree<'a>, text: Text<'a>) {
 }
 
 pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, line: Line<'a>) {
+    let line_style = line.style;
     layout.horizontal(None, OPTS, |layout| {
-        for span in line {
-            layout_span(layout, (span.content, span.style));
+        for span in line.spans {
+            // Merge line.style with span.style
+            let merged_style = line_style.patch(span.style);
+            layout_span(layout, (span.content, merged_style));
         }
     });
 }
