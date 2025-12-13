@@ -177,8 +177,8 @@ fn parse_file_path(input: &str) -> IResult<&str, &str> {
 
 fn unescape(path: String) -> String {
     if path.starts_with('"') && path.ends_with('"') {
-        String::from_utf8(smashquote::unescape_bytes(&path.as_bytes()[1..path.len() - 1]).unwrap())
-            .unwrap()
+        String::from_utf8_lossy(&smashquote::unescape_bytes(&path.as_bytes()[1..path.len() - 1]).unwrap())
+            .into_owned()
     } else {
         path
     }

@@ -435,6 +435,22 @@ fn tab_diff() {
 }
 
 #[test]
+fn non_utf8_diff() {
+    let mut ctx = setup_clone!();
+    let mut app = ctx.init_app();
+
+    commit(&ctx.dir, "non_utf8.txt", "File with valid UTF-8");
+    fs::write(
+        ctx.dir.join("non_utf8.txt"),
+        b"File with invalid UTF-8: \xff\xfe\n",
+    )
+    .unwrap();
+    ctx.update(&mut app, keys("g"));
+
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn ext_diff() {
     let mut ctx = setup_clone!();
     let mut app = ctx.init_app();

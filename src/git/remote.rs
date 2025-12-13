@@ -19,18 +19,14 @@ pub(crate) fn get_branch_upstream<'repo>(branch: &Branch<'repo>) -> Res<Option<B
 }
 
 pub(crate) fn get_remote_name(repo: &Repository, upstream: &Branch) -> Res<String> {
-    let branch_full = str::from_utf8(upstream.get().name_bytes())
-        .map_err(Utf8Error::Str)
-        .map_err(Error::BranchNameUtf8)?;
+    let branch_full = String::from_utf8_lossy(upstream.get().name_bytes());
 
-    String::from_utf8(
-        repo.branch_remote_name(branch_full)
+    Ok(String::from_utf8_lossy(
+        repo.branch_remote_name(&branch_full)
             .map_err(Error::GetRemote)?
-            .deref()
-            .to_vec(),
+            .deref(),
     )
-    .map_err(Utf8Error::String)
-    .map_err(Error::RemoteNameUtf8)
+    .into_owned())
 }
 
 /// If the branch has an upstream, returns the remote name and branch name in that order.
@@ -52,9 +48,7 @@ pub(crate) fn get_upstream_components(repo: &Repository) -> Res<Option<(String, 
         return Ok(None);
     };
 
-    let branch = String::from_utf8(upstream.get().shorthand_bytes().to_vec())
-        .map_err(Utf8Error::String)
-        .map_err(Error::BranchNameUtf8)?;
+    let branch = String::from_utf8_lossy(upstream.get().shorthand_bytes()).into_owned();
 
     if upstream.get().is_remote() {
         let remote_name = get_remote_name(repo, &upstream)?;
@@ -70,9 +64,7 @@ pub(crate) fn get_upstream_shortname(repo: &Repository) -> Res<Option<String>> {
         return Ok(None);
     };
     Ok(Some(
-        String::from_utf8(upstream.get().shorthand_bytes().to_vec())
-            .map_err(Utf8Error::String)
-            .map_err(Error::GetCurrentBranchUpstreamUtf8)?,
+        String::from_utf8_lossy(upstream.get().shorthand_bytes()).into_owned(),
     ))
 }
 
@@ -95,9 +87,7 @@ pub(crate) fn get_push_remote(repo: &Repository) -> Res<Option<String>> {
 
     match config.get_entry(&push_remote_cfg) {
         Ok(entry) => Ok(Some(
-            String::from_utf8(entry.value_bytes().to_vec())
-                .map_err(Utf8Error::String)
-                .map_err(Error::ReadGitConfigUtf8)?,
+            String::from_utf8_lossy(entry.value_bytes()).into_owned(),
         )),
         Err(e) if e.class() == git2::ErrorClass::Config => get_default_push_remote(repo),
         Err(e) => Err(Error::ReadGitConfig(e)),
@@ -110,9 +100,7 @@ pub(crate) fn get_default_push_remote(repo: &Repository) -> Res<Option<String>> 
 
     match config.get_entry(push_default_cfg) {
         Ok(entry) => Ok(Some(
-            String::from_utf8(entry.value_bytes().to_vec())
-                .map_err(Utf8Error::String)
-                .map_err(Error::ReadGitConfigUtf8)?,
+            String::from_utf8_lossy(entry.value_bytes()).into_owned(),
         )),
         Err(e) if e.class() == git2::ErrorClass::Config => Ok(None),
         Err(e) => Err(Error::ReadGitConfig(e)),
