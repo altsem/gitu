@@ -5,6 +5,8 @@
     crane.url = "github:ipetkov/crane";
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
+    git-hooks.url = "github:cachix/git-hooks.nix";
+    git-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs@{ nixpkgs, flake-parts, ... }:
@@ -34,6 +36,26 @@
             };
           };
           deps-only = craneLib.buildDepsOnly ({ } // common-build-args);
+
+          pre-commit-check = inputs.git-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              rustfmt = {
+                enable = true;
+                packageOverrides = {
+                  cargo = toolchain;
+                  rustfmt = toolchain;
+                };
+              };
+              clippy = {
+                enable = true;
+                packageOverrides = {
+                  cargo = toolchain;
+                  clippy = toolchain;
+                };
+              };
+            };
+          };
 
           packages = {
             default = packages.gitu;
@@ -66,6 +88,17 @@
 
         in rec {
           inherit packages checks;
+
+          devShells.default = pkgs.mkShell {
+            inherit (pre-commit-check) shellHook;
+            inputsFrom = [ packages.gitu ];
+            nativeBuildInputs = with pkgs; [
+              toolchain
+              git-cliff
+              cargo-nextest
+              cargo-deny
+            ];
+          };
         };
     };
 }
