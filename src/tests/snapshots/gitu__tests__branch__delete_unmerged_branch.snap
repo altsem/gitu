@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d -f unmerged                                                     |
 Deleted branch unmerged (was c84f226).                                          |
-styles_hash: 284c7054a6c675b
+styles_hash: d5990944076d6380

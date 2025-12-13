@@ -23,22 +23,12 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
     let style = &config.style;
 
     let arg_binds = config.bindings.arg_list(pending).collect::<Vec<_>>();
-
-    let non_target_binds = config
+    let (target_binds, non_target_binds): (Vec<_>, Vec<_>) = config
         .bindings
         .list(&pending.menu)
-        .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
-        .collect::<Vec<_>>();
-
-    let menus = non_target_binds
-        .iter()
-        .filter(|bind| matches!(bind.op, Op::OpenMenu(_)))
-        .collect::<Vec<_>>();
-
-    let target_binds = config
-        .bindings
-        .list(&pending.menu)
-        .filter(|keybind| keybind.op.clone().implementation().is_target_op())
+        .partition(|keybind| keybind.op.clone().implementation().is_target_op());
+    let target_binds: Vec<_> = target_binds
+        .into_iter()
         .filter(|keybind| {
             keybind
                 .op
@@ -47,7 +37,16 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                 .get_action(&item.data)
                 .is_some()
         })
-        .collect::<Vec<_>>();
+        .collect();
+    let (menu_binds, non_menu_binds): (Vec<_>, Vec<_>) = non_target_binds
+        .into_iter()
+        .chunk_by(|bind| &bind.op)
+        .into_iter()
+        .map(|(op, binds)| {
+            let binds: Vec<_> = binds.collect();
+            (op, binds)
+        })
+        .partition(|(op, _binds)| matches!(op, Op::OpenMenu(_)));
 
     let line = item.to_line(Arc::clone(&config));
 
@@ -55,136 +54,109 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
         ui::repeat_chars(layout, width, ui::DASHES, ui::STYLE);
 
         layout.horizontal(None, OPTS.gap(3).pad(1), |layout| {
-            layout.vertical(None, OPTS, |layout| {
-                layout_line(
-                    layout,
-                    Line::styled(format!("{}", pending.menu), &style.command),
-                );
-
-                let non_menu_binds: Vec<_> = non_target_binds
-                    .iter()
-                    .filter(|bind| !matches!(bind.op, Op::OpenMenu(_)))
-                    .chunk_by(|bind| &bind.op)
-                    .into_iter()
-                    .map(|(op, binds)| {
-                        let binds: Vec<_> = binds.collect();
-                        (op, binds)
-                    })
-                    .collect();
-
-                let max_key_width = non_menu_binds
-                    .iter()
-                    .map(|(_op, binds)| {
-                        binds.iter().map(|bind| bind.raw.len()).sum::<usize>()
-                            + binds.len().saturating_sub(1)
-                    })
-                    .max()
-                    .unwrap_or(0);
-
-                for (op, binds) in non_menu_binds {
-                    let key_str = format_key_string_from_double_refs(&binds);
-                    let padding = calc_padding(key_str.len(), max_key_width);
-                    super::layout_line(
+            // Column 1: Main menu commands
+            if !non_menu_binds.is_empty() {
+                layout.vertical(None, OPTS, |layout| {
+                    layout_line(
                         layout,
-                        Line::from(vec![
-                            Span::styled(key_str, &style.hotkey),
-                            Span::raw(format!(
-                                "{} {}",
-                                padding,
-                                op.clone().implementation().display(state)
-                            )),
-                        ]),
+                        Line::styled(format!("{}", pending.menu), &style.command),
                     );
-                }
-            });
 
-            layout.vertical(None, OPTS, |layout| {
-                if !menus.is_empty() {
-                    super::layout_line(layout, Line::styled("Submenu", &style.command));
-                }
-
-                let menu_binds: Vec<_> = menus
-                    .iter()
-                    .chunk_by(|bind| &bind.op)
-                    .into_iter()
-                    .map(|(op, binds)| {
-                        let binds: Vec<_> = binds.collect();
-                        (op, binds)
-                    })
-                    .collect();
-
-                let max_menu_key_width = menu_binds
-                    .iter()
-                    .map(|(_op, binds)| {
-                        binds.iter().map(|bind| bind.raw.len()).sum::<usize>()
-                            + binds.len().saturating_sub(1)
-                    })
-                    .max()
-                    .unwrap_or(0);
-
-                for (op, binds) in menu_binds {
-                    let Op::OpenMenu(menu) = op else {
-                        unreachable!();
-                    };
-
-                    let key_str = format_key_string_from_triple_refs(&binds);
-                    let padding = calc_padding(key_str.len(), max_menu_key_width);
-                    super::layout_line(
+                    layout_keybinds_table(
                         layout,
-                        Line::from(vec![
-                            Span::styled(key_str, &style.hotkey),
-                            Span::raw(format!("{} {}", padding, menu)),
-                        ]),
+                        non_menu_binds
+                            .into_iter()
+                            .map(|(op, binds)| {
+                                (
+                                    Line::styled(
+                                        binds.iter().map(|bind| bind.raw.as_str()).join("/"),
+                                        &style.hotkey,
+                                    ),
+                                    Line::raw(op.clone().implementation().display(state)),
+                                )
+                            })
+                            .collect(),
                     );
-                }
-            });
+                });
+            }
 
+            // Column 2: Submenus
+            if !menu_binds.is_empty() {
+                layout.vertical(None, OPTS, |layout| {
+                    layout_line(layout, Line::styled("Submenu", &style.command));
+
+                    layout_keybinds_table(
+                        layout,
+                        menu_binds
+                            .into_iter()
+                            .map(|(op, binds)| {
+                                let Op::OpenMenu(menu) = op else {
+                                    unreachable!();
+                                };
+                                (
+                                    Line::styled(
+                                        binds.iter().map(|bind| bind.raw.as_str()).join("/"),
+                                        &style.hotkey,
+                                    ),
+                                    Line::raw(menu.to_string()),
+                                )
+                            })
+                            .collect(),
+                    );
+                });
+            }
+
+            // Column 3: Target commands and arguments
             layout.vertical(None, OPTS, |layout| {
                 if !target_binds.is_empty() {
-                    super::layout_line(layout, line);
-                }
+                    layout_line(layout, line);
 
-                for bind in target_binds {
-                    super::layout_line(
+                    layout_keybinds_table(
                         layout,
-                        Line::from(vec![
-                            Span::styled(bind.raw.clone(), &style.hotkey),
-                            Span::styled(
-                                format!(" {}", bind.op.clone().implementation().display(state)),
-                                Style::new(),
-                            ),
-                        ]),
+                        target_binds
+                            .into_iter()
+                            .map(|bind| {
+                                (
+                                    Line::styled(bind.raw.clone(), &style.hotkey),
+                                    Line::raw(bind.op.clone().implementation().display(state)),
+                                )
+                            })
+                            .collect(),
                     );
                 }
 
                 if !arg_binds.is_empty() {
-                    super::layout_line(layout, Line::styled("Arguments", &style.command));
-                }
+                    layout_line(layout, Line::styled("Arguments", &style.command));
 
-                for bind in arg_binds {
-                    let Op::ToggleArg(name) = &bind.op else {
-                        unreachable!();
-                    };
-
-                    let arg = pending.args.get(name.as_str()).unwrap();
-
-                    super::layout_line(
+                    layout_keybinds_table(
                         layout,
-                        Line::from(vec![
-                            Span::styled(bind.raw.clone(), &style.hotkey),
-                            Span::raw(" "),
-                            Span::raw(arg.display),
-                            Span::raw(" ("),
-                            Span::styled(
-                                arg.get_cli_token().to_string(),
-                                if arg.is_active() {
-                                    Style::from(&style.active_arg)
-                                } else {
-                                    Style::new()
-                                },
-                            ),
-                            Span::raw(")"),
-                        ]),
+                        arg_binds
+                            .into_iter()
+                            .map(|bind| {
+                                let Op::ToggleArg(name) = &bind.op else {
+                                    unreachable!();
+                                };
+
+                                let arg = pending.args.get(name.as_str()).unwrap();
+
+                                (
+                                    Line::styled(bind.raw.clone(), &style.hotkey),
+                                    Line::from(vec![
+                                        Span::raw(arg.display),
+                                        Span::raw(" ("),
+                                        Span::styled(
+                                            arg.get_cli_token().to_string(),
+                                            if arg.is_active() {
+                                                Style::from(&style.active_arg)
+                                            } else {
+                                                Style::new()
+                                            },
+                                        ),
+                                        Span::raw(")"),
+                                    ]),
+                                )
+                            })
+                            .collect(),
                     );
                 }
             });
@@ -192,20 +164,18 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
     });
 }
 
-macro_rules! format_key_string {
-    ($binds:expr) => {
-        $binds.iter().map(|bind| bind.raw.as_str()).join("/")
-    };
-}
+fn layout_keybinds_table<'a>(layout: &mut UiTree<'a>, items: Vec<(Line<'a>, Line<'a>)>) {
+    layout.horizontal(None, OPTS.gap(1), |layout| {
+        layout.vertical(None, OPTS, |layout| {
+            for (key, _) in items.iter() {
+                layout_line(layout, key.clone());
+            }
+        });
 
-fn format_key_string_from_double_refs(binds: &[&&crate::bindings::Binding]) -> String {
-    format_key_string!(binds)
-}
-
-fn format_key_string_from_triple_refs(binds: &[&&&crate::bindings::Binding]) -> String {
-    format_key_string!(binds)
-}
-
-fn calc_padding(key_str_len: usize, max_width: usize) -> String {
-    " ".repeat(max_width.saturating_sub(key_str_len))
+        layout.vertical(None, OPTS, |layout| {
+            for (_, value) in items {
+                layout_line(layout, value);
+            }
+        });
+    });
 }

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git restore --staged script.sh                                                |
-styles_hash: 1db3439394c7596
+styles_hash: b9e895b8ae1270ab

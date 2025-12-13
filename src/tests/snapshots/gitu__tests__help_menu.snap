@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  g                Refresh          X   Reset                                    |
  q/esc            Quit/Close       V   Revert                                   |
                                    z   Stash                                    |
-styles_hash: 8239f779d102e2eb
+styles_hash: 43322e31c74e471

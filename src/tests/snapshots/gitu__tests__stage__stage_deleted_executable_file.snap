@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add script.sh                                                             |
-styles_hash: 136a807c06bf533c
+styles_hash: 51f750ba129bf6c
