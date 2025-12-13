@@ -61,28 +61,38 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                     Line::styled(format!("{}", pending.menu), &style.command),
                 );
 
-                let max_key_width = non_target_binds
+                let non_menu_binds: Vec<_> = non_target_binds
                     .iter()
                     .filter(|bind| !matches!(bind.op, Op::OpenMenu(_)))
                     .chunk_by(|bind| &bind.op)
                     .into_iter()
-                    .map(|(_op, binds)| binds.into_iter().map(|bind| &bind.raw).join("/").len())
+                    .map(|(op, binds)| {
+                        let binds: Vec<_> = binds.collect();
+                        (op, binds)
+                    })
+                    .collect();
+
+                let max_key_width = non_menu_binds
+                    .iter()
+                    .map(|(_op, binds)| {
+                        binds.iter().map(|bind| bind.raw.len()).sum::<usize>()
+                            + binds.len().saturating_sub(1)
+                    })
                     .max()
                     .unwrap_or(0);
 
-                for (op, binds) in non_target_binds
-                    .iter()
-                    .chunk_by(|bind| &bind.op)
-                    .into_iter()
-                    .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
-                {
-                    let key_str = binds.into_iter().map(|bind| &bind.raw).join("/");
-                    let padding = " ".repeat(max_key_width.saturating_sub(key_str.len()));
+                for (op, binds) in non_menu_binds {
+                    let key_str = format_key_string_from_double_refs(&binds);
+                    let padding = calc_padding(key_str.len(), max_key_width);
                     super::layout_line(
                         layout,
                         Line::from(vec![
                             Span::styled(key_str, &style.hotkey),
-                            Span::raw(format!("{} {}", padding, op.clone().implementation().display(state))),
+                            Span::raw(format!(
+                                "{} {}",
+                                padding,
+                                op.clone().implementation().display(state)
+                            )),
                         ]),
                     );
                 }
@@ -93,21 +103,32 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                     super::layout_line(layout, Line::styled("Submenu", &style.command));
                 }
 
-                let max_menu_key_width = menus
+                let menu_binds: Vec<_> = menus
                     .iter()
                     .chunk_by(|bind| &bind.op)
                     .into_iter()
-                    .map(|(_op, binds)| binds.into_iter().map(|bind| &bind.raw).join("/").len())
+                    .map(|(op, binds)| {
+                        let binds: Vec<_> = binds.collect();
+                        (op, binds)
+                    })
+                    .collect();
+
+                let max_menu_key_width = menu_binds
+                    .iter()
+                    .map(|(_op, binds)| {
+                        binds.iter().map(|bind| bind.raw.len()).sum::<usize>()
+                            + binds.len().saturating_sub(1)
+                    })
                     .max()
                     .unwrap_or(0);
 
-                for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
+                for (op, binds) in menu_binds {
                     let Op::OpenMenu(menu) = op else {
                         unreachable!();
                     };
 
-                    let key_str = binds.into_iter().map(|bind| &bind.raw).join("/");
-                    let padding = " ".repeat(max_menu_key_width.saturating_sub(key_str.len()));
+                    let key_str = format_key_string_from_triple_refs(&binds);
+                    let padding = calc_padding(key_str.len(), max_menu_key_width);
                     super::layout_line(
                         layout,
                         Line::from(vec![
@@ -169,4 +190,22 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
             });
         });
     });
+}
+
+macro_rules! format_key_string {
+    ($binds:expr) => {
+        $binds.iter().map(|bind| bind.raw.as_str()).join("/")
+    };
+}
+
+fn format_key_string_from_double_refs(binds: &[&&crate::bindings::Binding]) -> String {
+    format_key_string!(binds)
+}
+
+fn format_key_string_from_triple_refs(binds: &[&&&crate::bindings::Binding]) -> String {
+    format_key_string!(binds)
+}
+
+fn calc_padding(key_str_len: usize, max_width: usize) -> String {
+    " ".repeat(max_width.saturating_sub(key_str_len))
 }
