@@ -57,6 +57,17 @@ pub enum ConfirmDiscardOption {
 
 #[derive(Default, Debug, Deserialize)]
 pub struct StyleConfig {
+    pub separator: StyleConfigEntry,
+
+    pub info_msg: StyleConfigEntry,
+    pub error_msg: StyleConfigEntry,
+    pub command: StyleConfigEntry,
+
+    #[serde(default)]
+    pub menu: MenuStyleConfig,
+
+    pub prompt: StyleConfigEntry,
+
     pub section_header: StyleConfigEntry,
     pub file_header: StyleConfigEntry,
     pub hunk_header: StyleConfigEntry,
@@ -68,18 +79,28 @@ pub struct StyleConfig {
     pub syntax_highlight: SyntaxHighlightConfig,
 
     pub cursor: SymbolStyleConfigEntry,
-    pub selection_line: StyleConfigEntry,
     pub selection_bar: SymbolStyleConfigEntry,
+    pub selection_line: StyleConfigEntry,
     pub selection_area: StyleConfigEntry,
 
     pub hash: StyleConfigEntry,
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
     pub tag: StyleConfigEntry,
+}
 
-    pub command: StyleConfigEntry,
+#[derive(Default, Debug, Deserialize)]
+pub struct MenuStyleConfig {
+    #[serde(default)]
+    pub heading: StyleConfigEntry,
+    #[serde(default)]
+    pub key: StyleConfigEntry,
+    /// Active argument value display (e.g., "--interactive")
+    #[serde(default)]
     pub active_arg: StyleConfigEntry,
-    pub hotkey: StyleConfigEntry,
+    /// Inactive argument value display
+    #[serde(default)]
+    pub inactive_arg: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]

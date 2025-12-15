@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  p pop                                                                          |
  k drop                                                                         |
  q/esc Quit/Close                                                               |
-styles_hash: d78f58222bd68be5
+styles_hash: 4b344b24bf22a0ea

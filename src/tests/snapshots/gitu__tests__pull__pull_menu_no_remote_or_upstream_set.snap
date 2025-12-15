@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  u upstream, setting that                                                       |
  e from elsewhere                                                               |
  q/esc Quit/Close                                                               |
-styles_hash: 9639b349a71ac562
+styles_hash: 6fd466ac1fbe9075
