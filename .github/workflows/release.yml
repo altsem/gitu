@@ -6,6 +6,8 @@ on:
 
 jobs:
   build-artifacts:
+    permissions:
+      contents: write
     uses: ./.github/workflows/build-artifacts.yml
 
   verify:
