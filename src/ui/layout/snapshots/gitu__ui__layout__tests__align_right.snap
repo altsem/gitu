@@ -1,5 +1,0 @@
----
-source: src/ui/layout/mod.rs
-expression: render_to_string(layout)
----
-                    Aligned to the right

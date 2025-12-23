@@ -134,3 +134,151 @@ fn render_highlighted_text<'a>(
         layout_span(layout, (Cow::Owned(buffer), base_style));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use crate::picker::{PickerData, PickerItem, PickerState};
+    use crate::ui::layout::LayoutTree;
+    use itertools::Itertools;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use std::collections::BTreeMap;
+
+    /// Create a default test config for picker tests
+    fn test_config() -> Config {
+        use crate::config::{GeneralConfig, StyleConfig};
+
+        Config {
+            general: GeneralConfig::default(),
+            style: StyleConfig::default(),
+            bindings: BTreeMap::new().try_into().unwrap(),
+        }
+    }
+
+    fn create_test_items() -> Vec<PickerItem> {
+        vec![
+            PickerItem::new("main", PickerData::Revision("main".to_string())),
+            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+            PickerItem::new("feature/test", PickerData::Revision("feature/test".to_string())),
+            PickerItem::new("feature/new", PickerData::Revision("feature/new".to_string())),
+            PickerItem::new("bugfix/123", PickerData::Revision("bugfix/123".to_string())),
+        ]
+    }
+
+    /// Render the picker layout to a string for testing purposes.
+    /// Note: ASCII only — does not support Unicode beyond single-byte chars.
+    fn render_to_string(layout: UiTree, width: usize, height: usize) -> String {
+        let mut grid = vec![' '; height * width];
+
+        for item in layout.iter() {
+            let x0 = item.pos[0] as usize;
+            let y0 = item.pos[1] as usize;
+            let item_width = item.size[0] as usize;
+            let text = &item.data.0;
+
+            for (i, c) in text.chars().take(item_width).enumerate() {
+                if y0 < height && x0 + i < width {
+                    grid[y0 * width + (x0 + i)] = c;
+                }
+            }
+        }
+
+        grid.chunks(width)
+            .map(|row| row.iter().collect::<String>().trim_end().to_string())
+            .join("\n")
+    }
+
+    #[test]
+    fn test_picker_empty_input() {
+        let items = create_test_items();
+        let state = PickerState::new("Select branch", items, false);
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_with_filter() {
+        let items = create_test_items();
+        let mut state = PickerState::new("Select branch", items, false);
+
+        // Type "fea" to filter
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state.update_filter();
+
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_cursor_movement() {
+        let items = create_test_items();
+        let mut state = PickerState::new("Select branch", items, false);
+
+        // Move cursor to third item
+        state.next();
+        state.next();
+
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_with_custom_input() {
+        let items = create_test_items();
+        let mut state = PickerState::new("New branch", items, true);
+
+        // Type a custom branch name
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('m'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
+        state.update_filter();
+
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_narrow_width() {
+        let items = create_test_items();
+        let state = PickerState::new("Select", items, false);
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 20);
+        });
+        layout.compute([20, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 20, 15));
+    }
+}

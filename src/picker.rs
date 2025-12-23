@@ -421,6 +421,31 @@ mod tests {
     }
 
     #[test]
+    fn test_case_insensitive_matching() {
+        let items = vec![
+            PickerItem::new("Feature", PickerData::Revision("Feature".to_string())),
+            PickerItem::new("feature", PickerData::Revision("feature".to_string())),
+            PickerItem::new("FEATURE", PickerData::Revision("FEATURE".to_string())),
+        ];
+
+        let mut state = PickerState::new("Select item", items, false);
+
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state.update_filter();
+
+        // fuzzy-matcher is case-insensitive by default
+        assert_eq!(state.filtered_count(), 3);
+    }
+
+    #[test]
     fn test_no_matches() {
         let items = create_test_items();
         let mut state = PickerState::new("Select", items, false);
