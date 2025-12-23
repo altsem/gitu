@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git rebase --autostash main                                                   |
 Successfully rebased and updated refs/heads/other-branch.                       |
-styles_hash: ae948205314006a8
+styles_hash: e4b2d1eeab466a0a

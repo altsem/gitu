@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git checkout -b new                                                           |
 Switched to a new branch 'new'                                                  |
 > Branch main not changed                                                       |
-styles_hash: efbf6fb7f3e7fef3
+styles_hash: f6b1f1b8641cb19a

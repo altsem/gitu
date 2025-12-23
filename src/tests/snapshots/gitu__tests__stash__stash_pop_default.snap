@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash pop -q 0                                                            |
 Already up to date.                                                             |
-styles_hash: eb420676d51ca2ad
+styles_hash: d0f94aafefcbeb56

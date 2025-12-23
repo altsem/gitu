@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d merged                                                          |
 Deleted branch merged (was b66a0bf).                                            |
-styles_hash: d3fa9306db1ed169
+styles_hash: dce6312dfc6aa477

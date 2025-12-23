@@ -1,15 +1,19 @@
 ---
-source: src/tests/unstage.rs
+source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- On branch main                                                                 |
- Your branch is ahead of 'origin/main' by 1 commit(s).                          |
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Unstaged changes (1)                                                           |
-▌deleted    to-delete…                                                          |
+ modified   non_utf8.txt                                                        |
+ @@ -1 +1 @@                                                                    |
+ -File with valid UTF-8                                                         |
+ \ No newline at end of file                                                    |
+ +FileFile with invalid UTF-8: ��                                               |
                                                                                 |
  Recent commits                                                                 |
- 0341425 main add to-delete                                                     |
+ 7c3d61a main add non_utf8.txt                                                  |
  b66a0bf origin/main add initial-file                                           |
                                                                                 |
                                                                                 |
@@ -18,8 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-────────────────────────────────────────────────────────────────────────────────|
-$ git restore --staged to-delete                                                |
-styles_hash: c5bc1d29471d4f7b
+styles_hash: 232c1529ecd86f60

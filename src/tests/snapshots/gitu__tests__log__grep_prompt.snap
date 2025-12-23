@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  q/esc Quit/Close                                                               |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Search messages: › █                                                          |
-styles_hash: 343781514ec05b3b
+styles_hash: 30915effaeaeb2e3

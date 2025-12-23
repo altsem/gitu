@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git remote add test localhost                                                 |
-styles_hash: 7aa4604393b2a423
+styles_hash: e5be2cc8ca3f42c

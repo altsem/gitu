@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git fetch --all --jobs 10                                                     |
 From file://                                                                     
    b66a0bf..d07f2d3  main       -> origin/main                                  |
-styles_hash: 8ca66865fcdbe96d
+styles_hash: f448eeaae20a6982
