@@ -703,10 +703,12 @@ R  old.rs -> new.rs
             for c2 in &status_chars {
                 input.push(*c1);
                 input.push(*c2);
+                let c1_str = c1.to_string();
+                let c2_str = c2.to_string();
                 input.push_str(&format!(
                     " file_{}_{}.txt\n",
-                    if *c1 == ' ' { "space" } else { &c1.to_string() },
-                    if *c2 == ' ' { "space" } else { &c2.to_string() }
+                    if *c1 == ' ' { "space" } else { &c1_str },
+                    if *c2 == ' ' { "space" } else { &c2_str }
                 ));
                 count += 1;
             }
