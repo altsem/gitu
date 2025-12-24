@@ -1,5 +1,5 @@
 test:
-	cargo test
+	cargo insta test --unreferenced reject
 	cargo bench --no-run
 	cargo clippy -- -Dwarnings
 	cargo fmt --check
