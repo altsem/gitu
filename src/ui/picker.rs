@@ -247,6 +247,89 @@ mod tests {
     }
 
     #[test]
+    fn test_picker_scroll_many_items() {
+        // Create 20 items to test scrolling
+        let items: Vec<_> = (0..20)
+            .map(|i| {
+                PickerItem::new(
+                    format!("branch-{:02}", i),
+                    PickerData::Revision(format!("branch-{:02}", i)),
+                )
+            })
+            .collect();
+
+        let mut state = PickerState::new("Select branch", items, false);
+        let config = test_config();
+
+        // Move cursor to middle (position 10)
+        for _ in 0..10 {
+            state.next();
+        }
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_scroll_near_end() {
+        // Create 20 items to test scrolling near the end
+        let items: Vec<_> = (0..20)
+            .map(|i| {
+                PickerItem::new(
+                    format!("branch-{:02}", i),
+                    PickerData::Revision(format!("branch-{:02}", i)),
+                )
+            })
+            .collect();
+
+        let mut state = PickerState::new("Select branch", items, false);
+        let config = test_config();
+
+        // Move cursor near end (position 18)
+        for _ in 0..18 {
+            state.next();
+        }
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_filtered_with_navigation() {
+        let items = create_test_items();
+        let mut state = PickerState::new("Select branch", items, false);
+
+        // Filter to get feature branches
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state.update_filter();
+
+        // Navigate to second item
+        state.next();
+
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
     fn test_picker_with_custom_input() {
         let items = create_test_items();
         let mut state = PickerState::new("New branch", items, true);
@@ -254,6 +337,28 @@ mod tests {
         // Type a custom branch name
         state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('m'), KeyModifiers::empty()));
         state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
+        state.update_filter();
+
+        let config = test_config();
+
+        let mut layout = LayoutTree::new();
+        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+            layout_picker(layout, &state, &config, 40);
+        });
+        layout.compute([40, 15]);
+
+        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+    }
+
+    #[test]
+    fn test_picker_no_matches() {
+        let items = create_test_items();
+        let mut state = PickerState::new("Select branch", items, false);
+
+        // Type something that doesn't match
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
+        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::empty()));
         state.update_filter();
 
         let config = test_config();

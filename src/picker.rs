@@ -619,6 +619,59 @@ mod tests {
     }
 
     #[test]
+    fn test_navigation_with_custom_input_at_end() {
+        let items = vec![
+            PickerItem::new("feature/a", PickerData::Revision("feature/a".to_string())),
+            PickerItem::new("feature/b", PickerData::Revision("feature/b".to_string())),
+        ];
+
+        let mut state = PickerState::new("Select", items, true);
+
+        // Type "feat" to get matches + custom input
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::empty()));
+        state.update_filter();
+
+        // Should have 2 matches + custom input = 3 total
+        assert_eq!(state.filtered_count(), 2);
+        assert_eq!(state.cursor(), 0);
+
+        // Navigate to first match
+        let selected = state.selected().unwrap();
+        match &selected.data {
+            PickerData::Revision(_) => {}
+            _ => panic!("Expected first item to be a revision"),
+        }
+
+        // Navigate to second match
+        state.next();
+        assert_eq!(state.cursor(), 1);
+
+        // Navigate to custom input (last item)
+        state.next();
+        assert_eq!(state.cursor(), 2);
+        let selected = state.selected().unwrap();
+        match &selected.data {
+            PickerData::CustomInput(s) => assert_eq!(s, "feat"),
+            _ => panic!("Expected custom input at end"),
+        }
+
+        // Wrap around to first
+        state.next();
+        assert_eq!(state.cursor(), 0);
+    }
+
+    #[test]
     fn test_cursor_resets_when_filter_reduces_items() {
         let items = create_test_items();
         let mut state = PickerState::new("Select", items, false);
@@ -637,6 +690,84 @@ mod tests {
 
         // Cursor should reset to 0
         assert_eq!(state.cursor(), 0);
+    }
+
+    #[test]
+    fn test_scroll_through_many_items() {
+        // Create 20 items to test scrolling behavior
+        let items: Vec<_> = (0..20)
+            .map(|i| {
+                PickerItem::new(
+                    format!("branch-{:02}", i),
+                    PickerData::Revision(format!("branch-{:02}", i)),
+                )
+            })
+            .collect();
+
+        let mut state = PickerState::new("Select", items, false);
+
+        // Start at first item
+        assert_eq!(state.cursor(), 0);
+
+        // Navigate to middle item
+        for _ in 0..10 {
+            state.next();
+        }
+        assert_eq!(state.cursor(), 10);
+
+        // Navigate to last item
+        for _ in 0..9 {
+            state.next();
+        }
+        assert_eq!(state.cursor(), 19);
+
+        // Wrap around to first
+        state.next();
+        assert_eq!(state.cursor(), 0);
+
+        // Navigate backwards
+        state.previous();
+        assert_eq!(state.cursor(), 19);
+    }
+
+    #[test]
+    fn test_navigation_after_filtering() {
+        let items = vec![
+            PickerItem::new("feature/a", PickerData::Revision("feature/a".to_string())),
+            PickerItem::new("feature/b", PickerData::Revision("feature/b".to_string())),
+            PickerItem::new("main", PickerData::Revision("main".to_string())),
+            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+        ];
+
+        let mut state = PickerState::new("Select", items, false);
+
+        // Filter to get only feature/* branches
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state.update_filter();
+
+        // Should have 2 filtered items
+        assert_eq!(state.filtered_count(), 2);
+        assert_eq!(state.cursor(), 0);
+
+        // Navigate through filtered items
+        state.next();
+        assert_eq!(state.cursor(), 1);
+
+        // Wrap around
+        state.next();
+        assert_eq!(state.cursor(), 0);
+
+        // Go backwards
+        state.previous();
+        assert_eq!(state.cursor(), 1);
     }
 
     #[test]
@@ -685,6 +816,44 @@ mod tests {
         // No matches, only custom input at cursor 0
         assert_eq!(state.cursor(), 0);
         assert_eq!(state.selected().unwrap().display.as_ref(), "qq");
+    }
+
+    #[test]
+    fn test_select_custom_input() {
+        let items = create_test_items();
+        let mut state = PickerState::new("Select", items, true);
+
+        // Type a pattern that doesn't match anything
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::empty()));
+        state.update_filter();
+
+        // Should have no matches but custom input
+        assert_eq!(state.filtered_count(), 0);
+        assert!(state.custom_input_item.is_some());
+
+        // Cursor should be at custom input (position 0 since no other items)
+        assert_eq!(state.cursor(), 0);
+
+        // Selected item should be the custom input
+        let selected = state.selected().unwrap();
+        assert_eq!(selected.display, "xyz");
+        match &selected.data {
+            PickerData::CustomInput(s) => assert_eq!(s, "xyz"),
+            _ => panic!("Expected CustomInput"),
+        }
+
+        // Mark as done
+        state.done();
+        assert!(state.is_done());
+        assert_eq!(state.status(), &PickerStatus::Done);
     }
 
     #[test]
