@@ -177,8 +177,10 @@ fn parse_file_path(input: &str) -> IResult<&str, &str> {
 
 fn unescape(path: String) -> String {
     if path.starts_with('"') && path.ends_with('"') {
-        String::from_utf8(smashquote::unescape_bytes(&path.as_bytes()[1..path.len() - 1]).unwrap())
-            .unwrap()
+        String::from_utf8_lossy(
+            &smashquote::unescape_bytes(&path.as_bytes()[1..path.len() - 1]).unwrap(),
+        )
+        .into_owned()
     } else {
         path
     }
@@ -701,10 +703,12 @@ R  old.rs -> new.rs
             for c2 in &status_chars {
                 input.push(*c1);
                 input.push(*c2);
+                let c1_str = c1.to_string();
+                let c2_str = c2.to_string();
                 input.push_str(&format!(
                     " file_{}_{}.txt\n",
-                    if *c1 == ' ' { "space" } else { &c1.to_string() },
-                    if *c2 == ' ' { "space" } else { &c2.to_string() }
+                    if *c1 == ' ' { "space" } else { &c1_str },
+                    if *c2 == ' ' { "space" } else { &c2_str }
                 ));
                 count += 1;
             }

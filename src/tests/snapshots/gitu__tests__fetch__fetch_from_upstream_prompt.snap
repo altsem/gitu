@@ -1,0 +1,25 @@
+---
+source: src/tests/fetch.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+? Set upstream then fetch: › █                                                  |
+styles_hash: a9ce1b225e9e7e38

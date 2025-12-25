@@ -1,0 +1,25 @@
+---
+source: src/tests/fetch.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+ Fetch                                 Arguments                                |
+ a     from all remotes                -p Prune deleted branches (--prune)      |
+ p     from pushRemote, setting that   -t Fetch all tags (--tags)               |
+ u     from upstream, setting that                                              |
+ e     from elsewhere                                                           |
+ q/esc Cancel/Quit                                                              |
+styles_hash: fbb28b712f78e61e

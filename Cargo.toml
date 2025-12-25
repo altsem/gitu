@@ -1,7 +1,7 @@
 [package]
 name = "gitu"
 description = "A git client inspired by Magit"
-version = "0.39.0"
+version = "0.40.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/altsem/gitu"
@@ -14,7 +14,7 @@ harness = false
 pretty_assertions = "1.4.1"
 temp-dir = "0.1.16"
 criterion = "0.5.1"
-insta = "1.43.2"
+insta = "1.44.3"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
 stdext = "0.3.3"
@@ -31,7 +31,7 @@ arboard = { version = "3.6.1", default-features = false, features = [
     "windows-sys",
 ] }
 chrono = "0.4.42"
-clap = { version = "4.5.47", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 crossterm = "0.28.1"
 etcetera = "0.10.0"
 figment = { version = "0.10.19", features = ["toml"] }
@@ -45,7 +45,7 @@ serde = { version = "1.0.225", features = ["derive"] }
 ratatui = { version = "0.29.0", features = ["serde"] }
 simple-logging = "2.0.2"
 toml = "0.8.23"
-tui-prompts = "0.5.0"
+tui-prompts = "0.5.2"
 tree-sitter = "=0.25.6"
 tree-sitter-highlight = "=0.25.6"
 tree-sitter-rust = "=0.24.0"
@@ -67,7 +67,7 @@ tree-sitter-scala = "=0.23.4"
 tree-sitter-ocaml = "=0.24.2"
 tree-sitter-html = "=0.23.2"
 tree-sitter-elixir = "=0.3.4"
-regex = "1.11.2"
+regex = "1.12.2"
 strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
 cached = "0.55.1"

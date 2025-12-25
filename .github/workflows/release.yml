@@ -5,77 +5,18 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  build-artifact:
-    runs-on: ${{ matrix.os }}
-    environment: release
+  build-artifacts:
     permissions:
       contents: write
-    env:
-      BUILD_NAME: "gitu-${{ github.ref_name }}-${{ matrix.target }}"
-    strategy:
-      matrix:
-        build: [linux-x64, windows-x64, macos-x64, macos-arm64]
-        include:
-        - build: linux-x64
-          os: ubuntu-latest
-          target: x86_64-unknown-linux-gnu
-        - build: windows-x64
-          os: windows-2022
-          target: x86_64-pc-windows-msvc
-        - build: macos-x64
-          os: macos-15-intel
-          target: x86_64-apple-darwin
-        - build: macos-arm64
-          os: macos-latest
-          target: aarch64-apple-darwin
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 50
-
-    - name: Fetch tags
-      run: git fetch --tags --force
-
-    - name: Cache
-      uses: actions/cache@v4.3.0
-      with:
-        path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Build release binary
-      run: cargo build --verbose --release --locked --target ${{ matrix.target }}
-
-    - name: Bundle release
-      shell: bash
-      run: |
-        mkdir -p "$BUILD_NAME"
-        cp {README.md,LICENSE} "$BUILD_NAME/"
-        cp "target/${{ matrix.target }}/release/gitu" "$BUILD_NAME/"
-
-    - name: Run smoke test
-      shell: bash
-      run: |
-        "$BUILD_NAME/gitu" --version
-
-    - name: Upload asset
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.BUILD_NAME }}
-        path: ${{ env.BUILD_NAME }}
+    uses: ./.github/workflows/build-artifacts.yml
 
   verify:
-    needs: ['build-artifact']
+    needs: ['build-artifacts']
     runs-on: ubuntu-latest
     environment: release
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 50
 
@@ -89,12 +30,12 @@ jobs:
           cargo publish --dry-run
 
   cargo-publish:
-    needs: ['build-artifact', 'verify']
+    needs: ['build-artifacts', 'verify']
     runs-on: ubuntu-latest
     environment: release
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 50
 
@@ -108,7 +49,7 @@ jobs:
         cargo publish
 
   create-github-release:
-    needs: ['build-artifact', 'verify']
+    needs: ['build-artifacts', 'verify']
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -117,13 +58,13 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout .recent-changelog-entry
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: .recent-changelog-entry
           sparse-checkout-cone-mode: false
 
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: artifacts
 

@@ -17,9 +17,9 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Pull                            Arguments                                      |
- p pushRemote, setting that      -r Rebase local commits (--rebase)             |
- u from main                                                                    |
- e from elsewhere                                                               |
+ Pull                             Arguments                                     |
+ p     pushRemote, setting that   -r Rebase local commits (--rebase)            |
+ u     from main                                                                |
+ e     from elsewhere                                                           |
  q/esc Cancel/Quit                                                              |
-styles_hash: 596dee06411c0ed2
+styles_hash: 7bc7b0fa946fd8ec

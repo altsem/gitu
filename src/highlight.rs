@@ -213,9 +213,13 @@ pub(crate) fn iter_syntax_highlights<'a>(
 ) -> Peekable<impl Iterator<Item = (Range<usize>, Style)> + 'a> {
     fill_gaps(
         0..content.len(),
-        syntax_parser::parse(Path::new(path), &content)
-            .into_iter()
-            .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag))),
+        if config.enabled {
+            syntax_parser::parse(Path::new(path), &content)
+        } else {
+            vec![]
+        }
+        .into_iter()
+        .map(move |(range, tag)| (range, syntax_highlight_tag_style(config, tag))),
         Style::new(),
     )
     .peekable()

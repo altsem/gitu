@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Drop stash (default 0): › █                                                   |
-styles_hash: 58ddaedd485d843a
+styles_hash: 6610d51b9ce82971
