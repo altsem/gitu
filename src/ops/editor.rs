@@ -8,10 +8,17 @@ use crate::{
 };
 use std::rc::Rc;
 
-pub(crate) struct Quit;
-impl OpTrait for Quit {
+pub(crate) struct CancelOrQuit;
+impl OpTrait for CancelOrQuit {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, term| {
+            // First, check if there's an active search and clear it
+            if app.screen().get_search_pattern().is_some() {
+                app.screen_mut().clear_search();
+                app.state.search_pattern = None;
+                return Ok(());
+            }
+
             let menu = app
                 .state
                 .pending_menu
@@ -38,7 +45,7 @@ impl OpTrait for Quit {
     }
 
     fn display(&self, _state: &State) -> String {
-        "Quit/Close".into()
+        "Cancel/Quit".into()
     }
 }
 
@@ -313,5 +320,72 @@ impl OpTrait for HalfPageDown {
 
     fn display(&self, _state: &State) -> String {
         "Half page down".into()
+    }
+}
+
+pub(crate) struct Search;
+impl OpTrait for Search {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app, term| {
+            let pattern = match app.search_prompt(
+                term,
+                "Search",
+                &mut |app, value| {
+                    app.screen_mut().search(value, true);
+                },
+            ) {
+                Ok(p) => p,
+                Err(_) => {
+                    // Prompt was aborted (Esc pressed), clear the search
+                    app.screen_mut().clear_search();
+                    app.state.search_pattern = None;
+                    return Ok(());
+                }
+            };
+
+            app.state.search_pattern = if pattern.is_empty() {
+                None
+            } else {
+                Some(pattern.clone())
+            };
+
+            app.screen_mut().search(&pattern, false);
+            app.close_menu();
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Search".into()
+    }
+}
+
+pub(crate) struct SearchNext;
+impl OpTrait for SearchNext {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app, _term| {
+            app.screen_mut().search_next();
+            app.close_menu();
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Next match".into()
+    }
+}
+
+pub(crate) struct SearchPrevious;
+impl OpTrait for SearchPrevious {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app, _term| {
+            app.screen_mut().search_previous();
+            app.close_menu();
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Previous match".into()
     }
 }

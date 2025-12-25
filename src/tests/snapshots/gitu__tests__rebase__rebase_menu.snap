@@ -18,7 +18,7 @@ expression: ctx.redact_buffer()
  a     abort            -a Autosquash (--autosquash)                            |
  c     continue         -A Autostash (--autostash)                              |
  e     onto elsewhere   -d Lie about committer date (--committer-date-is-author-|
- q/esc Quit/Close       -i Interactive (--interactive)                          |
+ q/esc Cancel/Quit      -i Interactive (--interactive)                          |
                         -k Keep empty commits (--keep-empty)                    |
                         -h Disable hooks (--no-verify)                          |
                         -p Preserve merges (--preserve-merges)                  |
