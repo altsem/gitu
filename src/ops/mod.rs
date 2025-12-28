@@ -9,6 +9,7 @@ use crate::{
 };
 use std::{fmt::Display, rc::Rc};
 
+pub(crate) mod apply;
 pub(crate) mod branch;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
@@ -100,6 +101,7 @@ pub(crate) enum Op {
     Unstage,
     Show,
     Discard,
+    Apply,
     CopyHash,
 
     ToggleSection,
@@ -187,6 +189,7 @@ impl Op {
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
+            Op::Apply => Box::new(apply::Apply),
             Op::CopyHash => Box::new(copy_hash::CopyHash),
 
             Op::AddRemote => Box::new(remote::AddRemote),

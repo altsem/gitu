@@ -113,6 +113,7 @@ root.show = ["enter"]
 root.discard = ["K"]
 root.stage = ["s"]
 root.unstage = ["u"]
+root.apply = ["a"]
 root.copy_hash = ["y"]
 
 root.help_menu = ["h", "?"]
