@@ -1,0 +1,60 @@
+---
+source: src/tests/stash.rs
+expression: out
+---
+ commit 082bbb9f54ee18c550d027e05160d7130f2ca93a                                |
+ Author: Author Name <author@email.com>                                         |
+ Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+                                                                                |
+     On main: apply-stash                                                       |
+                                                                                |
+ Unstaged changes (2)                                                           |
+ modified   file1.txt                                                           |
+ @@ -1,5 +1,7 @@                                                                |
+  one                                                                           |
+  two                                                                           |
+▌+two-and-a-half                                                                |
+ +two-and-three-quarters                                                        |
+  three                                                                         |
+  four                                                                          |
+  five                                                                          |
+ @@ -7,4 +9,4 @@ six                                                            |
+  seven                                                                         |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --recount                                                           |
+styles_hash: b7847f95f615675f
+
+[files before]
+--- file1.txt ---
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+--- file2.txt ---
+alpha
+beta
+gamma
+
+[files after]
+--- file1.txt ---
+one
+two
+two-and-a-half
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+--- file2.txt ---
+alpha
+beta
+gamma
