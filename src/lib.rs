@@ -13,6 +13,7 @@ mod items;
 mod key_parser;
 mod menu;
 mod ops;
+pub mod picker;
 mod prompt;
 mod screen;
 mod syntax_parser;

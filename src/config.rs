@@ -78,6 +78,9 @@ pub struct StyleConfig {
     #[serde(default)]
     pub syntax_highlight: SyntaxHighlightConfig,
 
+    #[serde(default)]
+    pub picker: PickerStyleConfig,
+
     pub cursor: SymbolStyleConfigEntry,
     pub selection_bar: SymbolStyleConfigEntry,
     pub selection_line: StyleConfigEntry,
@@ -168,6 +171,18 @@ pub struct SyntaxHighlightConfig {
     pub variable_builtin: StyleConfigEntry,
     #[serde(default)]
     pub variable_parameter: StyleConfigEntry,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct PickerStyleConfig {
+    #[serde(default)]
+    pub prompt: StyleConfigEntry,
+    #[serde(default)]
+    pub info: StyleConfigEntry,
+    #[serde(default)]
+    pub selection_line: StyleConfigEntry,
+    #[serde(default)]
+    pub matched: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]

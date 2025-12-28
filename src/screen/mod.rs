@@ -374,7 +374,12 @@ struct LineView<'a> {
 
 const SPACES: &str = "                                                                ";
 
-pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a Screen) {
+pub(crate) fn layout_screen<'a>(
+    layout: &mut UiTree<'a>,
+    size: Size,
+    screen: &'a Screen,
+    hide_cursor: bool,
+) {
     let style = &screen.config.style;
 
     layout.vertical(None, OPTS, |layout| {
@@ -386,7 +391,7 @@ pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a
                 let bg = area_sel.patch(line_sel);
 
                 let mut line_end = 1;
-                let gutter_char = if line.highlighted {
+                let gutter_char = if !hide_cursor && line.highlighted {
                     gutter_char(style, is_line_sel, bg)
                 } else {
                     (" ".into(), Style::new())
