@@ -170,11 +170,30 @@ fn show() {
 fn show_stash() {
     let ctx = setup_clone!();
 
-    fs::write(ctx.dir.join("file1.txt"), "content").unwrap();
-    run(&ctx.dir, &["git", "add", "file1.txt"]);
-    // Unstaged changes to "file1.txt"
-    fs::write(ctx.dir.join("file1.txt"), "content\nmodified content").unwrap();
-    run(&ctx.dir, &["git", "stash", "save", "firststash"]);
+    // Unstaged changes should be shown as a diff against a tracked file.
+    commit(&ctx.dir, "unstaged.txt", "");
+
+    // Staged changes
+    fs::write(ctx.dir.join("staged.txt"), "staged\n").unwrap();
+    run(&ctx.dir, &["git", "add", "staged.txt"]);
+
+    // Unstaged changes
+    fs::write(ctx.dir.join("unstaged.txt"), "unstaged\n").unwrap();
+
+    // Untracked changes
+    fs::write(ctx.dir.join("untracked.txt"), "untracked\n").unwrap();
+
+    run(
+        &ctx.dir,
+        &[
+            "git",
+            "stash",
+            "push",
+            "--include-untracked",
+            "--message",
+            "firststash",
+        ],
+    );
 
     snapshot!(ctx, "jj<enter>");
 }
@@ -285,7 +304,8 @@ fn hide_untracked() {
 
     let mut app = ctx.init_app();
     let mut config = app.state.repo.config().unwrap();
-    config.set_str("status.showUntrackedFiles", "off").unwrap();
+    // Git expects "no|normal|all" here; "off" can error on some versions and break `git status`.
+    config.set_str("status.showUntrackedFiles", "no").unwrap();
 
     ctx.update(&mut app, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());

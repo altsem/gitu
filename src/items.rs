@@ -152,6 +152,9 @@ impl Item {
                     SectionHeader::Stashes => "Stashes".to_string(),
                     SectionHeader::RecentCommits => "Recent commits".to_string(),
                     SectionHeader::Commit(oid) => format!("commit {oid}"),
+                    SectionHeader::StagedChanges(count) => format!("Staged changes ({count})"),
+                    SectionHeader::UnstagedChanges(count) => format!("Unstaged changes ({count})"),
+                    SectionHeader::UntrackedFiles(count) => format!("Untracked files ({count})"),
                 };
 
                 Line::styled(content, &config.style.section_header)
