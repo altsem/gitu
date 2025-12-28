@@ -1,3 +1,5 @@
+.PHONY: *
+
 test:
 	cargo insta test --unreferenced reject
 	cargo bench --no-run
@@ -13,3 +15,7 @@ flamegraph:
 heaptrack:
 	cargo build --profile profiling
 	heaptrack target/profiling/gitu
+
+test-depend:
+	cargo install cargo-insta git-cliff || true
+

@@ -27,11 +27,7 @@ jobs:
             target
         key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Setup
-      run: |
-        cargo install cargo-deny || true
-        cargo install git-cliff || true
-
+    - run: make test-depend
     - run: make test
 
   test:
