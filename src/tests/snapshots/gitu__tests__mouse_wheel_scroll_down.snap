@@ -12,7 +12,7 @@ expression: ctx.redact_buffer()
  modified   file07…                                                             |
  modified   file08…                                                             |
  modified   file09…                                                             |
-▌modified   file10…                                                             |
+ modified   file10…                                                             |
  modified   file11…                                                             |
  modified   file12…                                                             |
  modified   file13…                                                             |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  modified   file17…                                                             |
  modified   file18…                                                             |
  modified   file19…                                                             |
-styles_hash: 581a108fde4c40fe
+styles_hash: e2b83c90b357195b

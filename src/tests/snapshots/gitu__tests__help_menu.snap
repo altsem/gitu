@@ -1,26 +1,25 @@
 ---
 source: src/tests/mod.rs
-assertion_line: 50
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
 ▌Your branch is up to date with 'origin/main'.                                  |
-                                                                                |
- Recent commits                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Help                              Submenu           On branch main             |
- Y                Show Refs        b   Branch        tab Fold                   |
- k/up             Up               c   Commit                                   |
- j/down           Down             f   Fetch                                    |
- ctrl+k/ctrl+up   Up line          h/? Help                                     |
- ctrl+j/ctrl+down Down line        l   Log                                      |
- alt+k/alt+up     Prev section     m   Merge                                    |
- alt+j/alt+down   Next section     M   Remote                                   |
- alt+h/alt+left   Parent section   F   Pull                                     |
- g+g              Top              P   Push                                     |
- G                Bottom           r   Rebase                                   |
- ctrl+u           Half page up     X   Reset                                    |
- ctrl+d           Half page down   V   Revert                                   |
- g+r              Refresh          A   Cherry-pick                              |
- q/esc            Quit/Close       z   Stash                                    |
-styles_hash: d3bd90efdd7b7678
+ Help                                     Submenu           On branch main      |
+ Y                Show Refs               b   Branch        tab Fold            |
+ k/up             Up                      c   Commit                            |
+ j/down           Down                    f   Fetch                             |
+ ctrl+k/ctrl+up   Up line                 h/? Help                              |
+ ctrl+j/ctrl+down Down line               l   Log                               |
+ alt+k/alt+up     Prev section            m   Merge                             |
+ alt+j/alt+down   Next section            M   Remote                            |
+ alt+h/alt+left   Parent section          F   Pull                              |
+ g+g              Top                     P   Push                              |
+ G                Bottom                  r   Rebase                            |
+ ctrl+u           Scroll half page up     X   Reset                             |
+ ctrl+d           Scroll half page down   V   Revert                            |
+ ctrl+y           Scroll view up          A   Cherry-pick                       |
+ ctrl+e           Scroll view down        z   Stash                             |
+ g+r              Refresh                                                       |
+ q/esc            Quit/Close                                                    |
+styles_hash: f683951757a0712c

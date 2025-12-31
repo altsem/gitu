@@ -328,13 +328,13 @@ impl App {
             MouseEventKind::ScrollUp => {
                 let scroll_lines = self.state.config.general.mouse_scroll_lines;
                 if scroll_lines > 0 {
-                    self.screen_mut().scroll_up(scroll_lines);
+                    self.screen_mut().scroll_view_up(scroll_lines);
                 }
             }
             MouseEventKind::ScrollDown => {
                 let scroll_lines = self.state.config.general.mouse_scroll_lines;
                 if scroll_lines > 0 {
-                    self.screen_mut().scroll_down(scroll_lines);
+                    self.screen_mut().scroll_view_down(scroll_lines);
                 }
             }
             _ => return Ok(false),
