@@ -2,7 +2,7 @@
 source: src/tests/stash.rs
 expression: out
 ---
- commit 082bbb9f54ee18c550d027e05160d7130f2ca93a                                |
+ stash@{0}                                                                      |
  Author: Author Name <author@email.com>                                         |
  Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
                                                                                 |
@@ -22,7 +22,7 @@ expression: out
 ▌ seven                                                                         |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply                                                                     |
-styles_hash: d763dc53e8cf23b0
+styles_hash: 92b47e5045c3f2a
 
 [files before]
 --- file1.txt ---
