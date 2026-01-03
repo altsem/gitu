@@ -2,7 +2,7 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
- commit 9ac951d5b05558f4a67292b6cfe63a9a1cea8d2b                                |
+ stash@{0}                                                                      |
  Author: Author Name <author@email.com>                                         |
  Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  added      untracked.txt                                                       |
  @@ -0,0 +1 @@                                                                  |
  +untracked                                                                     |
-styles_hash: 7e6ce9ab3b9d59ee
+styles_hash: 657c8e06e0c26076

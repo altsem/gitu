@@ -33,13 +33,13 @@ pub(crate) fn create(
 
             let mut out: Vec<Item> = Vec::new();
             out.extend(iter::once(Item {
-                id: hash(["stash_section", &commit.hash]),
+                id: hash(["stash_section", &stash_ref]),
                 depth: 0,
-                data: ItemData::Header(SectionHeader::Commit(commit.hash.clone())),
+                data: ItemData::Header(SectionHeader::StashRef(stash_ref.clone())),
                 ..Default::default()
             }));
             out.extend(details.into_iter().map(|line| Item {
-                id: hash(["stash", &commit.hash]),
+                id: hash(["stash", &stash_ref]),
                 depth: 1,
                 unselectable: true,
                 data: ItemData::Raw(line.to_string()),

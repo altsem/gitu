@@ -153,6 +153,7 @@ pub(crate) enum SectionHeader {
     Stashes,
     RecentCommits,
     Commit(String),
+    StashRef(String),
     StagedChanges(usize),
     UnstagedChanges(usize),
     UntrackedFiles(usize),
