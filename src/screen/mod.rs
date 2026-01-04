@@ -168,44 +168,24 @@ impl Screen {
             .unwrap_or(self.cursor)
     }
 
-    pub(crate) fn scroll_half_page_up(&mut self) {
+    pub(crate) fn scroll_view_half_page_up(&mut self) {
         let half_screen = self.size.height as usize / 2;
-        self.scroll = self.scroll.saturating_sub(half_screen);
-
-        let nav_mode = self.selected_item_nav_mode();
-        self.update_cursor(nav_mode);
+        self.scroll_view_up(half_screen);
     }
 
-    pub(crate) fn scroll_half_page_down(&mut self) {
+    pub(crate) fn scroll_view_half_page_down(&mut self) {
         let half_screen = self.size.height as usize / 2;
-        self.scroll = (self.scroll + half_screen).min(
-            self.line_index
-                .iter()
-                .copied()
-                .enumerate()
-                .map(|(line, _)| (line + 1).saturating_sub(half_screen))
-                .next_back()
-                .unwrap_or(0),
-        );
-
-        let nav_mode = self.selected_item_nav_mode();
-        self.update_cursor(nav_mode);
+        self.scroll_view_down(half_screen);
     }
 
-    pub(crate) fn scroll_up(&mut self, lines: usize) {
+    pub(crate) fn scroll_view_up(&mut self, lines: usize) {
         self.scroll = self.scroll.saturating_sub(lines);
-        let nav_mode = self.selected_item_nav_mode();
-        self.update_cursor(nav_mode);
+        self.clamp_scroll();
     }
 
-    pub(crate) fn scroll_down(&mut self, lines: usize) {
-        let max_scroll = self
-            .line_index
-            .len()
-            .saturating_sub(self.size.height as usize);
-        self.scroll = (self.scroll + lines).min(max_scroll);
-        let nav_mode = self.selected_item_nav_mode();
-        self.update_cursor(nav_mode);
+    pub(crate) fn scroll_view_down(&mut self, lines: usize) {
+        self.scroll = self.scroll.saturating_add(lines);
+        self.clamp_scroll();
     }
 
     pub(crate) fn toggle_section(&mut self) {
@@ -231,6 +211,7 @@ impl Screen {
     }
 
     fn update_cursor(&mut self, nav_mode: NavMode) {
+        self.clamp_scroll();
         self.clamp_cursor();
         if self.is_cursor_off_screen() {
             self.move_cursor_to_screen_center();
@@ -272,6 +253,7 @@ impl Screen {
             .flatten()
             .map(|(i, _item)| i)
             .collect();
+        self.clamp_scroll();
     }
 
     fn is_cursor_off_screen(&self) -> bool {
@@ -287,6 +269,26 @@ impl Screen {
         self.cursor = self
             .cursor
             .clamp(0, self.line_index.len().saturating_sub(1));
+    }
+
+    fn clamp_scroll(&mut self) {
+        if self.line_index.is_empty() {
+            self.scroll = 0;
+            return;
+        }
+
+        self.scroll = self.scroll.min(self.max_scroll_with_context());
+    }
+
+    fn max_scroll_with_context(&self) -> usize {
+        let len = self.line_index.len();
+        if len == 0 {
+            return 0;
+        }
+
+        let max_scroll = len.saturating_sub(self.size.height as usize);
+        let max_scroll = max_scroll.saturating_add(BOTTOM_CONTEXT_LINES);
+        max_scroll.min(len.saturating_sub(1))
     }
 
     fn move_from_unselectable(&mut self, nav_mode: NavMode) {

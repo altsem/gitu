@@ -291,13 +291,13 @@ impl OpTrait for HalfPageUp {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().scroll_half_page_up();
+            app.screen_mut().scroll_view_half_page_up();
             Ok(())
         }))
     }
 
     fn display(&self, _state: &State) -> String {
-        "Half page up".into()
+        "Scroll half page up".into()
     }
 }
 
@@ -306,12 +306,42 @@ impl OpTrait for HalfPageDown {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
             app.close_menu();
-            app.screen_mut().scroll_half_page_down();
+            app.screen_mut().scroll_view_half_page_down();
             Ok(())
         }))
     }
 
     fn display(&self, _state: &State) -> String {
-        "Half page down".into()
+        "Scroll half page down".into()
+    }
+}
+
+pub(crate) struct ScrollViewUp;
+impl OpTrait for ScrollViewUp {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app, _term| {
+            app.close_menu();
+            app.screen_mut().scroll_view_up(1);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Scroll view up".into()
+    }
+}
+
+pub(crate) struct ScrollViewDown;
+impl OpTrait for ScrollViewDown {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app, _term| {
+            app.close_menu();
+            app.screen_mut().scroll_view_down(1);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Scroll view down".into()
     }
 }

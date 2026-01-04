@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
  modified   file14…                                                             |
  modified   file15…                                                             |
  modified   file16…                                                             |
-▌modified   file17…                                                             |
+ modified   file17…                                                             |
  modified   file18…                                                             |
  modified   file19…                                                             |
  modified   file20…                                                             |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
  Recent commits                                                                 |
  ae744cc main add file30                                                        |
-styles_hash: f0f5b789b0d8de8f
+styles_hash: 9d0bedcc92bfcaa8

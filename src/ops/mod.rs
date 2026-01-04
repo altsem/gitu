@@ -112,6 +112,8 @@ pub(crate) enum Op {
     MoveParentSection,
     HalfPageUp,
     HalfPageDown,
+    ScrollViewUp,
+    ScrollViewDown,
 
     Refresh,
     Quit,
@@ -142,6 +144,8 @@ impl Op {
             Op::MoveParentSection => Box::new(editor::MoveParentSection),
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
+            Op::ScrollViewUp => Box::new(editor::ScrollViewUp),
+            Op::ScrollViewDown => Box::new(editor::ScrollViewDown),
             Op::Checkout => Box::new(branch::Checkout),
             Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
             Op::Spinoff => Box::new(branch::Spinoff),
