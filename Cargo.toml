@@ -13,7 +13,7 @@ harness = false
 [dev-dependencies]
 pretty_assertions = "1.4.1"
 temp-dir = "0.1.16"
-criterion = "0.5.1"
+criterion = "0.8.1"
 insta = "1.46.0"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
