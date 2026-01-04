@@ -14,7 +14,7 @@ harness = false
 pretty_assertions = "1.4.1"
 temp-dir = "0.1.16"
 criterion = "0.5.1"
-insta = "1.44.3"
+insta = "1.46.0"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
 stdext = "0.3.3"
@@ -32,7 +32,7 @@ arboard = { version = "3.6.1", default-features = false, features = [
     "windows-sys",
 ] }
 chrono = "0.4.42"
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"] }
 crossterm = "0.28.1"
 etcetera = "0.11.0"
 figment = { version = "0.10.19", features = ["toml"] }
