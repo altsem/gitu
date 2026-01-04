@@ -270,6 +270,7 @@ fn moved_file() {
 }
 
 #[test]
+#[cfg(not(target_os = "windows"))]
 fn chmod_file() {
     let mut ctx = setup_clone!();
     commit(&ctx.dir, "test-file", "hello\nworld\n");
