@@ -34,6 +34,7 @@ mod unstage;
 use crossterm::event::MouseButton;
 use helpers::{TestContext, clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run};
 use stdext::function_name;
+use url::Url;
 
 use crate::tests::helpers::run_ignore_status;
 
@@ -370,6 +371,7 @@ fn go_down_past_collapsed() {
 #[test]
 fn inside_submodule() {
     let mut ctx = setup_clone!();
+    let url = Url::from_file_path(ctx.remote_dir.as_path()).unwrap();
     run(
         &ctx.dir,
         &[
@@ -378,7 +380,7 @@ fn inside_submodule() {
             "protocol.file.allow=always",
             "submodule",
             "add",
-            ctx.remote_dir.to_str().unwrap(),
+            url.as_str(),
             "test-submodule",
         ],
     );

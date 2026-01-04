@@ -18,6 +18,7 @@ insta = "1.44.3"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
 stdext = "0.3.3"
+url = "2.5.7"
 
 [profile.profiling]
 inherits = "dev"
@@ -75,3 +76,4 @@ strum = { version = "0.26.3", features = ["strum_macros"] }
 tinyvec = "1.10.0"
 smashquote = "0.1.2"
 imara-diff = { version = "0.2.0", default-features = false }
+url = "2.5.7"
