@@ -192,21 +192,110 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     })
 }
 
-pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
-    let text = String::from_utf8_lossy(
-        &Command::new("git")
-            .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["stash", "show", "-p", stash_ref])
+#[derive(Debug, Clone)]
+pub(crate) struct StashDiffs {
+    pub staged: Diff,
+    pub unstaged: Diff,
+    pub untracked: Option<Diff>,
+}
+
+pub(crate) fn stash_diffs(repo: &Repository, stash_ref: &str) -> Res<StashDiffs> {
+    let dir = repo.workdir().expect("Bare repos unhandled");
+
+    let stash_commit = repo
+        .revparse_single(stash_ref)
+        .map_err(Error::GitShowMeta)?
+        .peel_to_commit()
+        .map_err(Error::GitShowMeta)?;
+
+    let diff = |from: &str, to: &str, paths: &[std::ffi::OsString]| -> Res<Diff> {
+        let mut cmd = Command::new("git");
+        cmd.current_dir(dir);
+        cmd.args(["diff", "--no-ext-diff"]);
+        cmd.args([from, to]);
+        if !paths.is_empty() {
+            cmd.arg("--");
+            cmd.args(paths);
+        }
+
+        let text =
+            String::from_utf8_lossy(&cmd.output().map_err(Error::GitDiff)?.stdout).into_owned();
+
+        Ok(Diff {
+            file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+            diff_type: DiffType::TreeToTree,
+            text,
+        })
+    };
+
+    let show = || -> Res<Diff> {
+        let text = String::from_utf8_lossy(
+            &Command::new("git")
+                .current_dir(dir)
+                .args(["stash", "show", "-p", stash_ref])
+                .output()
+                .map_err(Error::GitShow)?
+                .stdout,
+        )
+        .into_owned();
+
+        Ok(Diff {
+            file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
+            diff_type: DiffType::TreeToTree,
+            text,
+        })
+    };
+
+    if stash_commit.parent_count() < 2 {
+        let empty = Diff {
+            text: String::new(),
+            diff_type: DiffType::TreeToTree,
+            file_diffs: vec![],
+        };
+        return Ok(StashDiffs {
+            staged: empty,
+            unstaged: show()?,
+            untracked: None,
+        });
+    }
+
+    let base_ref = format!("{stash_ref}^");
+    let index_ref = format!("{stash_ref}^2");
+
+    let staged = diff(&base_ref, &index_ref, &[])?;
+    let unstaged = diff(&index_ref, stash_ref, &[])?;
+
+    let untracked = if stash_commit.parent_count() >= 3 {
+        let untracked_ref = format!("{stash_ref}^3");
+        let paths_out = Command::new("git")
+            .current_dir(dir)
+            .args([
+                "ls-tree",
+                "-z",
+                "--name-only",
+                "-r",
+                "--full-tree",
+                &untracked_ref,
+            ])
             .output()
             .map_err(Error::GitShow)?
-            .stdout,
-    )
-    .into_owned();
+            .stdout;
 
-    Ok(Diff {
-        file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
-        diff_type: DiffType::TreeToTree,
-        text,
+        let paths = paths_out
+            .split(|b| *b == b'\0')
+            .filter(|p| !p.is_empty())
+            .map(|p| std::ffi::OsString::from(String::from_utf8_lossy(p).into_owned()))
+            .collect::<Vec<_>>();
+
+        Some(diff(&base_ref, &untracked_ref, &paths)?)
+    } else {
+        None
+    };
+
+    Ok(StashDiffs {
+        staged,
+        unstaged,
+        untracked,
     })
 }
 
