@@ -399,27 +399,8 @@ pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a
 
                     let span_width = span.content.graphemes(true).count();
 
-                    if line_end + span_width >= size.width as usize {
-                        // Truncate the span and insert an ellipsis to indicate overflow
-                        let overflow = line_end + span_width - size.width as usize;
-                        line_end = size.width as usize;
-                        ui::layout_span(
-                            layout,
-                            (
-                                span.content
-                                    .graphemes(true)
-                                    .take(span_width.saturating_sub(overflow + 1))
-                                    .collect::<String>()
-                                    .into(),
-                                style,
-                            ),
-                        );
-                        layout_span(layout, ("…".into(), bg));
-                    } else {
-                        // Insert the span as normal
-                        line_end += span_width;
-                        ui::layout_span(layout, (span.content, style));
-                    }
+                    line_end += span_width;
+                    ui::layout_span(layout, (span.content, style));
                 });
 
                 // Add ellipsis indicator for collapsed sections
