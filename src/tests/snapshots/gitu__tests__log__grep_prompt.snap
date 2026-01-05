@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Log                Arguments                                                   |
- l     current      -F Search messages (--grep)                                 |
- o     other        -n Limit number of commits (-n=256)                         |
- q/esc Quit/Close                                                               |
+ Log                 Arguments                                                  |
+ l     current       -F Search messages (--grep)                                |
+ o     other         -n Limit number of commits (-n=256)                        |
+ q/esc Cancel/Quit                                                              |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Search messages: › █                                                          |
-styles_hash: 30915effaeaeb2e3
+styles_hash: cca2f603e76c8dfb

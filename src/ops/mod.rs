@@ -113,8 +113,12 @@ pub(crate) enum Op {
     HalfPageUp,
     HalfPageDown,
 
+    Search,
+    SearchNext,
+    SearchPrevious,
+
     Refresh,
-    Quit,
+    CancelOrQuit,
 
     #[serde(untagged)]
     OpenMenu(Menu),
@@ -127,7 +131,7 @@ pub(crate) enum Op {
 impl Op {
     pub fn implementation(self) -> Box<dyn OpTrait> {
         match self {
-            Op::Quit => Box::new(editor::Quit),
+            Op::CancelOrQuit => Box::new(editor::CancelOrQuit),
             Op::OpenMenu(menu) => Box::new(editor::OpenMenu(menu)),
             Op::Refresh => Box::new(editor::Refresh),
             Op::ToggleArg(name) => Box::new(editor::ToggleArg(name)),
@@ -142,6 +146,9 @@ impl Op {
             Op::MoveParentSection => Box::new(editor::MoveParentSection),
             Op::HalfPageUp => Box::new(editor::HalfPageUp),
             Op::HalfPageDown => Box::new(editor::HalfPageDown),
+            Op::Search => Box::new(editor::Search),
+            Op::SearchNext => Box::new(editor::SearchNext),
+            Op::SearchPrevious => Box::new(editor::SearchPrevious),
             Op::Checkout => Box::new(branch::Checkout),
             Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
             Op::Spinoff => Box::new(branch::Spinoff),
