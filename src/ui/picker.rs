@@ -7,7 +7,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::config::Config;
 use crate::picker::PickerState;
 use crate::ui::layout::OPTS;
-use crate::ui::{CARET, DASHES, STYLE, UiTree, layout_span, repeat_chars};
+use crate::ui::{CARET, DASHES, UiTree, layout_span, repeat_chars};
 
 const MAX_ITEMS_DISPLAY: usize = 10;
 
@@ -19,7 +19,8 @@ pub(crate) fn layout_picker<'a>(
     width: usize,
 ) {
     // Separator line
-    repeat_chars(layout, width, DASHES, STYLE);
+    let separator_style = Style::from(&config.style.separator);
+    repeat_chars(layout, width, DASHES, separator_style);
 
     let prompt_style: Style = (&config.style.picker.prompt).into();
     let info_style: Style = (&config.style.picker.info).into();
@@ -141,8 +142,8 @@ mod tests {
     use crate::config::Config;
     use crate::picker::{PickerData, PickerItem, PickerState};
     use crate::ui::layout::LayoutTree;
-    use itertools::Itertools;
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use itertools::Itertools;
     use std::collections::BTreeMap;
 
     /// Create a default test config for picker tests
@@ -161,8 +162,14 @@ mod tests {
         vec![
             PickerItem::new("main", PickerData::Revision("main".to_string())),
             PickerItem::new("develop", PickerData::Revision("develop".to_string())),
-            PickerItem::new("feature/test", PickerData::Revision("feature/test".to_string())),
-            PickerItem::new("feature/new", PickerData::Revision("feature/new".to_string())),
+            PickerItem::new(
+                "feature/test",
+                PickerData::Revision("feature/test".to_string()),
+            ),
+            PickerItem::new(
+                "feature/new",
+                PickerData::Revision("feature/new".to_string()),
+            ),
             PickerItem::new("bugfix/123", PickerData::Revision("bugfix/123".to_string())),
         ]
     }
@@ -211,9 +218,15 @@ mod tests {
         let mut state = PickerState::new("Select branch", items, false);
 
         // Type "fea" to filter
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
         state.update_filter();
 
         let config = test_config();
@@ -311,9 +324,15 @@ mod tests {
         let mut state = PickerState::new("Select branch", items, false);
 
         // Filter to get feature branches
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
         state.update_filter();
 
         // Navigate to second item
@@ -336,8 +355,12 @@ mod tests {
         let mut state = PickerState::new("New branch", items, true);
 
         // Type a custom branch name
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('m'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('m'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
         state.update_filter();
 
         let config = test_config();
@@ -357,9 +380,15 @@ mod tests {
         let mut state = PickerState::new("Select branch", items, false);
 
         // Type something that doesn't match
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
-        state.input_state.handle_key_event(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::empty()));
+        state
+            .input_state
+            .handle_key_event(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::empty()));
         state.update_filter();
 
         let config = test_config();
