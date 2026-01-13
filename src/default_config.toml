@@ -35,6 +35,19 @@ confirm_discard = "line"
 # section_header = { fg = "#808080" }
 # section_header = { bg = "light green", mods = "UNDERLINED|ITALIC" }
 
+separator = { mods = "DIM" }
+
+info_msg = { fg = "green", mods = "BOLD" }
+error_msg = { fg = "red", mods = "BOLD" }
+command = { fg = "blue", mods = "BOLD" }
+
+menu.heading = { fg = "blue", mods = "BOLD" }
+menu.key = { fg = "magenta" }
+menu.active_arg = { fg = "light red", mods = "BOLD" }
+menu.inactive_arg = {}
+
+prompt = { fg = "cyan", mods = "DIM" }
+
 section_header = { fg = "yellow" }
 file_header = { fg = "magenta" }
 hunk_header = { fg = "blue" }
@@ -86,10 +99,6 @@ hash = { fg = "yellow" }
 branch = { fg = "green" }
 remote = { fg = "red" }
 tag = { fg = "yellow" }
-
-command = { fg = "blue", mods = "BOLD" }
-active_arg = { fg = "light red", mods = "BOLD" }
-hotkey = { fg = "magenta" }
 
 [bindings]
 root.quit = ["q", "esc"]

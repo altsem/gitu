@@ -27,22 +27,12 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
     let style = &config.style;
 
     let arg_binds = config.bindings.arg_list(pending).collect::<Vec<_>>();
-
-    let non_target_binds = config
+    let (target_binds, non_target_binds): (Vec<_>, Vec<_>) = config
         .bindings
         .list(&pending.menu)
-        .filter(|keybind| !keybind.op.clone().implementation().is_target_op())
-        .collect::<Vec<_>>();
-
-    let menus = non_target_binds
-        .iter()
-        .filter(|bind| matches!(bind.op, Op::OpenMenu(_)))
-        .collect::<Vec<_>>();
-
-    let target_binds = config
-        .bindings
-        .list(&pending.menu)
-        .filter(|keybind| keybind.op.clone().implementation().is_target_op())
+        .partition(|keybind| keybind.op.clone().implementation().is_target_op());
+    let target_binds: Vec<_> = target_binds
+        .into_iter()
         .filter(|keybind| {
             keybind
                 .op
@@ -51,114 +41,146 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                 .get_action(&item.data)
                 .is_some()
         })
-        .collect::<Vec<_>>();
+        .collect();
+    let (menu_binds, non_menu_binds): (Vec<_>, Vec<_>) = non_target_binds
+        .into_iter()
+        .chunk_by(|bind| &bind.op)
+        .into_iter()
+        .map(|(op, binds)| {
+            let binds: Vec<_> = binds.collect();
+            (op, binds)
+        })
+        .partition(|(op, _binds)| matches!(op, Op::OpenMenu(_)));
 
     let line = item.to_line(Arc::clone(&config));
+    let separator_style = Style::from(&style.separator);
 
     layout.vertical(None, OPTS, |layout| {
-        ui::repeat_chars(layout, width, ui::DASHES, ui::STYLE);
+        ui::repeat_chars(layout, width, ui::DASHES, separator_style);
 
         layout.horizontal(None, OPTS.gap(3).pad(1), |layout| {
-            layout.vertical(None, OPTS, |layout| {
-                layout_line(
-                    layout,
-                    Line::styled(format!("{}", pending.menu), &style.command),
-                );
-
-                for (op, binds) in non_target_binds
-                    .iter()
-                    .chunk_by(|bind| &bind.op)
-                    .into_iter()
-                    .filter(|(op, _binds)| !matches!(op, Op::OpenMenu(_)))
-                {
-                    super::layout_line(
+            // Column 1: Main menu commands
+            if !non_menu_binds.is_empty() {
+                layout.vertical(None, OPTS, |layout| {
+                    layout_line(
                         layout,
-                        Line::from(vec![
-                            Span::styled(
-                                binds.into_iter().map(|bind| &bind.raw).join("/"),
-                                &style.hotkey,
-                            ),
-                            Span::styled(
-                                format!(" {}", op.clone().implementation().display(state)),
-                                Style::new(),
-                            ),
-                        ]),
+                        Line::styled(format!("{}", pending.menu), &style.menu.heading),
                     );
-                }
-            });
 
-            layout.vertical(None, OPTS, |layout| {
-                if !menus.is_empty() {
-                    super::layout_line(layout, Line::styled("Submenu", &style.command));
-                }
-
-                for (op, binds) in menus.iter().chunk_by(|bind| &bind.op).into_iter() {
-                    let Op::OpenMenu(menu) = op else {
-                        unreachable!();
-                    };
-
-                    super::layout_line(
+                    layout_keybinds_table(
                         layout,
-                        Line::from(vec![
-                            Span::styled(
-                                binds.into_iter().map(|bind| &bind.raw).join("/"),
-                                &style.hotkey,
-                            ),
-                            Span::styled(format!(" {menu}"), Style::new()),
-                        ]),
+                        non_menu_binds
+                            .into_iter()
+                            .map(|(op, binds)| {
+                                (
+                                    Line::styled(
+                                        binds.iter().map(|bind| bind.raw.as_str()).join("/"),
+                                        &style.menu.key,
+                                    ),
+                                    Line::raw(op.clone().implementation().display(state)),
+                                )
+                            })
+                            .collect(),
                     );
-                }
-            });
+                });
+            }
 
+            // Column 2: Submenus
+            if !menu_binds.is_empty() {
+                layout.vertical(None, OPTS, |layout| {
+                    layout_line(layout, Line::styled("Submenu", &style.menu.heading));
+
+                    layout_keybinds_table(
+                        layout,
+                        menu_binds
+                            .into_iter()
+                            .map(|(op, binds)| {
+                                let Op::OpenMenu(menu) = op else {
+                                    unreachable!();
+                                };
+                                (
+                                    Line::styled(
+                                        binds.iter().map(|bind| bind.raw.as_str()).join("/"),
+                                        &style.menu.key,
+                                    ),
+                                    Line::raw(menu.to_string()),
+                                )
+                            })
+                            .collect(),
+                    );
+                });
+            }
+
+            // Column 3: Target commands and arguments
             layout.vertical(None, OPTS, |layout| {
                 if !target_binds.is_empty() {
-                    super::layout_line(layout, line);
-                }
+                    layout_line(layout, line);
 
-                for bind in target_binds {
-                    super::layout_line(
+                    layout_keybinds_table(
                         layout,
-                        Line::from(vec![
-                            Span::styled(bind.raw.clone(), &style.hotkey),
-                            Span::styled(
-                                format!(" {}", bind.op.clone().implementation().display(state)),
-                                Style::new(),
-                            ),
-                        ]),
+                        target_binds
+                            .into_iter()
+                            .map(|bind| {
+                                (
+                                    Line::styled(bind.raw.clone(), &style.menu.key),
+                                    Line::raw(bind.op.clone().implementation().display(state)),
+                                )
+                            })
+                            .collect(),
                     );
                 }
 
                 if !arg_binds.is_empty() {
-                    super::layout_line(layout, Line::styled("Arguments", &style.command));
-                }
+                    layout_line(layout, Line::styled("Arguments", &style.menu.heading));
 
-                for bind in arg_binds {
-                    let Op::ToggleArg(name) = &bind.op else {
-                        unreachable!();
-                    };
-
-                    let arg = pending.args.get(name.as_str()).unwrap();
-
-                    super::layout_line(
+                    layout_keybinds_table(
                         layout,
-                        Line::from(vec![
-                            Span::styled(bind.raw.clone(), &style.hotkey),
-                            Span::raw(" "),
-                            Span::raw(arg.display),
-                            Span::raw(" ("),
-                            Span::styled(
-                                arg.get_cli_token().to_string(),
-                                if arg.is_active() {
-                                    Style::from(&style.active_arg)
-                                } else {
-                                    Style::new()
-                                },
-                            ),
-                            Span::raw(")"),
-                        ]),
+                        arg_binds
+                            .into_iter()
+                            .map(|bind| {
+                                let Op::ToggleArg(name) = &bind.op else {
+                                    unreachable!();
+                                };
+
+                                let arg = pending.args.get(name.as_str()).unwrap();
+
+                                (
+                                    Line::styled(bind.raw.clone(), &style.menu.key),
+                                    Line::from(vec![
+                                        Span::raw(arg.display),
+                                        Span::raw(" ("),
+                                        Span::styled(
+                                            arg.get_cli_token().to_string(),
+                                            if arg.is_active() {
+                                                Style::from(&style.menu.active_arg)
+                                            } else {
+                                                Style::from(&style.menu.inactive_arg)
+                                            },
+                                        ),
+                                        Span::raw(")"),
+                                    ]),
+                                )
+                            })
+                            .collect(),
                     );
                 }
             });
+        });
+    });
+}
+
+fn layout_keybinds_table<'a>(layout: &mut UiTree<'a>, items: Vec<(Line<'a>, Line<'a>)>) {
+    layout.horizontal(None, OPTS.gap(1), |layout| {
+        layout.vertical(None, OPTS, |layout| {
+            for (key, _) in items.iter() {
+                layout_line(layout, key.clone());
+            }
+        });
+
+        layout.vertical(None, OPTS, |layout| {
+            for (_, value) in items {
+                layout_line(layout, value);
+            }
         });
     });
 }

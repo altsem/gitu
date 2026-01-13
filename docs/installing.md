@@ -26,6 +26,14 @@ The latest release is available
 Download the archive that is appropriate for your platform and extract the
 binary into your `$PATH`. A common valid path location is `/usr/local/bin`.
 
+### Using Mise
+
+You can use [mise-en-place](https://github.com/jdx/mise), a polyglot tool version manager to install and make available for all your projects the last version of gitu using a command like:
+
+```shell
+mise use -g gitu@latest
+```
+
 ### Using Nix flakes
 To build from `master` on flaked Nix platforms add this repo to your inputs:
 

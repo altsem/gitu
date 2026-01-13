@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout merged                                                           |
 Switched to branch 'merged'                                                     |
-styles_hash: dddf48e40dd31d6d
+styles_hash: c4b788b765812f1b

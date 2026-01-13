@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash apply -q 1                                                          |
-styles_hash: 5513120a2b004bfb
+styles_hash: 6ff816bedee07b43

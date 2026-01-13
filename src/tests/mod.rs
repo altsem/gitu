@@ -34,6 +34,7 @@ mod unstage;
 use crossterm::event::MouseButton;
 use helpers::{TestContext, clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run};
 use stdext::function_name;
+use url::Url;
 
 use crate::tests::helpers::run_ignore_status;
 
@@ -269,6 +270,7 @@ fn moved_file() {
 }
 
 #[test]
+#[cfg(not(target_os = "windows"))]
 fn chmod_file() {
     let mut ctx = setup_clone!();
     commit(&ctx.dir, "test-file", "hello\nworld\n");
@@ -370,6 +372,7 @@ fn go_down_past_collapsed() {
 #[test]
 fn inside_submodule() {
     let mut ctx = setup_clone!();
+    let url = Url::from_file_path(ctx.remote_dir.as_path()).unwrap();
     run(
         &ctx.dir,
         &[
@@ -378,7 +381,7 @@ fn inside_submodule() {
             "protocol.file.allow=always",
             "submodule",
             "add",
-            ctx.remote_dir.to_str().unwrap(),
+            url.as_str(),
             "test-submodule",
         ],
     );
@@ -429,6 +432,22 @@ fn tab_diff() {
 
     commit(&ctx.dir, "tab.txt", "this has no tab prefixed\n");
     fs::write(ctx.dir.join("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
+    ctx.update(&mut app, keys("g"));
+
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn non_utf8_diff() {
+    let mut ctx = setup_clone!();
+    let mut app = ctx.init_app();
+
+    commit(&ctx.dir, "non_utf8.txt", "File with valid UTF-8");
+    fs::write(
+        ctx.dir.join("non_utf8.txt"),
+        b"File with invalid UTF-8: \xff\xfe\n",
+    )
+    .unwrap();
     ctx.update(&mut app, keys("g"));
 
     insta::assert_snapshot!(ctx.redact_buffer());

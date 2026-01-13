@@ -6,6 +6,8 @@ on:
 
 jobs:
   build-artifacts:
+    permissions:
+      contents: write
     uses: ./.github/workflows/build-artifacts.yml
 
   verify:
@@ -62,7 +64,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
