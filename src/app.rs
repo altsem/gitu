@@ -691,31 +691,25 @@ impl App {
 
     fn handle_picker_input(&mut self, key: event::KeyEvent) {
         if let Some(ref mut picker) = self.state.picker {
-            use crossterm::event::KeyCode;
-            use crossterm::event::KeyModifiers;
+            // The character received in the KeyEvent changes as shift is pressed,
+            // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
+            let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
+            let key_combo = vec![(mods_without_shift, key.code)];
 
-            match (key.code, key.modifiers) {
-                // Navigation
-                (KeyCode::Down, KeyModifiers::NONE)
-                | (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-                    picker.next();
-                }
-                (KeyCode::Up, KeyModifiers::NONE) | (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
-                    picker.previous();
-                }
-                // Select
-                (KeyCode::Enter, _) => {
-                    picker.done();
-                }
-                // Cancel
-                (KeyCode::Esc, _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
-                    picker.cancel();
-                }
+            let bindings = &self.state.config.picker_bindings;
+
+            if bindings.next.iter().any(|b| b == &key_combo) {
+                picker.next();
+            } else if bindings.previous.iter().any(|b| b == &key_combo) {
+                picker.previous();
+            } else if bindings.done.iter().any(|b| b == &key_combo) {
+                picker.done();
+            } else if bindings.cancel.iter().any(|b| b == &key_combo) {
+                picker.cancel();
+            } else {
                 // Text input - delegate to text state
-                _ => {
-                    picker.input_state.handle_key_event(key);
-                    picker.update_filter();
-                }
+                picker.input_state.handle_key_event(key);
+                picker.update_filter();
             }
         }
     }

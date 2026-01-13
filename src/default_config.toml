@@ -223,3 +223,8 @@ stash_menu.stash_pop = ["p"]
 stash_menu.stash_apply = ["a"]
 stash_menu.stash_drop = ["k"]
 stash_menu.quit = ["q", "esc"]
+
+picker.next = ["down", "ctrl+n"]
+picker.previous = ["up", "ctrl+p"]
+picker.done = ["enter"]
+picker.cancel = ["esc", "ctrl+c"]

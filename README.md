@@ -29,20 +29,6 @@ A help-menu can be shown by pressing the `h` key, or by configuring `general.alw
 
 <img style="width: 720px" src="vhs/help.png"/>
 
-#### Picker Keybinds
-When using the interactive picker (for branch/commit selection):
-
-| Key | Action |
-|-----|--------|
-| `↓` or `Ctrl-n` | Next item |
-| `↑` or `Ctrl-p` | Previous item |
-| `Enter` | Select current item |
-| `Esc` or `Ctrl-c` | Cancel |
-| Any text | Filter items (fuzzy matching) |
-
-> [!NOTE]
-> Picker keybinds will be configurable in a future release.
-
 ### Configuration
 The environment variables `VISUAL`, `EDITOR` or `GIT_EDITOR` (checked in this order) dictate which editor Gitu will open. This means that e. g. commit messages will be opened in the `GIT_EDITOR` by Git, but if the user wishes to do edits to the actual files in a different editor, `VISUAL` or `EDITOR` can be set accordingly.
 
