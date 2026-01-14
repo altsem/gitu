@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
  c     Checkout new branch                                                      |
  s     Spinoff branch                                                           |
  K     Delete branch                                                            |
- q/esc Quit/Close                                                               |
+ q/esc Cancel/Quit                                                              |
 styles_hash: a06534dee707ba43
