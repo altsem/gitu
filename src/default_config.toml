@@ -83,6 +83,11 @@ syntax_highlight.type_builtin = { fg = "yellow" }
 syntax_highlight.variable_builtin = {}
 syntax_highlight.variable_parameter = {}
 
+picker.prompt = { fg = "cyan" }
+picker.info = { mods = "DIM" }
+picker.selection_line = { mods = "BOLD" }
+picker.matched = { fg = "yellow", mods = "BOLD" }
+
 cursor = { symbol = "▌", fg = "blue" }
 selection_bar = { symbol = "▌", fg = "blue", mods = "DIM" }
 selection_line = { mods = "BOLD" }
@@ -227,3 +232,8 @@ stash_menu.stash_pop = ["p"]
 stash_menu.stash_apply = ["a"]
 stash_menu.stash_drop = ["k"]
 stash_menu.quit = ["q", "esc"]
+
+picker.next = ["down", "ctrl+n"]
+picker.previous = ["up", "ctrl+p"]
+picker.done = ["enter"]
+picker.cancel = ["esc", "ctrl+c"]

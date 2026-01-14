@@ -38,6 +38,19 @@ Configuration is also loaded from:
 - Windows: `%USERPROFILE%\AppData\Roaming\gitu\config.toml`
 
 , refer to the [default configuration](src/default_config.toml).
+
+#### Picker Style Customization
+
+You can customize the appearance of the interactive picker by adding the following to your config:
+
+```toml
+[style.picker]
+prompt = { fg = "cyan" }                    # Prompt text color
+info = { mods = "DIM" }                     # Status line style (e.g., "3/10 matches")
+selection_line = { mods = "BOLD" }               # Selected item style
+matched = { fg = "yellow", mods = "BOLD" }  # Fuzzy-matched characters highlight
+```
+
 ### Installing Gitu
 Follow the install instructions: [Installing Gitu](docs/installing.md)\
 Or install from your package manager:
