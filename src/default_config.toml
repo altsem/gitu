@@ -120,6 +120,11 @@ root.stage = ["s"]
 root.unstage = ["u"]
 root.copy_hash = ["y"]
 
+picker.next = ["down", "ctrl+n", "tab"]
+picker.previous = ["up", "ctrl+p", "shift+tab"]
+picker.done = ["enter"]
+picker.cancel = ["esc", "ctrl+c"]
+
 root.help_menu = ["h", "?"]
 help_menu.quit = ["q", "h", "?", "esc"]
 
@@ -232,8 +237,3 @@ stash_menu.stash_pop = ["p"]
 stash_menu.stash_apply = ["a"]
 stash_menu.stash_drop = ["k"]
 stash_menu.quit = ["q", "esc"]
-
-picker.next = ["down", "ctrl+n"]
-picker.previous = ["up", "ctrl+p"]
-picker.done = ["enter"]
-picker.cancel = ["esc", "ctrl+c"]

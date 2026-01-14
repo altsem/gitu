@@ -272,7 +272,9 @@ impl TryFrom<PickerBindingsConfig> for PickerBindings {
         let cancel = parse_picker_keys(&config.cancel, "picker.cancel", &mut bad_bindings);
 
         if !bad_bindings.is_empty() {
-            return Err(Error::Bindings { bad_key_bindings: bad_bindings });
+            return Err(Error::Bindings {
+                bad_key_bindings: bad_bindings,
+            });
         }
 
         Ok(Self {

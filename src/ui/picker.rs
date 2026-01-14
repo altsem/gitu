@@ -109,12 +109,11 @@ fn render_highlighted_text<'a>(
     base_style: Style,
     config: &Config,
 ) {
-    let graphemes: Vec<&str> = text.graphemes(true).collect();
     let highlight_style: Style = (&config.style.picker.matched).into();
 
     let mut buffer = String::new();
 
-    for (idx, &grapheme) in graphemes.iter().enumerate() {
+    for (idx, grapheme) in text.graphemes(true).enumerate() {
         let should_highlight = highlight_indices.contains(&idx);
 
         if should_highlight {
