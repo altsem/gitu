@@ -319,6 +319,29 @@ fn stash_drop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     Ok(())
 }
 
+pub(crate) struct StashClear;
+impl OpTrait for StashClear {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            stash_clear(app, term)?;
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "clear".into()
+    }
+}
+
+fn stash_clear(app: &mut App, term: &mut Term) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["stash", "clear"]);
+
+    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
+    Ok(())
+}
+
 fn selected_stash(app: &App) -> Option<String> {
     match app.screen().get_selected_item().data {
         ItemData::Stash { id, .. } => Some(id.to_string()),
