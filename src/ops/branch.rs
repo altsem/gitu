@@ -23,6 +23,7 @@ impl OpTrait for Checkout {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let picker = create_branch_picker(app, "Checkout", true)?;
+            app.close_menu();
             let result = app.picker(term, picker)?;
 
             if let Some(data) = result {
@@ -43,7 +44,6 @@ fn checkout(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", rev]);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -93,6 +93,7 @@ impl OpTrait for Delete {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let default = default.clone();
             let picker = create_branch_picker_with_default(app, "Delete", true, default)?;
+            app.close_menu();
             let result = app.picker(term, picker)?;
 
             if let Some(data) = result {
@@ -128,7 +129,6 @@ pub fn delete(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
 
     cmd.arg(branch_name);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
