@@ -254,10 +254,14 @@ impl App {
             Some(menu) => menu.menu,
         };
 
-        // The the character received in the KeyEvent changes as shift is pressed,
-        // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
-        let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
-        self.state.pending_keys.push((mods_without_shift, key.code));
+        // The character received in the KeyEvent changes as shift is pressed,
+        // e.g. '/' becomes '?' on a US keyboard. So ignore SHIFT for char keys.
+        // For non-char keys (e.g. arrows), SHIFT is meaningful and should be preserved.
+        let modifiers = match key.code {
+            event::KeyCode::Char(_) => key.modifiers.difference(KeyModifiers::SHIFT),
+            _ => key.modifiers,
+        };
+        self.state.pending_keys.push((modifiers, key.code));
 
         let matching_bindings = self
             .state
@@ -310,13 +314,13 @@ impl App {
             MouseEventKind::ScrollUp => {
                 let scroll_lines = self.state.config.general.mouse_scroll_lines;
                 if scroll_lines > 0 {
-                    self.screen_mut().scroll_up(scroll_lines);
+                    self.screen_mut().scroll_view_up(scroll_lines);
                 }
             }
             MouseEventKind::ScrollDown => {
                 let scroll_lines = self.state.config.general.mouse_scroll_lines;
                 if scroll_lines > 0 {
-                    self.screen_mut().scroll_down(scroll_lines);
+                    self.screen_mut().scroll_view_down(scroll_lines);
                 }
             }
             _ => return Ok(false),

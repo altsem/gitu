@@ -287,7 +287,7 @@ fn hide_untracked() {
 
     let mut app = ctx.init_app();
     let mut config = app.state.repo.config().unwrap();
-    config.set_str("status.showUntrackedFiles", "off").unwrap();
+    config.set_str("status.showUntrackedFiles", "no").unwrap();
 
     ctx.update(&mut app, keys("g"));
     insta::assert_snapshot!(ctx.redact_buffer());
