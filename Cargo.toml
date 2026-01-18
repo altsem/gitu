@@ -31,6 +31,7 @@ strip = true
 arboard = { version = "3.6.1", default-features = false, features = [
     "windows-sys",
 ] }
+base64 = "0.22.1"
 chrono = "0.4.42"
 clap = { version = "4.5.54", features = ["derive"] }
 crossterm = "0.28.1"
