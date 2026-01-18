@@ -1,0 +1,62 @@
+---
+source: src/tests/stash.rs
+expression: out
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 2 commit(s).                          |
+                                                                                |
+ Unstaged changes (2)                                                           |
+▌modified   file1.txt                                                           |
+▌@@ -1,5 +1,7 @@                                                                |
+▌ one                                                                           |
+▌ two                                                                           |
+▌+two-and-a-half                                                                |
+▌+two-and-three-quarters                                                        |
+▌ three                                                                         |
+▌ four                                                                          |
+▌ five                                                                          |
+▌@@ -7,4 +9,4 @@ six                                                            |
+▌ seven                                                                         |
+▌ eight                                                                         |
+▌ nine                                                                          |
+▌-ten                                                                           |
+────────────────────────────────────────────────────────────────────────────────|
+$ git stash apply -q stash@{0}                                                  |
+styles_hash: ac8c9cc328d84585
+
+[files before]
+--- file1.txt ---
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+--- file2.txt ---
+alpha
+beta
+gamma
+
+[files after]
+--- file1.txt ---
+one
+two
+two-and-a-half
+two-and-three-quarters
+three
+four
+five
+six
+seven
+eight
+nine
+TEN
+--- file2.txt ---
+alpha
+beta
+gamma
+delta
