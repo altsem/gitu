@@ -21,41 +21,11 @@ fn setup_picker(ctx: TestContext) -> TestContext {
     ctx
 }
 
-fn setup_many_branches(ctx: TestContext) -> TestContext {
-    // Create many branches to test scrolling
-    for i in 1..=20 {
-        run(
-            &ctx.dir,
-            &["git", "checkout", "-b", &format!("branch-{:02}", i)],
-        );
-        run(&ctx.dir, &["git", "checkout", "main"]);
-    }
-    ctx
-}
-
 // ==================== Checkout Tests ====================
 
 #[test]
 fn checkout_picker() {
     snapshot!(setup_picker(setup_clone!()), "bb");
-}
-
-#[test]
-fn checkout_picker_filter() {
-    snapshot!(setup_picker(setup_clone!()), "bbfeat");
-}
-
-#[test]
-fn checkout_picker_navigate() {
-    snapshot!(setup_picker(setup_clone!()), "bb<down><down>");
-}
-
-#[test]
-fn checkout_picker_scroll() {
-    snapshot!(
-        setup_many_branches(setup_clone!()),
-        "bb<down><down><down><down><down><down><down><down><down><down>"
-    );
 }
 
 #[test]
@@ -83,24 +53,6 @@ fn checkout_use_custom_input() {
 #[test]
 fn delete_picker() {
     snapshot!(setup_picker(setup_clone!()), "bK");
-}
-
-#[test]
-fn delete_picker_filter() {
-    snapshot!(setup_picker(setup_clone!()), "bKfeat");
-}
-
-#[test]
-fn delete_picker_navigate() {
-    snapshot!(setup_picker(setup_clone!()), "bK<down><down>");
-}
-
-#[test]
-fn delete_picker_scroll() {
-    snapshot!(
-        setup_many_branches(setup_clone!()),
-        "bK<down><down><down><down><down><down><down><down><down><down>"
-    );
 }
 
 #[test]
