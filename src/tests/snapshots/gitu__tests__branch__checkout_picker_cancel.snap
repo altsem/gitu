@@ -1,19 +1,12 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌Reverting 57409cb                                                              |
-                                                                                |
- Unstaged changes (1)                                                           |
- unmerged   new-file…                                                           |
-                                                                                |
- Staged changes (1)                                                             |
- unmerged   new-file…                                                           |
+▌On branch main                                                                 |
+▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- 7294ba4 main modify new-file                                                   |
- 57409cb add new-file                                                           |
- b66a0bf origin/main add initial-file                                           |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +15,11 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: ce1bcac7e4255e31
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 5ea219649635416a

@@ -1,25 +1,25 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/editor.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is ahead of 'origin/main' by 2 commit(s).                          |
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- 7294ba4 main modify new-file                                                   |
- 57409cb add new-file                                                           |
- b66a0bf origin/main add initial-file                                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git revert --abort                                                            |
-styles_hash: 8d5b31c704dbb728
+ 2/2   Checkout › █                                                             |
+▌origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 49e995be810c0237

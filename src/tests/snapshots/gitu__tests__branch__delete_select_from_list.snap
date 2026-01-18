@@ -6,7 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git branch -d merged                                                          |
-Deleted branch merged (was b66a0bf).                                            |
-styles_hash: dce6312dfc6aa477
+? Branch is not fully merged. Really delete? (y or n) › █                       |
+styles_hash: 34185cd7d71d1f27

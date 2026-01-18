@@ -9,6 +9,7 @@ use crate::{
     },
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
+    picker::{PickerData, PickerItem, PickerState},
     term::Term,
 };
 use std::{process::Command, rc::Rc};
@@ -21,16 +22,15 @@ pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
-                term,
-                &PromptParams {
-                    prompt: "Checkout",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
-                },
-            )?;
+            let picker = create_branch_picker(app, "Checkout", true)?;
+            app.close_menu();
+            let result = app.picker(term, picker)?;
 
-            checkout(app, term, &rev)?;
+            if let Some(data) = result {
+                let rev = data.display();
+                checkout(app, term, rev)?;
+            }
+
             Ok(())
         }))
     }
@@ -44,7 +44,6 @@ fn checkout(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", rev]);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -93,17 +92,15 @@ impl OpTrait for Delete {
 
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let default = default.clone();
+            let picker = create_branch_picker_with_default(app, "Delete", true, default)?;
+            app.close_menu();
+            let result = app.picker(term, picker)?;
 
-            let branch_name = app.prompt(
-                term,
-                &PromptParams {
-                    prompt: "Delete",
-                    create_default_value: Box::new(move |_| default.clone()),
-                    ..Default::default()
-                },
-            )?;
+            if let Some(data) = result {
+                let branch_name = data.display();
+                delete(app, term, branch_name)?;
+            }
 
-            delete(app, term, &branch_name)?;
             Ok(())
         }))
     }
@@ -132,7 +129,6 @@ pub fn delete(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
 
     cmd.arg(branch_name);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -225,4 +221,108 @@ impl OpTrait for Spinoff {
     fn display(&self, _state: &State) -> String {
         "Spinoff branch".into()
     }
+}
+
+fn create_branch_picker(
+    app: &App,
+    prompt: &'static str,
+    exclude_current: bool,
+) -> Result<PickerState, Error> {
+    create_branch_picker_with_default(app, prompt, exclude_current, selected_rev(app))
+}
+
+fn create_branch_picker_with_default(
+    app: &App,
+    prompt: &'static str,
+    exclude_current: bool,
+    default_rev: Option<String>,
+) -> Result<PickerState, Error> {
+    let mut items = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+
+    // Get current branch name if we need to exclude it
+    let current_branch = if exclude_current {
+        app.state
+            .repo
+            .head()
+            .ok()
+            .and_then(|head| head.shorthand().map(|s| s.to_string()))
+    } else {
+        None
+    };
+
+    // Add default value first if it exists and is not current branch
+    if let Some(ref default) = default_rev
+        && Some(default.as_str()) != current_branch.as_deref()
+    {
+        items.push(PickerItem::new(
+            default.clone(),
+            PickerData::Revision(default.clone()),
+        ));
+        seen.insert(default.clone());
+    }
+
+    // Get all branches (exclude current if needed)
+    let branches = app
+        .state
+        .repo
+        .branches(None)
+        .map_err(Error::ListGitReferences)?;
+    for branch in branches {
+        let (branch, _) = branch.map_err(Error::ListGitReferences)?;
+        if let Some(name) = branch.name().map_err(Error::ListGitReferences)? {
+            let name = name.to_string();
+            // Skip current branch and already seen names
+            if Some(&name) != current_branch.as_ref() && !seen.contains(&name) {
+                items.push(PickerItem::new(
+                    name.clone(),
+                    PickerData::Revision(name.clone()),
+                ));
+                seen.insert(name);
+            }
+        }
+    }
+
+    // Get all tags
+    let tag_names = app
+        .state
+        .repo
+        .tag_names(None)
+        .map_err(Error::ListGitReferences)?;
+    for tag_name in tag_names.iter().flatten() {
+        let tag_name = tag_name.to_string();
+        if !seen.contains(&tag_name) {
+            items.push(PickerItem::new(
+                tag_name.clone(),
+                PickerData::Revision(tag_name.clone()),
+            ));
+            seen.insert(tag_name);
+        }
+    }
+
+    // Get all remote branches
+    let references = app
+        .state
+        .repo
+        .references()
+        .map_err(Error::ListGitReferences)?;
+    for reference in references {
+        let reference = reference.map_err(Error::ListGitReferences)?;
+        if reference.is_remote()
+            && let Some(name) = reference.shorthand()
+        {
+            let name = name.to_string();
+            if !seen.contains(&name) {
+                items.push(PickerItem::new(
+                    name.clone(),
+                    PickerData::Revision(name.clone()),
+                ));
+                seen.insert(name);
+            }
+        }
+    }
+
+    // Allow custom input to support commit hashes, relative refs (e.g., HEAD~3),
+    // and other git revisions not in the predefined list
+    Ok(PickerState::new(prompt, items, true))
 }
