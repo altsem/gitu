@@ -2,24 +2,24 @@
 source: src/tests/editor.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
  b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
- Branch                                                                         |
- b     Checkout branch/revision                                                 |
- c     Checkout new branch                                                      |
- s     Spinoff branch                                                           |
- K     Delete branch                                                            |
- q/esc Quit/Close                                                               |
-styles_hash: 7ec5204ca252dbc6
+ 2/2   Checkout › █                                                             |
+▌origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 49e995be810c0237
