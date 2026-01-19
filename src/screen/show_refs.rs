@@ -101,15 +101,7 @@ where
         .filter(filter)
         .map(move |reference| {
             let name = reference.name().unwrap().to_owned();
-            let shorthand = reference.shorthand().unwrap().to_owned();
-
-            let ref_kind = if reference.is_branch() {
-                RefKind::Branch(shorthand)
-            } else if reference.is_tag() {
-                RefKind::Tag(shorthand)
-            } else {
-                RefKind::Remote(shorthand)
-            };
+            let ref_kind = RefKind::from_reference(&reference).unwrap();
 
             let prefix = create_prefix(repo, &reference);
 
