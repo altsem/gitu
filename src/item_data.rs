@@ -90,6 +90,19 @@ impl RefKind {
             RefKind::Branch(name) | RefKind::Tag(name) | RefKind::Remote(name) => name,
         }
     }
+
+    /// Convert a git2::Reference to RefKind, returning None if the reference has no shorthand
+    pub(crate) fn from_reference(reference: &git2::Reference<'_>) -> Option<Self> {
+        let shorthand = reference.shorthand()?.to_string();
+
+        Some(if reference.is_branch() {
+            RefKind::Branch(shorthand)
+        } else if reference.is_tag() {
+            RefKind::Tag(shorthand)
+        } else {
+            RefKind::Remote(shorthand)
+        })
+    }
 }
 
 #[derive(Clone, Debug)]

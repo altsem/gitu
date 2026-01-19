@@ -86,23 +86,10 @@ impl OpTrait for Merge {
 
             // Get current HEAD reference to exclude it from picker
             // HEAD can be a branch, tag, remote, or detached (pointing to a commit)
-            let current_ref: Option<RefKind> = app.state.repo.head().ok().and_then(|head| {
-                // Get the full reference name from HEAD
-                // For branches: "refs/heads/main", for detached: "HEAD"
-                head.name().and_then(|name| {
-                    name.strip_prefix("refs/heads/")
-                        .map(|s| RefKind::Branch(s.to_string()))
-                        .or_else(|| {
-                            name.strip_prefix("refs/tags/")
-                                .map(|s| RefKind::Tag(s.to_string()))
-                        })
-                        .or_else(|| {
-                            name.strip_prefix("refs/remotes/")
-                                .map(|s| RefKind::Remote(s.to_string()))
-                        })
-                    // If none match, returns None (detached HEAD or other ref type)
-                })
-            });
+            let current_ref = {
+                let head = app.state.repo.head().map_err(Error::GetHead)?;
+                RefKind::from_reference(&head)
+            };
 
             // Collect all branches (local and remote)
             let branches_iter = app
@@ -112,16 +99,15 @@ impl OpTrait for Merge {
                 .map_err(Error::ListGitReferences)?;
             for branch in branches_iter {
                 let (branch, branch_type) = branch.map_err(Error::ListGitReferences)?;
-                if let Some(name) = branch.name().map_err(Error::ListGitReferences)? {
-                    let name = name.to_string();
+                let branch_ref = branch.get();
+                if let Some(ref_kind) = RefKind::from_reference(branch_ref) {
                     match branch_type {
                         git2::BranchType::Local => {
-                            let ref_kind = RefKind::Branch(name.clone());
+                            let name = ref_kind.shorthand().to_string();
                             *shorthand_count.entry(name).or_insert(0) += 1;
                             branches.push(ref_kind);
                         }
                         git2::BranchType::Remote => {
-                            let ref_kind = RefKind::Remote(name);
                             remotes.push(ref_kind);
                         }
                     }
