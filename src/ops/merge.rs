@@ -127,9 +127,6 @@ impl OpTrait for Merge {
                 tags.push(ref_kind);
             }
 
-            // Note: current_ref is already counted in shorthand_count
-            // during branch/tag collection, so no need to count it again
-
             // Add default ref first if it exists
             if let Some(ref default) = default_ref {
                 let shorthand = default.shorthand();
