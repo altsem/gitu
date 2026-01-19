@@ -1,0 +1,25 @@
+---
+source: src/tests/merge.rs
+expression: ctx.redact_buffer()
+---
+ Branches                                                                       |
+ * main                                                                         |
+   other                                                                        |
+   v1.0.0                                                                       |
+                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+────────────────────────────────────────────────────────────────────────────────|
+ 5/5   Merge › █                                                                |
+▌refs/heads/v1.0.0                                                              |
+ other                                                                          |
+ refs/tags/v1.0.0                                                               |
+ origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 33dc324ad4ae7dc3

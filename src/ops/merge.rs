@@ -1,4 +1,4 @@
-use super::{Action, OpTrait, selected_rev};
+use super::{Action, OpTrait};
 use crate::{
     Res,
     app::{App, State},
@@ -66,60 +66,142 @@ fn merge(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
 
 pub(crate) struct Merge;
 impl OpTrait for Merge {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
-        Some(Rc::new(|app: &mut App, term: &mut Term| {
-            let default_rev = selected_rev(app);
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        use crate::item_data::RefKind;
+
+        // Extract default ref from target if it's a Reference
+        let default_ref = if let ItemData::Reference { kind, .. } = target {
+            Some(kind.clone())
+        } else {
+            None
+        };
+
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let mut items = Vec::new();
-            let mut seen = std::collections::HashSet::new();
+            let mut shorthand_count: std::collections::HashMap<String, usize> =
+                std::collections::HashMap::new();
+            let mut branches: Vec<RefKind> = Vec::new();
+            let mut tags: Vec<RefKind> = Vec::new();
+            let mut remotes: Vec<RefKind> = Vec::new();
 
-            // Add default value first if it exists
-            if let Some(ref default) = default_rev {
-                items.push(PickerItem::new(
-                    default.clone(),
-                    PickerData::Revision(default.clone()),
-                ));
-                seen.insert(default.clone());
-            }
+            // Get current HEAD reference to exclude it from picker
+            // HEAD can be a branch, tag, remote, or detached (pointing to a commit)
+            let current_ref: Option<RefKind> = app.state.repo.head().ok().and_then(|head| {
+                // Get the full reference name from HEAD
+                // For branches: "refs/heads/main", for detached: "HEAD"
+                head.name().and_then(|name| {
+                    name.strip_prefix("refs/heads/")
+                        .map(|s| RefKind::Branch(s.to_string()))
+                        .or_else(|| {
+                            name.strip_prefix("refs/tags/")
+                                .map(|s| RefKind::Tag(s.to_string()))
+                        })
+                        .or_else(|| {
+                            name.strip_prefix("refs/remotes/")
+                                .map(|s| RefKind::Remote(s.to_string()))
+                        })
+                    // If none match, returns None (detached HEAD or other ref type)
+                })
+            });
 
-            // Get current branch name to exclude it
-            let current_branch = app.state.repo.head().ok()
-                .and_then(|head| head.shorthand().map(|s| s.to_string()));
-
-            // Get all branches
-            let branches = app.state.repo.branches(None).map_err(Error::ListGitReferences)?;
-            for branch in branches {
-                let (branch, _) = branch.map_err(Error::ListGitReferences)?;
+            // Collect all branches (local and remote)
+            let branches_iter = app
+                .state
+                .repo
+                .branches(None)
+                .map_err(Error::ListGitReferences)?;
+            for branch in branches_iter {
+                let (branch, branch_type) = branch.map_err(Error::ListGitReferences)?;
                 if let Some(name) = branch.name().map_err(Error::ListGitReferences)? {
                     let name = name.to_string();
-                    // Skip current branch and already seen names
-                    if Some(&name) != current_branch.as_ref() && !seen.contains(&name) {
-                        items.push(PickerItem::new(name.clone(), PickerData::Revision(name.clone())));
-                        seen.insert(name);
+                    match branch_type {
+                        git2::BranchType::Local => {
+                            let ref_kind = RefKind::Branch(name.clone());
+                            *shorthand_count.entry(name).or_insert(0) += 1;
+                            branches.push(ref_kind);
+                        }
+                        git2::BranchType::Remote => {
+                            let ref_kind = RefKind::Remote(name);
+                            remotes.push(ref_kind);
+                        }
                     }
                 }
             }
 
-            // Get all tags
-            let tag_names = app.state.repo.tag_names(None).map_err(Error::ListGitReferences)?;
+            // Collect all tags (count for duplicate detection)
+            let tag_names = app
+                .state
+                .repo
+                .tag_names(None)
+                .map_err(Error::ListGitReferences)?;
             for tag_name in tag_names.iter().flatten() {
                 let tag_name = tag_name.to_string();
-                if !seen.contains(&tag_name) {
-                    items.push(PickerItem::new(tag_name.clone(), PickerData::Revision(tag_name.clone())));
-                    seen.insert(tag_name);
-                }
+                let ref_kind = RefKind::Tag(tag_name.clone());
+                *shorthand_count.entry(tag_name).or_insert(0) += 1;
+                tags.push(ref_kind);
             }
 
-            // Get all remote branches
-            let references = app.state.repo.references().map_err(Error::ListGitReferences)?;
-            for reference in references {
-                let reference = reference.map_err(Error::ListGitReferences)?;
-                if reference.is_remote() && let Some(name) = reference.shorthand() {
-                    let name = name.to_string();
-                    if !seen.contains(&name) {
-                        items.push(PickerItem::new(name.clone(), PickerData::Revision(name.clone())));
-                        seen.insert(name);
+            // Note: current_ref is already counted in shorthand_count
+            // during branch/tag collection, so no need to count it again
+
+            // Add default ref first if it exists
+            if let Some(ref default) = default_ref {
+                let shorthand = default.shorthand();
+                let (display, refname) = match default {
+                    RefKind::Remote(_) => {
+                        // Remotes never have duplicates
+                        (shorthand.to_string(), shorthand.to_string())
                     }
+                    _ => {
+                        let is_duplicate = shorthand_count.get(shorthand).is_some_and(|&c| c > 1);
+                        if is_duplicate {
+                            let full_refname = default.to_full_refname();
+                            (full_refname.clone(), full_refname)
+                        } else {
+                            (shorthand.to_string(), shorthand.to_string())
+                        }
+                    }
+                };
+                items.push(PickerItem::new(display, PickerData::Revision(refname)));
+            }
+
+            // Add all refs (branches, then tags, then remotes)
+            for ref_kind in branches.into_iter().chain(tags).chain(remotes) {
+                let shorthand = ref_kind.shorthand();
+
+                // Skip current ref (HEAD) - could be branch, tag, or remote
+                if current_ref
+                    .as_ref()
+                    .is_some_and(|current| current.to_full_refname() == ref_kind.to_full_refname())
+                {
+                    continue;
                 }
+
+                // Skip if it's the same as default (compare by full refname to distinguish branch/tag)
+                if default_ref
+                    .as_ref()
+                    .is_some_and(|d| d.to_full_refname() == ref_kind.to_full_refname())
+                {
+                    continue;
+                }
+
+                // Handle duplicates (only for branches and tags)
+                let (display, refname) = match &ref_kind {
+                    RefKind::Remote(_) => {
+                        // Remotes never have duplicates (they have remote/ prefix)
+                        (shorthand.to_string(), shorthand.to_string())
+                    }
+                    _ => {
+                        let is_duplicate = shorthand_count.get(shorthand).is_some_and(|&c| c > 1);
+                        if is_duplicate {
+                            let full_refname = ref_kind.to_full_refname();
+                            (full_refname.clone(), full_refname)
+                        } else {
+                            (shorthand.to_string(), shorthand.to_string())
+                        }
+                    }
+                };
+                items.push(PickerItem::new(display, PickerData::Revision(refname)));
             }
 
             // Allow custom input to support commit hashes, relative refs (e.g., HEAD~3),

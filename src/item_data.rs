@@ -74,6 +74,24 @@ pub(crate) enum RefKind {
     Remote(String),
 }
 
+impl RefKind {
+    /// Convert to fully qualified refname (e.g., "refs/heads/main", "refs/tags/v1.0.0")
+    pub(crate) fn to_full_refname(&self) -> String {
+        match self {
+            RefKind::Branch(name) => format!("refs/heads/{}", name),
+            RefKind::Tag(name) => format!("refs/tags/{}", name),
+            RefKind::Remote(name) => format!("refs/remotes/{}", name),
+        }
+    }
+
+    /// Get the shorthand name without refs/ prefix
+    pub(crate) fn shorthand(&self) -> &str {
+        match self {
+            RefKind::Branch(name) | RefKind::Tag(name) | RefKind::Remote(name) => name,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum SectionHeader {
     Remote(String),

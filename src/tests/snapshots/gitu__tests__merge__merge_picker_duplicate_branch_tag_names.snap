@@ -11,15 +11,15 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- 7/7   Merge › █                                                                |
-▌bugfix-123                                                                     |
- feature-a                                                                      |
- feature-b                                                                      |
- v1.0.0                                                                         |
- v2.0.0                                                                         |
+ 5/5   Merge › █                                                                |
+▌other                                                                          |
+ refs/heads/v1.0.0                                                              |
+ refs/tags/v1.0.0                                                               |
  origin/HEAD                                                                    |
  origin/main                                                                    |
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 16f8dd2fc9f8bc2f
+                                                                                |
+                                                                                |
+styles_hash: 796d60861d959d60

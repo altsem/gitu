@@ -1,0 +1,25 @@
+---
+source: src/tests/merge.rs
+expression: ctx.redact_buffer()
+---
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
+                                                                                |
+ Recent commits                                                                 |
+ 46369c5 main other v1.0.0 add other commit                                     |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git merge refs/tags/v1.0.0                                                    |
+styles_hash: 253546b91b05cb9

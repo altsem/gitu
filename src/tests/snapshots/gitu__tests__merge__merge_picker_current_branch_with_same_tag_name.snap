@@ -2,24 +2,24 @@
 source: src/tests/merge.rs
 expression: ctx.redact_buffer()
 ---
- On branch main                                                                 |
- Your branch is up to date with 'origin/main'.                                  |
+ On branch v1.0.0                                                               |
                                                                                 |
  Recent commits                                                                 |
+ 4760d8f v1.0.0 v1.0.0 add branch commit                                        |
  b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- 7/7   Merge › █                                                                |
-▌bugfix-123                                                                     |
- feature-a                                                                      |
- feature-b                                                                      |
- v1.0.0                                                                         |
- v2.0.0                                                                         |
+ 4/4   Merge › █                                                                |
+▌main                                                                           |
+ refs/tags/v1.0.0                                                               |
  origin/HEAD                                                                    |
  origin/main                                                                    |
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 16f8dd2fc9f8bc2f
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 5811f84d139176cf
