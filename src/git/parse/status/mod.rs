@@ -56,14 +56,22 @@ fn parse_branch_line(input: &str) -> IResult<&str, BranchStatus> {
 }
 
 fn parse_no_commits(input: &str) -> IResult<&str, BranchStatus> {
-    map(preceded(tag("No commits yet on "), parse_branch), |local| {
-        BranchStatus {
-            local: Some(local.to_string()),
-            remote: None,
-            ahead: 0,
-            behind: 0,
-        }
-    })
+    map(
+        (
+            preceded(tag("No commits yet on "), parse_branch),
+            opt(preceded(tag("..."), parse_branch)),
+            opt(preceded(space1, parse_ahead_behind)),
+        ),
+        |(local, remote, ahead_behind)| {
+            let (ahead, behind) = ahead_behind.unwrap_or((0, 0));
+            BranchStatus {
+                local: Some(local.to_string()),
+                remote: remote.map(|s| s.to_string()),
+                ahead,
+                behind,
+            }
+        },
+    )
     .parse(input)
 }
 
@@ -397,6 +405,25 @@ mod tests {
         let result = Status::from_str(input).unwrap();
         assert_eq!(result.branch_status.local, Some("main".to_string()));
         assert_eq!(result.branch_status.remote, None);
+    }
+
+    #[test]
+    fn no_commits_yet_with_remote() {
+        let input = "## No commits yet on main...origin/main\n";
+        let result = Status::from_str(input).unwrap();
+        assert_eq!(result.branch_status.local, Some("main".to_string()));
+        assert_eq!(result.branch_status.remote, Some("origin/main".to_string()));
+    }
+
+    #[test]
+    fn no_commits_yet_with_remote_gone() {
+        let input = "## No commits yet on main...origin/main [gone]\n?? .gitignore\n";
+        let result = Status::from_str(input).unwrap();
+        assert_eq!(result.branch_status.local, Some("main".to_string()));
+        assert_eq!(result.branch_status.remote, Some("origin/main".to_string()));
+        assert_eq!(result.branch_status.ahead, 0);
+        assert_eq!(result.branch_status.behind, 0);
+        assert_eq!(result.files[0].path, ".gitignore");
     }
 
     #[test]
