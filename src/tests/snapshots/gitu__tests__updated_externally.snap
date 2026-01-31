@@ -14,7 +14,7 @@ expression: ctx.redact_buffer()
  +test                                                                          |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: d61e94830ad618a5
+styles_hash: d039b0e5e5fa1fa3

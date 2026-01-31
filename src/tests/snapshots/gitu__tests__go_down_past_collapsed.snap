@@ -10,9 +10,9 @@ expression: ctx.redact_buffer()
 ▌modified   file-two…                                                           |
                                                                                 |
  Recent commits                                                                 |
- e45938a main add file-two                                                      |
- b3cf8e8 add file-one                                                           |
- b66a0bf origin/main add initial-file                                           |
+ e45938a main Author Name add file-two                                          |
+ b3cf8e8 Author Name add file-one                                               |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: ced58bcec150cda1
+styles_hash: 74cbcc45479b1cf5

@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch main                                                                 |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  u     upstream, setting that     -F Force (--force)                            |
  e     to elsewhere               -f Force with lease (--force-with-lease)      |
  q/esc Quit/Close                 -h Disable hooks (--no-verify)                |
-styles_hash: 116e27f679f6d5ff
+styles_hash: 5bf4b2badb6906cd

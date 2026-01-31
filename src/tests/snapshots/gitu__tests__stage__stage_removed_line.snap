@@ -19,7 +19,7 @@ expression: ctx.redact_buffer()
   testtest                                                                      |
                                                                                 |
  Recent commits                                                                 |
- 223428c main add firstfile                                                     |
+ 223428c main Author Name add firstfile                                         |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --recount                                                  |
-styles_hash: 3d0b28ed50247a08
+styles_hash: 77328d16e6c43e34

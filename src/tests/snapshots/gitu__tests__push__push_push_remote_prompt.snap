@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main add new-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ e7eb2bd main Author Name add new-file                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Set pushRemote then push: › █                                                 |
-styles_hash: 92fb80f8cf77f949
+styles_hash: aaea1f2356fb28a9

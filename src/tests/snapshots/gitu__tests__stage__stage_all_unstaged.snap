@@ -10,9 +10,9 @@ expression: ctx.redact_buffer()
 ▌modified   secondfile…                                                         |
                                                                                 |
  Recent commits                                                                 |
- 0c2c6c3 main add secondfile                                                    |
- 223428c add firstfile                                                          |
- b66a0bf origin/main add initial-file                                           |
+ 0c2c6c3 main Author Name add secondfile                                        |
+ 223428c Author Name add firstfile                                              |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add -u .                                                                  |
-styles_hash: a063500e9afe37d6
+styles_hash: c9c820623a83d13b

@@ -2,7 +2,7 @@
 source: src/tests/mod.rs
 expression: ctx.redact_buffer()
 ---
-▌b66a0bf main origin/main add initial-file                                      |
+▌b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Revert commit (default b66a0bf82020d6a386e94d0fceedec1f817d20c7): › █         |
-styles_hash: eed2121b6c3c5b0f
+styles_hash: dc64b486323874e7

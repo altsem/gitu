@@ -10,10 +10,10 @@ expression: ctx.redact_buffer()
  +unstaged                                                                      |
                                                                                 |
  Recent commits                                                                 |
- bada738 main empty commit                                                      |
- 2809bd7 modify instant_fixup.txt                                               |
- fa09c62 add instant_fixup.txt                                                  |
-▌b66a0bf origin/main add initial-file                                           |
+ bada738 main Author Name empty commit                                          |
+ 2809bd7 Author Name modify instant_fixup.txt                                   |
+ fa09c62 Author Name add instant_fixup.txt                                      |
+▌b66a0bf origin/main Author Name add initial-file                               |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git commit --fixup efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f                   |
 [main bec1be7] fixup! modify instant_fixup.txt                                  |
@@ -22,4 +22,4 @@ $ git commit --fixup efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f                   
 $ git rebase -i -q --autostash --keep-empty --autosquash efc77f3bea683ce4ea27f2e|
 Applied autostash.                                                              |
 Created autostash: d682ced                                                      |
-styles_hash: 22852fd934c64bf
+styles_hash: f59845009e9ead1f

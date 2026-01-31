@@ -13,8 +13,8 @@ expression: ctx.redact_buffer()
 ▌ testtest                                                                      |
                                                                                 |
  Recent commits                                                                 |
- bbe772c main add testfile                                                      |
- b66a0bf origin/main add initial-file                                           |
+ bbe772c main Author Name add testfile                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 6e23db6ecca0d933
+styles_hash: 39f19048c63a1f5b

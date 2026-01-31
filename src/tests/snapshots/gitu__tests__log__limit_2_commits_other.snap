@@ -2,8 +2,8 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-▌8bb5532 main add first commit                                                  |
- 6c08cf7 add second commit                                                      |
+▌8bb5532 main Author Name add first commit                                      |
+ 6c08cf7 Author Name add second commit                                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: a908290abddd40c9
+styles_hash: 23a4e5c4fc1c9845

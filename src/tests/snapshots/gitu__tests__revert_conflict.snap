@@ -11,9 +11,9 @@ expression: ctx.redact_buffer()
  unmerged   new-file…                                                           |
                                                                                 |
  Recent commits                                                                 |
- 7294ba4 main modify new-file                                                   |
- 57409cb add new-file                                                           |
- b66a0bf origin/main add initial-file                                           |
+ 7294ba4 main Author Name modify new-file                                       |
+ 57409cb Author Name add new-file                                               |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: ce1bcac7e4255e31
+styles_hash: edfc6b326da24b05

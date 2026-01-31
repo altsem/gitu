@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main add new-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ e7eb2bd main Author Name add new-file                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  u     to origin/main             -F Force (--force)                            |
  e     to elsewhere               -f Force with lease (--force-with-lease)      |
  q/esc Quit/Close                 -h Disable hooks (--no-verify)                |
-styles_hash: 423a5e46d8d37364
+styles_hash: 5975a577b19db5a6

@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch new-branch                                                           |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main new-branch origin/main add initial-file                           |
+ b66a0bf main new-branch origin/main Author Name add initial-file               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch --set-upstream-to new-branch                                       |
 warning: not setting branch 'new-branch' as its own upstream                    |
-styles_hash: 44bba4e4bc54ab4f
+styles_hash: 14b71984e3184671

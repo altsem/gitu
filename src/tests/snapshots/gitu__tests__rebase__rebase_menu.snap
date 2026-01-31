@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch other-branch                                                         |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf other-branch origin/main add initial-file                              |
+ b66a0bf other-branch origin/main Author Name add initial-file                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                         -k Keep empty commits (--keep-empty)                    |
                         -h Disable hooks (--no-verify)                          |
                         -p Preserve merges (--preserve-merges)                  |
-styles_hash: c2a795da9f9636c1
+styles_hash: f0afa6a576227118

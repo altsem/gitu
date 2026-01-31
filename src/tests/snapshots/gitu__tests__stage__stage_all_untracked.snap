@@ -10,7 +10,7 @@ expression: ctx.redact_buffer()
 ▌added      file-b                                                              |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add file-a file-b                                                         |
-styles_hash: 93f1d2dc4e2c68b6
+styles_hash: e5d8ac77f0dcda46

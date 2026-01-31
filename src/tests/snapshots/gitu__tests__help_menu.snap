@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
 ────────────────────────────────────────────────────────────────────────────────|
  Help                              Submenu      On branch main                  |
  Y                Show Refs        b   Branch   tab Fold                        |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  g                Refresh          X   Reset                                    |
  q/esc            Quit/Close       V   Revert                                   |
                                    z   Stash                                    |
-styles_hash: 43322e31c74e471
+styles_hash: 6ade783a719d70eb

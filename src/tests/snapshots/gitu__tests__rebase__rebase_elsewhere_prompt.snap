@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch other-branch                                                         |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf other-branch origin/main add initial-file                              |
+ b66a0bf other-branch origin/main Author Name add initial-file                  |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Rebase onto: › █                                                              |
-styles_hash: 53f8a523dd3a4d8a
+styles_hash: c286eddd83273a4a

@@ -12,7 +12,7 @@ expression: ctx.redact_buffer()
  added      file-one…                                                           |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Stash message: › █                                                            |
-styles_hash: 84962ae13e37fe04
+styles_hash: 887ec01fb4635f0d
