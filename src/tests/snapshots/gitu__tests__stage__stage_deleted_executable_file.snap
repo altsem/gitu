@@ -9,9 +9,9 @@ expression: ctx.redact_buffer()
 ▌deleted    script.sh…                                                          |
                                                                                 |
  Recent commits                                                                 |
- af83421 main add executable script                                             |
- 289f1e5 add script.sh                                                          |
- b66a0bf origin/main add initial-file                                           |
+ af83421 main Author Name add executable script                                 |
+ 289f1e5 Author Name add script.sh                                              |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add script.sh                                                             |
-styles_hash: 904386f2bd8f8286
+styles_hash: efb4ad05a0ccf44c

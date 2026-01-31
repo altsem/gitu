@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  stash@0 On main: file-two                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash drop 1                                                              |
 Dropped refs/stash@{1} (6e4ee08a012b0675b1f27465f158930aa1088b7a)               |
-styles_hash: 94c54afa40f5600a
+styles_hash: 5004ce10fa8647a0

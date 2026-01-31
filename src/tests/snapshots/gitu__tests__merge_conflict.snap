@@ -13,13 +13,13 @@ expression: ctx.redact_buffer()
  unmerged   new-file-2…                                                         |
                                                                                 |
  Recent commits                                                                 |
- 44bb4dc main modify new-file-2                                                 |
- 174f1f4 modify new-file                                                        |
- b57d72c add new-file-2                                                         |
- 46c81ca add new-file                                                           |
- b66a0bf origin/main add initial-file                                           |
+ 44bb4dc main Author Name modify new-file-2                                     |
+ 174f1f4 Author Name modify new-file                                            |
+ b57d72c Author Name add new-file-2                                             |
+ 46c81ca Author Name add new-file                                               |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: f80e04421a39123
+styles_hash: b66b15684854e4f5

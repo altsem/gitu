@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  unwanted-file                                                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 4738e02f19882d7d
+styles_hash: cb69cc2d63a846a2

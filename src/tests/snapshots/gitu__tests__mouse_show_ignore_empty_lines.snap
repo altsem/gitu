@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
 ▌stash@0 On main: firststash                                                    |
                                                                                 |
  Recent commits                                                                 |
- cd4d2d1 main add testfile                                                      |
- b66a0bf origin/main add initial-file                                           |
+ cd4d2d1 main Author Name add testfile                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 756a2316769a9390
+styles_hash: eb3ab71b0f73da36

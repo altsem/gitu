@@ -10,7 +10,7 @@ expression: ctx.redact_buffer()
  stash@1 On main: file-one                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Pop stash (default 0): › █                                                    |
-styles_hash: f9d1a1a4d6ebc785
+styles_hash: 70a8dda4e20cf09

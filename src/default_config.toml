@@ -99,6 +99,7 @@ hash = { fg = "yellow" }
 branch = { fg = "green" }
 remote = { fg = "red" }
 tag = { fg = "yellow" }
+author = { fg = "magenta" }
 
 [bindings]
 root.quit = ["q", "esc"]

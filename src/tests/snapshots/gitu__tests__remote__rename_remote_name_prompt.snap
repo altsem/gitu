@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Rename remote: › █                                                            |
-styles_hash: d4bf27d871c90729
+styles_hash: acf61a44ec7643bb

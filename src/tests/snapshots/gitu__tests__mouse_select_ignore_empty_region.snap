@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
 ▌modified   testfile…                                                           |
                                                                                 |
  Recent commits                                                                 |
- cd4d2d1 main add testfile                                                      |
- b66a0bf origin/main add initial-file                                           |
+ cd4d2d1 main Author Name add testfile                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 96cd3159bc3b002
+styles_hash: b16fa21bc23047fe

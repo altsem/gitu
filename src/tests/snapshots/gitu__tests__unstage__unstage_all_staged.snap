@@ -11,7 +11,7 @@ expression: ctx.redact_buffer()
 ▌unaffected                                                                     |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main Author Name add initial-file                          |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git reset HEAD --                                                             |
-styles_hash: 9c970ab3eaa19c0b
+styles_hash: bb0a56b240851d65

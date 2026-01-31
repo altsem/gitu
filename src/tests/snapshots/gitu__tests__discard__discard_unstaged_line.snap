@@ -12,8 +12,8 @@ expression: ctx.redact_buffer()
 ▌-BAR                                                                           |
                                                                                 |
  Recent commits                                                                 |
- 4f3ed19 main add file-one                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 4f3ed19 main Author Name add file-one                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: baa3baebf7866985
+styles_hash: 2f83dffa64ecd213

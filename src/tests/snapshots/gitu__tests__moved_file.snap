@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
  renamed    new-file -> moved-file…                                             |
                                                                                 |
  Recent commits                                                                 |
- 46c81ca main add new-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 46c81ca main Author Name add new-file                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 43a9ff7990a714d
+styles_hash: 8b2176102ecd0b69

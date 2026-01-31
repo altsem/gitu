@@ -15,11 +15,11 @@ expression: ctx.redact_buffer()
   blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
- e45938a main add file-two                                                      |
- b3cf8e8 add file-one                                                           |
- b66a0bf origin/main add initial-file                                           |
+ e45938a main Author Name add file-two                                          |
+ b3cf8e8 Author Name add file-one                                               |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached                                                            |
-styles_hash: ec215853d0f68a99
+styles_hash: 9df6ef20bfc8fd33

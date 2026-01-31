@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
  Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 4f3ed19 main add file-one                                                      |
-▌b66a0bf origin/main add initial-file                                           |
+ 4f3ed19 main Author Name add file-one                                          |
+▌b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: 8f7c4c587f69ffd4
+styles_hash: 9c1f128e96d75bd

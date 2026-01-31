@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
  deleted    new-file…                                                           |
                                                                                 |
  Recent commits                                                                 |
- b00a756 main add new-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ b00a756 main Author Name add new-file                                          |
+ b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: badf8c339aba8de6
+styles_hash: baea5352b58a717c

@@ -6,9 +6,9 @@ expression: ctx.redact_buffer()
  Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 2809bd7 main modify instant_fixup.txt                                          |
- fa09c62 add instant_fixup.txt                                                  |
-▌b66a0bf origin/main add initial-file                                           |
+ 2809bd7 main Author Name modify instant_fixup.txt                              |
+ fa09c62 Author Name add instant_fixup.txt                                      |
+▌b66a0bf origin/main Author Name add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ $ git commit --fixup efc77f3bea683ce4ea27f2e9d7d1bdf04c91a57f                   
  Author: Author Name <author@email.com>                                         |
  1 file changed, 1 insertion(+), 1 deletion(-)                                  |
 $ git rebase -i -q --autostash --keep-empty --autosquash efc77f3bea683ce4ea27f2e|
-styles_hash: 6969ae121e8e1f63
+styles_hash: ad13416608c50ff8

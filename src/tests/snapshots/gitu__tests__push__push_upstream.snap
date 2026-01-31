@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
- b66a0bf add initial-file                                                       |
+ e7eb2bd main origin/main Author Name add new-file                              |
+ b66a0bf Author Name add initial-file                                           |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git push origin refs/heads/main:refs/heads/main                               |
 To file://                                                                       
    b66a0bf..e7eb2bd  main -> main                                               |
-styles_hash: 7c6cd7afeae2ed31
+styles_hash: 6afee94c95c2d4cd
