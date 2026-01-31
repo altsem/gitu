@@ -58,6 +58,7 @@ impl Item {
                 short_id,
                 associated_references,
                 summary,
+                author,
                 ..
             } => Line::from_iter(itertools::intersperse(
                 iter::once(Span::styled(short_id, &config.style.hash))
@@ -74,6 +75,7 @@ impl Item {
                                 }
                             }),
                     )
+                    .chain([Span::styled(author, &config.style.author)])
                     .chain([Span::raw(summary)]),
                 Span::raw(" "),
             )),
@@ -360,6 +362,7 @@ pub(crate) fn log(
                 short_id,
                 associated_references,
                 summary: commit.summary().unwrap_or("").to_string(),
+                author: commit.author().name().unwrap_or("").to_string(),
             };
 
             Ok(Some(Item {

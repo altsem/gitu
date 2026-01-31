@@ -112,6 +112,7 @@ pub struct StyleConfig {
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
     pub tag: StyleConfigEntry,
+    pub author: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]
