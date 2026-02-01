@@ -5,8 +5,8 @@ expression: ctx.redact_buffer()
 ▌On branch new                                                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main merged new origin/main add initial-file                           |
-                                                                                |
+ c84f226 new unmerged add first commit                                          |
+ b66a0bf main merged origin/main add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git checkout -b new main                                                      |
+$ git checkout -b new unmerged                                                  |
 Switched to a new branch 'new'                                                  |
-styles_hash: 51d00da50a627344
+styles_hash: 64b6fb8b841715c1

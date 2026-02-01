@@ -25,7 +25,12 @@ fn switch_branch_input() {
 
 #[test]
 fn checkout_new_branch() {
-    snapshot!(setup(setup_clone!()), "bcnew<enter>");
+    snapshot!(setup(setup_clone!()), "bc<enter>new<enter>");
+}
+
+#[test]
+fn checkout_new_branch_start_point() {
+    snapshot!(setup(setup_clone!()), "bcunmerged<enter>new<enter>");
 }
 
 #[test]

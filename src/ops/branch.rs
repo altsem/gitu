@@ -53,15 +53,25 @@ pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
-            let branch_name = app.prompt(
+            let default_start_point = get_current_branch_name(&app.state.repo)?;
+            let start_point = app.prompt(
                 term,
                 &PromptParams {
-                    prompt: "Create and checkout branch:",
+                    prompt: "Create and checkout branch starting at:",
+                    create_default_value: Box::new(move |_app| Some(default_start_point.clone())),
                     ..Default::default()
                 },
             )?;
 
-            checkout_new_branch_prompt_update(app, term, &branch_name)?;
+            let branch_name = app.prompt(
+                term,
+                &PromptParams {
+                    prompt: "Name for new branch:",
+                    ..Default::default()
+                },
+            )?;
+
+            checkout_new_branch_prompt_update(app, term, &start_point, &branch_name)?;
             Ok(())
         }))
     }
@@ -71,9 +81,14 @@ impl OpTrait for CheckoutNewBranch {
     }
 }
 
-fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
+fn checkout_new_branch_prompt_update(
+    app: &mut App,
+    term: &mut Term,
+    start_point: &str,
+    branch_name: &str,
+) -> Res<()> {
     let mut cmd = Command::new("git");
-    cmd.args(["checkout", "-b", branch_name]);
+    cmd.args(["checkout", "-b", branch_name, start_point]);
 
     app.close_menu();
     app.run_cmd(term, &[], cmd)?;
