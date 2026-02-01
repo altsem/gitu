@@ -45,7 +45,7 @@ notify = "8.0.0"
 serde = { version = "1.0.225", features = ["derive"] }
 ratatui = { version = "0.29.0", features = ["serde"] }
 simple-logging = "2.0.2"
-toml = "0.8.23"
+toml = "0.9.11"
 tui-prompts = "0.5.2"
 tree-sitter = "=0.25.6"
 tree-sitter-highlight = "=0.25.6"
