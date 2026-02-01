@@ -68,11 +68,7 @@ pub(crate) struct Merge;
 impl OpTrait for Merge {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         // Extract default ref from target if it's a Reference
-        let default_ref = if let ItemData::Reference { kind, .. } = target {
-            Some(kind.clone())
-        } else {
-            None
-        };
+        let default_ref = target.to_ref_kind();
 
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             // Allow custom input to support commit hashes, relative refs (e.g., HEAD~3),
