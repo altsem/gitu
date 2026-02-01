@@ -1,0 +1,25 @@
+---
+source: src/tests/branch.rs
+expression: ctx.redact_buffer()
+---
+ Branches                                                                       |
+ * main                                                                         |
+   merged                                                                       |
+   unmerged                                                                     |
+                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+────────────────────────────────────────────────────────────────────────────────|
+ 4/4   Checkout › █                                                             |
+▌merged                                                                         |
+ unmerged                                                                       |
+ origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 2cac6f3d25b0271c

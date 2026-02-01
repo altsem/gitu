@@ -59,6 +59,13 @@ impl ItemData {
                 | ItemData::BranchStatus(_, _, _)
         )
     }
+
+    pub(crate) fn to_ref_kind(&self) -> Option<RefKind> {
+        match self {
+            Self::Reference { kind, .. } => Some(kind.clone()),
+            _ => None,
+        }
+    }
 }
 
 impl Default for ItemData {

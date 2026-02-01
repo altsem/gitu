@@ -1,4 +1,4 @@
-use super::{Action, OpTrait, selected_rev};
+use super::{Action, OpTrait};
 use crate::{
     Res,
     app::{App, PromptParams, State},
@@ -9,6 +9,7 @@ use crate::{
     },
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
+    picker::{BranchesAndTagsOptions, PickerState},
     term::Term,
 };
 use std::{process::Command, rc::Rc};
@@ -19,19 +20,24 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let default_ref = target.to_ref_kind();
+
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
-                term,
-                &PromptParams {
-                    prompt: "Checkout",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
+            // Allow custom input to support checking out other revisions not in the list
+            let picker = PickerState::for_branches_and_tags(
+                "Checkout",
+                &app.state.repo,
+                BranchesAndTagsOptions {
+                    exclude_head: true,
+                    allow_custom_input: true,
+                    default: default_ref.clone(),
                 },
             )?;
-
-            checkout(app, term, &rev)?;
-            Ok(())
+            match app.picker(term, picker)? {
+                Some(data) => checkout(app, term, data.display()),
+                None => Ok(()), // picker got cancelled
+            }
         }))
     }
 
