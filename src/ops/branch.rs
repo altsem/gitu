@@ -9,8 +9,10 @@ use crate::{
     },
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
+    picker::{PickerData, PickerItem, PickerState},
     term::Term,
 };
+use itertools::Itertools;
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -21,17 +23,57 @@ pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
-                term,
-                &PromptParams {
-                    prompt: "Checkout",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
-                },
-            )?;
+            let selected_rev = selected_rev(app);
+            // Collect and sort all branches (local and remote) excluding the current branch &
+            // selected revision, if there's any.
+            let mut branches: Vec<PickerItem> = app
+                .state
+                .repo
+                .branches(None)
+                .map_err(Error::ListGitReferences)?
+                .filter_map(Result::ok)
+                .filter_map(|(branch, _)| {
+                    if branch.is_head() {
+                        return None;
+                    }
 
-            checkout(app, term, &rev)?;
-            Ok(())
+                    let name = branch.name().ok()??;
+
+                    // Filter out selected rev, as it will be added to the top
+                    // below.
+                    if let Some(ref rev) = selected_rev
+                        && rev == name
+                    {
+                        return None;
+                    }
+
+                    // Remote is only used for sorting
+                    Some((branch.get().is_remote(), name.to_string()))
+                })
+                .sorted()
+                .map(|(_remote, branch_name)| {
+                    PickerItem::new(branch_name.clone(), PickerData::Revision(branch_name))
+                })
+                .collect();
+
+            // If this action was started from a selected revision, push it to the
+            // to the top, so it's selected by default and can be accepted by <enter>
+            // without any extra steps.
+            if let Some(rev) = selected_rev {
+                branches.insert(0, PickerItem::new(rev.clone(), PickerData::Revision(rev)));
+            }
+
+            // Allow custom input to support checking out other revisions not in the list
+            let picker = PickerState::new("Checkout", branches, true);
+            match app.picker(term, picker)? {
+                Some(data) => checkout(app, term, data.display()),
+                None => {
+                    // TODO: necessary to make sure parent menu closes, shouldn't this be
+                    // handled by .picker, like .prompt does?
+                    app.close_menu();
+                    Ok(())
+                }
+            }
         }))
     }
 
