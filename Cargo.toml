@@ -43,7 +43,7 @@ log = "0.4.28"
 nom = "8.0.0"
 notify = "8.0.0"
 serde = { version = "1.0.225", features = ["derive"] }
-ratatui = { version = "0.29.0", features = ["serde"] }
+ratatui = { version = "0.30.0", features = ["serde"] }
 simple-logging = "2.0.2"
 toml = "0.8.23"
 tui-prompts = "0.5.2"
