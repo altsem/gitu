@@ -34,8 +34,23 @@ fn switch_branch_selected_revision_picker() {
 }
 
 #[test]
+fn checkout_new_branch_starting_point_picker() {
+    snapshot!(setup(setup_clone!()), "bc");
+}
+
+#[test]
+fn checkout_new_branch_starting_point_picker_from_selected_rev() {
+    snapshot!(setup(setup_clone!()), "Yjjbc");
+}
+
+#[test]
+fn checkout_new_branch_name_prompt() {
+    snapshot!(setup(setup_clone!()), "bc<enter>");
+}
+
+#[test]
 fn checkout_new_branch() {
-    snapshot!(setup(setup_clone!()), "bcnew<enter>");
+    snapshot!(setup(setup_clone!()), "bc<enter>new<enter>");
 }
 
 #[test]
