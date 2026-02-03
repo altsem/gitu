@@ -1,5 +1,8 @@
+use crate::error::Error;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use git2::Repository;
+use itertools::Itertools;
 use std::borrow::Cow;
 use tui_prompts::State as _;
 use tui_prompts::TextState;
@@ -104,6 +107,57 @@ impl PickerState {
         };
         state.update_filter();
         state
+    }
+
+    // Creates a new picker displaying the given branches sorted from local to remote.
+    //
+    // The picker also allows to pick a custom revision, i.e. a commit hash or tag.
+    //
+    // If a default revision is provided, it is at the top and selected by default.
+    //
+    // The current branch and any invalid branches are excluded.
+    pub fn for_branches(
+        prompt: impl Into<Cow<'static, str>>,
+        repo: &Repository,
+        default_revision: Option<String>,
+    ) -> Result<Self, Error> {
+        // Collect and sort all branches (local and remote) excluding the current branch &
+        // default_value, if there's any.
+        let mut branches: Vec<PickerItem> = repo
+            .branches(None)
+            .map_err(Error::ListGitReferences)?
+            .filter_map(Result::ok)
+            .filter_map(|(branch, _)| {
+                if branch.is_head() {
+                    return None;
+                }
+
+                let name = branch.name().ok()??;
+
+                // The default revision will be added to the top below,
+                // so filter it out.
+                if let Some(ref rev) = default_revision
+                    && rev == name
+                {
+                    return None;
+                }
+
+                // Remote is only used for sorting
+                Some((branch.get().is_remote(), name.to_string()))
+            })
+            .sorted()
+            .map(|(_remote, branch_name)| {
+                PickerItem::new(branch_name.clone(), PickerData::Revision(branch_name))
+            })
+            .collect();
+
+        // Add the default revision to the top, so it's selected by default and
+        // can be accepted by <enter> without any extra steps.
+        if let Some(rev) = default_revision {
+            branches.insert(0, PickerItem::new(rev.clone(), PickerData::Revision(rev)));
+        }
+
+        Ok(Self::new(prompt, branches, true))
     }
 
     /// Get current input pattern

@@ -2,24 +2,24 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch new                                                                  |
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main merged new origin/main add initial-file                           |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ b66a0bf main merged origin/main add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git checkout -b new main                                                      |
-Switched to a new branch 'new'                                                  |
-styles_hash: 51d00da50a627344
+ 4/4   Checkout › █                                                             |
+▌merged                                                                         |
+ unmerged                                                                       |
+ origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: a64f5b0f5c87b3e5

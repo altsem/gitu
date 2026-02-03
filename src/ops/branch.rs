@@ -9,8 +9,10 @@ use crate::{
     },
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
+    picker::PickerState,
     term::Term,
 };
+
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -21,17 +23,16 @@ pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
-                term,
-                &PromptParams {
-                    prompt: "Checkout",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
-                },
-            )?;
-
-            checkout(app, term, &rev)?;
-            Ok(())
+            let picker = PickerState::for_branches("Checkout", &app.state.repo, selected_rev(app))?;
+            match app.picker(term, picker)? {
+                Some(data) => checkout(app, term, data.display()),
+                None => {
+                    // TODO: necessary to make sure parent menu closes, shouldn't this be
+                    // handled by .picker, like .prompt does?
+                    app.close_menu();
+                    Ok(())
+                }
+            }
         }))
     }
 
@@ -53,15 +54,28 @@ pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let start_point_picker = PickerState::for_branches(
+                "Create branch starting at",
+                &app.state.repo,
+                Some(get_current_branch_name(&app.state.repo)?),
+            )?;
+
+            let Some(starting_point) = app.picker(term, start_point_picker)? else {
+                // TODO: necessary to make sure parent menu closes, shouldn't this be
+                // handled by .picker, like .prompt does?
+                app.close_menu();
+                return Ok(());
+            };
+
             let branch_name = app.prompt(
                 term,
                 &PromptParams {
-                    prompt: "Create and checkout branch:",
+                    prompt: "Create and checkout branch",
                     ..Default::default()
                 },
             )?;
 
-            checkout_new_branch_prompt_update(app, term, &branch_name)?;
+            checkout_new_branch_prompt_update(app, term, &branch_name, starting_point.display())?;
             Ok(())
         }))
     }
@@ -71,9 +85,14 @@ impl OpTrait for CheckoutNewBranch {
     }
 }
 
-fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
+fn checkout_new_branch_prompt_update(
+    app: &mut App,
+    term: &mut Term,
+    branch_name: &str,
+    starting_point: &str,
+) -> Res<()> {
     let mut cmd = Command::new("git");
-    cmd.args(["checkout", "-b", branch_name]);
+    cmd.args(["checkout", "-b", branch_name, starting_point]);
 
     app.close_menu();
     app.run_cmd(term, &[], cmd)?;
