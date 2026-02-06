@@ -24,6 +24,16 @@ fn switch_branch_input() {
 }
 
 #[test]
+fn switch_branch_picker() {
+    snapshot!(setup(setup_clone!()), "bb");
+}
+
+#[test]
+fn switch_branch_selected_revision_picker() {
+    snapshot!(setup(setup_clone!()), "Yjjbb");
+}
+
+#[test]
 fn checkout_new_branch() {
     snapshot!(setup(setup_clone!()), "bcnew<enter>");
 }
