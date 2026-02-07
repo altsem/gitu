@@ -121,7 +121,7 @@ root.unstage = ["u"]
 root.copy_hash = ["y"]
 
 picker.next = ["down", "ctrl+n", "tab"]
-picker.previous = ["up", "ctrl+p", "shift+tab"]
+picker.previous = ["up", "ctrl+p", "backtab"]
 picker.done = ["enter"]
 picker.cancel = ["esc", "ctrl+c"]
 

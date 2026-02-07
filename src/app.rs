@@ -208,7 +208,7 @@ impl App {
                 }
                 Ok(())
             }
-            Event::Key(key) => {
+            Event::Key(mut key) => {
                 if self.state.pending_cmd.is_none() {
                     self.state.current_cmd_log.clear();
                 }
@@ -216,6 +216,10 @@ impl App {
                 if self.state.pending_cmd.is_none() {
                     self.state.current_cmd_log.clear();
                 }
+
+                // The character received in the KeyEvent changes as shift is pressed,
+                // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
+                key.modifiers = key.modifiers.difference(KeyModifiers::SHIFT);
 
                 if self.state.picker.is_some() {
                     self.handle_picker_input(key);
@@ -254,10 +258,7 @@ impl App {
             Some(menu) => menu.menu,
         };
 
-        // The the character received in the KeyEvent changes as shift is pressed,
-        // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
-        let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
-        self.state.pending_keys.push((mods_without_shift, key.code));
+        self.state.pending_keys.push((key.modifiers, key.code));
 
         let matching_bindings = self
             .state
@@ -691,12 +692,8 @@ impl App {
 
     fn handle_picker_input(&mut self, key: event::KeyEvent) {
         if let Some(ref mut picker) = self.state.picker {
-            // The character received in the KeyEvent changes as shift is pressed,
-            // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
-            let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
-            let key_combo = vec![(mods_without_shift, key.code)];
-
             let bindings = &self.state.config.picker_bindings;
+            let key_combo = vec![(key.modifiers, key.code)];
 
             if bindings.next.iter().any(|b| b == &key_combo) {
                 picker.next();
