@@ -668,6 +668,10 @@ impl App {
         self.state.picker = Some(picker_state);
         let result = self.handle_picker(term);
 
+        if let Err(_) | Ok(None) = result {
+            self.close_menu();
+        }
+
         self.state.picker = None;
 
         result
