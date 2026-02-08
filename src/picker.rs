@@ -1,5 +1,7 @@
+use crate::error::Error;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
+use git2::Repository;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use tui_prompts::State as _;
@@ -65,6 +67,12 @@ pub enum PickerStatus {
     Cancelled,
 }
 
+pub(crate) struct BranchesAndTagsOptions {
+    pub exclude_head: bool,
+    pub allow_custom_input: bool,
+    pub default: Option<RefKind>,
+}
+
 /// State of the picker component
 pub struct PickerState {
     /// All available items (excluding custom input)
@@ -107,6 +115,57 @@ impl PickerState {
         };
         state.update_filter();
         state
+    }
+
+    /// Create a picker to select from existing branches or tags.
+    ///
+    /// The default option, if provided, will be displayed at the top and
+    /// is selected by default.
+    ///
+    /// Custom user input can be enabled to select arbitrary revisions, such as
+    /// HEAD~2.
+    pub(crate) fn for_branches_and_tags(
+        prompt: impl Into<Cow<'static, str>>,
+        repo: &Repository,
+        options: BranchesAndTagsOptions,
+    ) -> Result<Self, Error> {
+        // Get current HEAD reference to exclude it from picker
+        let exclude_ref = if options.exclude_head {
+            let head = repo.head().map_err(Error::GetHead)?;
+            RefKind::from_reference(&head)
+        } else {
+            None
+        };
+        // Ignore default if it's excluded.
+        let default = if options.default == exclude_ref {
+            None
+        } else {
+            options.default
+        };
+
+        let branches = repo
+            .branches(None)
+            .map_err(Error::ListGitReferences)?
+            .filter_map(|branch| {
+                let (branch, _) = branch.ok()?;
+                RefKind::from_reference(branch.get())
+            });
+
+        let tags = repo.tag_names(None).map_err(Error::ListGitReferences)?;
+        let tags = tags
+            .into_iter()
+            .flatten()
+            .map(|tag_name| RefKind::Tag(tag_name.to_string()));
+
+        let all_refs: Vec<RefKind> = branches.chain(tags).collect();
+
+        Ok(Self::with_refs(
+            prompt,
+            all_refs,
+            exclude_ref,
+            default,
+            options.allow_custom_input,
+        ))
     }
 
     /// Create a picker from RefKinds, automatically handling duplicates and sorting
