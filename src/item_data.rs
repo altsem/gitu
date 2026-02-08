@@ -67,7 +67,7 @@ impl Default for ItemData {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub(crate) enum RefKind {
     Tag(String),
     Branch(String),

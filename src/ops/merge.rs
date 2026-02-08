@@ -1,12 +1,10 @@
 use super::{Action, OpTrait};
-use crate::item_data::RefKind;
 use crate::{
     Res,
     app::{App, State},
-    error::Error,
     item_data::ItemData,
     menu::arg::Arg,
-    picker::PickerState,
+    picker::{BranchesAndTagsOptions, PickerState},
     term::Term,
 };
 
@@ -77,40 +75,17 @@ impl OpTrait for Merge {
         };
 
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            // Get current HEAD reference to exclude it from picker
-            let exclude_ref = {
-                let head = app.state.repo.head().map_err(Error::GetHead)?;
-                RefKind::from_reference(&head)
-            };
-
-            // Collect all branches (local and remote)
-            let branches = app
-                .state
-                .repo
-                .branches(None)
-                .map_err(Error::ListGitReferences)?
-                .filter_map(|branch| {
-                    let (branch, _) = branch.ok()?;
-                    RefKind::from_reference(branch.get())
-                });
-
-            // Collect all tags
-            let tags: Vec<RefKind> = app
-                .state
-                .repo
-                .tag_names(None)
-                .map_err(Error::ListGitReferences)?
-                .into_iter()
-                .flatten()
-                .map(|tag_name| RefKind::Tag(tag_name.to_string()))
-                .collect();
-
-            let all_refs: Vec<RefKind> = branches.chain(tags).collect();
-
             // Allow custom input to support commit hashes, relative refs (e.g., HEAD~3),
             // and other git revisions not in the predefined list
-            let picker =
-                PickerState::with_refs("Merge", all_refs, exclude_ref, default_ref.clone(), true);
+            let picker = PickerState::for_branches_and_tags(
+                "Merge",
+                &app.state.repo,
+                BranchesAndTagsOptions {
+                    exclude_head: true,
+                    allow_custom_input: true,
+                    default: default_ref.clone(),
+                },
+            )?;
             let result = app.picker(term, picker)?;
 
             if let Some(data) = result {
