@@ -252,6 +252,10 @@ impl App {
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
+        if key.kind != event::KeyEventKind::Press {
+            return Ok(());
+        }
+
         let menu = match &self.state.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
