@@ -37,7 +37,7 @@ pub enum Error {
     ReadOid(git2::Error),
     ArgMustBePositiveNumber,
     ArgInvalidRegex(regex::Error),
-    Clipboard(arboard::Error),
+    Clipboard(crate::clipboard::ClipboardError),
     FindGitRev(git2::Error),
     NoEditorSet,
     GitStatus(git2::Error),

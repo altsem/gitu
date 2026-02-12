@@ -10,7 +10,6 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
 
-use arboard::Clipboard;
 use crossterm::event;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
@@ -23,6 +22,7 @@ use ratatui::layout::Size;
 use tui_prompts::State as _;
 
 use crate::cli;
+use crate::clipboard::Clipboard;
 use crate::cmd_log::CmdLog;
 use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
@@ -90,9 +90,7 @@ impl App {
 
         let pending_menu = root_menu(&config).map(PendingMenu::init);
 
-        let clipboard = Clipboard::new()
-            .inspect_err(|e| log::warn!("Couldn't initialize clipboard: {e}"))
-            .ok();
+        let clipboard = Clipboard::new(config.general.use_osc52_clipboard);
 
         let mut app = Self {
             state: State {
