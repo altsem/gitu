@@ -4,3 +4,4 @@
 .direnv
 result
 /testfiles
+.pre-commit-config.yaml
