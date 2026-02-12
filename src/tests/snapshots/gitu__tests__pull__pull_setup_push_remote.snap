@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
  p     from origin        -r Rebase local commits (--rebase)                    |
  u     from origin/main                                                         |
  e     from elsewhere                                                           |
- q/esc Quit/Close                                                               |
+ q/esc Cancel/Quit                                                              |
 styles_hash: 921d63089e120af4

@@ -112,6 +112,9 @@ pub struct StyleConfig {
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
     pub tag: StyleConfigEntry,
+
+    pub search_match: StyleConfigEntry,
+    pub current_search_match: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]

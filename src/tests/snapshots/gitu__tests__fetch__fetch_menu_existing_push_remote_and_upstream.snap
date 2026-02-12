@@ -21,5 +21,5 @@ expression: ctx.redact_buffer()
  p     from origin        -t Fetch all tags (--tags)                            |
  u     from origin                                                              |
  e     from elsewhere                                                           |
- q/esc Quit/Close                                                               |
+ q/esc Cancel/Quit                                                              |
 styles_hash: 17731e0c232c3b88
