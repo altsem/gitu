@@ -1,13 +1,12 @@
 ---
-source: src/tests/mod.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌b66a0bf main origin/main add initial-file                                      |
+▌On branch feature-a                                                            |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ Recent commits                                                                 |
+ 3b23a7d feature-a add feature-a commit                                         |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-? Revert commit (default b66a0bf82020d6a386e94d0fceedec1f817d20c7): › █         |
-styles_hash: eed2121b6c3c5b0f
+$ git checkout feature-a                                                        |
+Switched to branch 'feature-a'                                                  |
+styles_hash: ed07bb3ef72d6e56

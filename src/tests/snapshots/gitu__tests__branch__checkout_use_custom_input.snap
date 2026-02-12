@@ -1,0 +1,25 @@
+---
+source: src/tests/branch.rs
+expression: ctx.redact_buffer()
+---
+▌No branch                                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git checkout b66a0bf82020d6a386e94d0fceedec1f817d20c7                         |
+Note: switching to 'b66a0bf82020d6a386e94d0fceedec1f817d20c7'.                  |
+You are in 'detached HEAD' state. You can look around, make experimental        |
+changes and commit them, and you can discard any commits you make in this       |
+state without impacting any branches by switching back to a branch.             |
+If you want to create a new branch to retain commits you create, you may        |
+do so (now or later) by using -c with the switch command. Example:              |
+  git switch -c <new-branch-name>                                               |
+Or undo this operation with:                                                    |
+  git switch -                                                                  |
+Turn off this advice by setting config variable advice.detachedHead to false    |
+HEAD is now at b66a0bf add initial-file                                         |
+styles_hash: cfd01b18ca92dee4
