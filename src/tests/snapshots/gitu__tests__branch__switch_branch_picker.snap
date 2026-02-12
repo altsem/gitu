@@ -1,18 +1,20 @@
 ---
-source: src/tests/editor.rs
+source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
  On branch main                                                                 |
  Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main merged origin/main add initial-file                               |
                                                                                 |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- 2/2   Checkout › █                                                             |
-▌origin/HEAD                                                                    |
+ 4/4   Checkout › █                                                             |
+▌merged                                                                         |
+ unmerged                                                                       |
+ origin/HEAD                                                                    |
  origin/main                                                                    |
                                                                                 |
                                                                                 |
@@ -20,6 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-styles_hash: 49e995be810c0237
+styles_hash: a64f5b0f5c87b3e5
