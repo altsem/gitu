@@ -1,0 +1,61 @@
+---
+source: src/tests/stash.rs
+expression: out
+---
+ stash@{0}                                                                      |
+ Author: Author Name <author@email.com>                                         |
+ Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
+                                                                                |
+     On main: apply-stash                                                       |
+                                                                                |
+ Unstaged changes (2)                                                           |
+ modified   file1.txt                                                           |
+▌@@ -1,5 +1,7 @@                                                                |
+▌ one                                                                           |
+▌ two                                                                           |
+▌+two-and-a-half                                                                |
+▌+two-and-three-quarters                                                        |
+▌ three                                                                         |
+▌ four                                                                          |
+▌ five                                                                          |
+ @@ -7,4 +9,4 @@ six                                                            |
+  seven                                                                         |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply                                                                     |
+styles_hash: 2a88314975ff98fc
+
+[files before]
+--- file1.txt ---
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+--- file2.txt ---
+alpha
+beta
+gamma
+
+[files after]
+--- file1.txt ---
+one
+two
+two-and-a-half
+two-and-three-quarters
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+--- file2.txt ---
+alpha
+beta
+gamma
