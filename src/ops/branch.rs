@@ -1,4 +1,4 @@
-use super::{Action, OpTrait, selected_rev};
+use super::{Action, OpTrait};
 use crate::{
     Res,
     app::{App, PromptParams, State},
@@ -9,6 +9,7 @@ use crate::{
     },
     item_data::{ItemData, RefKind},
     menu::arg::Arg,
+    picker::{BranchesAndTagsOptions, PickerState},
     term::Term,
 };
 use std::{process::Command, rc::Rc};
@@ -19,19 +20,24 @@ pub(crate) fn init_args() -> Vec<Arg> {
 
 pub(crate) struct Checkout;
 impl OpTrait for Checkout {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let default_ref = target.to_ref_kind();
+
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
-                term,
-                &PromptParams {
-                    prompt: "Checkout",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
+            // Allow custom input to support checking out other revisions not in the list
+            let picker = PickerState::for_branches_and_tags(
+                "Checkout",
+                &app.state.repo,
+                BranchesAndTagsOptions {
+                    exclude_head: true,
+                    allow_custom_input: true,
+                    default: default_ref.clone(),
                 },
             )?;
-
-            checkout(app, term, &rev)?;
-            Ok(())
+            match app.picker(term, picker)? {
+                Some(data) => checkout(app, term, data.display()),
+                None => Ok(()), // picker got cancelled
+            }
         }))
     }
 
@@ -53,15 +59,32 @@ pub(crate) struct CheckoutNewBranch;
 impl OpTrait for CheckoutNewBranch {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let start_point_picker = PickerState::for_branches_and_tags(
+                "Create branch starting at",
+                &app.state.repo,
+                BranchesAndTagsOptions {
+                    exclude_head: false,
+                    allow_custom_input: true,
+                    default: {
+                        let head = app.state.repo.head().map_err(Error::GetHead)?;
+                        RefKind::from_reference(&head)
+                    },
+                },
+            )?;
+
+            let Some(starting_point) = app.picker(term, start_point_picker)? else {
+                return Ok(());
+            };
+
             let branch_name = app.prompt(
                 term,
                 &PromptParams {
-                    prompt: "Create and checkout branch:",
+                    prompt: "Create and checkout branch",
                     ..Default::default()
                 },
             )?;
 
-            checkout_new_branch_prompt_update(app, term, &branch_name)?;
+            checkout_new_branch_prompt_update(app, term, &branch_name, starting_point.display())?;
             Ok(())
         }))
     }
@@ -71,9 +94,14 @@ impl OpTrait for CheckoutNewBranch {
     }
 }
 
-fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
+fn checkout_new_branch_prompt_update(
+    app: &mut App,
+    term: &mut Term,
+    branch_name: &str,
+    starting_point: &str,
+) -> Res<()> {
     let mut cmd = Command::new("git");
-    cmd.args(["checkout", "-b", branch_name]);
+    cmd.args(["checkout", "-b", branch_name, starting_point]);
 
     app.close_menu();
     app.run_cmd(term, &[], cmd)?;

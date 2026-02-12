@@ -1,0 +1,25 @@
+---
+source: src/tests/branch.rs
+expression: ctx.redact_buffer()
+---
+ Branches                                                                       |
+ * main                                                                         |
+   merged                                                                       |
+   unmerged                                                                     |
+                                                                                |
+ Remote origin                                                                  |
+   origin/HEAD                                                                  |
+   origin/main                                                                  |
+────────────────────────────────────────────────────────────────────────────────|
+ 5/5   Create branch starting at › █                                            |
+▌main                                                                           |
+ merged                                                                         |
+ unmerged                                                                       |
+ origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: e48ad585ed1f40a5
