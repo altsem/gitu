@@ -96,9 +96,9 @@ impl OpTrait for Delete {
             app.close_menu();
             let result = app.pick(
                 term,
-                PickerState::with_refs(PickerParams {
+                PickerState::with_branches(PickerParams {
                     prompt: "Delete".into(),
-                    refs: &git::branches_tags(&app.state.repo)?,
+                    refs: &git::branches(&app.state.repo, None)?,
                     exclude_ref: git::head_ref(&app.state.repo)?,
                     default: default.clone(),
                     allow_custom_input: false,

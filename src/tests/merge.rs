@@ -81,7 +81,7 @@ fn merge_picker_duplicate_names_select_branch() {
     with_var("GIT_MERGE_AUTOEDIT", Some("no"), || {
         snapshot!(
             setup_branch_tag_same_name(setup_clone!()),
-            "mmheads/v1.0.0<enter>"
+            "mmv1.0.0<enter>"
         );
     });
 }
@@ -90,10 +90,7 @@ fn merge_picker_duplicate_names_select_branch() {
 fn merge_picker_duplicate_names_select_tag() {
     // Test merging the tag when there's a duplicate name
     with_var("GIT_MERGE_AUTOEDIT", Some("no"), || {
-        snapshot!(
-            setup_branch_tag_same_name(setup_clone!()),
-            "mmtags/v1.0.0<enter>"
-        );
+        snapshot!(setup_branch_tag_same_name(setup_clone!()), "mmtag:<enter>");
     });
 }
 

@@ -11,14 +11,14 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- 7/7   Delete › █                                                               |
+ 3/3   Delete › █                                                               |
 ▌bugfix-123                                                                     |
  feature-a                                                                      |
  feature-b                                                                      |
- v1.0.0                                                                         |
- v2.0.0                                                                         |
- origin/HEAD                                                                    |
- origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |

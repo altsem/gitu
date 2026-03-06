@@ -1,7 +1,6 @@
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use std::borrow::Cow;
-use std::collections::HashMap;
 use tui_prompts::State as _;
 use tui_prompts::TextState;
 
@@ -113,91 +112,67 @@ impl PickerState {
         state
     }
 
-    /// Create a picker from RefKinds, automatically handling duplicates and sorting
-    ///
-    /// Items are sorted as: default (if provided) -> branches -> tags -> remotes
-    /// Duplicate shorthands are displayed with their full refname
-    /// The exclude_ref is excluded from the picker options
+    /// Create a picker showing only local branches by shorthand name.
+    /// The default branch (if any) is listed first. The exclude_ref is omitted.
+    pub(crate) fn with_branches(params: PickerParams) -> Self {
+        let default_name = params.default.as_ref().map(|r| r.shorthand().to_string());
+        let exclude_name = params
+            .exclude_ref
+            .as_ref()
+            .map(|r| r.shorthand().to_string());
+
+        let items = default_name
+            .iter()
+            .map(|name| PickerItem::new(name.clone(), PickerData::Item(name.clone())))
+            .chain(
+                params
+                    .refs
+                    .iter()
+                    .filter(|r| matches!(r, Ref::Head(_)))
+                    .filter(|r| exclude_name.as_deref().is_none_or(|e| e != r.shorthand()))
+                    .filter(|r| default_name.as_deref().is_none_or(|d| d != r.shorthand()))
+                    .map(|r| {
+                        let name = r.shorthand().to_string();
+                        PickerItem::new(name.clone(), PickerData::Item(name))
+                    }),
+            )
+            .collect();
+
+        Self::new(params.prompt, items, params.allow_custom_input)
+    }
+
+    /// Create a picker from refs. Tags are prefixed with "tag: " in display.
+    /// The default ref (if any) is listed first. The exclude_ref is omitted.
     pub(crate) fn with_refs(params: PickerParams) -> Self {
-        let mut items = Vec::new();
-        let mut shorthand_count: HashMap<String, usize> = HashMap::new();
-        let mut branches = Vec::new();
-        let mut tags = Vec::new();
-        let mut remotes = Vec::new();
-
-        // Count shorthands for duplicate detection (before filtering)
-        for r#ref in params.refs {
-            let shorthand = r#ref.shorthand();
-            match r#ref {
-                Ref::Head(_) | Ref::Tag(_) => {
-                    *shorthand_count.entry(shorthand.to_string()).or_insert(0) += 1;
-                }
-                Ref::Remote(_) => {
-                    // Remote-tracking branches have unique names (include remote/ prefix)
-                }
-            }
-        }
-
-        // Categorize and filter refs
-        for ref_kind in params.refs {
-            // Skip excluded ref
-            if params
-                .exclude_ref
-                .as_ref()
-                .is_some_and(|excluded| excluded == ref_kind)
-            {
-                continue;
-            }
-
-            match ref_kind {
-                Ref::Head(_) => branches.push(ref_kind),
-                Ref::Tag(_) => tags.push(ref_kind),
-                Ref::Remote(_) => remotes.push(ref_kind),
-            }
-        }
-
-        // Add default ref first if it exists
-        if let Some(default) = &params.default {
-            let display = match default {
-                Rev::Ref(Ref::Remote(name)) => name.clone(),
-                Rev::Ref(r) => {
-                    let is_duplicate = shorthand_count.get(r.shorthand()).is_some_and(|&c| c > 1);
-                    if is_duplicate {
-                        r.to_full_refname()
-                    } else {
-                        r.shorthand().to_string()
-                    }
-                }
-                Rev::Commit(c) => c.clone(),
+        let ref_to_item = |r: &Ref| {
+            let (display, refname) = match r {
+                Ref::Tag(name) => (format!("tag: {}", name), r.to_full_refname()),
+                _ => (r.shorthand().to_string(), r.shorthand().to_string()),
             };
-            items.push(PickerItem::new(display.clone(), PickerData::Item(display)));
-        }
+            PickerItem::new(display, PickerData::Item(refname))
+        };
 
-        // Add all refs (branches, then tags, then remotes)
-        for ref_kind in branches.into_iter().chain(tags).chain(remotes) {
-            // Skip if it's the same as default
-            if params.default.as_ref().is_some_and(|d| match d {
-                Rev::Ref(d) => d == ref_kind,
-                _ => false,
-            }) {
-                continue;
-            }
+        let default_item = params.default.as_ref().map(|default| match default {
+            Rev::Ref(r) => ref_to_item(r),
+            Rev::Commit(c) => PickerItem::new(c.clone(), PickerData::Item(c.clone())),
+        });
 
-            let shorthand = ref_kind.shorthand();
-            let (display, refname) = match &ref_kind {
-                Ref::Remote(_) => (shorthand.to_string(), shorthand.to_string()),
-                _ => {
-                    let is_duplicate = shorthand_count.get(shorthand).is_some_and(|&c| c > 1);
-                    if is_duplicate {
-                        let full_refname = ref_kind.to_full_refname();
-                        (full_refname.clone(), full_refname)
-                    } else {
-                        (shorthand.to_string(), shorthand.to_string())
-                    }
-                }
-            };
-            items.push(PickerItem::new(display, PickerData::Item(refname)));
-        }
+        let items = default_item
+            .into_iter()
+            .chain(
+                params
+                    .refs
+                    .iter()
+                    .filter(|r| {
+                        params.exclude_ref.as_ref().is_none_or(|e| e != *r)
+                            && params.default.as_ref().is_none_or(|d| match d {
+                                Rev::Ref(d) => d != *r,
+                                _ => true,
+                            })
+                    })
+                    .map(ref_to_item),
+            )
+            .collect();
 
         Self::new(params.prompt, items, params.allow_custom_input)
     }
@@ -1111,10 +1086,16 @@ mod tests {
             .map(|(_, item)| item.display.as_ref())
             .collect();
 
-        // Should be sorted: branches first, then tags, then remotes
+        // Order is preserved from input
         assert_eq!(
             items,
-            &["feature", "main", "v1.0.0", "v2.0.0", "origin/main"]
+            &[
+                "tag: v1.0.0",
+                "origin/main",
+                "feature",
+                "main",
+                "tag: v2.0.0"
+            ]
         )
     }
 
@@ -1156,8 +1137,8 @@ mod tests {
             .map(|(_, item)| item.display.as_ref())
             .collect();
 
-        // Default should be first, then remaining branches, then tags
-        assert_eq!(&items, &["main", "feature", "v1.0.0"]);
+        // Default should be first, then remaining in input order
+        assert_eq!(&items, &["main", "feature", "tag: v1.0.0"]);
     }
 
     #[test]
@@ -1183,12 +1164,12 @@ mod tests {
             .collect();
 
         // main should be excluded
-        assert_eq!(&items, &["feature", "v1.0.0"])
+        assert_eq!(&items, &["feature", "tag: v1.0.0"])
     }
 
     #[test]
     fn test_with_refs_duplicate_names() {
-        // Test that duplicates show full refname
+        // Tag and branch with same name are disambiguated by "tag: " prefix
         let refs = &[
             Ref::Head("v1.0.0".to_string()),
             Ref::Tag("v1.0.0".to_string()),
@@ -1208,14 +1189,12 @@ mod tests {
             .map(|(_, item)| item.display.as_ref())
             .collect();
 
-        // Order is preserved from input: branches first (in order), then tags
-        // Duplicates should show full refname
-        assert_eq!(&items, &["refs/heads/v1.0.0", "main", "refs/tags/v1.0.0"])
+        assert_eq!(&items, &["v1.0.0", "tag: v1.0.0", "main"])
     }
 
     #[test]
     fn test_with_refs_duplicate_with_default() {
-        // Test duplicates with default ref
+        // Tag default shown with "tag: " prefix
         let refs = &[
             Ref::Head("v1.0.0".to_string()),
             Ref::Tag("v1.0.0".to_string()),
@@ -1235,8 +1214,7 @@ mod tests {
             .map(|(_, item)| item.display.as_ref())
             .collect();
 
-        // Default (tag) should be first with full refname, then other items in order
-        assert_eq!(items, &["refs/tags/v1.0.0", "refs/heads/v1.0.0", "main"])
+        assert_eq!(items, &["tag: v1.0.0", "v1.0.0", "main"])
     }
 
     #[test]
@@ -1290,10 +1268,8 @@ mod tests {
     }
 
     #[test]
-    fn test_with_refs_duplicate_detection_before_exclusion() {
-        // Test that duplicate detection happens before exclusion
-        // If we have branch "v1.0.0" and tag "v1.0.0", and we exclude the branch,
-        // the tag should still show full refname because the duplicate existed
+    fn test_with_refs_exclude_tag_sibling() {
+        // If branch is excluded, remaining tag still shows "tag: " prefix
         let refs = &[
             Ref::Head("v1.0.0".to_string()),
             Ref::Tag("v1.0.0".to_string()),
@@ -1312,8 +1288,7 @@ mod tests {
             .map(|(_, item)| item.display.as_ref())
             .collect();
 
-        // Only tag remains, but should show full refname because duplicate existed
-        assert_eq!(&items, &["refs/tags/v1.0.0"]);
+        assert_eq!(&items, &["tag: v1.0.0"]);
     }
 
     #[test]
