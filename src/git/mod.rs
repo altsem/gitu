@@ -331,10 +331,22 @@ pub(crate) fn head_ref(repo: &git2::Repository) -> Res<Option<Ref>> {
 }
 
 pub(crate) fn branches_tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
-    Ok(branches(repo, None)?
+    let mut refs = branches(repo, None)?
         .into_iter()
         .chain(tags(repo)?)
-        .collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    refs.sort_by_key(|r| {
+        std::cmp::Reverse(
+            repo.find_reference(&r.to_full_refname())
+                .ok()
+                .and_then(|r| r.peel_to_commit().ok())
+                .map(|c| c.time().seconds())
+                .unwrap_or(0),
+        )
+    });
+
+    Ok(refs)
 }
 
 pub(crate) fn branches(repo: &git2::Repository, filter: Option<git2::BranchType>) -> Res<Vec<Ref>> {
