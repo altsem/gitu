@@ -26,8 +26,6 @@ impl OpTrait for MergeContinue {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["merge", "--continue"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -44,8 +42,6 @@ impl OpTrait for MergeAbort {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["merge", "--abort"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -61,8 +57,6 @@ fn merge(app: &mut App, term: &mut Term, rev: &str, args: &[OsString]) -> Res<()
     cmd.arg("merge");
     cmd.args(args);
     cmd.arg(rev);
-
-    app.close_menu();
     app.run_cmd_interactive(term, cmd)?;
     Ok(())
 }
@@ -73,7 +67,6 @@ impl OpTrait for Merge {
         let rev = target.rev();
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let args = app.state.pending_menu.as_ref().unwrap().args();
-            app.close_menu();
             let result = app.pick(
                 term,
                 PickerState::with_refs(PickerParams {

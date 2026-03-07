@@ -45,8 +45,6 @@ fn reset_soft(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["reset", "--soft"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)
 }
 
@@ -83,8 +81,6 @@ fn reset_mixed(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["reset", "--mixed"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)
 }
 
@@ -121,7 +117,5 @@ fn reset_hard(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["reset", "--hard"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)
 }

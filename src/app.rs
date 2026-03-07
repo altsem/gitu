@@ -57,6 +57,7 @@ pub(crate) struct State {
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
+    inhibit_close_menu: bool,
 }
 
 pub(crate) struct App {
@@ -109,6 +110,7 @@ impl App {
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
+                inhibit_close_menu: false,
             },
         };
 
@@ -332,10 +334,15 @@ impl App {
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
         let screen_ref = self.screen();
         let item_data = &screen_ref.get_selected_item().data;
+        let implementation = op.clone().implementation();
 
-        if let Some(mut action) = op.clone().implementation().get_action(item_data) {
+        if let Some(mut action) = implementation.get_action(item_data) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
             self.handle_result(result)?;
+            if !self.state.inhibit_close_menu {
+                self.close_menu();
+            }
+            self.state.inhibit_close_menu = false;
         }
 
         Ok(())
@@ -347,7 +354,6 @@ impl App {
             Err(Error::NoMoreEvents) => Err(Error::NoMoreEvents),
             Err(Error::PromptAborted) => Ok(()),
             Err(error) => {
-                self.close_menu();
                 self.state
                     .current_cmd_log
                     .push(CmdLogEntry::Error(error.to_string()));
@@ -359,6 +365,10 @@ impl App {
 
     pub fn close_menu(&mut self) {
         self.state.pending_menu = root_menu(&self.state.config).map(PendingMenu::init)
+    }
+
+    pub fn inhibit_close_menu(&mut self) {
+        self.state.inhibit_close_menu = true;
     }
 
     pub fn screen_mut(&mut self) -> &mut Screen {
@@ -559,9 +569,6 @@ impl App {
         let result = self.handle_prompt(term, params);
 
         self.unhide_menu();
-        if result.is_err() {
-            self.close_menu();
-        }
         self.state.prompt.reset(term)?;
 
         result
@@ -593,9 +600,6 @@ impl App {
         let result = self.handle_confirm(term);
 
         self.unhide_menu();
-        if result.is_err() {
-            self.close_menu();
-        }
         self.state.prompt.reset(term)?;
 
         result

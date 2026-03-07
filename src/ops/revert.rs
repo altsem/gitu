@@ -26,8 +26,6 @@ impl OpTrait for RevertAbort {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--abort"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -44,8 +42,6 @@ impl OpTrait for RevertContinue {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--continue"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -89,7 +85,5 @@ fn revert_commit(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["revert"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd_interactive(term, cmd)
 }

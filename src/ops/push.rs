@@ -152,8 +152,6 @@ fn push(app: &mut App, term: &mut Term, extra_args: &[&str]) -> Res<()> {
     cmd.args(["push"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.args(extra_args);
-
-    app.close_menu();
     app.run_cmd_async(term, &[], cmd)?;
     Ok(())
 }

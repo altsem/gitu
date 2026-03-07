@@ -35,8 +35,6 @@ impl OpTrait for Commit {
             let mut cmd = Command::new("git");
             cmd.args(["commit"]);
             cmd.args(app.state.pending_menu.as_ref().unwrap().args());
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -54,8 +52,6 @@ impl OpTrait for CommitAmend {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend"]);
             cmd.args(app.state.pending_menu.as_ref().unwrap().args());
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -73,8 +69,6 @@ impl OpTrait for CommitExtend {
             let mut cmd = Command::new("git");
             cmd.args(["commit", "--amend", "--no-edit"]);
             cmd.args(app.state.pending_menu.as_ref().unwrap().args());
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -94,8 +88,6 @@ impl OpTrait for CommitFixup {
 
                 Some(Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
-
-                    app.close_menu();
                     app.run_cmd_interactive(term, commit_fixup_cmd(&args, &rev))
                 }))
             }
@@ -129,9 +121,6 @@ impl OpTrait for CommitInstantFixup {
 
                 Some(Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
-
-                    app.close_menu();
-
                     app.run_cmd(term, &[], commit_fixup_cmd(&args, &rev))?;
                     app.run_cmd(term, &[], rebase_autosquash_cmd(&rev))
                 }))
