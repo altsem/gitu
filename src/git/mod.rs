@@ -9,6 +9,7 @@ use crate::{
     error::{Error, Utf8Error},
     git::diff::DiffType,
     gitu_diff,
+    item_data::{Ref, Rev},
 };
 use std::{
     fs,
@@ -125,15 +126,15 @@ fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
 }
 
 pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
+    let text = String::from_utf8_lossy(
+        &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["diff", "--no-ext-diff"])
             .output()
             .map_err(Error::GitDiff)?
             .stdout,
     )
-    .map_err(Error::GitDiffUtf8)?;
+    .into_owned();
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -143,15 +144,15 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
 }
 
 pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
+    let text = String::from_utf8_lossy(
+        &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["diff", "--no-ext-diff", "--staged"])
             .output()
             .map_err(Error::GitDiff)?
             .stdout,
     )
-    .map_err(Error::GitDiffUtf8)?;
+    .into_owned();
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -161,29 +162,29 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
 }
 
 pub(crate) fn status(dir: &Path) -> Res<status::Status> {
-    let text = String::from_utf8(
-        Command::new("git")
+    let text = String::from_utf8_lossy(
+        &Command::new("git")
             .current_dir(dir)
             .args(["status", "--porcelain", "--branch"])
             .output()
             .unwrap()
             .stdout,
     )
-    .map_err(Error::GitDiffUtf8)?;
+    .into_owned();
 
     Ok(status::Status::from_str(&text).unwrap())
 }
 
 pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
+    let text = String::from_utf8_lossy(
+        &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["show", reference])
             .output()
             .map_err(Error::GitShow)?
             .stdout,
     )
-    .map_err(Error::GitShowUtf8)?;
+    .into_owned();
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -193,15 +194,15 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
 }
 
 pub(crate) fn stash_show(repo: &Repository, stash_ref: &str) -> Res<Diff> {
-    let text = String::from_utf8(
-        Command::new("git")
+    let text = String::from_utf8_lossy(
+        &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
             .args(["stash", "show", "-p", stash_ref])
             .output()
             .map_err(Error::GitShow)?
             .stdout,
     )
-    .map_err(Error::GitShowUtf8)?;
+    .into_owned();
 
     Ok(Diff {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
@@ -252,20 +253,16 @@ pub(crate) fn show_summary(repo: &Repository, reference: &str) -> Res<Commit> {
 }
 
 pub(crate) fn get_current_branch_name(repo: &git2::Repository) -> Res<String> {
-    String::from_utf8(
+    Ok(String::from_utf8_lossy(
         get_current_branch(repo)?
             .name_bytes()
-            .map_err(Error::CurrentBranchName)?
-            .to_vec(),
+            .map_err(Error::CurrentBranchName)?,
     )
-    .map_err(Utf8Error::String)
-    .map_err(Error::BranchNameUtf8)
+    .into_owned())
 }
 
 pub(crate) fn get_head_name(repo: &git2::Repository) -> Res<String> {
-    String::from_utf8(repo.head().map_err(Error::GetHead)?.name_bytes().to_vec())
-        .map_err(Utf8Error::String)
-        .map_err(Error::BranchNameUtf8)
+    Ok(String::from_utf8_lossy(repo.head().map_err(Error::GetHead)?.name_bytes()).into_owned())
 }
 
 pub(crate) fn get_current_branch(repo: &git2::Repository) -> Res<Branch<'_>> {
@@ -319,4 +316,60 @@ pub(crate) fn restore_index(file: &Path) -> Command {
     cmd.args(["restore", "--staged"]);
     cmd.arg(file);
     cmd
+}
+
+pub(crate) fn head(repo: &git2::Repository) -> Res<Rev> {
+    let head = repo.head().map_err(Error::GetHead)?;
+    Rev::from_reference(&head)
+}
+
+pub(crate) fn head_ref(repo: &git2::Repository) -> Res<Option<Ref>> {
+    match head(repo)? {
+        Rev::Ref(r) => Ok(Some(r)),
+        Rev::Commit(_) => Ok(None),
+    }
+}
+
+pub(crate) fn branches_tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    let mut refs = branches(repo, None)?
+        .into_iter()
+        .chain(tags(repo)?)
+        .collect::<Vec<_>>();
+
+    refs.sort_by_key(|r| {
+        std::cmp::Reverse(
+            repo.find_reference(&r.to_full_refname())
+                .ok()
+                .and_then(|r| r.peel_to_commit().ok())
+                .map(|c| c.time().seconds())
+                .unwrap_or(0),
+        )
+    });
+
+    Ok(refs)
+}
+
+pub(crate) fn branches(repo: &git2::Repository, filter: Option<git2::BranchType>) -> Res<Vec<Ref>> {
+    Ok(repo
+        .branches(filter)
+        .map_err(Error::ListGitReferences)?
+        .filter_map(|branch| {
+            let (branch, _) = branch.ok()?;
+            let Ok(Rev::Ref(r)) = Rev::from_reference(branch.get()) else {
+                return None;
+            };
+
+            Some(r)
+        })
+        .collect())
+}
+
+pub(crate) fn tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    Ok(repo
+        .tag_names(None)
+        .map_err(Error::ListGitReferences)?
+        .into_iter()
+        .flatten()
+        .map(|tag_name| Ref::Tag(tag_name.to_string()))
+        .collect())
 }

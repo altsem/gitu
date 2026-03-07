@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git commit --amend --no-edit                                                  |
-styles_hash: e30dda22040580a6
+styles_hash: 33ce7d91041bde51

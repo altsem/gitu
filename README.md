@@ -38,6 +38,7 @@ Configuration is also loaded from:
 - Windows: `%USERPROFILE%\AppData\Roaming\gitu\config.toml`
 
 , refer to the [default configuration](src/default_config.toml).
+
 ### Installing Gitu
 Follow the install instructions: [Installing Gitu](docs/installing.md)\
 Or install from your package manager:

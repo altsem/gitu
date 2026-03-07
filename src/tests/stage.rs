@@ -64,6 +64,7 @@ fn stage_deleted_file() {
 }
 
 #[test]
+#[cfg(not(target_os = "windows"))]
 fn stage_deleted_executable_file() {
     let ctx = setup_clone!();
     commit(&ctx.dir, "script.sh", "#!/bin/bash\necho hello\n");

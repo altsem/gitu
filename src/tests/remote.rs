@@ -1,6 +1,6 @@
 use git2::{Buf, Error, Repository};
 
-use crate::{git::remote::*, repo_setup_clone, setup_clone, tests::helpers::RepoTestContext};
+use crate::{git::remote::*, repo_setup_clone, tests::helpers::RepoTestContext};
 
 use super::*;
 

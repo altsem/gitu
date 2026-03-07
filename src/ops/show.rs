@@ -3,7 +3,7 @@ use crate::{
     Action,
     app::State,
     error::Error,
-    item_data::{ItemData, RefKind},
+    item_data::{ItemData, Ref},
     screen,
 };
 use core::str;
@@ -15,11 +15,11 @@ impl OpTrait for Show {
         match target {
             ItemData::Commit { oid, .. }
             | ItemData::Reference {
-                kind: RefKind::Tag(oid),
+                kind: Ref::Tag(oid),
                 ..
             }
             | ItemData::Reference {
-                kind: RefKind::Branch(oid),
+                kind: Ref::Head(oid),
                 ..
             } => goto_show_screen(oid.clone()),
             ItemData::Untracked(u) => editor(u.as_path(), None),

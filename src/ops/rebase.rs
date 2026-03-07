@@ -1,9 +1,11 @@
-use super::{Action, OpTrait, selected_rev};
+use super::{Action, OpTrait};
 use crate::{
     Res,
-    app::{App, PromptParams, State},
-    item_data::{ItemData, RefKind},
+    app::{App, State},
+    git,
+    item_data::{ItemData, Ref},
     menu::arg::Arg,
+    picker::{PickerParams, PickerState},
     term::Term,
 };
 use std::{
@@ -66,18 +68,30 @@ impl OpTrait for RebaseAbort {
 
 pub(crate) struct RebaseElsewhere;
 impl OpTrait for RebaseElsewhere {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let default_ref = if let ItemData::Reference { kind, .. } = target {
+            Some(kind.clone())
+        } else {
+            None
+        };
+
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
+            let args = app.state.pending_menu.as_ref().unwrap().args();
+            app.close_menu();
+            let result = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Rebase onto",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
-                },
+                PickerState::with_refs(PickerParams {
+                    prompt: "Rebase onto".into(),
+                    refs: &git::branches_tags(&app.state.repo)?,
+                    exclude_ref: git::head_ref(&app.state.repo)?,
+                    default: default_ref.clone().map(crate::item_data::Rev::Ref),
+                    allow_custom_input: true,
+                }),
             )?;
 
-            rebase_elsewhere(app, term, &rev)?;
+            if let Some(data) = result {
+                rebase_elsewhere(app, term, data.display(), &args)?;
+            }
             Ok(())
         }))
     }
@@ -87,10 +101,15 @@ impl OpTrait for RebaseElsewhere {
     }
 }
 
-fn rebase_elsewhere(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
+fn rebase_elsewhere(
+    app: &mut App,
+    term: &mut Term,
+    rev: &str,
+    args: &[std::ffi::OsString],
+) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.arg("rebase");
-    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
+    cmd.args(args);
     cmd.arg(rev);
 
     app.close_menu();
@@ -104,11 +123,11 @@ impl OpTrait for RebaseInteractive {
         let action = match target {
             ItemData::Commit { oid, .. }
             | ItemData::Reference {
-                kind: RefKind::Tag(oid),
+                kind: Ref::Tag(oid),
                 ..
             }
             | ItemData::Reference {
-                kind: RefKind::Branch(oid),
+                kind: Ref::Head(oid),
                 ..
             } => {
                 let rev = OsString::from(oid);
@@ -152,11 +171,11 @@ impl OpTrait for RebaseAutosquash {
         let action = match target {
             ItemData::Commit { oid, .. }
             | ItemData::Reference {
-                kind: RefKind::Tag(oid),
+                kind: Ref::Tag(oid),
                 ..
             }
             | ItemData::Reference {
-                kind: RefKind::Branch(oid),
+                kind: Ref::Head(oid),
                 ..
             } => {
                 let rev = OsString::from(oid);

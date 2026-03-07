@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.40.0] - 2025-12-15
+
+### 🚀 Features
+
+- Add customizable UI styles for menus and messages (#475)
+- Add fetch from upstream and push remote
+- Rename 'Toggle Section' to 'Fold/Unfold', make it context aware
+
+### 🐛 Bug Fixes
+
+- Handle non-UTF8 bytes in git command output
+- Do not rely on srcdir being named exactly `gitu` to run tests
+- *(config)* `style.syntax_highlight.enabled`had no effect
+
 ## [0.39.0] - 2025-11-12
 
 ### 🚀 Features

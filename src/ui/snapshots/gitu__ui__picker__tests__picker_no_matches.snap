@@ -1,0 +1,6 @@
+---
+source: src/ui/picker.rs
+expression: "render_to_string(layout, 40, 15)"
+---
+────────────────────────────────────────
+ 0/5   Select branch › xyz█

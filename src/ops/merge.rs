@@ -1,11 +1,16 @@
-use super::{Action, OpTrait, selected_rev};
+use super::{Action, OpTrait};
+use crate::git;
+use crate::picker::PickerParams;
 use crate::{
     Res,
-    app::{App, PromptParams, State},
+    app::{App, State},
     item_data::ItemData,
     menu::arg::Arg,
+    picker::PickerState,
     term::Term,
 };
+
+use std::ffi::OsString;
 use std::{process::Command, rc::Rc};
 
 pub(crate) fn init_args() -> Vec<Arg> {
@@ -51,10 +56,10 @@ impl OpTrait for MergeAbort {
     }
 }
 
-fn merge(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
+fn merge(app: &mut App, term: &mut Term, rev: &str, args: &[OsString]) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.arg("merge");
-    cmd.args(app.state.pending_menu.as_ref().unwrap().args());
+    cmd.args(args);
     cmd.arg(rev);
 
     app.close_menu();
@@ -64,18 +69,27 @@ fn merge(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
 
 pub(crate) struct Merge;
 impl OpTrait for Merge {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
-        Some(Rc::new(|app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let rev = target.rev();
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let args = app.state.pending_menu.as_ref().unwrap().args();
+            app.close_menu();
+            let result = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Merge",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
-                },
+                PickerState::with_refs(PickerParams {
+                    prompt: "Merge".into(),
+                    refs: &git::branches_tags(&app.state.repo)?,
+                    exclude_ref: git::head_ref(&app.state.repo)?,
+                    default: rev.clone(),
+                    allow_custom_input: true,
+                }),
             )?;
 
-            merge(app, term, &rev)?;
+            if let Some(data) = result {
+                let rev = data.display();
+                merge(app, term, rev, &args)?;
+            }
+
             Ok(())
         }))
     }

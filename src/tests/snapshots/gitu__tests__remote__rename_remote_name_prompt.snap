@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Rename remote: › █                                                            |
-styles_hash: b7603d8a82add7a
+styles_hash: d4bf27d871c90729

@@ -3,7 +3,7 @@ use crate::{
     Res,
     app::{App, PromptParams, State},
     error::Error,
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::arg::{Arg, any_regex, positive_number},
     screen,
     term::Term,
@@ -47,7 +47,12 @@ impl OpTrait for LogOther {
                 term,
                 &PromptParams {
                     prompt: "Log rev",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;

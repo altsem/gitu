@@ -8,22 +8,15 @@ use layout::LayoutTree;
 use layout::OPTS;
 use ratatui::Frame;
 use ratatui::prelude::*;
-use ratatui::style::Stylize;
 use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub(crate) mod layout;
 mod menu;
+pub mod picker;
 
 const CARET: &str = "\u{2588}";
 const DASHES: &str = "────────────────────────────────────────────────────────────────";
-const STYLE: Style = Style {
-    fg: None,
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::DIM,
-    sub_modifier: Modifier::empty(),
-};
 
 pub(crate) type UiTree<'a> = LayoutTree<(Cow<'a, str>, Style)>;
 
@@ -33,13 +26,15 @@ pub(crate) fn ui(frame: &mut Frame, state: &mut State) {
 
     layout.vertical(None, OPTS, |layout| {
         layout.vertical(None, OPTS.grow(), |layout| {
-            screen::layout_screen(layout, size, state.screens.last().unwrap());
+            let hide_cursor = state.picker.is_some();
+            screen::layout_screen(layout, size, state.screens.last().unwrap(), hide_cursor);
         });
 
         layout.vertical(None, OPTS, |layout| {
             menu::layout_menu(layout, state, size.width as usize);
             layout_command_log(layout, state, size.width as usize);
             layout_prompt(layout, state, size.width as usize);
+            layout_picker(layout, state, size.width as usize);
         });
     });
 
@@ -68,7 +63,8 @@ impl<'a> Widget for SpanRef<'a> {
 
 fn layout_command_log<'a>(layout: &mut UiTree<'a>, state: &State, width: usize) {
     if !state.current_cmd_log.is_empty() {
-        repeat_chars(layout, width, DASHES, STYLE);
+        let separator_style = Style::from(&state.config.style.separator);
+        repeat_chars(layout, width, DASHES, separator_style);
         layout_text(layout, state.current_cmd_log.format_log(&state.config));
     }
 }
@@ -79,19 +75,27 @@ fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
     };
 
     let prompt_symbol = state.prompt.state.status().symbol();
+    let separator_style = Style::from(&state.config.style.separator);
+    let prompt_style = Style::from(&state.config.style.prompt);
 
-    repeat_chars(layout, width, DASHES, STYLE);
+    repeat_chars(layout, width, DASHES, separator_style);
     layout.horizontal(None, OPTS, |layout| {
         layout_span(layout, (prompt_symbol.content, prompt_symbol.style));
         layout_span(layout, (" ".into(), Style::new()));
         layout_span(
             layout,
-            (prompt_data.prompt_text.as_ref().into(), Style::new()),
+            (prompt_data.prompt_text.as_ref().into(), prompt_style),
         );
-        layout_span(layout, (" › ".into(), Style::new().cyan().dim()));
+        layout_span(layout, (" › ".into(), prompt_style));
         layout_span(layout, (state.prompt.state.value().into(), Style::new()));
         layout_span(layout, (CARET.into(), Style::new()));
     });
+}
+
+fn layout_picker<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
+    if let Some(ref picker_state) = state.picker {
+        picker::layout_picker(layout, picker_state, &state.config, width);
+    }
 }
 
 pub(crate) fn layout_text<'a>(layout: &mut UiTree<'a>, text: Text<'a>) {
@@ -103,9 +107,12 @@ pub(crate) fn layout_text<'a>(layout: &mut UiTree<'a>, text: Text<'a>) {
 }
 
 pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, line: Line<'a>) {
+    let line_style = line.style;
     layout.horizontal(None, OPTS, |layout| {
         for span in line {
-            layout_span(layout, (span.content, span.style));
+            // Merge line.style with span.style
+            let merged_style = line_style.patch(span.style);
+            layout_span(layout, (span.content, merged_style));
         }
     });
 }

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add file-a file-b                                                         |
-styles_hash: c31f24a08945591f
+styles_hash: 93f1d2dc4e2c68b6

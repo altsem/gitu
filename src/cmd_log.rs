@@ -1,9 +1,7 @@
 use crate::config::Config;
 use itertools::Itertools;
-use ratatui::style::Style;
-use ratatui::style::Stylize;
-use ratatui::text::Line;
 use ratatui::text::Text;
+use ratatui::text::{Line, Span};
 use std::borrow::Cow;
 use std::iter;
 use std::process::Command;
@@ -77,10 +75,13 @@ pub(crate) fn format_log_entry<'a>(
     log: &Arc<RwLock<CmdLogEntry>>,
 ) -> Vec<Line<'a>> {
     match &*log.read().unwrap() {
-        CmdLogEntry::Cmd { args, out } => [Line::styled(
-            format!("{}{}", if out.is_some() { "$ " } else { "Running: " }, args),
-            &config.style.command,
-        )]
+        CmdLogEntry::Cmd { args, out } => [Line::from(vec![
+            Span::styled(
+                if out.is_some() { "$ " } else { "Running: " },
+                &config.style.info_msg,
+            ),
+            Span::styled(args.to_string(), &config.style.command),
+        ])]
         .into_iter()
         .chain(out.iter().flat_map(|out| {
             if out.is_empty() {
@@ -91,13 +92,10 @@ pub(crate) fn format_log_entry<'a>(
         }))
         .collect::<Vec<_>>(),
         CmdLogEntry::Error(err) => {
-            vec![Line::styled(format!("! {err}"), Style::new().red().bold())]
+            vec![Line::styled(format!("! {err}"), &config.style.error_msg)]
         }
         CmdLogEntry::Info(msg) => {
-            vec![Line::styled(
-                format!("> {msg}"),
-                Style::new().green().bold(),
-            )]
+            vec![Line::styled(format!("> {msg}"), &config.style.info_msg)]
         }
     }
 }

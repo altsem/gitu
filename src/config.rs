@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
-use crate::{Bindings, Res, error::Error, menu::Menu, ops::Op};
+use crate::{Bindings, Res, error::Error, key_parser, menu::Menu, ops::Op};
+use crossterm::event::{KeyCode, KeyModifiers};
 use etcetera::{BaseStrategy, choose_base_strategy};
 use figment::{
     Figment,
@@ -15,6 +16,27 @@ pub struct Config {
     pub general: GeneralConfig,
     pub style: StyleConfig,
     pub bindings: Bindings,
+    pub picker_bindings: PickerBindings,
+}
+
+#[derive(Default, Deserialize)]
+pub(crate) struct PickerBindingsConfig {
+    #[serde(default)]
+    pub next: Vec<String>,
+    #[serde(default)]
+    pub previous: Vec<String>,
+    #[serde(default)]
+    pub done: Vec<String>,
+    #[serde(default)]
+    pub cancel: Vec<String>,
+}
+
+#[derive(Default, Deserialize)]
+pub(crate) struct BindingsConfig {
+    #[serde(flatten)]
+    pub menus: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>,
+    #[serde(default)]
+    pub picker: PickerBindingsConfig,
 }
 
 #[derive(Default, Deserialize)]
@@ -23,7 +45,7 @@ pub struct Config {
 pub(crate) struct FigmentConfig {
     pub general: GeneralConfig,
     pub style: StyleConfig,
-    pub bindings: BTreeMap<Menu, BTreeMap<Op, Vec<String>>>,
+    pub bindings: BindingsConfig,
 }
 
 #[derive(Default, Debug, Deserialize)]
@@ -57,6 +79,17 @@ pub enum ConfirmDiscardOption {
 
 #[derive(Default, Debug, Deserialize)]
 pub struct StyleConfig {
+    pub separator: StyleConfigEntry,
+
+    pub info_msg: StyleConfigEntry,
+    pub error_msg: StyleConfigEntry,
+    pub command: StyleConfigEntry,
+
+    #[serde(default)]
+    pub menu: MenuStyleConfig,
+
+    pub prompt: StyleConfigEntry,
+
     pub section_header: StyleConfigEntry,
     pub file_header: StyleConfigEntry,
     pub hunk_header: StyleConfigEntry,
@@ -67,19 +100,32 @@ pub struct StyleConfig {
     #[serde(default)]
     pub syntax_highlight: SyntaxHighlightConfig,
 
+    #[serde(default)]
+    pub picker: PickerStyleConfig,
+
     pub cursor: SymbolStyleConfigEntry,
-    pub selection_line: StyleConfigEntry,
     pub selection_bar: SymbolStyleConfigEntry,
+    pub selection_line: StyleConfigEntry,
     pub selection_area: StyleConfigEntry,
 
     pub hash: StyleConfigEntry,
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
     pub tag: StyleConfigEntry,
+}
 
-    pub command: StyleConfigEntry,
+#[derive(Default, Debug, Deserialize)]
+pub struct MenuStyleConfig {
+    #[serde(default)]
+    pub heading: StyleConfigEntry,
+    #[serde(default)]
+    pub key: StyleConfigEntry,
+    /// Active argument value display (e.g., "--interactive")
+    #[serde(default)]
     pub active_arg: StyleConfigEntry,
-    pub hotkey: StyleConfigEntry,
+    /// Inactive argument value display
+    #[serde(default)]
+    pub inactive_arg: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]
@@ -150,6 +196,18 @@ pub struct SyntaxHighlightConfig {
 }
 
 #[derive(Default, Debug, Deserialize)]
+pub struct PickerStyleConfig {
+    #[serde(default)]
+    pub prompt: StyleConfigEntry,
+    #[serde(default)]
+    pub info: StyleConfigEntry,
+    #[serde(default)]
+    pub selection_line: StyleConfigEntry,
+    #[serde(default)]
+    pub matched: StyleConfigEntry,
+}
+
+#[derive(Default, Debug, Deserialize)]
 pub struct StyleConfigEntry {
     #[serde(default)]
     fg: Option<Color>,
@@ -195,6 +253,57 @@ impl From<&SymbolStyleConfigEntry> for Style {
     }
 }
 
+pub struct PickerBindings {
+    pub next: Vec<Vec<(KeyModifiers, KeyCode)>>,
+    pub previous: Vec<Vec<(KeyModifiers, KeyCode)>>,
+    pub done: Vec<Vec<(KeyModifiers, KeyCode)>>,
+    pub cancel: Vec<Vec<(KeyModifiers, KeyCode)>>,
+}
+
+impl TryFrom<PickerBindingsConfig> for PickerBindings {
+    type Error = crate::error::Error;
+
+    fn try_from(config: PickerBindingsConfig) -> Result<Self, Self::Error> {
+        let mut bad_bindings = Vec::new();
+
+        let next = parse_picker_keys(&config.next, "picker.next", &mut bad_bindings);
+        let previous = parse_picker_keys(&config.previous, "picker.previous", &mut bad_bindings);
+        let done = parse_picker_keys(&config.done, "picker.done", &mut bad_bindings);
+        let cancel = parse_picker_keys(&config.cancel, "picker.cancel", &mut bad_bindings);
+
+        if !bad_bindings.is_empty() {
+            return Err(Error::Bindings {
+                bad_key_bindings: bad_bindings,
+            });
+        }
+
+        Ok(Self {
+            next,
+            previous,
+            done,
+            cancel,
+        })
+    }
+}
+
+fn parse_picker_keys(
+    raw_keys: &[String],
+    action_name: &str,
+    bad_bindings: &mut Vec<String>,
+) -> Vec<Vec<(KeyModifiers, KeyCode)>> {
+    raw_keys
+        .iter()
+        .filter_map(|keys| {
+            if let Ok(("", parsed)) = key_parser::parse_config_keys(keys) {
+                Some(parsed)
+            } else {
+                bad_bindings.push(format!("- {} = {}", action_name, keys));
+                None
+            }
+        })
+        .collect()
+}
+
 pub fn init_config(path: Option<PathBuf>) -> Res<Config> {
     let config_path = path.unwrap_or_else(config_path);
 
@@ -207,19 +316,21 @@ pub fn init_config(path: Option<PathBuf>) -> Res<Config> {
     let FigmentConfig {
         general,
         style,
-        bindings: raw_bindings,
+        bindings: bindings_config,
     } = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .merge(Toml::file(config_path))
         .extract()
         .map_err(Box::new)
         .map_err(Error::Config)?;
-    let bindings = Bindings::try_from(raw_bindings)?;
+    let bindings = Bindings::try_from(bindings_config.menus)?;
+    let picker_bindings = PickerBindings::try_from(bindings_config.picker)?;
 
     Ok(Config {
         general,
         style,
         bindings,
+        picker_bindings,
     })
 }
 
@@ -235,7 +346,7 @@ pub(crate) fn init_test_config() -> Res<Config> {
     let FigmentConfig {
         mut general,
         style,
-        bindings: raw_bindings,
+        bindings: bindings_config,
     } = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
         .extract()
@@ -248,7 +359,8 @@ pub(crate) fn init_test_config() -> Res<Config> {
     Ok(Config {
         general,
         style,
-        bindings: Bindings::try_from(raw_bindings).unwrap(),
+        bindings: Bindings::try_from(bindings_config.menus).unwrap(),
+        picker_bindings: PickerBindings::try_from(bindings_config.picker).unwrap(),
     })
 }
 

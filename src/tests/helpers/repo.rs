@@ -5,6 +5,7 @@ use std::{
 };
 
 use temp_dir::TempDir;
+use url::Url;
 
 pub struct RepoTestContext {
     pub dir: PathBuf,
@@ -42,7 +43,7 @@ impl RepoTestContext {
         set_config(&remote_dir);
         clone_and_commit(&remote_dir, "initial-file", "hello");
 
-        let url = format!("file://{}", remote_dir.to_str().unwrap());
+        let url = Url::from_file_path(&remote_dir).unwrap().to_string();
         run(&local_dir, &["git", "clone", &url, "."]);
         set_config(&local_dir);
 
@@ -66,10 +67,10 @@ fn assert_local_test_repo(local_dir: &Path, remote_dir: &Path) {
     );
 
     let origin = run(local_dir, &["git", "remote", "get-url", "origin"]);
-    let origin = origin.trim();
-    let expected = format!("file://{}", remote_dir.to_str().unwrap());
+    let actual = Url::parse(&origin).unwrap();
+    let expected = Url::from_file_path(remote_dir).unwrap();
 
-    assert_eq!(origin, expected, "unexpected origin URL for test repo");
+    assert_eq!(actual, expected, "unexpected origin URL for test repo");
 }
 
 fn assert_remote_test_repo(dir: &Path) {
@@ -130,7 +131,7 @@ fn set_config(path: &Path) {
 pub fn clone_and_commit(remote_dir: &Path, file_name: &str, file_content: &str) {
     let other_dir = TempDir::new().unwrap();
 
-    let url = format!("file://{}", remote_dir.to_str().unwrap());
+    let url = Url::from_file_path(remote_dir).unwrap().to_string();
     run(other_dir.path(), &["git", "clone", &url, "."]);
 
     set_config(other_dir.path());
