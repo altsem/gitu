@@ -24,8 +24,6 @@ impl OpTrait for FetchAll {
             let mut cmd = Command::new("git");
             cmd.args(["fetch", "--all", "--jobs", "10"]);
             cmd.args(app.state.pending_menu.as_ref().unwrap().args());
-
-            app.close_menu();
             app.run_cmd_async(term, &[], cmd)?;
             Ok(())
         }))
@@ -63,8 +61,6 @@ fn fetch_elsewhere(app: &mut App, term: &mut Term, remote: &str) -> Res<()> {
     cmd.args(["fetch"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(remote);
-
-    app.close_menu();
     app.run_cmd_async(term, &[], cmd)?;
     Ok(())
 }

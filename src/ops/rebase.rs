@@ -36,8 +36,6 @@ impl OpTrait for RebaseContinue {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--continue"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -54,8 +52,6 @@ impl OpTrait for RebaseAbort {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["rebase", "--abort"]);
-
-            app.close_menu();
             app.run_cmd(term, &[], cmd)?;
             Ok(())
         }))
@@ -77,7 +73,6 @@ impl OpTrait for RebaseElsewhere {
 
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
             let args = app.state.pending_menu.as_ref().unwrap().args();
-            app.close_menu();
             let result = app.pick(
                 term,
                 PickerState::with_refs(PickerParams {
@@ -111,8 +106,6 @@ fn rebase_elsewhere(
     cmd.arg("rebase");
     cmd.args(args);
     cmd.arg(rev);
-
-    app.close_menu();
     app.run_cmd_interactive(term, cmd)?;
     Ok(())
 }
@@ -133,7 +126,6 @@ impl OpTrait for RebaseInteractive {
                 let rev = OsString::from(oid);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
-                    app.close_menu();
                     app.run_cmd_interactive(term, rebase_interactive_cmd(&args, &rev))
                 })
             }
@@ -181,7 +173,6 @@ impl OpTrait for RebaseAutosquash {
                 let rev = OsString::from(oid);
                 Rc::new(move |app: &mut App, term: &mut Term| {
                     let args = app.state.pending_menu.as_ref().unwrap().args();
-                    app.close_menu();
                     app.run_cmd_interactive(term, rebase_autosquash_cmd(&args, &rev))
                 })
             }

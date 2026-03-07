@@ -73,10 +73,6 @@ fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
         Err(err) => Err(Error::FindGitRev(err)),
     };
 
-    if oid_result.is_err() {
-        app.close_menu();
-    }
-
     let oid = oid_result?;
 
     goto_log_screen(app, Some(oid));
@@ -101,8 +97,6 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
         .and_then(|m| m.args.get("--grep"));
 
     let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>().cloned());
-
-    app.close_menu();
 
     app.state.screens.push(
         screen::log::create(

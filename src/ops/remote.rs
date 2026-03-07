@@ -102,7 +102,6 @@ fn remove_remote(
     let mut cmd = Command::new("git");
     cmd.args(["remote", "remove", remote_name]);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -116,7 +115,6 @@ fn rename_remote(
     let mut cmd = Command::new("git");
     cmd.args(["remote", "rename", remote_name, new_remote_name]);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -130,7 +128,6 @@ fn add_remote_with_name(
     let mut cmd = Command::new("git");
     cmd.args(["remote", "add", remote_name, remote_url]);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }

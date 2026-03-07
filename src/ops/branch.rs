@@ -22,7 +22,6 @@ pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            app.close_menu();
             let result = app.pick(
                 term,
                 PickerState::with_refs(PickerParams {
@@ -81,8 +80,6 @@ impl OpTrait for CheckoutNewBranch {
 fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", "-b", branch_name]);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -93,7 +90,6 @@ impl OpTrait for Delete {
         let default = target.rev();
 
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            app.close_menu();
             let result = app.pick(
                 term,
                 PickerState::with_branches(PickerParams {
@@ -187,8 +183,6 @@ impl OpTrait for Spinoff {
                 .map(|x| x.target());
 
             drop(current_branch);
-
-            app.close_menu();
 
             // Checkout new branch
             let mut cmd = Command::new("git");

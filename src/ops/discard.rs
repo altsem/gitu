@@ -88,7 +88,6 @@ fn clean_file(file: PathBuf) -> Action {
         cmd.args(["clean", "--force"]);
         cmd.arg(&file);
 
-        app.close_menu();
         app.run_cmd(term, &[], cmd)
     })
 }
@@ -101,8 +100,6 @@ fn reverse_worktree(patch: String) -> Action {
 
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse", "--recount"]);
-
-        app.close_menu();
         app.run_cmd(term, &patch_bytes, cmd)
     })
 }
@@ -115,8 +112,6 @@ fn reverse_index_and_worktree(patch: String) -> Action {
 
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--reverse", "--index", "--recount"]);
-
-        app.close_menu();
         app.run_cmd(term, &patch_bytes, cmd)
     })
 }

@@ -47,7 +47,6 @@ fn stash_push(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
         cmd.args(["--message", input]);
     }
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -82,7 +81,6 @@ fn stash_push_index(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
         cmd.args(["--message", input]);
     }
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -92,7 +90,6 @@ impl OpTrait for StashWorktree {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| -> Res<()> {
             if is_working_tree_empty(&app.state.repo)? {
-                app.close_menu();
                 return Err(Error::StashWorkTreeEmpty);
             }
 
@@ -142,8 +139,6 @@ fn stash_worktree(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["stash", "push"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
-
-    app.close_menu();
 
     if need_to_stash_index {
         let mut cmd = Command::new("git");
@@ -215,7 +210,6 @@ fn stash_push_keep_index(app: &mut App, term: &mut Term, input: &str) -> Res<()>
         cmd.args(["--message", input]);
     }
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -248,7 +242,6 @@ fn stash_pop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["stash", "pop", "-q"]);
     cmd.arg(input);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -281,7 +274,6 @@ fn stash_apply(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["stash", "apply", "-q"]);
     cmd.arg(input);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -314,7 +306,6 @@ fn stash_drop(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["stash", "drop"]);
     cmd.arg(input);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
