@@ -13,12 +13,12 @@ harness = false
 [dev-dependencies]
 pretty_assertions = "1.4.1"
 temp-dir = "0.1.16"
-criterion = "0.8.1"
-insta = "1.46.0"
+criterion = "0.8.2"
+insta = "1.46.3"
 unicode-width = "0.2.0"
 temp-env = "0.3.6"
 stdext = "0.3.3"
-url = "2.5.7"
+url = "2.5.8"
 
 [profile.profiling]
 inherits = "dev"
@@ -31,13 +31,13 @@ strip = true
 arboard = { version = "3.6.1", default-features = false, features = [
     "windows-sys",
 ] }
-chrono = "0.4.42"
-clap = { version = "4.5.54", features = ["derive"] }
+chrono = "0.4.44"
+clap = { version = "4.5.60", features = ["derive"] }
 crossterm = "0.28.1"
 etcetera = "0.11.0"
 figment = { version = "0.10.19", features = ["toml"] }
 git-version = "0.3.9"
-git2 = { version = "0.20.2", default-features = false }
+git2 = { version = "0.20.4", default-features = false }
 itertools = "0.14.0"
 log = "0.4.28"
 nom = "8.0.0"
@@ -68,7 +68,7 @@ tree-sitter-scala = "=0.23.4"
 tree-sitter-ocaml = "=0.24.2"
 tree-sitter-html = "=0.23.2"
 tree-sitter-elixir = "=0.3.4"
-regex = "1.12.2"
+regex = "1.12.3"
 strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
 cached = "0.56.0"
@@ -77,4 +77,4 @@ tinyvec = "1.10.0"
 smashquote = "0.1.2"
 imara-diff = { version = "0.2.0", default-features = false }
 fuzzy-matcher = "0.3.7"
-url = "2.5.7"
+url = "2.5.8"
