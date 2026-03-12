@@ -118,6 +118,7 @@ root.show = ["enter"]
 root.discard = ["K"]
 root.stage = ["s"]
 root.unstage = ["u"]
+root.apply = ["a"]
 root.copy_hash = ["y"]
 
 picker.next = ["down", "ctrl+n", "tab"]
