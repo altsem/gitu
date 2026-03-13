@@ -2,11 +2,17 @@
 source: src/tests/branch.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
+▌On branch main-rename                                                          |
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+ b66a0bf main-rename origin/main add initial-file                               |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -15,11 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
- Branch                                                                         |
- b     Checkout branch/revision                                                 |
- c     Checkout new branch                                                      |
- s     Spinoff branch                                                           |
- K     Delete branch                                                            |
- m     Rename branch                                                            |
- q/esc Quit/Close                                                               |
-styles_hash: cdf143286ee83a68
+$ git branch -m main main-rename                                                |
+styles_hash: ea8b06a9b8042d62

@@ -138,6 +138,58 @@ pub fn delete(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
     Ok(())
 }
 
+pub(crate) struct Rename;
+impl OpTrait for Rename {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let default = target.rev();
+
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let result = app.pick(
+                term,
+                PickerState::with_branches(PickerParams {
+                    prompt: "Rename branch".into(),
+                    refs: &git::branches(&app.state.repo, None)?,
+                    exclude_ref: None,
+                    default: default.clone(),
+                    allow_custom_input: false,
+                }),
+            )?;
+
+            if let Some(data) = result {
+                let old_name = data.display().to_string();
+
+                let new_name = app.prompt(
+                    term,
+                    &PromptParams {
+                        prompt: "Rename branch to",
+                        ..Default::default()
+                    },
+                )?;
+
+                if new_name.is_empty() {
+                    return Err(Error::BranchNameRequired);
+                }
+
+                rename(app, term, &old_name, &new_name)?;
+            }
+
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Rename branch".into()
+    }
+}
+
+pub fn rename(app: &mut App, term: &mut Term, old_name: &str, new_name: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["branch", "-m", old_name, new_name]);
+
+    app.run_cmd(term, &[], cmd)?;
+    Ok(())
+}
+
 pub(crate) struct Spinoff;
 impl OpTrait for Spinoff {
     fn get_action(&self, target: &ItemData) -> Option<Action> {

@@ -76,6 +76,31 @@ fn delete_unmerged_branch() {
     snapshot!(ctx, "bKbugfix-123<enter>nbKbugfix-123<enter>y");
 }
 
+// ==================== Rename Tests ====================
+
+#[test]
+fn rename_picker() {
+    snapshot!(setup_picker(setup_clone!()), "bm");
+}
+
+#[test]
+fn rename_picker_cancel() {
+    snapshot!(setup_picker(setup_clone!()), "bm<esc>");
+}
+
+#[test]
+fn rename_select_from_list() {
+    snapshot!(
+        setup_picker(setup_clone!()),
+        "bmfeature-a<enter>feature-rename<enter>"
+    );
+}
+
+#[test]
+fn rename_current_branch() {
+    snapshot!(setup_clone!(), "bm<enter>main-rename<enter>");
+}
+
 // ==================== CheckoutNewBranch Tests ====================
 
 #[test]
