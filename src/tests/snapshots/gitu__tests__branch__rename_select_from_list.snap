@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
- Branch                                                                         |
- b     Checkout branch/revision                                                 |
- c     Checkout new branch                                                      |
- s     Spinoff branch                                                           |
- K     Delete branch                                                            |
- m     Rename branch                                                            |
- q/esc Quit/Close                                                               |
-styles_hash: cdf143286ee83a68
+$ git branch -m feature-a feature-rename                                        |
+styles_hash: 2b5fb9a917713dd6
