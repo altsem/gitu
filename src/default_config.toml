@@ -132,6 +132,7 @@ root.branch_menu = ["b"]
 branch_menu.checkout = ["b"]
 branch_menu.checkout_new_branch = ["c"]
 branch_menu.spinoff = ["s"]
+branch_menu.rename = ["m"]
 branch_menu.delete = ["K"]
 branch_menu.quit = ["q", "esc"]
 
