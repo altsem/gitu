@@ -46,8 +46,6 @@ fn apply_stash(stash_ref: String) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["stash", "apply", "-q"]);
         cmd.arg(&stash_ref);
-
-        app.close_menu();
         app.run_cmd(term, &[], cmd)
     })
 }
@@ -60,8 +58,6 @@ fn apply_line(diff: &Rc<Diff>, file_i: usize, hunk_i: usize, line_i: usize) -> A
     Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--recount"]);
-
-        app.close_menu();
         app.run_cmd(term, &patch, cmd)
     })
 }
@@ -72,8 +68,6 @@ fn apply_patch(patch: String) -> Action {
     Rc::new(move |app: &mut App, term: &mut Term| {
         let mut cmd = Command::new("git");
         cmd.arg("apply");
-
-        app.close_menu();
         app.run_cmd(term, &patch, cmd)
     })
 }
