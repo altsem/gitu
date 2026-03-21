@@ -394,7 +394,7 @@ pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a
 
                 layout_span(layout, gutter_char);
 
-                line.display.spans.into_iter().for_each(|span| {
+                for span in line.display.spans.into_iter() {
                     let style = bg.patch(line.display.style).patch(span.style);
 
                     let span_width = span.content.graphemes(true).count();
@@ -415,16 +415,17 @@ pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, size: Size, screen: &'a
                             ),
                         );
                         layout_span(layout, ("…".into(), bg));
+                        break;
                     } else {
                         // Insert the span as normal
                         line_end += span_width;
                         ui::layout_span(layout, (span.content, style));
                     }
-                });
+                }
 
                 // Add ellipsis indicator for collapsed sections
                 let item = &screen.items[line.item_index];
-                if screen.is_collapsed(item) {
+                if screen.is_collapsed(item) && line_end < size.width as usize {
                     line_end += 1;
                     layout_span(layout, ("…".into(), bg));
                 }
