@@ -15,6 +15,7 @@ use std::fs;
 mod helpers;
 mod arg;
 mod branch;
+mod cherry_pick;
 mod commit;
 mod discard;
 mod editor;

@@ -111,6 +111,34 @@ pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct CherryPickStatus {
+    pub head: String,
+}
+
+pub(crate) fn cherry_pick_status(repo: &Repository) -> Res<Option<CherryPickStatus>> {
+    let dir = repo.workdir().expect("No workdir");
+    let mut cherry_pick_head_file = dir.to_path_buf();
+    cherry_pick_head_file.push(".git/CHERRY_PICK_HEAD");
+
+    match fs::read_to_string(&cherry_pick_head_file) {
+        Ok(content) => {
+            let head = content.trim().to_string();
+            Ok(Some(CherryPickStatus {
+                head: branch_name_lossy(dir, &head)?.unwrap_or(head[..7].to_string()),
+            }))
+        }
+        Err(err) => {
+            log::warn!(
+                "Couldn't read {}, due to {}",
+                cherry_pick_head_file.to_string_lossy(),
+                err
+            );
+            Ok(None)
+        }
+    }
+}
+
 fn branch_name_lossy(dir: &Path, hash: &str) -> Res<Option<String>> {
     let out = Command::new("git")
         .args(["for-each-ref", "--format", "%(objectname) %(refname:short)"])
