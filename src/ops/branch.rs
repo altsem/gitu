@@ -1,14 +1,15 @@
-use super::{Action, OpTrait, selected_rev};
+use super::{Action, OpTrait};
 use crate::{
     Res,
     app::{App, PromptParams, State},
     error::Error,
     git::{
-        does_branch_exist, get_current_branch, get_current_branch_name, is_branch_merged,
+        self, does_branch_exist, get_current_branch, get_current_branch_name, is_branch_merged,
         remote::get_branch_upstream,
     },
-    item_data::{ItemData, RefKind},
+    item_data::{ItemData, Ref},
     menu::arg::Arg,
+    picker::{PickerParams, PickerState},
     term::Term,
 };
 use std::{process::Command, rc::Rc};
@@ -21,16 +22,22 @@ pub(crate) struct Checkout;
 impl OpTrait for Checkout {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let rev = app.prompt(
+            let result = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Checkout",
-                    create_default_value: Box::new(selected_rev),
-                    ..Default::default()
-                },
+                PickerState::with_refs(PickerParams {
+                    prompt: "Checkout".into(),
+                    refs: &git::branches_tags(&app.state.repo)?,
+                    exclude_ref: git::head_ref(&app.state.repo)?,
+                    default: app.selected_rev(),
+                    allow_custom_input: true,
+                }),
             )?;
 
-            checkout(app, term, &rev)?;
+            if let Some(data) = result {
+                let rev = data.display();
+                checkout(app, term, rev)?;
+            }
+
             Ok(())
         }))
     }
@@ -44,7 +51,6 @@ fn checkout(app: &mut App, term: &mut Term, rev: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", rev]);
 
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -74,8 +80,6 @@ impl OpTrait for CheckoutNewBranch {
 fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["checkout", "-b", branch_name]);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -83,27 +87,25 @@ fn checkout_new_branch_prompt_update(app: &mut App, term: &mut Term, branch_name
 pub(crate) struct Delete;
 impl OpTrait for Delete {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
-        let default = match target {
-            ItemData::Reference {
-                kind: RefKind::Branch(branch),
-                ..
-            } => Some(branch.clone()),
-            _ => None,
-        };
+        let default = target.rev();
 
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let default = default.clone();
-
-            let branch_name = app.prompt(
+            let result = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Delete",
-                    create_default_value: Box::new(move |_| default.clone()),
-                    ..Default::default()
-                },
+                PickerState::with_branches(PickerParams {
+                    prompt: "Delete".into(),
+                    refs: &git::branches(&app.state.repo, None)?,
+                    exclude_ref: git::head_ref(&app.state.repo)?,
+                    default: default.clone(),
+                    allow_custom_input: false,
+                }),
             )?;
 
-            delete(app, term, &branch_name)?;
+            if let Some(data) = result {
+                let branch_name = data.display();
+                delete(app, term, branch_name)?;
+            }
+
             Ok(())
         }))
     }
@@ -132,7 +134,58 @@ pub fn delete(app: &mut App, term: &mut Term, branch_name: &str) -> Res<()> {
 
     cmd.arg(branch_name);
 
-    app.close_menu();
+    app.run_cmd(term, &[], cmd)?;
+    Ok(())
+}
+
+pub(crate) struct Rename;
+impl OpTrait for Rename {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let default = target.rev();
+
+        Some(Rc::new(move |app: &mut App, term: &mut Term| {
+            let result = app.pick(
+                term,
+                PickerState::with_branches(PickerParams {
+                    prompt: "Rename branch".into(),
+                    refs: &git::branches(&app.state.repo, None)?,
+                    exclude_ref: None,
+                    default: default.clone(),
+                    allow_custom_input: false,
+                }),
+            )?;
+
+            if let Some(data) = result {
+                let old_name = data.display().to_string();
+
+                let new_name = app.prompt(
+                    term,
+                    &PromptParams {
+                        prompt: "Rename branch to",
+                        ..Default::default()
+                    },
+                )?;
+
+                if new_name.is_empty() {
+                    return Err(Error::BranchNameRequired);
+                }
+
+                rename(app, term, &old_name, &new_name)?;
+            }
+
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "Rename branch".into()
+    }
+}
+
+pub fn rename(app: &mut App, term: &mut Term, old_name: &str, new_name: &str) -> Res<()> {
+    let mut cmd = Command::new("git");
+    cmd.args(["branch", "-m", old_name, new_name]);
+
     app.run_cmd(term, &[], cmd)?;
     Ok(())
 }
@@ -142,7 +195,7 @@ impl OpTrait for Spinoff {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let default = match target {
             ItemData::Reference {
-                kind: RefKind::Branch(branch),
+                kind: Ref::Head(branch),
                 ..
             } => Some(branch.clone()),
             _ => None,
@@ -182,8 +235,6 @@ impl OpTrait for Spinoff {
                 .map(|x| x.target());
 
             drop(current_branch);
-
-            app.close_menu();
 
             // Checkout new branch
             let mut cmd = Command::new("git");

@@ -3,7 +3,7 @@ use std::{process::Command, rc::Rc};
 use crate::{
     Res,
     app::{App, PromptParams, State},
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::arg::Arg,
     term::Term,
 };
@@ -26,8 +26,6 @@ impl OpTrait for RevertAbort {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--abort"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -44,8 +42,6 @@ impl OpTrait for RevertContinue {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
             let mut cmd = Command::new("git");
             cmd.args(["revert", "--continue"]);
-
-            app.close_menu();
             app.run_cmd_interactive(term, cmd)?;
             Ok(())
         }))
@@ -64,7 +60,12 @@ impl OpTrait for RevertCommit {
                 term,
                 &PromptParams {
                     prompt: "Revert commit",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -84,7 +85,5 @@ fn revert_commit(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["revert"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd_interactive(term, cmd)
 }

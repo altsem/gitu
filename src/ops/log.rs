@@ -3,7 +3,7 @@ use crate::{
     Res,
     app::{App, PromptParams, State},
     error::Error,
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::arg::{Arg, any_regex, positive_number},
     screen,
     term::Term,
@@ -47,7 +47,12 @@ impl OpTrait for LogOther {
                 term,
                 &PromptParams {
                     prompt: "Log rev",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -67,10 +72,6 @@ fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
         Ok(rev) => Ok(rev.id()),
         Err(err) => Err(Error::FindGitRev(err)),
     };
-
-    if oid_result.is_err() {
-        app.close_menu();
-    }
 
     let oid = oid_result?;
 
@@ -96,8 +97,6 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
         .and_then(|m| m.args.get("--grep"));
 
     let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>().cloned());
-
-    app.close_menu();
 
     app.state.screens.push(
         screen::log::create(

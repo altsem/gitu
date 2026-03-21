@@ -2,7 +2,7 @@
 source: src/tests/rebase.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch other-branch                                                         |
+ On branch other-branch                                                         |
                                                                                 |
  Recent commits                                                                 |
  b66a0bf other-branch origin/main add initial-file                              |
@@ -10,16 +10,16 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
-? Rebase onto: › █                                                              |
-styles_hash: 53f8a523dd3a4d8a
+ 3/3   Rebase onto › █                                                          |
+▌main                                                                           |
+ origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 65f4fc0ca3a35c1e

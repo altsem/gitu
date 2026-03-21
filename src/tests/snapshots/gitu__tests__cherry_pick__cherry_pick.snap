@@ -1,12 +1,13 @@
 ---
-source: src/tests/branch.rs
+source: src/tests/cherry_pick.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
+▌b9ef0d7 main other-branch add cherry-file                                      |
+ b66a0bf origin/main add initial-file                                           |
                                                                                 |
- Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git branch -d merged                                                          |
-Deleted branch merged (was b66a0bf).                                            |
-styles_hash: dce6312dfc6aa477
+$ git cherry-pick other-branch                                                  |
+styles_hash: 1386c91c12bf9893

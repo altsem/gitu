@@ -1,15 +1,16 @@
 ---
-source: src/tests/branch.rs
+source: src/tests/merge.rs
 expression: ctx.redact_buffer()
 ---
- Branches                                                                       |
-   main                                                                         |
-▌* merged                                                                       |
-   unmerged                                                                     |
+▌On branch main                                                                 |
+▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
- Remote origin                                                                  |
-   origin/HEAD                                                                  |
-   origin/main                                                                  |
+ Recent commits                                                                 |
+ 3b23a7d feature-a main v1.0.0 add feature-a commit                             |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -20,6 +21,5 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-$ git checkout merged                                                           |
-Switched to branch 'merged'                                                     |
-styles_hash: c4b788b765812f1b
+$ git merge feature-a                                                           |
+styles_hash: 994114f03d7a9c3c

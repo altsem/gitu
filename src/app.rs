@@ -28,8 +28,7 @@ use crate::cmd_log::CmdLogEntry;
 use crate::config::Config;
 use crate::error::Error;
 use crate::file_watcher::FileWatcher;
-use crate::item_data::ItemData;
-use crate::item_data::RefKind;
+use crate::item_data::Rev;
 use crate::menu::Menu;
 use crate::menu::PendingMenu;
 use crate::ops::Op;
@@ -58,6 +57,7 @@ pub(crate) struct State {
     pub clipboard: Option<Clipboard>,
     needs_redraw: bool,
     file_watcher: Option<FileWatcher>,
+    inhibit_close_menu: bool,
 }
 
 pub(crate) struct App {
@@ -110,6 +110,7 @@ impl App {
                 clipboard,
                 file_watcher: None,
                 needs_redraw: true,
+                inhibit_close_menu: false,
             },
         };
 
@@ -208,7 +209,7 @@ impl App {
                 }
                 Ok(())
             }
-            Event::Key(key) => {
+            Event::Key(mut key) => {
                 if self.state.pending_cmd.is_none() {
                     self.state.current_cmd_log.clear();
                 }
@@ -216,6 +217,10 @@ impl App {
                 if self.state.pending_cmd.is_none() {
                     self.state.current_cmd_log.clear();
                 }
+
+                // The character received in the KeyEvent changes as shift is pressed,
+                // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
+                key.modifiers = key.modifiers.difference(KeyModifiers::SHIFT);
 
                 if self.state.picker.is_some() {
                     self.handle_picker_input(key);
@@ -248,16 +253,17 @@ impl App {
     }
 
     fn handle_key_input(&mut self, term: &mut Term, key: event::KeyEvent) -> Res<()> {
+        if key.kind != event::KeyEventKind::Press {
+            return Ok(());
+        }
+
         let menu = match &self.state.pending_menu {
             None => Menu::Root,
             Some(menu) if menu.menu == Menu::Help => Menu::Root,
             Some(menu) => menu.menu,
         };
 
-        // The the character received in the KeyEvent changes as shift is pressed,
-        // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
-        let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
-        self.state.pending_keys.push((mods_without_shift, key.code));
+        self.state.pending_keys.push((key.modifiers, key.code));
 
         let matching_bindings = self
             .state
@@ -328,10 +334,15 @@ impl App {
     pub(crate) fn handle_op(&mut self, op: Op, term: &mut Term) -> Res<()> {
         let screen_ref = self.screen();
         let item_data = &screen_ref.get_selected_item().data;
+        let implementation = op.clone().implementation();
 
-        if let Some(mut action) = op.clone().implementation().get_action(item_data) {
+        if let Some(mut action) = implementation.get_action(item_data) {
             let result = Rc::get_mut(&mut action).unwrap()(self, term);
             self.handle_result(result)?;
+            if !self.state.inhibit_close_menu {
+                self.close_menu();
+            }
+            self.state.inhibit_close_menu = false;
         }
 
         Ok(())
@@ -343,7 +354,6 @@ impl App {
             Err(Error::NoMoreEvents) => Err(Error::NoMoreEvents),
             Err(Error::PromptAborted) => Ok(()),
             Err(error) => {
-                self.close_menu();
                 self.state
                     .current_cmd_log
                     .push(CmdLogEntry::Error(error.to_string()));
@@ -355,6 +365,10 @@ impl App {
 
     pub fn close_menu(&mut self) {
         self.state.pending_menu = root_menu(&self.state.config).map(PendingMenu::init)
+    }
+
+    pub fn inhibit_close_menu(&mut self) {
+        self.state.inhibit_close_menu = true;
     }
 
     pub fn screen_mut(&mut self) -> &mut Screen {
@@ -536,16 +550,8 @@ impl App {
         }
     }
 
-    pub fn selected_rev(&self) -> Option<String> {
-        match &self.screen().get_selected_item().data {
-            ItemData::Reference { kind, .. } => match kind {
-                RefKind::Tag(tag) => Some(tag.to_owned()),
-                RefKind::Branch(branch) => Some(branch.to_owned()),
-                RefKind::Remote(remote) => Some(remote.to_owned()),
-            },
-            ItemData::Commit { oid, .. } => Some(oid.to_owned()),
-            _ => None,
-        }
+    pub fn selected_rev(&self) -> Option<Rev> {
+        self.screen().get_selected_item().data.rev()
     }
 
     pub fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
@@ -563,9 +569,6 @@ impl App {
         let result = self.handle_prompt(term, params);
 
         self.unhide_menu();
-        if result.is_err() {
-            self.close_menu();
-        }
         self.state.prompt.reset(term)?;
 
         result
@@ -597,9 +600,6 @@ impl App {
         let result = self.handle_confirm(term);
 
         self.unhide_menu();
-        if result.is_err() {
-            self.close_menu();
-        }
         self.state.prompt.reset(term)?;
 
         result
@@ -635,13 +635,13 @@ impl App {
     /// # Example
     /// ```ignore
     /// let items = vec![
-    ///     PickerItem::new("main", PickerData::Revision("main".to_string())),
-    ///     PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+    ///     PickerItem::new("main", PickerData::Item("main".to_string())),
+    ///     PickerItem::new("develop", PickerData::Item("develop".to_string())),
     /// ];
     /// let picker = PickerState::new("Select branch", items, false);
     ///
-    /// match app.picker(term, picker)? {
-    ///     Some(PickerData::Revision(name)) => {
+    /// match app.pick(term, picker)? {
+    ///     Some(PickerData::Item(name)) => {
     ///         // User selected a branch
     ///         println!("Selected: {}", name);
     ///     }
@@ -654,12 +654,7 @@ impl App {
     ///     }
     /// }
     /// ```
-    #[allow(dead_code)]
-    pub fn picker(
-        &mut self,
-        term: &mut Term,
-        picker_state: PickerState,
-    ) -> Res<Option<PickerData>> {
+    pub fn pick(&mut self, term: &mut Term, picker_state: PickerState) -> Res<Option<PickerData>> {
         self.state.picker = Some(picker_state);
         let result = self.handle_picker(term);
 
@@ -691,12 +686,8 @@ impl App {
 
     fn handle_picker_input(&mut self, key: event::KeyEvent) {
         if let Some(ref mut picker) = self.state.picker {
-            // The character received in the KeyEvent changes as shift is pressed,
-            // e.g. '/' becomes '?' on a US keyboard. So just ignore SHIFT.
-            let mods_without_shift = key.modifiers.difference(KeyModifiers::SHIFT);
-            let key_combo = vec![(mods_without_shift, key.code)];
-
             let bindings = &self.state.config.picker_bindings;
+            let key_combo = vec![(key.modifiers, key.code)];
 
             if bindings.next.iter().any(|b| b == &key_combo) {
                 picker.next();

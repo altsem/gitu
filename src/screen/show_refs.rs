@@ -10,7 +10,7 @@ use crate::{
     Res,
     config::Config,
     error::Error,
-    item_data::{ItemData, RefKind, SectionHeader},
+    item_data::{ItemData, Rev, SectionHeader},
     items::{self, Item, hash},
 };
 use git2::{Reference, Repository};
@@ -101,14 +101,8 @@ where
         .filter(filter)
         .map(move |reference| {
             let name = reference.name().unwrap().to_owned();
-            let shorthand = reference.shorthand().unwrap().to_owned();
-
-            let ref_kind = if reference.is_branch() {
-                RefKind::Branch(shorthand)
-            } else if reference.is_tag() {
-                RefKind::Tag(shorthand)
-            } else {
-                RefKind::Remote(shorthand)
+            let Rev::Ref(ref_kind) = Rev::from_reference(&reference).unwrap() else {
+                unreachable!("This should be a reference")
             };
 
             let prefix = create_prefix(repo, &reference);

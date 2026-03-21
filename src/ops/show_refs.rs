@@ -24,7 +24,6 @@ impl OpTrait for ShowRefs {
 fn goto_refs_screen(app: &mut App) {
     app.state.screens.drain(1..);
     let size = app.state.screens.last().unwrap().size;
-    app.close_menu();
     app.state.screens.push(
         screen::show_refs::create(
             Arc::clone(&app.state.config),

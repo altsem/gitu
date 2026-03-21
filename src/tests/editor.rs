@@ -56,11 +56,11 @@ fn move_next_then_parent_section() {
 }
 
 #[test]
-fn exit_from_prompt_exits_menu() {
+fn exit_from_picker_exits_menu() {
     snapshot!(setup_clone!(), "bb<esc>");
 }
 
 #[test]
-fn re_enter_prompt_from_menu() {
+fn re_enter_picker_from_menu() {
     snapshot!(setup_clone!(), "bb<esc>bb");
 }

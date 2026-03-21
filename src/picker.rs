@@ -4,24 +4,22 @@ use std::borrow::Cow;
 use tui_prompts::State as _;
 use tui_prompts::TextState;
 
+use crate::item_data::Ref;
+use crate::item_data::Rev;
+
 /// Data that can be selected in a picker
 #[derive(Debug, Clone, PartialEq)]
 pub enum PickerData {
-    /// Revision (branch, commit, reference, etc.)
-    Revision(String),
-    /// Remote name
-    Remote(String),
+    /// A selected item value
+    Item(String),
     /// Custom user input (literal text from input field)
     CustomInput(String),
 }
 
 impl PickerData {
-    /// Get the display string for this data
     pub fn display(&self) -> &str {
         match self {
-            PickerData::Revision(s) => s,
-            PickerData::Remote(s) => s,
-            PickerData::CustomInput(s) => s,
+            PickerData::Item(s) | PickerData::CustomInput(s) => s,
         }
     }
 }
@@ -84,6 +82,14 @@ pub struct PickerState {
     custom_input_item: Option<PickerItem>,
 }
 
+pub(crate) struct PickerParams<'a> {
+    pub(crate) prompt: Cow<'static, str>,
+    pub(crate) refs: &'a [Ref],
+    pub(crate) exclude_ref: Option<Ref>,
+    pub(crate) default: Option<Rev>,
+    pub(crate) allow_custom_input: bool,
+}
+
 impl PickerState {
     /// Create a new picker with items
     pub fn new(
@@ -104,6 +110,71 @@ impl PickerState {
         };
         state.update_filter();
         state
+    }
+
+    /// Create a picker showing only local branches by shorthand name.
+    /// The default branch (if any) is listed first. The exclude_ref is omitted.
+    pub(crate) fn with_branches(params: PickerParams) -> Self {
+        let default_name = params.default.as_ref().map(|r| r.shorthand().to_string());
+        let exclude_name = params
+            .exclude_ref
+            .as_ref()
+            .map(|r| r.shorthand().to_string());
+
+        let items = default_name
+            .iter()
+            .map(|name| PickerItem::new(name.clone(), PickerData::Item(name.clone())))
+            .chain(
+                params
+                    .refs
+                    .iter()
+                    .filter(|r| matches!(r, Ref::Head(_)))
+                    .filter(|r| exclude_name.as_deref().is_none_or(|e| e != r.shorthand()))
+                    .filter(|r| default_name.as_deref().is_none_or(|d| d != r.shorthand()))
+                    .map(|r| {
+                        let name = r.shorthand().to_string();
+                        PickerItem::new(name.clone(), PickerData::Item(name))
+                    }),
+            )
+            .collect();
+
+        Self::new(params.prompt, items, params.allow_custom_input)
+    }
+
+    /// Create a picker from refs. Tags are prefixed with "tag: " in display.
+    /// The default ref (if any) is listed first. The exclude_ref is omitted.
+    pub(crate) fn with_refs(params: PickerParams) -> Self {
+        let ref_to_item = |r: &Ref| {
+            let (display, refname) = match r {
+                Ref::Tag(name) => (format!("tag: {}", name), r.to_full_refname()),
+                _ => (r.shorthand().to_string(), r.shorthand().to_string()),
+            };
+            PickerItem::new(display, PickerData::Item(refname))
+        };
+
+        let default_item = params.default.as_ref().map(|default| match default {
+            Rev::Ref(r) => ref_to_item(r),
+            Rev::Commit(c) => PickerItem::new(c.clone(), PickerData::Item(c.clone())),
+        });
+
+        let items = default_item
+            .into_iter()
+            .chain(
+                params
+                    .refs
+                    .iter()
+                    .filter(|r| {
+                        params.exclude_ref.as_ref().is_none_or(|e| e != *r)
+                            && params.default.as_ref().is_none_or(|d| match d {
+                                Rev::Ref(d) => d != *r,
+                                _ => true,
+                            })
+                    })
+                    .map(ref_to_item),
+            )
+            .collect();
+
+        Self::new(params.prompt, items, params.allow_custom_input)
     }
 
     /// Get current input pattern
@@ -281,23 +352,17 @@ mod tests {
 
     fn create_test_items() -> Vec<PickerItem> {
         vec![
-            PickerItem::new("main", PickerData::Revision("main".to_string())),
-            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
-            PickerItem::new(
-                "feature/test",
-                PickerData::Revision("feature/test".to_string()),
-            ),
-            PickerItem::new(
-                "feature/new",
-                PickerData::Revision("feature/new".to_string()),
-            ),
-            PickerItem::new("bugfix/123", PickerData::Revision("bugfix/123".to_string())),
+            PickerItem::new("main", PickerData::Item("main".to_string())),
+            PickerItem::new("develop", PickerData::Item("develop".to_string())),
+            PickerItem::new("feature/test", PickerData::Item("feature/test".to_string())),
+            PickerItem::new("feature/new", PickerData::Item("feature/new".to_string())),
+            PickerItem::new("bugfix/123", PickerData::Item("bugfix/123".to_string())),
         ]
     }
 
     #[test]
     fn test_picker_data_display() {
-        let revision = PickerData::Revision("main".to_string());
+        let revision = PickerData::Item("main".to_string());
         assert_eq!(revision.display(), "main");
 
         let custom = PickerData::CustomInput("custom".to_string());
@@ -306,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_picker_item_new() {
-        let item = PickerItem::new("main", PickerData::Revision("main".to_string()));
+        let item = PickerItem::new("main", PickerData::Item("main".to_string()));
         assert_eq!(item.display.as_ref(), "main");
         assert_eq!(item.data.display(), "main");
     }
@@ -378,16 +443,10 @@ mod tests {
     fn test_fuzzy_filtering_sorts_by_score() {
         // Create items with varying match quality for pattern "feat"
         let items = vec![
-            PickerItem::new("feat", PickerData::Revision("feat".to_string())), // Exact match
-            PickerItem::new("feature", PickerData::Revision("feature".to_string())), // Prefix match
-            PickerItem::new(
-                "feature/test",
-                PickerData::Revision("feature/test".to_string()),
-            ), // Prefix with more chars
-            PickerItem::new(
-                "fix-eat-bug",
-                PickerData::Revision("fix-eat-bug".to_string()),
-            ), // Scattered match
+            PickerItem::new("feat", PickerData::Item("feat".to_string())), // Exact match
+            PickerItem::new("feature", PickerData::Item("feature".to_string())), // Prefix match
+            PickerItem::new("feature/test", PickerData::Item("feature/test".to_string())), // Prefix with more chars
+            PickerItem::new("fix-eat-bug", PickerData::Item("fix-eat-bug".to_string())), // Scattered match
         ];
         let mut state = PickerState::new("Select", items, false);
 
@@ -423,9 +482,9 @@ mod tests {
     #[test]
     fn test_case_insensitive_matching() {
         let items = vec![
-            PickerItem::new("Feature", PickerData::Revision("Feature".to_string())),
-            PickerItem::new("feature", PickerData::Revision("feature".to_string())),
-            PickerItem::new("FEATURE", PickerData::Revision("FEATURE".to_string())),
+            PickerItem::new("Feature", PickerData::Item("Feature".to_string())),
+            PickerItem::new("feature", PickerData::Item("feature".to_string())),
+            PickerItem::new("FEATURE", PickerData::Item("FEATURE".to_string())),
         ];
 
         let mut state = PickerState::new("Select item", items, false);
@@ -621,8 +680,8 @@ mod tests {
     #[test]
     fn test_navigation_with_custom_input_at_end() {
         let items = vec![
-            PickerItem::new("feature/a", PickerData::Revision("feature/a".to_string())),
-            PickerItem::new("feature/b", PickerData::Revision("feature/b".to_string())),
+            PickerItem::new("feature/a", PickerData::Item("feature/a".to_string())),
+            PickerItem::new("feature/b", PickerData::Item("feature/b".to_string())),
         ];
 
         let mut state = PickerState::new("Select", items, true);
@@ -649,7 +708,7 @@ mod tests {
         // Navigate to first match
         let selected = state.selected().unwrap();
         match &selected.data {
-            PickerData::Revision(_) => {}
+            PickerData::Item(_) => {}
             _ => panic!("Expected first item to be a revision"),
         }
 
@@ -699,7 +758,7 @@ mod tests {
             .map(|i| {
                 PickerItem::new(
                     format!("branch-{:02}", i),
-                    PickerData::Revision(format!("branch-{:02}", i)),
+                    PickerData::Item(format!("branch-{:02}", i)),
                 )
             })
             .collect();
@@ -733,10 +792,10 @@ mod tests {
     #[test]
     fn test_navigation_after_filtering() {
         let items = vec![
-            PickerItem::new("feature/a", PickerData::Revision("feature/a".to_string())),
-            PickerItem::new("feature/b", PickerData::Revision("feature/b".to_string())),
-            PickerItem::new("main", PickerData::Revision("main".to_string())),
-            PickerItem::new("develop", PickerData::Revision("develop".to_string())),
+            PickerItem::new("feature/a", PickerData::Item("feature/a".to_string())),
+            PickerItem::new("feature/b", PickerData::Item("feature/b".to_string())),
+            PickerItem::new("main", PickerData::Item("main".to_string())),
+            PickerItem::new("develop", PickerData::Item("develop".to_string())),
         ];
 
         let mut state = PickerState::new("Select", items, false);
@@ -990,7 +1049,7 @@ mod tests {
     fn test_single_item_navigation() {
         let items = vec![PickerItem::new(
             "only",
-            PickerData::Revision("only".to_string()),
+            PickerData::Item("only".to_string()),
         )];
         let mut state = PickerState::new("Select", items, false);
 
@@ -1001,5 +1060,259 @@ mod tests {
 
         state.previous();
         assert_eq!(state.cursor(), 0); // Wraps to same item
+    }
+
+    #[test]
+    fn test_with_refs_basic_sorting() {
+        // Test that items are sorted as: default -> branches -> tags -> remotes
+        let refs = &[
+            Ref::Tag("v1.0.0".to_string()),
+            Ref::Remote("origin/main".to_string()),
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+            Ref::Tag("v2.0.0".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        // Order is preserved from input
+        assert_eq!(
+            items,
+            &[
+                "tag: v1.0.0",
+                "origin/main",
+                "feature",
+                "main",
+                "tag: v2.0.0"
+            ]
+        )
+    }
+
+    #[test]
+    fn test_with_refs_empty_list() {
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs: &[],
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: false,
+        });
+
+        assert_eq!(state.total_items(), 0);
+        assert_eq!(state.filtered_count(), 0);
+        assert!(state.selected().is_none());
+    }
+
+    #[test]
+    fn test_with_refs_with_default() {
+        // Test that default ref is shown first
+        let refs = &[
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+        ];
+
+        let default = Some(Rev::Ref(Ref::Head("main".to_string())));
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default,
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        // Default should be first, then remaining in input order
+        assert_eq!(&items, &["main", "feature", "tag: v1.0.0"]);
+    }
+
+    #[test]
+    fn test_with_refs_exclude_ref() {
+        // Test that excluded ref is not shown
+        let refs = &[
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: Some(Ref::Head("main".to_string())),
+            default: None,
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        // main should be excluded
+        assert_eq!(&items, &["feature", "tag: v1.0.0"])
+    }
+
+    #[test]
+    fn test_with_refs_duplicate_names() {
+        // Tag and branch with same name are disambiguated by "tag: " prefix
+        let refs = &[
+            Ref::Head("v1.0.0".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+            Ref::Head("main".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        assert_eq!(&items, &["v1.0.0", "tag: v1.0.0", "main"])
+    }
+
+    #[test]
+    fn test_with_refs_duplicate_with_default() {
+        // Tag default shown with "tag: " prefix
+        let refs = &[
+            Ref::Head("v1.0.0".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+            Ref::Head("main".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: Some(Rev::Ref(Ref::Tag("v1.0.0".to_string()))),
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        assert_eq!(items, &["tag: v1.0.0", "v1.0.0", "main"])
+    }
+
+    #[test]
+    fn test_with_refs_exclude_and_default_same() {
+        // Test when exclude and default are the same
+        // The implementation adds default first, then filters exclude from remaining items
+        // So if default == exclude, default is still added, then exclude filters it from the rest
+        let refs = &[
+            Ref::Head("feature".to_string()),
+            Ref::Head("main".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: Some(Ref::Head("main".to_string())),
+            default: Some(Rev::Ref(Ref::Head("main".to_string()))),
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        // Default is added first, then exclude filters remaining items
+        // So we get: main (default) + feature (not excluded)
+        assert_eq!(&items, &["main", "feature"])
+    }
+
+    #[test]
+    fn test_with_refs_with_custom_input() {
+        let refs = &[
+            Ref::Head("main".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: None,
+            allow_custom_input: true,
+        });
+
+        // Custom input should be allowed
+        assert!(state.allow_custom_input);
+
+        // With empty pattern, no custom input item
+        assert!(state.custom_input_item.is_none());
+    }
+
+    #[test]
+    fn test_with_refs_exclude_tag_sibling() {
+        // If branch is excluded, remaining tag still shows "tag: " prefix
+        let refs = &[
+            Ref::Head("v1.0.0".to_string()),
+            Ref::Tag("v1.0.0".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: Some(Ref::Head("v1.0.0".to_string())),
+            default: None,
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        assert_eq!(&items, &["tag: v1.0.0"]);
+    }
+
+    #[test]
+    fn test_with_refs_remote_tracking_default() {
+        let refs = &[
+            Ref::Head("main".to_string()),
+            Ref::Remote("origin/main".to_string()),
+            Ref::Remote("origin/feature".to_string()),
+        ];
+
+        let state = PickerState::with_refs(PickerParams {
+            prompt: "Select".into(),
+            refs,
+            exclude_ref: None,
+            default: Some(Rev::Ref(Ref::Remote("origin/main".to_string()))),
+            allow_custom_input: false,
+        });
+
+        let items: Vec<_> = state
+            .filtered_items()
+            .map(|(_, item)| item.display.as_ref())
+            .collect();
+
+        // Default remote-tracking branch shown first as shorthand, then remaining
+        assert_eq!(&items, &["origin/main", "main", "origin/feature"]);
     }
 }
