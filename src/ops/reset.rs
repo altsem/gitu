@@ -2,7 +2,7 @@ use super::{OpTrait, selected_rev};
 use crate::{
     Action, Res,
     app::{App, PromptParams, State},
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::arg::Arg,
     term::Term,
 };
@@ -20,7 +20,12 @@ impl OpTrait for ResetSoft {
                 term,
                 &PromptParams {
                     prompt: "Soft reset to",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -40,8 +45,6 @@ fn reset_soft(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["reset", "--soft"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)
 }
 
@@ -53,7 +56,12 @@ impl OpTrait for ResetMixed {
                 term,
                 &PromptParams {
                     prompt: "Mixed reset to",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -73,8 +81,6 @@ fn reset_mixed(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["reset", "--mixed"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)
 }
 
@@ -86,7 +92,12 @@ impl OpTrait for ResetHard {
                 term,
                 &PromptParams {
                     prompt: "Hard reset to",
-                    create_default_value: Box::new(selected_rev),
+                    create_default_value: Box::new(|app| {
+                        selected_rev(app)
+                            .as_ref()
+                            .map(Rev::shorthand)
+                            .map(String::from)
+                    }),
                     ..Default::default()
                 },
             )?;
@@ -106,7 +117,5 @@ fn reset_hard(app: &mut App, term: &mut Term, input: &str) -> Res<()> {
     cmd.args(["reset", "--hard"]);
     cmd.args(app.state.pending_menu.as_ref().unwrap().args());
     cmd.arg(input);
-
-    app.close_menu();
     app.run_cmd(term, &[], cmd)
 }

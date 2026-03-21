@@ -1,0 +1,25 @@
+---
+source: src/tests/cherry_pick.rs
+expression: ctx.redact_buffer()
+---
+▌Cherry-picking other-branch                                                    |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ unmerged   conflict-file…                                                      |
+                                                                                |
+ Staged changes (1)                                                             |
+ unmerged   conflict-file…                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ 487ec57 main modify conflict-file                                              |
+ 415b98a add conflict-file                                                      |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git cherry-pick --continue                                                    |
+error: Committing is not possible because you have unmerged files.              |
+hint: Fix them up in the work tree, and then use 'git add/rm <file>'            |
+hint: as appropriate to mark resolution and make a commit.                      |
+fatal: Exiting because of an unresolved conflict.                               |
+! 'git cherry-pick--continue' exited with code: 128                             |
+styles_hash: fac6f201096c5cdc

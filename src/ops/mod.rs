@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     Res,
     app::{App, State},
-    item_data::ItemData,
+    item_data::{ItemData, Rev},
     menu::Menu,
     term::Term,
 };
@@ -11,6 +11,7 @@ use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod apply;
 pub(crate) mod branch;
+pub(crate) mod cherry_pick;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
 pub(crate) mod discard;
@@ -73,6 +74,7 @@ pub(crate) enum Op {
     RebaseContinue,
     RebaseElsewhere,
     RemoveRemote,
+    Rename,
     RenameRemote,
     ShowRefs,
     Stash,
@@ -93,6 +95,9 @@ pub(crate) enum Op {
     RevertAbort,
     RevertContinue,
     RevertCommit,
+    CherryPickAbort,
+    CherryPickContinue,
+    CherryPick,
     Merge,
     MergeAbort,
     MergeContinue,
@@ -148,6 +153,7 @@ impl Op {
             Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
             Op::Spinoff => Box::new(branch::Spinoff),
             Op::Delete => Box::new(branch::Delete),
+            Op::Rename => Box::new(branch::Rename),
             Op::Commit => Box::new(commit::Commit),
             Op::CommitAmend => Box::new(commit::CommitAmend),
             Op::CommitExtend => Box::new(commit::CommitExtend),
@@ -186,6 +192,9 @@ impl Op {
             Op::RevertAbort => Box::new(revert::RevertAbort),
             Op::RevertContinue => Box::new(revert::RevertContinue),
             Op::RevertCommit => Box::new(revert::RevertCommit),
+            Op::CherryPickAbort => Box::new(cherry_pick::CherryPickAbort),
+            Op::CherryPickContinue => Box::new(cherry_pick::CherryPickContinue),
+            Op::CherryPick => Box::new(cherry_pick::CherryPick),
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
@@ -219,6 +228,7 @@ impl Display for Menu {
             Menu::Rebase => "Rebase",
             Menu::Reset => "Reset",
             Menu::Revert => "Revert",
+            Menu::CherryPick => "Cherry-pick",
             Menu::Stash => "Stash",
         })
     }
@@ -228,6 +238,6 @@ pub(crate) fn confirm(app: &mut App, term: &mut Term, prompt: &'static str) -> R
     app.confirm(term, prompt)
 }
 
-pub(crate) fn selected_rev(state: &App) -> Option<String> {
-    state.selected_rev()
+pub(crate) fn selected_rev(app: &App) -> Option<Rev> {
+    app.selected_rev()
 }

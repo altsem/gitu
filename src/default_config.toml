@@ -83,6 +83,11 @@ syntax_highlight.type_builtin = { fg = "yellow" }
 syntax_highlight.variable_builtin = {}
 syntax_highlight.variable_parameter = {}
 
+picker.prompt = { fg = "cyan" }
+picker.info = { mods = "DIM" }
+picker.selection_line = { mods = "BOLD" }
+picker.matched = { fg = "yellow", mods = "BOLD" }
+
 cursor = { symbol = "▌", fg = "blue" }
 selection_bar = { symbol = "▌", fg = "blue", mods = "DIM" }
 selection_line = { mods = "BOLD" }
@@ -116,6 +121,11 @@ root.unstage = ["u"]
 root.apply = ["a"]
 root.copy_hash = ["y"]
 
+picker.next = ["down", "ctrl+n", "tab"]
+picker.previous = ["up", "ctrl+p", "backtab"]
+picker.done = ["enter"]
+picker.cancel = ["esc", "ctrl+c"]
+
 root.help_menu = ["h", "?"]
 help_menu.quit = ["q", "h", "?", "esc"]
 
@@ -123,6 +133,7 @@ root.branch_menu = ["b"]
 branch_menu.checkout = ["b"]
 branch_menu.checkout_new_branch = ["c"]
 branch_menu.spinoff = ["s"]
+branch_menu.rename = ["m"]
 branch_menu.delete = ["K"]
 branch_menu.quit = ["q", "esc"]
 
@@ -216,6 +227,15 @@ revert_menu.revert_abort = ["a"]
 revert_menu.revert_continue = ["c"]
 revert_menu.revert_commit = ["V"]
 revert_menu.quit = ["q", "esc"]
+
+root.cherry_pick_menu = ["A"]
+cherry_pick_menu.--no-commit = ["-n"]
+cherry_pick_menu.--signoff = ["-s"]
+cherry_pick_menu.--edit = ["-e"]
+cherry_pick_menu.cherry_pick_abort = ["a"]
+cherry_pick_menu.cherry_pick_continue = ["c"]
+cherry_pick_menu.cherry_pick = ["A"]
+cherry_pick_menu.quit = ["q", "esc"]
 
 root.stash_menu = ["z"]
 stash_menu.--all = ["-a"]

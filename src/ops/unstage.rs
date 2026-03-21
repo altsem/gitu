@@ -62,16 +62,12 @@ fn unstage_staged() -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["reset", "HEAD", "--"]);
 
-        app.close_menu();
         app.run_cmd(term, &[], cmd)
     })
 }
 
 fn unstage_file(file: PathBuf) -> Action {
-    Rc::new(move |app: &mut App, term: &mut Term| {
-        app.close_menu();
-        app.run_cmd(term, &[], git::restore_index(&file))
-    })
+    Rc::new(move |app: &mut App, term: &mut Term| app.run_cmd(term, &[], git::restore_index(&file)))
 }
 
 fn unstage_patch(input: Vec<u8>) -> Action {
@@ -79,7 +75,6 @@ fn unstage_patch(input: Vec<u8>) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse"]);
 
-        app.close_menu();
         app.run_cmd(term, &input, cmd)
     })
 }
@@ -89,7 +84,6 @@ fn unstage_line(input: Vec<u8>) -> Action {
         let mut cmd = Command::new("git");
         cmd.args(["apply", "--cached", "--reverse", "--recount"]);
 
-        app.close_menu();
         app.run_cmd(term, &input, cmd)
     })
 }

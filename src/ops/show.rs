@@ -3,7 +3,7 @@ use crate::{
     Action,
     app::State,
     error::Error,
-    item_data::{ItemData, RefKind},
+    item_data::{ItemData, Ref},
     screen,
 };
 use core::str;
@@ -15,11 +15,11 @@ impl OpTrait for Show {
         match target {
             ItemData::Commit { oid, .. }
             | ItemData::Reference {
-                kind: RefKind::Tag(oid),
+                kind: Ref::Tag(oid),
                 ..
             }
             | ItemData::Reference {
-                kind: RefKind::Branch(oid),
+                kind: Ref::Head(oid),
                 ..
             } => goto_show_screen(oid.clone()),
             ItemData::Untracked(u) => editor(u.as_path(), None),
@@ -55,7 +55,6 @@ impl OpTrait for Show {
 
 fn goto_show_screen(r: String) -> Option<Action> {
     Some(Rc::new(move |app, term| {
-        app.close_menu();
         app.state.screens.push(
             screen::show::create(
                 Arc::clone(&app.state.config),
@@ -71,7 +70,6 @@ fn goto_show_screen(r: String) -> Option<Action> {
 
 fn goto_show_stash_screen(stash_ref: String) -> Option<Action> {
     Some(Rc::new(move |app, term| {
-        app.close_menu();
         app.state.screens.push(
             screen::show_stash::create(
                 Arc::clone(&app.state.config),
@@ -104,7 +102,6 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
             parse_editor_command(&editor, &file, maybe_line)
         };
 
-        app.close_menu();
         app.run_cmd_interactive(term, cmd)?;
         app.update_screens()
     }))

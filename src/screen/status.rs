@@ -15,6 +15,7 @@ enum SectionID {
     RebaseStatus,
     MergeStatus,
     RevertStatus,
+    CherryPickStatus,
     Untracked,
     Stashes,
     RecentCommits,
@@ -29,6 +30,7 @@ impl Hash for SectionID {
             SectionID::RebaseStatus => "rebase_status",
             SectionID::MergeStatus => "merge_status",
             SectionID::RevertStatus => "revert_status",
+            SectionID::CherryPickStatus => "cherry_pick_status",
             SectionID::Untracked => "untracked",
             SectionID::Stashes => "stashes",
             SectionID::RecentCommits => "recent_commits",
@@ -74,6 +76,13 @@ pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> R
                 vec![Item {
                     id: hash(SectionID::RevertStatus),
                     data: ItemData::Header(SectionHeader::Revert(revert.head)),
+                    ..Default::default()
+                }]
+                .into_iter()
+            } else if let Some(cherry_pick) = git::cherry_pick_status(&repo)? {
+                vec![Item {
+                    id: hash(SectionID::CherryPickStatus),
+                    data: ItemData::Header(SectionHeader::CherryPick(cherry_pick.head)),
                     ..Default::default()
                 }]
                 .into_iter()

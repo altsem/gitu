@@ -9,6 +9,7 @@ use crate::{
     error::{Error, Utf8Error},
     git::diff::DiffType,
     gitu_diff,
+    item_data::{Ref, Rev},
 };
 use std::{
     fs,
@@ -103,6 +104,34 @@ pub(crate) fn revert_status(repo: &Repository) -> Res<Option<RevertStatus>> {
             log::warn!(
                 "Couldn't read {}, due to {}",
                 revert_head_file.to_string_lossy(),
+                err
+            );
+            Ok(None)
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct CherryPickStatus {
+    pub head: String,
+}
+
+pub(crate) fn cherry_pick_status(repo: &Repository) -> Res<Option<CherryPickStatus>> {
+    let dir = repo.workdir().expect("No workdir");
+    let mut cherry_pick_head_file = dir.to_path_buf();
+    cherry_pick_head_file.push(".git/CHERRY_PICK_HEAD");
+
+    match fs::read_to_string(&cherry_pick_head_file) {
+        Ok(content) => {
+            let head = content.trim().to_string();
+            Ok(Some(CherryPickStatus {
+                head: branch_name_lossy(dir, &head)?.unwrap_or(head[..7].to_string()),
+            }))
+        }
+        Err(err) => {
+            log::warn!(
+                "Couldn't read {}, due to {}",
+                cherry_pick_head_file.to_string_lossy(),
                 err
             );
             Ok(None)
@@ -404,4 +433,60 @@ pub(crate) fn restore_index(file: &Path) -> Command {
     cmd.args(["restore", "--staged"]);
     cmd.arg(file);
     cmd
+}
+
+pub(crate) fn head(repo: &git2::Repository) -> Res<Rev> {
+    let head = repo.head().map_err(Error::GetHead)?;
+    Rev::from_reference(&head)
+}
+
+pub(crate) fn head_ref(repo: &git2::Repository) -> Res<Option<Ref>> {
+    match head(repo)? {
+        Rev::Ref(r) => Ok(Some(r)),
+        Rev::Commit(_) => Ok(None),
+    }
+}
+
+pub(crate) fn branches_tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    let mut refs = branches(repo, None)?
+        .into_iter()
+        .chain(tags(repo)?)
+        .collect::<Vec<_>>();
+
+    refs.sort_by_key(|r| {
+        std::cmp::Reverse(
+            repo.find_reference(&r.to_full_refname())
+                .ok()
+                .and_then(|r| r.peel_to_commit().ok())
+                .map(|c| c.time().seconds())
+                .unwrap_or(0),
+        )
+    });
+
+    Ok(refs)
+}
+
+pub(crate) fn branches(repo: &git2::Repository, filter: Option<git2::BranchType>) -> Res<Vec<Ref>> {
+    Ok(repo
+        .branches(filter)
+        .map_err(Error::ListGitReferences)?
+        .filter_map(|branch| {
+            let (branch, _) = branch.ok()?;
+            let Ok(Rev::Ref(r)) = Rev::from_reference(branch.get()) else {
+                return None;
+            };
+
+            Some(r)
+        })
+        .collect())
+}
+
+pub(crate) fn tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    Ok(repo
+        .tag_names(None)
+        .map_err(Error::ListGitReferences)?
+        .into_iter()
+        .flatten()
+        .map(|tag_name| Ref::Tag(tag_name.to_string()))
+        .collect())
 }

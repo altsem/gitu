@@ -1,0 +1,25 @@
+---
+source: src/tests/cherry_pick.rs
+expression: ctx.redact_buffer()
+---
+▌b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git cherry-pick --no-commit Aother-branch                                     |
+fatal: bad revision 'Aother-branch'                                             |
+! 'git cherry-pick--no-commitAother-branch' exited with code: 128               |
+styles_hash: 909239aa67e66107

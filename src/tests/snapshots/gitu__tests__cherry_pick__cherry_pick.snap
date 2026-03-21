@@ -1,0 +1,25 @@
+---
+source: src/tests/cherry_pick.rs
+expression: ctx.redact_buffer()
+---
+▌b9ef0d7 main other-branch add cherry-file                                      |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git cherry-pick other-branch                                                  |
+styles_hash: 1386c91c12bf9893

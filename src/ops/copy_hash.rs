@@ -21,7 +21,6 @@ impl OpTrait for CopyHash {
 
 fn copy_hash(r: String) -> Option<Action> {
     Some(Rc::new(move |app, _term| {
-        app.close_menu();
         match &mut app.state.clipboard {
             Some(cb) => {
                 cb.set_text(r.clone()).map_err(Error::Clipboard)?;

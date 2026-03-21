@@ -155,6 +155,7 @@ fn parse_special_key(input: &str) -> IResult<&str, KeyCode> {
             map(tag("pagedown"), |_| KeyCode::PageDown),
             map(tag("space"), |_| KeyCode::Char(' ')),
             map(tag("tab"), |_| KeyCode::Tab),
+            map(tag("backtab"), |_| KeyCode::BackTab),
             map(tag("delete"), |_| KeyCode::Delete),
             map(tag("insert"), |_| KeyCode::Insert),
             map(tag("esc"), |_| KeyCode::Esc),
