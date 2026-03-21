@@ -51,6 +51,9 @@ pub(crate) enum Menu {
     #[serde(rename = "revert_menu")]
     #[strum(serialize = "revert_menu")]
     Revert,
+    #[serde(rename = "cherry_pick_menu")]
+    #[strum(serialize = "cherry_pick_menu")]
+    CherryPick,
     #[serde(rename = "stash_menu")]
     #[strum(serialize = "stash_menu")]
     Stash,
@@ -81,6 +84,7 @@ impl PendingMenu {
                 Menu::Remote => vec![],
                 Menu::Reset => ops::reset::init_args(),
                 Menu::Revert => ops::revert::init_args(),
+                Menu::CherryPick => ops::cherry_pick::init_args(),
                 Menu::Stash => ops::stash::init_args(),
             }
             .into_iter()

@@ -145,6 +145,7 @@ impl Item {
                     SectionHeader::Rebase(head, onto) => format!("Rebasing {head} onto {onto}"),
                     SectionHeader::Merge(head) => format!("Merging {head}"),
                     SectionHeader::Revert(head) => format!("Reverting {head}"),
+                    SectionHeader::CherryPick(head) => format!("Cherry-picking {head}"),
                     SectionHeader::Stashes => "Stashes".to_string(),
                     SectionHeader::RecentCommits => "Recent commits".to_string(),
                     SectionHeader::Commit(oid) => format!("commit {oid}"),

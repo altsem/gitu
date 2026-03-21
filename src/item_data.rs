@@ -149,6 +149,7 @@ pub(crate) enum SectionHeader {
     Rebase(String, String),
     Merge(String),
     Revert(String),
+    CherryPick(String),
     Stashes,
     RecentCommits,
     Commit(String),

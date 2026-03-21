@@ -1,0 +1,25 @@
+---
+source: src/tests/cherry_pick.rs
+expression: ctx.redact_buffer()
+---
+▌Cherry-picking other-branch                                                    |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ unmerged   conflict-file…                                                      |
+                                                                                |
+ Staged changes (1)                                                             |
+ unmerged   conflict-file…                                                      |
+                                                                                |
+ Recent commits                                                                 |
+ 487ec57 main modify conflict-file                                              |
+ 415b98a add conflict-file                                                      |
+ b66a0bf origin/main add initial-file                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 9b5add9091fc728d

@@ -10,6 +10,7 @@ use crate::{
 use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod branch;
+pub(crate) mod cherry_pick;
 pub(crate) mod commit;
 pub(crate) mod copy_hash;
 pub(crate) mod discard;
@@ -93,6 +94,9 @@ pub(crate) enum Op {
     RevertAbort,
     RevertContinue,
     RevertCommit,
+    CherryPickAbort,
+    CherryPickContinue,
+    CherryPick,
     Merge,
     MergeAbort,
     MergeContinue,
@@ -186,6 +190,9 @@ impl Op {
             Op::RevertAbort => Box::new(revert::RevertAbort),
             Op::RevertContinue => Box::new(revert::RevertContinue),
             Op::RevertCommit => Box::new(revert::RevertCommit),
+            Op::CherryPickAbort => Box::new(cherry_pick::CherryPickAbort),
+            Op::CherryPickContinue => Box::new(cherry_pick::CherryPickContinue),
+            Op::CherryPick => Box::new(cherry_pick::CherryPick),
             Op::Show => Box::new(show::Show),
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
@@ -218,6 +225,7 @@ impl Display for Menu {
             Menu::Rebase => "Rebase",
             Menu::Reset => "Reset",
             Menu::Revert => "Revert",
+            Menu::CherryPick => "Cherry-pick",
             Menu::Stash => "Stash",
         })
     }
