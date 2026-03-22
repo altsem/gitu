@@ -24,6 +24,7 @@ pub(crate) mod push;
 pub(crate) mod rebase;
 pub(crate) mod remote;
 pub(crate) mod reset;
+pub(crate) mod reverse;
 pub(crate) mod revert;
 pub(crate) mod show;
 pub(crate) mod show_refs;
@@ -107,6 +108,7 @@ pub(crate) enum Op {
     Show,
     Discard,
     Apply,
+    Reverse,
     CopyHash,
 
     ToggleSection,
@@ -199,6 +201,7 @@ impl Op {
             Op::Stage => Box::new(stage::Stage),
             Op::Unstage => Box::new(unstage::Unstage),
             Op::Apply => Box::new(apply::Apply),
+            Op::Reverse => Box::new(reverse::Reverse),
             Op::CopyHash => Box::new(copy_hash::CopyHash),
 
             Op::AddRemote => Box::new(remote::AddRemote),
