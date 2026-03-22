@@ -2,9 +2,11 @@ use std::{process::Command, rc::Rc};
 
 use crate::{
     Res,
-    app::{App, PromptParams, State},
-    item_data::{ItemData, Rev},
+    app::{App, State},
+    git,
+    item_data::ItemData,
     menu::arg::Arg,
+    picker::{PickerParams, PickerState},
     term::Term,
 };
 
@@ -52,23 +54,23 @@ impl OpTrait for CherryPickContinue {
 
 pub(crate) struct CherryPick;
 impl OpTrait for CherryPick {
-    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+    fn get_action(&self, target: &ItemData) -> Option<Action> {
+        let rev = target.rev();
         Some(Rc::new(move |app: &mut App, term: &mut Term| {
-            let commit = app.prompt(
+            let result = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Cherry-pick commit",
-                    create_default_value: Box::new(|app| {
-                        selected_rev(app)
-                            .as_ref()
-                            .map(Rev::shorthand)
-                            .map(String::from)
-                    }),
-                    ..Default::default()
-                },
+                PickerState::with_refs(PickerParams {
+                    prompt: "Cherry-pick".into(),
+                    refs: &git::branches_tags(&app.state.repo)?,
+                    exclude_ref: git::head_ref(&app.state.repo)?,
+                    default: rev.clone().or_else(|| selected_rev(app)),
+                    allow_custom_input: true,
+                }),
             )?;
 
-            cherry_pick(app, term, &commit)?;
+            if let Some(data) = result {
+                cherry_pick(app, term, data.display())?;
+            }
             Ok(())
         }))
     }
