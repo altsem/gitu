@@ -2,17 +2,7 @@
 source: src/tests/cherry_pick.rs
 expression: ctx.redact_buffer()
 ---
-▌b66a0bf main origin/main add initial-file                                      |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
+ b66a0bf main origin/main add initial-file                                      |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +11,15 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
-? Cherry-pick commit (default main): › █                                        |
-styles_hash: bee94fff2519b82b
+ 4/4   Cherry-pick › █                                                          |
+▌main                                                                           |
+ other-branch                                                                   |
+ origin/HEAD                                                                    |
+ origin/main                                                                    |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: f868f120e27e8b1b
