@@ -28,6 +28,7 @@ mod quit;
 mod rebase;
 mod remote;
 mod reset;
+mod reverse;
 mod stage;
 mod stash;
 mod unstage;
