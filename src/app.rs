@@ -685,6 +685,10 @@ impl App {
     }
 
     fn handle_picker_input(&mut self, key: event::KeyEvent) {
+        if key.kind != event::KeyEventKind::Press {
+            return;
+        }
+
         if let Some(ref mut picker) = self.state.picker {
             let bindings = &self.state.config.picker_bindings;
             let key_combo = vec![(key.modifiers, key.code)];
