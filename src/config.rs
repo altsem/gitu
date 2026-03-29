@@ -59,6 +59,7 @@ pub struct GeneralConfig {
     pub recent_commits_limit: usize,
     pub mouse_support: bool,
     pub mouse_scroll_lines: usize,
+    pub use_osc52_clipboard: bool,
 }
 
 #[derive(Default, Debug, Deserialize)]

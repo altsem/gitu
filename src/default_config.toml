@@ -21,6 +21,15 @@ mouse_scroll_lines = 3
 # "never" - never prompt when discarding.
 confirm_discard = "line"
 
+# Enable OSC 52 clipboard support for terminals that support it.
+# This allows clipboard operations over SSH and in environments without
+# system clipboard access. Set to true to enable.
+#
+# To test if your terminal supports OSC 52, run this command:
+#   printf '\033]52;c;%s\007' "$(echo -n 'test' | base64)"
+# Then try pasting - if you see 'test', OSC 52 is supported.
+use_osc52_clipboard = false
+
 [style]
 # fg / bg can be either of:
 # - a hex value: "#707070"
