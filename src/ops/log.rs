@@ -21,6 +21,7 @@ pub(crate) fn init_args() -> Vec<Arg> {
             positive_number,
         ),
         Arg::new_arg("--grep", "Search messages", None, any_regex),
+        Arg::new_arg("-G", "Search changes", None, any_regex),
         // Arg::new_str("-S", "Search occurrences"), // TODO: Implement search
     ]
 }
@@ -98,6 +99,14 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
 
     let msg_regex = msg_regex_menu.and_then(|arg| arg.value_as::<Regex>().cloned());
 
+    let changes_regex_menu = app
+        .state
+        .pending_menu
+        .as_ref()
+        .and_then(|m| m.args.get("-G"));
+
+    let changes_regex = changes_regex_menu.and_then(|arg| arg.value_as::<Regex>().cloned());
+
     app.state.screens.push(
         screen::log::create(
             Arc::clone(&app.state.config),
@@ -106,6 +115,7 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
             limit as usize,
             rev,
             msg_regex,
+            changes_regex,
         )
         .expect("Couldn't create screen"),
     );

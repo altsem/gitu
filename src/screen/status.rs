@@ -240,5 +240,5 @@ fn create_log_section_items<'a>(
         },
     ]
     .into_iter()
-    .chain(items::log(repo, limit, None, None).unwrap())
+    .chain(items::log(repo, limit, None, None, None).unwrap())
 }

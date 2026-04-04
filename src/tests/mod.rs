@@ -21,6 +21,7 @@ mod discard;
 mod editor;
 mod fetch;
 mod log;
+mod log_grep_changes;
 mod merge;
 mod pull;
 mod push;
