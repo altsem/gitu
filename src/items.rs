@@ -7,6 +7,7 @@ use crate::highlight;
 use crate::item_data::ItemData;
 use crate::item_data::Ref;
 use crate::item_data::SectionHeader;
+use git2::DiffOptions;
 use git2::Oid;
 use git2::Repository;
 use ratatui::text::Line;
@@ -300,6 +301,7 @@ pub(crate) fn log(
     limit: usize,
     rev: Option<Oid>,
     msg_regex: Option<Regex>,
+    changes_regex: Option<Regex>,
 ) -> Res<Vec<Item>> {
     let mut revwalk = repo.revwalk().map_err(Error::ReadLog)?;
     if let Some(r) = rev {
@@ -348,6 +350,43 @@ pub(crate) fn log(
                 && !re.is_match(commit.message().unwrap_or(""))
             {
                 return Ok(None);
+            }
+
+            if let Some(re) = &changes_regex {
+                let parent = commit.parent(0).ok();
+                let parent_tree = parent
+                    .as_ref()
+                    .map(|p| p.tree())
+                    .transpose()
+                    .map_err(Error::ReadLog)?;
+                let current_tree = commit.tree().map_err(Error::ReadLog)?;
+
+                let mut opts = DiffOptions::new();
+                let diff = repo
+                    .diff_tree_to_tree(parent_tree.as_ref(), Some(&current_tree), Some(&mut opts))
+                    .map_err(Error::ReadLog)?;
+
+                let mut found = false;
+
+                diff.print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
+                    let content = std::str::from_utf8(line.content()).unwrap_or("");
+
+                    match line.origin() {
+                        '+' | '-' => {
+                            if re.is_match(content) {
+                                found = true;
+                                return false;
+                            }
+                        }
+                        _ => {}
+                    }
+                    true
+                })
+                .ok();
+
+                if !found {
+                    return Ok(None);
+                }
             }
 
             let associated_references: Vec<_> = references

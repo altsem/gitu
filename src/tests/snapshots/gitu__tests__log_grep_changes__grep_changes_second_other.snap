@@ -1,0 +1,25 @@
+---
+source: src/tests/log_grep_changes.rs
+expression: ctx.redact_buffer()
+---
+▌a7fb92e main modify first                                                      |
+ eb42c24 modify first                                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: a908290abddd40c9

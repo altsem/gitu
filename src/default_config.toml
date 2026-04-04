@@ -167,6 +167,7 @@ log_menu.log_other = ["o"]
 log_menu.quit = ["q", "esc"]
 log_menu.-n = ["-n"]
 log_menu.--grep = ["-F"]
+log_menu.-G = ["-G"]
 
 root.merge_menu = ["m"]
 merge_menu.--ff-only = ["-f"]
