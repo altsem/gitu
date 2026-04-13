@@ -115,32 +115,40 @@ pub fn run(config: Arc<Config>, args: &cli::Args, term: &mut Term) -> Res<()> {
 
 fn open_repo(dir: &Path) -> Res<Repository> {
     log::debug!("Opening repo");
-    let repo = open_repo_from_env()?;
+    let mut repo = Repository::open(dir).map_err(Error::OpenRepo)?;
+
+    if repo.is_worktree() {
+        repo = Repository::open(repo.commondir()).map_err(Error::OpenRepo)?;
+    }
+
     repo.set_workdir(dir, false).map_err(Error::OpenRepo)?;
     Ok(repo)
 }
 
 fn find_git_dir() -> Res<PathBuf> {
     log::debug!("Finding git dir");
-    let dir = PathBuf::from(
-        String::from_utf8(
-            Command::new("git")
-                .args(["rev-parse", "--show-toplevel"])
-                .output()
-                .map_err(Error::FindGitDir)?
-                .stdout,
-        )
-        .map_err(Error::GitDirUtf8)?
-        .trim_end(),
-    );
-    Ok(dir)
-}
 
-fn open_repo_from_env() -> Res<Repository> {
-    match Repository::open_from_env() {
-        Ok(repo) => Ok(repo),
-        Err(err) => Err(Error::OpenRepo(err)),
-    }
+    let output = Command::new("git")
+        .args(["rev-parse", "--show-toplevel"])
+        .output()
+        .map_err(Error::FindGitDir)?;
+
+    let status = output.status;
+
+    if !status.success() {
+        return Err(Error::CmdBadExit(
+            String::from_utf8(output.stderr).unwrap(),
+            status.code(),
+        ));
+    };
+
+    let dir = PathBuf::from(
+        String::from_utf8(output.stdout)
+            .map_err(Error::GitDirUtf8)?
+            .trim_end(),
+    );
+
+    Ok(dir)
 }
 
 fn keys_to_events(keys: &[(KeyModifiers, KeyCode)]) -> Vec<Event> {

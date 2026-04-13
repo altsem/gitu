@@ -413,6 +413,42 @@ fn inside_submodule() {
 }
 
 #[test]
+fn inside_shallow() {
+    let mut ctx = setup_clone!();
+    let url = Url::from_file_path(&ctx.remote_dir).unwrap().to_string();
+    run(&ctx.dir, &["git", "clone", "--depth=1", &url, "shallow"]);
+
+    let _app = ctx.init_app_at_path(ctx.dir.join("shallow"));
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn inside_worktree() {
+    let mut ctx = setup_clone!();
+    run(&ctx.dir, &["git", "checkout", "-b", "new-branch"]);
+    run(&ctx.dir, &["git", "worktree", "add", "main"]);
+
+    let _app = ctx.init_app_at_path(ctx.dir.join("main"));
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
+fn inside_shallow_worktree() {
+    let mut ctx = setup_clone!();
+    clone_and_commit(&ctx.remote_dir, "new-file", "hello");
+
+    let url = Url::from_file_path(&ctx.remote_dir).unwrap().to_string();
+    run(&ctx.dir, &["git", "clone", "--depth=1", &url, "shallow"]);
+
+    let shallow_dir = ctx.dir.join("shallow");
+    run(&shallow_dir, &["git", "checkout", "-b", "new-branch"]);
+    run(&shallow_dir, &["git", "worktree", "add", "main"]);
+
+    let _app = ctx.init_app_at_path(shallow_dir.join("main"));
+    insta::assert_snapshot!(ctx.redact_buffer());
+}
+
+#[test]
 fn syntax_highlighted() {
     let ctx = setup_clone!();
     commit(

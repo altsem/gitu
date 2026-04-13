@@ -4,14 +4,15 @@ use crate::{
     config::{self, Config},
     error::Error,
     key_parser::parse_test_keys,
+    open_repo,
     term::{Term, TermBackend},
     tests::helpers::RepoTestContext,
 };
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
-use git2::Repository;
 use ratatui::{Terminal, backend::TestBackend, layout::Size};
 use regex::Regex;
-use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
+use std::path::PathBuf;
+use std::{rc::Rc, sync::Arc, time::Duration};
 
 use self::buffer::TestBuffer;
 
@@ -69,7 +70,7 @@ impl TestContext {
 
     pub fn init_app_at_path(&mut self, path: PathBuf) -> App {
         let mut app = App::create(
-            Rc::new(Repository::open(path).unwrap()),
+            Rc::new(open_repo(&path).unwrap()),
             self.size,
             &Args::default(),
             Arc::clone(&self.config),
