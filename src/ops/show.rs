@@ -135,6 +135,7 @@ fn line_args(file: &str, maybe_line: Option<u32>, lower: String) -> Vec<String> 
             || lower.ends_with("nano")
             || lower.ends_with("micro")
             || lower.ends_with("nvr")
+            || lower.ends_with("kak")
         {
             vec![format!("+{line}"), file.to_string()]
         } else {
