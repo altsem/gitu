@@ -14,6 +14,7 @@ use std::fs;
 #[macro_use]
 mod helpers;
 mod arg;
+mod blame;
 mod branch;
 mod cherry_pick;
 mod commit;

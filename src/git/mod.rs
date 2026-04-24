@@ -168,6 +168,7 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         diff_type: DiffType::WorkdirToIndex,
         text,
+        commit: None,
     })
 }
 
@@ -186,6 +187,7 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         diff_type: DiffType::IndexToTree,
         text,
+        commit: None,
     })
 }
 
@@ -218,6 +220,7 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
         file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
         diff_type: DiffType::TreeToTree,
         text,
+        commit: Some(reference.to_string()),
     })
 }
 
@@ -254,6 +257,7 @@ pub(crate) fn stash_diffs(repo: &Repository, stash_ref: &str) -> Res<StashDiffs>
             file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
             diff_type: DiffType::TreeToTree,
             text,
+            commit: None,
         })
     };
 
@@ -272,6 +276,7 @@ pub(crate) fn stash_diffs(repo: &Repository, stash_ref: &str) -> Res<StashDiffs>
             file_diffs: gitu_diff::Parser::new(&text).parse_diff().unwrap(),
             diff_type: DiffType::TreeToTree,
             text,
+            commit: None,
         })
     };
 
@@ -280,6 +285,7 @@ pub(crate) fn stash_diffs(repo: &Repository, stash_ref: &str) -> Res<StashDiffs>
             text: String::new(),
             diff_type: DiffType::TreeToTree,
             file_diffs: vec![],
+            commit: None,
         };
         return Ok(StashDiffs {
             staged: empty,
@@ -426,6 +432,95 @@ pub(crate) fn does_branch_exist(repo: &git2::Repository, name: &str) -> Res<bool
     } else {
         Err(Error::DoesBranchExist(err))
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct BlameLine {
+    pub commit_hash: String,
+    pub short_hash: String,
+    pub author: String,
+    pub author_time: i64,
+    pub summary: String,
+    pub line_num: u32,
+    pub orig_line_num: u32,
+    pub content: String,
+}
+
+pub(crate) fn blame(
+    repo: &Repository,
+    file_path: &str,
+    commit: Option<&str>,
+) -> Res<Vec<BlameLine>> {
+    let dir = repo.workdir().expect("Bare repos unhandled");
+
+    let mut args = vec!["blame", "--line-porcelain"];
+    let commit_owned;
+    if let Some(c) = commit {
+        commit_owned = c.to_string();
+        args.push(commit_owned.as_str());
+    }
+    args.extend_from_slice(&["--", file_path]);
+
+    let output = Command::new("git")
+        .current_dir(dir)
+        .args(&args)
+        .output()
+        .map_err(Error::GitBlame)?;
+
+    if !output.status.success() {
+        return Ok(vec![]);
+    }
+
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    Ok(parse_blame_porcelain(&text))
+}
+
+fn parse_blame_porcelain(text: &str) -> Vec<BlameLine> {
+    let mut lines = text.lines();
+    let mut result = Vec::new();
+
+    while let Some(header) = lines.next() {
+        let parts: Vec<&str> = header.splitn(4, ' ').collect();
+        if parts.len() < 3 || parts[0].len() < 8 {
+            continue;
+        }
+
+        let commit_hash = parts[0].to_string();
+        let short_hash = commit_hash[..8].to_string();
+        let orig_line_num: u32 = parts[1].parse().unwrap_or(0);
+        let line_num: u32 = parts[2].parse().unwrap_or(0);
+
+        let mut author = String::new();
+        let mut author_time: i64 = 0;
+        let mut summary = String::new();
+        let mut content = String::new();
+
+        for line in lines.by_ref() {
+            if let Some(rest) = line.strip_prefix('\t') {
+                content = rest.to_string();
+                break;
+            } else if let Some(rest) = line.strip_prefix("author ") {
+                author = rest.to_string();
+            } else if let Some(rest) = line.strip_prefix("author-time ") {
+                author_time = rest.parse().unwrap_or(0);
+            } else if let Some(rest) = line.strip_prefix("summary ") {
+                summary = rest.to_string();
+            }
+        }
+
+        result.push(BlameLine {
+            commit_hash,
+            short_hash,
+            author,
+            author_time,
+            summary,
+            line_num,
+            orig_line_num,
+            content,
+        });
+    }
+
+    result
 }
 
 pub(crate) fn restore_index(file: &Path) -> Command {

@@ -187,7 +187,7 @@ pub(crate) struct MoveDownLine;
 impl OpTrait for MoveDownLine {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
-            app.screen_mut().select_next(NavMode::IncludeHunkLines);
+            app.screen_mut().select_next(NavMode::IncludeSubLines);
             Ok(())
         }))
     }
@@ -201,7 +201,7 @@ pub(crate) struct MoveUpLine;
 impl OpTrait for MoveUpLine {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app, _term| {
-            app.screen_mut().select_previous(NavMode::IncludeHunkLines);
+            app.screen_mut().select_previous(NavMode::IncludeSubLines);
             Ok(())
         }))
     }

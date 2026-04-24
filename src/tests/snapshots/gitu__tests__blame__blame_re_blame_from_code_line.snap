@@ -1,0 +1,25 @@
+---
+source: src/tests/blame.rs
+expression: ctx.redact_buffer()
+---
+ Blame file @ dc61526641c542a66eef0574499da9b6f12a5764^                         |
+ 1fcc61bc add file                                                              |
+    1 unchanged-top                                                             |
+▌   2 original                                                                  |
+    3 unchanged-botto                                                           |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: f6ac29ed54b120db

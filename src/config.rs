@@ -112,6 +112,17 @@ pub struct StyleConfig {
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
     pub tag: StyleConfigEntry,
+
+    #[serde(default)]
+    pub blame: BlameStyleConfig,
+}
+
+#[derive(Default, Debug, Deserialize)]
+pub struct BlameStyleConfig {
+    #[serde(default)]
+    pub line_num: StyleConfigEntry,
+    #[serde(default)]
+    pub code_line: StyleConfigEntry,
 }
 
 #[derive(Default, Debug, Deserialize)]

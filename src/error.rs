@@ -58,6 +58,7 @@ pub enum Error {
     GetBranchName(git2::Error),
     BaseCommitOid,
     UpstreamCommitOid,
+    GitBlame(io::Error),
 }
 
 impl std::error::Error for Error {}
@@ -164,6 +165,7 @@ impl Display for Error {
             Error::UpstreamCommitOid => {
                 f.write_str("Could not resolve OID of upstream branch commit")
             }
+            Error::GitBlame(e) => f.write_fmt(format_args!("Git blame error: {e}")),
         }
     }
 }

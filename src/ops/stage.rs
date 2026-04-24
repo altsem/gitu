@@ -16,7 +16,7 @@ impl OpTrait for Stage {
             ItemData::AllUnstaged(_) => stage_unstaged(),
             ItemData::AllUntracked(untracked) => stage_untracked(untracked.clone()),
             ItemData::Untracked(u) => stage_file(u.into()),
-            ItemData::Delta { diff, file_i } => {
+            ItemData::Delta { diff, file_i, .. } => {
                 let diff_header = &diff.file_diffs[*file_i].header;
                 let file_path = match diff_header.status {
                     Status::Deleted => &diff_header.old_file,

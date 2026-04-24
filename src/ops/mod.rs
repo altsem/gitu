@@ -10,6 +10,7 @@ use crate::{
 use std::{fmt::Display, rc::Rc};
 
 pub(crate) mod apply;
+pub(crate) mod blame;
 pub(crate) mod branch;
 pub(crate) mod cherry_pick;
 pub(crate) mod commit;
@@ -110,6 +111,7 @@ pub(crate) enum Op {
     Apply,
     Reverse,
     CopyHash,
+    Blame,
 
     ToggleSection,
     MoveUp,
@@ -203,6 +205,7 @@ impl Op {
             Op::Apply => Box::new(apply::Apply),
             Op::Reverse => Box::new(reverse::Reverse),
             Op::CopyHash => Box::new(copy_hash::CopyHash),
+            Op::Blame => Box::new(blame::Blame),
 
             Op::AddRemote => Box::new(remote::AddRemote),
             Op::RemoveRemote => Box::new(remote::RemoveRemote),

@@ -9,6 +9,7 @@ use crate::item_data::Ref;
 use crate::item_data::SectionHeader;
 use git2::Oid;
 use git2::Repository;
+use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::text::Span;
 use regex::Regex;
@@ -77,7 +78,7 @@ impl Item {
                 path.to_string_lossy().into_owned(),
                 &config.style.file_header,
             ),
-            ItemData::Delta { diff, file_i } => {
+            ItemData::Delta { diff, file_i, .. } => {
                 let file_diff = &diff.file_diffs[file_i];
 
                 let content = format!(
@@ -153,6 +154,9 @@ impl Item {
                     SectionHeader::StagedChanges(count) => format!("Staged changes ({count})"),
                     SectionHeader::UnstagedChanges(count) => format!("Unstaged changes ({count})"),
                     SectionHeader::UntrackedFiles(count) => format!("Untracked files ({count})"),
+                    SectionHeader::Blame(file, commit) => {
+                        format!("Blame {file} @ {commit}")
+                    }
                 };
 
                 Line::styled(content, &config.style.section_header)
@@ -173,6 +177,38 @@ impl Item {
                 Line::raw(content)
             }
             ItemData::Error(err) => Line::raw(err),
+            ItemData::BlameHeader {
+                short_hash,
+                summary,
+                ..
+            } => Line::from(vec![
+                Span::styled(format!("{:<8}", short_hash), &config.style.hash),
+                Span::raw(" "),
+                Span::raw(summary.clone()),
+            ]),
+            ItemData::BlameCodeLine {
+                blame_file,
+                line_i,
+                line_num,
+                content,
+                ..
+            } => {
+                let mut spans = vec![Span::styled(
+                    format!("{:>4} ", line_num),
+                    &config.style.blame.line_num,
+                )];
+
+                for (range, style) in blame_file.highlights.get_line_highlights(line_i) {
+                    if !range.is_empty() && range.end <= content.len() {
+                        spans.push(Span::styled(
+                            content[range.clone()].replace('\t', "    "),
+                            *style,
+                        ));
+                    }
+                }
+
+                Line::from(spans).style(Style::from(&config.style.blame.code_line))
+            }
         }
     }
 }
@@ -181,6 +217,7 @@ pub(crate) fn create_diff_items(
     diff: &Rc<Diff>,
     depth: usize,
     default_collapsed: bool,
+    commit: Option<String>,
 ) -> impl Iterator<Item = Item> + '_ {
     diff.file_diffs
         .iter()
@@ -193,6 +230,7 @@ pub(crate) fn create_diff_items(
                 data: ItemData::Delta {
                     diff: Rc::clone(diff),
                     file_i,
+                    commit: commit.clone(),
                 },
                 ..Default::default()
             })

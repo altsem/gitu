@@ -12,6 +12,7 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::Arc;
 
+pub(crate) mod blame;
 pub(crate) mod log;
 pub(crate) mod show;
 pub(crate) mod show_refs;
@@ -24,7 +25,7 @@ const BOTTOM_CONTEXT_LINES: usize = 2;
 pub(crate) enum NavMode {
     Normal,
     Siblings { depth: usize },
-    IncludeHunkLines,
+    IncludeSubLines,
 }
 
 pub(crate) struct Screen {
@@ -145,14 +146,16 @@ impl Screen {
         let item = self.at_line(line_i);
         match nav_mode {
             NavMode::Normal => {
-                let is_hunk_line = matches!(item.data, ItemData::HunkLine { .. });
-
-                !item.unselectable && !is_hunk_line
+                let is_sub_line = matches!(
+                    item.data,
+                    ItemData::HunkLine { .. } | ItemData::BlameCodeLine { .. }
+                );
+                !item.unselectable && !is_sub_line
             }
             NavMode::Siblings { depth } => {
                 !item.unselectable && item.data.is_section() && item.depth <= depth
             }
-            NavMode::IncludeHunkLines => !item.unselectable,
+            NavMode::IncludeSubLines => !item.unselectable,
         }
     }
 
@@ -246,7 +249,7 @@ impl Screen {
         }
 
         match self.get_selected_item().data {
-            ItemData::HunkLine { .. } => NavMode::IncludeHunkLines,
+            ItemData::HunkLine { .. } | ItemData::BlameCodeLine { .. } => NavMode::IncludeSubLines,
             _ => NavMode::Normal,
         }
     }
@@ -331,12 +334,46 @@ impl Screen {
         &self.items[self.line_index[self.cursor]]
     }
 
+    pub(crate) fn select_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
+        if let Some(line_i) = (0..self.line_index.len()).find(|&line_i| {
+            !self.at_line(line_i).unselectable && predicate(&self.at_line(line_i).data)
+        }) {
+            self.cursor = line_i;
+            let half_screen = self.size.height as usize / 2;
+            if self.cursor >= half_screen {
+                self.scroll = self.cursor - half_screen;
+            }
+            self.scroll_fit_end();
+            self.scroll_fit_start();
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn select_last_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
+        if let Some(line_i) = (0..self.line_index.len()).rev().find(|&line_i| {
+            !self.at_line(line_i).unselectable && predicate(&self.at_line(line_i).data)
+        }) {
+            self.cursor = line_i;
+            let half_screen = self.size.height as usize / 2;
+            if self.cursor >= half_screen {
+                self.scroll = self.cursor - half_screen;
+            } else {
+                self.scroll_fit_start();
+            }
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn is_valid_screen_line(&self, screen_line: usize) -> bool {
         let target_line_i = screen_line + self.scroll;
         if self.line_index.is_empty() || target_line_i >= self.line_index.len() {
             return false;
         }
-        self.nav_filter(target_line_i, NavMode::IncludeHunkLines)
+        self.nav_filter(target_line_i, NavMode::IncludeSubLines)
     }
 
     fn line_views(&'_ self, area: Size) -> impl Iterator<Item = LineView<'_>> {

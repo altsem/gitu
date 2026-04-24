@@ -14,7 +14,7 @@ impl OpTrait for Unstage {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
             ItemData::AllStaged(_) => unstage_staged(),
-            ItemData::Delta { diff, file_i } => {
+            ItemData::Delta { diff, file_i, .. } => {
                 let diff_header = &diff.file_diffs[*file_i].header;
                 let file_path = match diff_header.status {
                     Status::Deleted => &diff_header.old_file,

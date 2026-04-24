@@ -197,7 +197,7 @@ fn create_status_section_items<'a>(
         ]
     }
     .into_iter()
-    .chain(items::create_diff_items(diff, 1, true))
+    .chain(items::create_diff_items(diff, 1, true, None))
 }
 
 fn create_stash_list_section_items<'a>(

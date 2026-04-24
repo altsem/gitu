@@ -6,6 +6,7 @@ pub(crate) struct Diff {
     pub text: String,
     pub diff_type: DiffType,
     pub file_diffs: Vec<FileDiff>,
+    pub commit: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -102,6 +103,36 @@ impl Diff {
             .collect::<String>();
 
         format!("{file_header}{hunk_header}{modified_content}")
+    }
+
+    pub(crate) fn hunk_first_changed_line_num(&self, file_i: usize, hunk_i: usize) -> u32 {
+        let new_line_start = self.file_diffs[file_i].hunks[hunk_i].header.new_line_start;
+        let mut new_line = new_line_start;
+        for line in self.hunk_content(file_i, hunk_i).lines() {
+            if line.starts_with('+') {
+                return new_line;
+            }
+            if !line.starts_with('-') {
+                new_line += 1;
+            }
+        }
+        new_line_start
+    }
+
+    pub(crate) fn hunk_line_new_file_num(
+        &self,
+        file_i: usize,
+        hunk_i: usize,
+        line_i: usize,
+    ) -> u32 {
+        let hunk = &self.file_diffs[file_i].hunks[hunk_i];
+        let non_minus_before = self
+            .hunk_content(file_i, hunk_i)
+            .lines()
+            .take(line_i)
+            .filter(|l| l.starts_with(' ') || l.starts_with('+'))
+            .count() as u32;
+        hunk.header.new_line_start + non_minus_before
     }
 
     pub(crate) fn file_line_of_first_diff(&self, file_i: usize, hunk_i: usize) -> usize {

@@ -225,6 +225,43 @@ pub(crate) fn iter_syntax_highlights<'a>(
     .peekable()
 }
 
+pub(crate) fn highlight_blame_file(
+    config: &Config,
+    file_path: &str,
+    content: String,
+) -> BlameHighlights {
+    let mut highlights_iter =
+        iter_syntax_highlights(&config.style.syntax_highlight, file_path, content.clone());
+
+    let mut result = BlameHighlights {
+        spans: vec![],
+        line_index: vec![],
+    };
+
+    for (line_range, _) in line_range_iterator(&content) {
+        let start = result.spans.len();
+        collect_line_highlights(&mut highlights_iter, &line_range, &mut result.spans);
+        result.line_index.push(start..result.spans.len());
+    }
+
+    result
+}
+
+#[derive(Debug, Clone)]
+pub struct BlameHighlights {
+    spans: Vec<(Range<usize>, Style)>,
+    line_index: Vec<Range<usize>>,
+}
+
+impl BlameHighlights {
+    pub fn get_line_highlights(&self, line: usize) -> &[(Range<usize>, Style)] {
+        if line >= self.line_index.len() {
+            return &[];
+        }
+        &self.spans[self.line_index[line].clone()]
+    }
+}
+
 pub(crate) fn fill_gaps<T: Clone + Default>(
     full_range: Range<usize>,
     ranges: impl Iterator<Item = (Range<usize>, T)>,

@@ -17,8 +17,9 @@ pub(crate) fn create(
     repo: Rc<Repository>,
     size: Size,
     reference: String,
+    target: Option<(String, u32)>,
 ) -> Res<Screen> {
-    Screen::new(
+    let mut screen = Screen::new(
         Arc::clone(&config),
         size,
         Box::new(move || {
@@ -40,8 +41,43 @@ pub(crate) fn create(
                 ..Default::default()
             }))
             .chain([items::blank_line()])
-            .chain(items::create_diff_items(&Rc::new(show), 0, false))
+            .chain(items::create_diff_items(
+                &Rc::new(show),
+                0,
+                false,
+                Some(commit.hash.clone()),
+            ))
             .collect())
         }),
-    )
+    )?;
+
+    if let Some((file, line_num)) = target {
+        let found = screen.select_matching(|data| {
+            if let ItemData::HunkLine {
+                diff,
+                file_i,
+                hunk_i,
+                line_i,
+                line_range,
+            } = data
+            {
+                if diff.file_diffs[*file_i].header.new_file.fmt(&diff.text) != file {
+                    return false;
+                }
+                let line = &diff.hunk_content(*file_i, *hunk_i)[line_range.clone()];
+                !line.starts_with('-')
+                    && diff.hunk_line_new_file_num(*file_i, *hunk_i, *line_i) == line_num
+            } else {
+                false
+            }
+        });
+        if !found {
+            screen.select_matching(|data| {
+                matches!(data, ItemData::Delta { diff, file_i, .. }
+                    if diff.file_diffs[*file_i].header.new_file.fmt(&diff.text) == file)
+            });
+        }
+    }
+
+    Ok(screen)
 }

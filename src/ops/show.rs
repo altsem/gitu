@@ -21,9 +21,26 @@ impl OpTrait for Show {
             | ItemData::Reference {
                 kind: Ref::Head(oid),
                 ..
-            } => goto_show_screen(oid.clone()),
+            } => goto_show_screen(oid.clone(), None),
+            ItemData::BlameHeader {
+                commit_hash,
+                file_path,
+                line_num,
+                ..
+            } if !is_null_oid(commit_hash) => {
+                goto_show_screen(commit_hash.clone(), Some((file_path.clone(), *line_num)))
+            }
+            ItemData::BlameCodeLine {
+                commit_hash,
+                file_path,
+                orig_line_num,
+                ..
+            } if !is_null_oid(commit_hash) => goto_show_screen(
+                commit_hash.clone(),
+                Some((file_path.clone(), *orig_line_num)),
+            ),
             ItemData::Untracked(u) => editor(u.as_path(), None),
-            ItemData::Delta { diff, file_i } => {
+            ItemData::Delta { diff, file_i, .. } => {
                 let file_path = &diff.file_diffs[*file_i].header.new_file;
                 let path: &str = &file_path.fmt(&diff.text);
                 editor(Path::new(path), None)
@@ -53,7 +70,7 @@ impl OpTrait for Show {
     }
 }
 
-fn goto_show_screen(r: String) -> Option<Action> {
+fn goto_show_screen(r: String, target: Option<(String, u32)>) -> Option<Action> {
     Some(Rc::new(move |app, term| {
         app.state.screens.push(
             screen::show::create(
@@ -61,6 +78,7 @@ fn goto_show_screen(r: String) -> Option<Action> {
                 Rc::clone(&app.state.repo),
                 term.size().map_err(Error::Term)?,
                 r.clone(),
+                target.clone(),
             )
             .expect("Couldn't create screen"),
         );
@@ -81,6 +99,10 @@ fn goto_show_stash_screen(stash_ref: String) -> Option<Action> {
         );
         Ok(())
     }))
+}
+
+fn is_null_oid(hash: &str) -> bool {
+    hash.chars().all(|c| c == '0')
 }
 
 pub(crate) const EDITOR_VARS: [&str; 4] = ["GITU_SHOW_EDITOR", "VISUAL", "EDITOR", "GIT_EDITOR"];

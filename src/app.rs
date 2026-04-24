@@ -79,6 +79,7 @@ impl App {
                     Rc::clone(&repo),
                     size,
                     reference.clone(),
+                    None,
                 )?]
             }
             None => vec![screen::status::create(

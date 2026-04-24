@@ -18,7 +18,7 @@ impl OpTrait for Discard {
                 ..
             } => discard_branch(branch.clone()),
             ItemData::Untracked(file) => clean_file(file.clone()),
-            ItemData::Delta { diff, file_i } => {
+            ItemData::Delta { diff, file_i, .. } => {
                 let patch = diff.format_file_patch(*file_i);
                 match diff.diff_type {
                     DiffType::WorkdirToIndex => reverse_worktree(patch),

@@ -1,6 +1,6 @@
 use std::{ops::Range, path::PathBuf, rc::Rc};
 
-use crate::{Res, error::Error, git::diff::Diff};
+use crate::{Res, error::Error, git::diff::Diff, highlight::BlameHighlights};
 
 #[derive(Clone, Debug)]
 pub(crate) enum ItemData {
@@ -22,6 +22,7 @@ pub(crate) enum ItemData {
     Delta {
         diff: Rc<Diff>,
         file_i: usize,
+        commit: Option<String>,
     },
     Hunk {
         diff: Rc<Diff>,
@@ -43,6 +44,30 @@ pub(crate) enum ItemData {
     Header(SectionHeader),
     BranchStatus(String, u32, u32),
     Error(String),
+    BlameHeader {
+        commit_hash: String,
+        short_hash: String,
+        _author: String,
+        _author_time: i64,
+        summary: String,
+        file_path: String,
+        line_num: u32, // orig line in the introducing commit (for show-screen nav)
+        blamed_line_num: u32, // line number in the blamed file (for blame-view nav)
+    },
+    BlameCodeLine {
+        blame_file: Rc<BlameFile>,
+        line_i: usize,
+        line_num: u32,
+        orig_line_num: u32,
+        content: String,
+        commit_hash: String,
+        file_path: String,
+    },
+}
+
+#[derive(Debug)]
+pub(crate) struct BlameFile {
+    pub highlights: BlameHighlights,
 }
 
 impl ItemData {
@@ -72,6 +97,8 @@ impl ItemData {
                 .cloned()
                 .map(Rev::Ref)
                 .or_else(|| Some(Rev::Commit(oid.to_owned()))),
+            ItemData::BlameHeader { commit_hash, .. }
+            | ItemData::BlameCodeLine { commit_hash, .. } => Some(Rev::Commit(commit_hash.clone())),
             _ => None,
         }
     }
@@ -157,4 +184,5 @@ pub(crate) enum SectionHeader {
     StagedChanges(usize),
     UnstagedChanges(usize),
     UntrackedFiles(usize),
+    Blame(String, String),
 }

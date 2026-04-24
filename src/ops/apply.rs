@@ -13,7 +13,7 @@ impl OpTrait for Apply {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
             ItemData::Stash { stash_ref, .. } => apply_stash(stash_ref.clone()),
-            ItemData::Delta { diff, file_i } => apply_patch(diff.format_file_patch(*file_i)),
+            ItemData::Delta { diff, file_i, .. } => apply_patch(diff.format_file_patch(*file_i)),
             ItemData::Hunk {
                 diff,
                 file_i,

@@ -12,7 +12,7 @@ pub(crate) struct Reverse;
 impl OpTrait for Reverse {
     fn get_action(&self, target: &ItemData) -> Option<Action> {
         let action = match target {
-            ItemData::Delta { diff, file_i } => reverse_patch(diff.format_file_patch(*file_i)),
+            ItemData::Delta { diff, file_i, .. } => reverse_patch(diff.format_file_patch(*file_i)),
             ItemData::Hunk {
                 diff,
                 file_i,

@@ -1,0 +1,25 @@
+---
+source: src/tests/blame.rs
+expression: ctx.redact_buffer()
+---
+ Blame file @ fa5e4bd731a775eec7d161bd5e133baca888379d                          |
+ fa5e4bd7 add file                                                              |
+▌   1 top                                                                       |
+    2 SELECT-THIS-LINE                                                          |
+    3 botto                                                                     |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 5775387cf04ec79
