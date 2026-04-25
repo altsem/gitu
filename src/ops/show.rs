@@ -57,6 +57,20 @@ impl OpTrait for Show {
                     Some(diff.file_line_of_first_diff(*file_i, *hunk_i) as u32),
                 )
             }
+            ItemData::HunkLine {
+                diff,
+                file_i,
+                hunk_i,
+                line_i,
+                ..
+            } => {
+                let file_path = &diff.file_diffs[*file_i].header.new_file;
+                let path: &str = &file_path.fmt(&diff.text);
+                editor(
+                    Path::new(path),
+                    Some(diff.hunk_line_new_file_num(*file_i, *hunk_i, *line_i)),
+                )
+            }
             ItemData::Stash { stash_ref, .. } => goto_show_stash_screen(stash_ref.clone()),
             _ => None,
         }
