@@ -76,3 +76,18 @@ fn log_other_input() {
 fn log_other_invalid() {
     snapshot!(setup(setup_clone!()), "lo <enter>");
 }
+
+#[test]
+fn log_empty_branch() {
+    // Regression for #262: showing the log of a branch with no commits used to
+    // panic ("index out of bounds") because the log screen had no items but the
+    // cursor still indexed into it.
+    let mut ctx = setup_clone!();
+    run(&ctx.dir, &["rm", "-rf", ".git"]);
+    run(&ctx.dir, &["rm", "initial-file"]);
+    run(&ctx.dir, &["git", "init", "--initial-branch=main"]);
+
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("ll"));
+    insta::assert_snapshot!(ctx.redact_buffer());
+}

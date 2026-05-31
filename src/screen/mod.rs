@@ -234,6 +234,14 @@ impl Screen {
     }
 
     fn update_cursor(&mut self, nav_mode: NavMode) {
+        // Nothing is selectable (e.g. the log of a branch with no commits).
+        // Reset the cursor to a valid sentinel rather than positioning it,
+        // which would index into an empty `line_index` and panic (#262).
+        if self.line_index.is_empty() {
+            self.cursor = 0;
+            return;
+        }
+
         self.clamp_cursor();
         if self.is_cursor_off_screen() {
             self.move_cursor_to_screen_center();
