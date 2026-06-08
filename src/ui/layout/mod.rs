@@ -4,7 +4,7 @@ mod vec2;
 
 use std::iter;
 
-use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use direction::Direction;
 use node::*;
@@ -121,7 +121,7 @@ impl LayoutTree<&'static str> {
     /// Add a text leaf, calculating size based on string length
     #[allow(dead_code)]
     pub fn text(&mut self, text: &'static str) -> &mut Self {
-        let width = text.graphemes(true).count();
+        let width = UnicodeWidthStr::width(text);
         self.leaf_with_size(text, [width as u16, 1]);
         self
     }
@@ -542,7 +542,22 @@ mod tests {
 
         layout.compute([10, 1]);
         let items: Vec<_> = layout.iter().collect();
-        assert_eq!(items[0].size, [4, 1]); // café has 4 graphemes
+        assert_eq!(items[0].size, [4, 1]); // café renders in 4 columns
+    }
+
+    #[test]
+    fn emoji_display_width() {
+        let mut layout = LayoutTree::new();
+
+        layout.horizontal(None, OPTS, |layout| {
+            // A single emoji is one grapheme but occupies two terminal columns.
+            layout.text("🚀").text("x");
+        });
+
+        layout.compute([10, 1]);
+        let items: Vec<_> = layout.iter().collect();
+        assert_eq!(items[0].size, [2, 1]); // emoji is 2 columns wide, not 1
+        assert_eq!(items[1].pos, [2, 0]); // following span starts after it
     }
 
     #[test]

@@ -4,6 +4,7 @@ use crate::ui::{UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
 use ratatui::{layout::Size, style::Style, text::Line};
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{Res, config::Config, items::hash};
 
@@ -473,23 +474,30 @@ pub(crate) fn layout_screen<'a>(
                 line.display.spans.into_iter().for_each(|span| {
                     let style = bg.patch(line.display.style).patch(span.style);
 
-                    let span_width = span.content.graphemes(true).count();
+                    let span_width = UnicodeWidthStr::width(span.content.as_ref());
 
                     if line_end + span_width >= size.width as usize {
-                        // Truncate the span and insert an ellipsis to indicate overflow
-                        let overflow = line_end + span_width - size.width as usize;
+                        // Truncate the span and insert an ellipsis to indicate overflow.
+                        // Keep as many graphemes as fit in the remaining columns, leaving
+                        // one column for the ellipsis. Accumulate display width (not
+                        // grapheme count) so wide characters like emoji are handled.
+                        let budget = (size.width as usize).saturating_sub(line_end + 1);
+                        let mut used = 0;
+                        let truncated: String = span
+                            .content
+                            .graphemes(true)
+                            .take_while(|g| {
+                                let next = used + UnicodeWidthStr::width(*g);
+                                if next <= budget {
+                                    used = next;
+                                    true
+                                } else {
+                                    false
+                                }
+                            })
+                            .collect();
                         line_end = size.width as usize;
-                        ui::layout_span(
-                            layout,
-                            (
-                                span.content
-                                    .graphemes(true)
-                                    .take(span_width.saturating_sub(overflow + 1))
-                                    .collect::<String>()
-                                    .into(),
-                                style,
-                            ),
-                        );
+                        ui::layout_span(layout, (truncated.into(), style));
                         layout_span(layout, ("…".into(), bg));
                     } else {
                         // Insert the span as normal
