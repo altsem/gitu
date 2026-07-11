@@ -74,3 +74,10 @@ fn stage_deleted_executable_file() {
     run(&ctx.dir, &["rm", "script.sh"]);
     snapshot!(ctx, "jjs");
 }
+
+#[test]
+fn stage_file_with_spaces_in_name() {
+    let ctx = setup_clone!();
+    run(&ctx.dir, &["touch", "file with space.txt"]);
+    snapshot!(ctx, "js");
+}

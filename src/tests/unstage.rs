@@ -45,3 +45,11 @@ fn unstage_deleted_executable_file() {
     run(&ctx.dir, &["git", "rm", "script.sh"]);
     snapshot!(ctx, "jju");
 }
+
+#[test]
+fn unstage_added_file_with_spaces_in_name() {
+    let ctx = setup_clone!();
+    run(&ctx.dir, &["touch", "file with space.txt"]);
+    run(&ctx.dir, &["git", "add", "file with space.txt"]);
+    snapshot!(ctx, "jju");
+}

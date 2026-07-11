@@ -245,7 +245,7 @@ impl<'a> Parser<'a> {
     fn skip_until_diff_header(&mut self) -> ThinResult<()> {
         log::trace!("Parser::skip_until_diff_header\n{:?}", self);
         while self.cursor < self.input.len() && !self.is_at_diff_header() {
-            self.consume_until(Self::newline_or_eof)?;
+            self.consume_until_after(Self::newline_or_eof)?;
         }
 
         Ok(())
@@ -304,59 +304,61 @@ impl<'a> Parser<'a> {
 
         if self.peek("new file") {
             diff_type = Status::Added;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         } else if self.peek("deleted file") {
             diff_type = Status::Deleted;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         }
 
         if self.consume("similarity index").is_ok() {
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         }
 
         if self.consume("dissimilarity index").is_ok() {
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         }
 
         if self.peek("index") {
         } else if self.peek("old mode") {
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
             if self.peek("new mode") {
-                self.consume_until(Self::newline)?;
+                self.consume_until_after(Self::newline)?;
             }
         } else if self.peek("new mode") {
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         } else if self.peek("deleted file mode") {
             diff_type = Status::Deleted;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         } else if self.peek("new file mode") {
             diff_type = Status::Added;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         } else if self.peek("copy from") {
             diff_type = Status::Copied;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
             self.consume("copy to")?;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         } else if self.peek("rename from") {
             diff_type = Status::Renamed;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
             self.consume("rename to")?;
-            self.consume_until(Self::newline)?;
+            self.consume_until_after(Self::newline)?;
         }
 
         if self.peek("index") {
             self.consume("index ")?;
-            self.consume_until(Self::newline_or_eof)?;
+            self.consume_until_after(Self::newline_or_eof)?;
         }
 
         if self.peek("Binary files ") {
-            self.consume_until(Self::newline_or_eof)?;
+            self.consume_until_after(Self::newline_or_eof)?;
         }
 
         if self.consume("--- ").is_ok() {
             old_file = self.diff_header_path(Self::newline_or_eof)?;
+            self.newline_or_eof()?;
             self.consume("+++ ")?;
             new_file = self.diff_header_path(Self::newline_or_eof)?;
+            self.newline_or_eof()?;
         }
 
         Ok(DiffHeader {
@@ -371,6 +373,7 @@ impl<'a> Parser<'a> {
         log::trace!("Parser::unmerged_file\n{:?}", self);
         let unmerged_path_prefix = self.consume("* Unmerged path ")?;
         let file = self.diff_header_path(Self::newline_or_eof)?;
+        self.newline_or_eof()?;
 
         Ok(DiffHeader {
             range: unmerged_path_prefix.start..self.cursor,
@@ -383,25 +386,49 @@ impl<'a> Parser<'a> {
     fn old_new_file_header(&mut self) -> ThinResult<(FilePath, FilePath, bool)> {
         log::trace!("Parser::old_new_file_header\n{:?}", self);
         self.consume("diff --git ")?;
-        let old_path = self.diff_header_path(Self::ascii_whitespace)?;
+
+        // Vary the delimiter of file-paths depending on whether it is quoted, prefixed, or lacks prefix.
+        // e.g.
+        // "a/file-1.txt" "b/file-1.txt" -> whitespace delimiter
+        // a/file-1.txt b/file-1.txt     -> whitespace delimiter, followed by a prefix ("b/")
+        // file-1.txt file-1.txt         -> whitespace delimiter
+        let delim: ParseFn<Range<usize>> = if self.peek("\"") {
+            Self::ascii_whitespace
+        } else if self.peek_fn(Self::diff_header_path_prefix) {
+            |p: &mut Parser<'_>| {
+                let start = p.cursor;
+                p.ascii_whitespace()
+                    .and_then(|_| p.diff_header_path_prefix())?;
+                Ok(start..p.cursor)
+            }
+        } else {
+            Self::ascii_whitespace
+        };
+
+        let old_path = self.diff_header_path(delim)?;
+        self.ascii_whitespace()?;
         let new_path = self.diff_header_path(Self::newline_or_eof)?;
+        self.newline_or_eof()?;
 
         Ok((old_path, new_path, false))
     }
 
-    fn diff_header_path(&mut self, end: ParseFn<'a, Range<usize>>) -> ThinResult<FilePath> {
+    /// When the header path is not quoted ("..."), then `stop_lookahead` is used.
+    fn diff_header_path(
+        &mut self,
+        stop_lookahead: ParseFn<'a, Range<usize>>,
+    ) -> ThinResult<FilePath> {
         log::trace!("Parser::diff_header_path\n{:?}", self);
         if self.consume("\"").ok().is_some() {
             self.diff_header_path_prefix().ok();
             let quoted = self.quoted()?;
-            self.ascii_whitespace().ok();
             Ok(FilePath {
                 range: quoted,
                 is_quoted: true,
             })
         } else {
             self.diff_header_path_prefix().ok();
-            let (consumed, _) = self.consume_until(end)?;
+            let consumed = self.consume_until_before(stop_lookahead)?;
             Ok(FilePath {
                 range: consumed,
                 is_quoted: false,
@@ -467,7 +494,7 @@ impl<'a> Parser<'a> {
             .map_err(|_| {
                 self.cursor = start;
                 array_vec![ThinParseError {
-                    expected: "<diff header path prefix (' a/...' or ' b/...')>",
+                    expected: "<diff header path prefix (e.g. 'a/' or 'b/')>",
                 }]
             })?;
 
@@ -497,6 +524,7 @@ impl<'a> Parser<'a> {
         log::trace!("Parser::conflicted_file\n{:?}", self);
         self.consume("diff --cc ")?;
         let file = self.diff_header_path(Self::newline_or_eof)?;
+        self.newline_or_eof()?;
         Ok((file.clone(), file, true))
     }
 
@@ -565,7 +593,7 @@ impl<'a> Parser<'a> {
         self.consume(" @@")?;
         self.consume(" ").ok();
 
-        let (fn_ctx, newline) = self.consume_until(Self::newline_or_eof)?;
+        let (fn_ctx, newline) = self.consume_until_after(Self::newline_or_eof)?;
 
         Ok(HunkHeader {
             range: hunk_header_start..self.cursor,
@@ -597,7 +625,7 @@ impl<'a> Parser<'a> {
         log::trace!("Parser::consume_lines_while_prefixed\n{:?}", self);
         let start = self.cursor;
         while self.cursor < self.input.len() && pred(self) {
-            self.consume_until(Self::newline_or_eof)?;
+            self.consume_until_after(Self::newline_or_eof)?;
         }
 
         Ok(start..self.cursor)
@@ -674,12 +702,33 @@ impl<'a> Parser<'a> {
 
     /// Scans through the input, moving the cursor byte-by-byte
     /// until the provided parse_fn will succeed, or the input has been exhausted.
+    /// Returns a tuple of the bytes scanned up until the match, excluding the match itself.
+    /// The resulting cursor will end up before the match.
+    fn consume_until_before<T: ParsedRange>(
+        &mut self,
+        parse_fn: fn(&mut Parser<'a>) -> ThinResult<T>,
+    ) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::consume_until_before\n{:?}", self);
+        let start = self.cursor;
+        let found = self.find(parse_fn).map_err(|mut err| {
+            err.try_push(ThinParseError {
+                expected: "to consume the match",
+            });
+            err
+        })?;
+        self.cursor = found.range().start;
+        Ok(start..found.range().start)
+    }
+
+    /// Scans through the input, moving the cursor byte-by-byte
+    /// until the provided parse_fn will succeed, or the input has been exhausted.
     /// Returns a tuple of the bytes scanned up until the match, and the match itself.
-    fn consume_until<T: ParsedRange>(
+    /// The resulting cursor will end up after the match.
+    fn consume_until_after<T: ParsedRange>(
         &mut self,
         parse_fn: fn(&mut Parser<'a>) -> ThinResult<T>,
     ) -> ThinResult<(Range<usize>, T)> {
-        log::trace!("Parser::consume_until\n{:?}", self);
+        log::trace!("Parser::consume_until_after\n{:?}", self);
         let start = self.cursor;
         let found = self.find(parse_fn).map_err(|mut err| {
             err.try_push(ThinParseError {
@@ -718,6 +767,14 @@ impl<'a> Parser<'a> {
         });
 
         Err(errors)
+    }
+
+    fn peek_fn<T: ParsedRange>(&self, parse_fn: ParseFn<'a, T>) -> bool {
+        let mut p = Parser {
+            input: self.input,
+            cursor: self.cursor,
+        };
+        parse_fn(&mut p).is_ok()
     }
 
     /// Consumes `expected` from the input and moves the cursor past it.
@@ -1110,7 +1167,6 @@ mod tests {
 
     #[test]
     fn filenames_with_spaces() {
-        // This case is ambiguous, normally if there's ---/+++ headers, we can use that.
         let input = "\
             diff --git a/file one.txt b/file two.txt\n\
             index 5626abf..f719efd 100644\n\
@@ -1120,8 +1176,41 @@ mod tests {
             ";
         let mut parser = Parser::new(input);
         let diff = parser.parse_diff().unwrap();
-        assert_eq!(diff[0].header.old_file.fmt(input), "file");
-        assert_eq!(diff[0].header.new_file.fmt(input), "one.txt b/file two.txt");
+        assert_eq!(diff[0].header.old_file.fmt(input), "file one.txt");
+        assert_eq!(diff[0].header.new_file.fmt(input), "file two.txt");
+    }
+
+    // #[test]
+    // fn filenames_with_spaces_ambiguous() {
+    //     let input = "\
+    //         diff --git a/file one.txt b/file two.txt b/file three.txt\n\
+    //         index 5626abf..f719efd 100644\n\
+    //         @@ -1 +1 @@\n\
+    //         -one\n\
+    //         +two\n\
+    //         ";
+    //     let mut parser = Parser::new(input);
+    //     let result = parser.parse_diff();
+    //     std::assert_matches!(result, Err(_));
+    // }
+
+    #[test]
+    fn added_file_with_spaces_in_name() {
+        let input = "diff --git a/something with space.md b/something with space.md\n\
+            new file mode 100644\n\
+            index 0000000..e69de29\n";
+        let mut parser = Parser::new(input);
+        let diff = parser.parse_diff().unwrap();
+        assert_eq!(diff.len(), 1);
+        assert_eq!(diff[0].header.status, Status::Added);
+        assert_eq!(
+            diff[0].header.old_file.fmt(input),
+            "something with space.md"
+        );
+        assert_eq!(
+            diff[0].header.new_file.fmt(input),
+            "something with space.md"
+        );
     }
 
     #[test]
@@ -1207,11 +1296,14 @@ mod tests {
             index 0000000..e69de29\n\
             diff --git \"a/\\a\" \"b/\\a\"\n\
             new file mode 100644\n\
+            index 0000000..e69de29\n\
+            diff --git \"a/l\\303\\266l space\" \"b/l\\303\\266l space\"\n\
+            new file mode 100644\n\
             index 0000000..e69de29";
 
         let mut parser = Parser::new(input);
         let diffs = parser.parse_diff().unwrap();
-        assert_eq!(diffs.len(), 8);
+        assert_eq!(diffs.len(), 9);
         assert_eq!(diffs[0].header.old_file.fmt(input), "ö", "Old file");
         assert_eq!(diffs[0].header.new_file.fmt(input), "ö", "New file");
         assert_eq!(diffs[1].header.old_file.fmt(input), "\"", "Old file");
@@ -1222,6 +1314,8 @@ mod tests {
         assert_eq!(diffs[3].header.new_file.fmt(input), "\r", "New file");
         assert_eq!(diffs[4].header.old_file.fmt(input), "\n", "Old file");
         assert_eq!(diffs[4].header.new_file.fmt(input), "\u{c}", "New file");
+        assert_eq!(diffs[8].header.old_file.fmt(input), "löl space", "Old file");
+        assert_eq!(diffs[8].header.new_file.fmt(input), "löl space", "New file");
     }
 
     #[test]

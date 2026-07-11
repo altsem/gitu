@@ -1,0 +1,25 @@
+---
+source: src/tests/unstage.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+ Untracked files                                                                |
+▌file with space.txt                                                            |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git restore --staged file with space.txt                                      |
+styles_hash: 4d31ee8109cfa98e

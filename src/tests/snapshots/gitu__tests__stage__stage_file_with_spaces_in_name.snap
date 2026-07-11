@@ -1,0 +1,25 @@
+---
+source: src/tests/stage.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is up to date with 'origin/main'.                                  |
+                                                                                |
+▌Staged changes (1)                                                             |
+▌added      file with space.txt                                                 |
+                                                                                |
+ Recent commits                                                                 |
+ b66a0bf main origin/main add initial-file                                      |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git add file with space.txt                                                   |
+styles_hash: 5372e7d632c4cf90
