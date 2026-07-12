@@ -1,6 +1,7 @@
 pub mod app;
 mod bindings;
 pub mod cli;
+mod clipboard;
 mod cmd_log;
 pub mod config;
 pub mod error;
