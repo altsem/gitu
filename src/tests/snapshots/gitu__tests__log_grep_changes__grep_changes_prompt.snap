@@ -1,17 +1,15 @@
 ---
-source: src/tests/log.rs
+source: src/tests/log_grep_changes.rs
 expression: ctx.redact_buffer()
 ---
 ▌On branch main                                                                 |
 ▌Your branch is ahead of 'origin/main' by 3 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 8bb5532 main add first commit                                                  |
- 6c08cf7 add second commit                                                      |
- 79e63f1 add third commit                                                       |
+ a7fb92e main modify first                                                      |
+ eb42c24 modify first                                                           |
+ a086849 add first                                                              |
  b66a0bf origin/main add initial-file                                           |
-                                                                                |
-                                                                                |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -21,5 +19,7 @@ expression: ctx.redact_buffer()
  Log                Arguments                                                   |
  l     current      -F Search messages (--grep)                                 |
  o     other        -G Search changes (-G)                                      |
- q/esc Quit/Close   -n Limit number of commits (-n=10)                          |
-styles_hash: 6b49349f1757c2bd
+ q/esc Quit/Close   -n Limit number of commits (-n=256)                         |
+────────────────────────────────────────────────────────────────────────────────|
+? Search changes: › █                                                           |
+styles_hash: f31db5867a2f6c5d
