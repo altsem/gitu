@@ -4,10 +4,9 @@ mod vec2;
 
 use std::iter;
 
-use unicode_segmentation::UnicodeSegmentation;
-
 use direction::Direction;
 use node::*;
+use unicode_width::UnicodeWidthStr;
 use vec2::Vec2;
 
 pub use node::OPTS;
@@ -127,8 +126,7 @@ impl LayoutTree<&'static str> {
     /// Add a text leaf, calculating size based on string length
     #[allow(dead_code)]
     pub fn text(&mut self, text: &'static str) -> &mut Self {
-        let width = text.graphemes(true).count();
-        self.leaf_with_size(text, [width as u16, 1]);
+        self.leaf_with_size(text, [UnicodeWidthStr::width(text) as u16, 1]);
         self
     }
 }
