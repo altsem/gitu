@@ -10,6 +10,7 @@ use ratatui::Frame;
 use ratatui::prelude::*;
 use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 pub(crate) mod layout;
 mod menu;
@@ -136,7 +137,7 @@ pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Styl
             for word in s.split_word_bounds() {
                 layout.leaf_with_size(
                     UiItem::Span(Cow::Borrowed(word), span.1),
-                    [word.graphemes(true).count() as u16, 1],
+                    [UnicodeWidthStr::width(word) as u16, 1],
                 );
             }
         }
@@ -144,7 +145,7 @@ pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Styl
             for word in s.split_word_bounds() {
                 layout.leaf_with_size(
                     UiItem::Span(Cow::Owned(word.into()), span.1),
-                    [word.graphemes(true).count() as u16, 1],
+                    [UnicodeWidthStr::width(word) as u16, 1],
                 );
             }
         }
