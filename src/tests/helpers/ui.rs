@@ -4,16 +4,15 @@ use crate::{
     config::{self, Config},
     error::Error,
     key_parser::parse_test_keys,
-    term::{Term, TermBackend},
+    term::{Term, TermBackend, TestBuffer},
     tests::helpers::RepoTestContext,
 };
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
-use ratatui::backend::TestBackend;
 use regex::Regex;
 use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
 
-use self::buffer::TestBuffer;
+use self::buffer::DebugBuffer;
 
 mod buffer;
 
@@ -45,7 +44,7 @@ impl TestContext {
     pub fn setup_clone(test_name: &str) -> Self {
         let size = (80, 20);
         let term = TermBackend::Test {
-            backend: TestBackend::new(size.0, size.1),
+            buffer: TestBuffer::new(size.0, size.1),
             events: vec![],
         };
         let repo_ctx = RepoTestContext::setup_clone(test_name);
@@ -92,10 +91,10 @@ impl TestContext {
     }
 
     pub fn redact_buffer(&self) -> String {
-        let TermBackend::Test { backend, .. } = &self.term else {
+        let TermBackend::Test { buffer, .. } = &self.term else {
             unreachable!();
         };
-        let mut debug_output = format!("{:?}", TestBuffer(backend.buffer()));
+        let mut debug_output = format!("{:?}", DebugBuffer(buffer));
 
         redact(&mut debug_output, "From file://(.*)\n");
         redact(&mut debug_output, "To file://(/.*)\n");
