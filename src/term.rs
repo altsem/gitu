@@ -7,10 +7,8 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend, TestBackend},
-    buffer::Cell,
-    prelude::Position,
-    style::{Color, Style},
+    backend::{Backend, CrosstermBackend},
+    style::{Color, Modifier, Style},
 };
 use std::io::{self, Stdout, stdout};
 use std::time::Duration;
@@ -27,18 +25,121 @@ pub enum TermBackend {
     Crossterm(CrosstermBackend<Stdout>),
     #[allow(dead_code)]
     Test {
-        backend: TestBackend,
+        buffer: TestBuffer,
         events: Vec<Event>,
     },
+}
+
+#[derive(Clone, PartialEq)]
+pub struct TestCell {
+    pub symbol: String,
+    pub fg: Color,
+    pub bg: Color,
+    pub underline_color: Color,
+    pub modifier: Modifier,
+}
+
+impl Default for TestCell {
+    fn default() -> Self {
+        TestCell {
+            symbol: " ".to_string(),
+            fg: Color::Reset,
+            bg: Color::Reset,
+            underline_color: Color::Reset,
+            modifier: Modifier::empty(),
+        }
+    }
+}
+
+impl TestCell {
+    fn set(&mut self, symbol: &str, style: &Style) {
+        self.symbol.clear();
+        self.symbol.push_str(symbol);
+
+        if let Some(fg) = style.fg {
+            self.fg = fg;
+        }
+        if let Some(bg) = style.bg {
+            self.bg = bg;
+        }
+        if let Some(underline_color) = style.underline_color {
+            self.underline_color = underline_color;
+        }
+
+        self.modifier.insert(style.add_modifier);
+        self.modifier.remove(style.sub_modifier);
+    }
+}
+
+pub struct TestBuffer {
+    pub cells: Vec<TestCell>,
+    pub width: u16,
+    pub height: u16,
+    cursor: (u16, u16),
+}
+
+impl TestBuffer {
+    pub fn new(width: u16, height: u16) -> Self {
+        TestBuffer {
+            cells: vec![TestCell::default(); width as usize * height as usize],
+            width,
+            height,
+            cursor: (0, 0),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.cells.fill(TestCell::default());
+    }
+
+    fn cell_mut(&mut self, x: u16, y: u16) -> Option<&mut TestCell> {
+        if x >= self.width || y >= self.height {
+            return None;
+        }
+
+        self.cells
+            .get_mut(y as usize * self.width as usize + x as usize)
+    }
+
+    fn print(&mut self, text: &str, style: &Style) {
+        let (mut x, y) = self.cursor;
+
+        for grapheme in text.graphemes(true) {
+            let grapheme_width = grapheme.width() as u16;
+            if grapheme_width == 0 || x >= self.width {
+                continue;
+            }
+
+            if let Some(cell) = self.cell_mut(x, y) {
+                *cell = TestCell::default();
+                cell.set(grapheme, style);
+            }
+            x += 1;
+
+            for _ in 1..grapheme_width {
+                if x >= self.width {
+                    break;
+                }
+
+                if let Some(cell) = self.cell_mut(x, y) {
+                    *cell = TestCell::default();
+                }
+                x += 1;
+            }
+        }
+
+        self.cursor = (x, y);
+    }
 }
 
 impl TermBackend {
     pub(crate) fn queue_move_cursor(&mut self, x: u16, y: u16) -> Res<()> {
         match self {
             TermBackend::Crossterm(t) => crossterm::queue!(t, MoveTo(x, y)).map_err(Error::Term),
-            TermBackend::Test { backend, .. } => backend
-                .set_cursor_position(Position::new(x, y))
-                .map_err(Error::Term),
+            TermBackend::Test { buffer, .. } => {
+                buffer.cursor = (x, y);
+                Ok(())
+            }
         }
     }
 
@@ -49,23 +150,24 @@ impl TermBackend {
 
                 Ok(())
             }
-            TermBackend::Test { backend, .. } => {
-                print_test_span(text, style, backend).map_err(Error::Term)
+            TermBackend::Test { buffer, .. } => {
+                buffer.print(text, style);
+                Ok(())
             }
         }
     }
 }
 
-const ATTRS: &[(ratatui::style::Modifier, Attribute)] = &[
-    (ratatui::style::Modifier::BOLD, Attribute::Bold),
-    (ratatui::style::Modifier::DIM, Attribute::Dim),
-    (ratatui::style::Modifier::ITALIC, Attribute::Italic),
-    (ratatui::style::Modifier::UNDERLINED, Attribute::Underlined),
-    (ratatui::style::Modifier::SLOW_BLINK, Attribute::SlowBlink),
-    (ratatui::style::Modifier::RAPID_BLINK, Attribute::RapidBlink),
-    (ratatui::style::Modifier::REVERSED, Attribute::Reverse),
-    (ratatui::style::Modifier::HIDDEN, Attribute::Hidden),
-    (ratatui::style::Modifier::CROSSED_OUT, Attribute::CrossedOut),
+const ATTRS: &[(Modifier, Attribute)] = &[
+    (Modifier::BOLD, Attribute::Bold),
+    (Modifier::DIM, Attribute::Dim),
+    (Modifier::ITALIC, Attribute::Italic),
+    (Modifier::UNDERLINED, Attribute::Underlined),
+    (Modifier::SLOW_BLINK, Attribute::SlowBlink),
+    (Modifier::RAPID_BLINK, Attribute::RapidBlink),
+    (Modifier::REVERSED, Attribute::Reverse),
+    (Modifier::HIDDEN, Attribute::Hidden),
+    (Modifier::CROSSED_OUT, Attribute::CrossedOut),
 ];
 
 fn print_crossterm_span(
@@ -89,58 +191,28 @@ fn print_crossterm_span(
     Ok(())
 }
 
-fn print_test_span(text: &str, style: &Style, backend: &mut TestBackend) -> io::Result<()> {
-    let Position { x, y } = backend.get_cursor_position()?;
-    let width = backend.size()?.width;
-
-    let mut cells = Vec::new();
-    let mut cx = x;
-    for grapheme in text.graphemes(true) {
-        let grapheme_width = grapheme.width() as u16;
-        if grapheme_width == 0 || cx >= width {
-            continue;
-        }
-
-        let mut cell = Cell::default();
-        cell.set_symbol(grapheme).set_style(*style);
-        cells.push((cx, y, cell));
-        cx += 1;
-
-        for _ in 1..grapheme_width {
-            if cx >= width {
-                break;
-            }
-            cells.push((cx, y, Cell::default()));
-            cx += 1;
-        }
-    }
-
-    backend.draw(cells.iter().map(|(x, y, cell)| (*x, *y, cell)))?;
-    backend.set_cursor_position(Position::new(cx, y))
-}
-
 impl TermBackend {
     pub(crate) fn size(&self) -> io::Result<(u16, u16)> {
         match self {
             TermBackend::Crossterm(_) => crossterm::terminal::size(),
-            TermBackend::Test { backend, .. } => {
-                let size = backend.size()?;
-                Ok((size.width, size.height))
-            }
+            TermBackend::Test { buffer, .. } => Ok((buffer.width, buffer.height)),
         }
     }
 
     pub(crate) fn clear(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => t.clear(),
-            TermBackend::Test { backend, .. } => backend.clear(),
+            TermBackend::Test { buffer, .. } => {
+                buffer.clear();
+                Ok(())
+            }
         }
     }
 
     pub(crate) fn flush(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => Backend::flush(t),
-            TermBackend::Test { backend, .. } => backend.flush(),
+            TermBackend::Test { .. } => Ok(()),
         }
     }
 }

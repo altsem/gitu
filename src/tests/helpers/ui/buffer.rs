@@ -1,32 +1,27 @@
-use ratatui::buffer::Buffer;
+use crate::term::TestBuffer;
 use std::{
     fmt::{Formatter, Result},
     hash::{DefaultHasher, Hash, Hasher},
 };
 use unicode_width::UnicodeWidthStr;
 
-pub(crate) struct TestBuffer<'a>(pub &'a Buffer);
+pub(crate) struct DebugBuffer<'a>(pub &'a TestBuffer);
 
-impl std::fmt::Debug for TestBuffer<'_> {
+impl std::fmt::Debug for DebugBuffer<'_> {
     // Stolen from ratatui-0.26.1/src/buffer/buffer.rs:394
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let mut last_style = None;
         let mut styles = vec![];
-        for (y, line) in self
-            .0
-            .content
-            .chunks(self.0.area.width as usize)
-            .enumerate()
-        {
+        for (y, line) in self.0.cells.chunks(self.0.width as usize).enumerate() {
             let mut overwritten = vec![];
             let mut skip: usize = 0;
             for (x, c) in line.iter().enumerate() {
                 if skip == 0 {
-                    f.write_str(c.symbol())?;
+                    f.write_str(&c.symbol)?;
                 } else {
-                    overwritten.push((x, c.symbol()));
+                    overwritten.push((x, &c.symbol));
                 }
-                skip = std::cmp::max(skip, c.symbol().width()).saturating_sub(1);
+                skip = std::cmp::max(skip, c.symbol.width()).saturating_sub(1);
                 {
                     let style = (c.fg, c.bg, c.underline_color, c.modifier);
                     if last_style != Some(style) {

@@ -6,8 +6,7 @@ use git2::Repository;
 use gitu::app::App;
 use gitu::cli::{Args, Commands};
 use gitu::config;
-use gitu::term::TermBackend;
-use ratatui::backend::TestBackend;
+use gitu::term::{TermBackend, TestBuffer};
 
 const REFERENCE: &str = "f4de01c0a12794d7b42a77b2138aa64119b90ea5";
 
@@ -16,7 +15,7 @@ const REFERENCE: &str = "f4de01c0a12794d7b42a77b2138aa64119b90ea5";
 fn bench_redraw(c: &mut Criterion, name: &str, size: (u16, u16)) {
     c.bench_function(name, |b| {
         let mut term = TermBackend::Test {
-            backend: TestBackend::new(size.0, size.1),
+            buffer: TestBuffer::new(size.0, size.1),
             events: vec![],
         };
 
