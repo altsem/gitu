@@ -271,7 +271,7 @@ impl Screen {
     pub(crate) fn update_indices(&mut self) -> Res<()> {
         self.update_item_heights();
 
-        assert_eq!(
+        debug_assert_eq!(
             self.items.len(),
             self.item_heights.len(),
             "items and item_heights should have equal len"
