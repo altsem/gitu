@@ -4,13 +4,13 @@ use crossterm::{
     cursor::{self, MoveTo},
     event::{DisableMouseCapture, EnableMouseCapture, Event},
     style::{Attribute, Colors, Print, SetAttribute, SetColors},
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{
+        Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
+        enable_raw_mode,
+    },
 };
-use ratatui::{
-    backend::{Backend, CrosstermBackend},
-    style::{Color, Modifier, Style},
-};
-use std::io::{self, Stdout, stdout};
+use ratatui::style::{Color, Modifier, Style};
+use std::io::{self, Stdout, Write, stdout};
 use std::time::Duration;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -18,11 +18,11 @@ use unicode_width::UnicodeWidthStr;
 pub type Term = TermBackend;
 
 pub fn backend() -> TermBackend {
-    TermBackend::Crossterm(CrosstermBackend::new(stdout()))
+    TermBackend::Crossterm(stdout())
 }
 
 pub enum TermBackend {
-    Crossterm(CrosstermBackend<Stdout>),
+    Crossterm(Stdout),
     #[allow(dead_code)]
     Test {
         buffer: TestBuffer,
@@ -170,11 +170,7 @@ const ATTRS: &[(Modifier, Attribute)] = &[
     (Modifier::CROSSED_OUT, Attribute::CrossedOut),
 ];
 
-fn print_crossterm_span(
-    text: &str,
-    style: &Style,
-    t: &mut CrosstermBackend<Stdout>,
-) -> Result<(), io::Error> {
+fn print_crossterm_span(text: &str, style: &Style, t: &mut Stdout) -> Result<(), io::Error> {
     let fg = style.fg.unwrap_or(Color::Reset);
     let bg = style.bg.unwrap_or(Color::Reset);
 
@@ -201,7 +197,7 @@ impl TermBackend {
 
     pub(crate) fn clear(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Crossterm(t) => t.clear(),
+            TermBackend::Crossterm(t) => crossterm::queue!(t, Clear(ClearType::All)),
             TermBackend::Test { buffer, .. } => {
                 buffer.clear();
                 Ok(())
@@ -211,7 +207,7 @@ impl TermBackend {
 
     pub(crate) fn flush(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Crossterm(t) => Backend::flush(t),
+            TermBackend::Crossterm(t) => t.flush(),
             TermBackend::Test { .. } => Ok(()),
         }
     }
