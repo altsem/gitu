@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Cannot stash: working tree is empty                                           |
-styles_hash: 540759bc87855080
+styles_hash: afd809f8df8f4679

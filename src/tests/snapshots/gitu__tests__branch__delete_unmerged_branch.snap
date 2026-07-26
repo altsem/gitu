@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -d -f bugfix-123                                                   |
 Deleted branch bugfix-123 (was 33a8c4d).                                        |
-styles_hash: 86ceb55a114a2ae
+styles_hash: 52f5b75cab04a311

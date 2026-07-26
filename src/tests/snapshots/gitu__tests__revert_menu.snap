@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  c     Continue           -E Don't edit commit message (--no-edit)              |
  V     Revert commit(s)   -s Add Signed-off-by lines (--signoff)                |
  q/esc Quit/Close                                                               |
-styles_hash: 64dda6a1259ae722
+styles_hash: 7112c073199b1f56

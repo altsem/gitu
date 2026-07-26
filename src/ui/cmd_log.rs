@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use ratatui::style::Style;
+use crate::style::Style;
 
 use crate::cmd_log::{CmdLog, CmdLogEntry};
 use crate::config::Config;

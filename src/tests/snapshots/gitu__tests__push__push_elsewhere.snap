@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git push origin                                                               |
 Everything up-to-date                                                           |
-styles_hash: b401f8433340269
+styles_hash: e36f64119a8fa528

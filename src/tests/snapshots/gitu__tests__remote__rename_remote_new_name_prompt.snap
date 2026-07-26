@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Rename to: › █                                                                |
-styles_hash: e71a307199e38aa3
+styles_hash: 39fd6cbc76086bbb

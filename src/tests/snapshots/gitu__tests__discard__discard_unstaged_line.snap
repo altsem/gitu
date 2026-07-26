@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: 6795b03f13817018
+styles_hash: 3dc1a544e2914fd9

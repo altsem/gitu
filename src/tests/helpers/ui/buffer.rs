@@ -23,10 +23,10 @@ impl std::fmt::Debug for DebugBuffer<'_> {
                 }
                 skip = std::cmp::max(skip, c.symbol.width()).saturating_sub(1);
                 {
-                    let style = (c.fg, c.bg, c.underline_color, c.modifier);
+                    let style = (c.fg, c.bg, c.modifier);
                     if last_style != Some(style) {
                         last_style = Some(style);
-                        styles.push((x, y, c.fg, c.bg, c.underline_color, c.modifier));
+                        styles.push((x, y, c.fg, c.bg, c.modifier));
                     }
                 }
             }

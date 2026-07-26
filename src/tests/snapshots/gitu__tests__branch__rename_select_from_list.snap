@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git branch -m feature-a feature-rename                                        |
-styles_hash: 2b5fb9a917713dd6
+styles_hash: 5c61e2b785462988

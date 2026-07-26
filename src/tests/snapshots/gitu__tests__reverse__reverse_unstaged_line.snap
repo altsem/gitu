@@ -22,7 +22,7 @@ expression: out
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: 8f5ab6e7fae3f786
+styles_hash: d8eeebb35b94d8e3
 
 [file before]
 blahonga

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  l     current      -F Search messages (--grep=example)                         |
  o     other        -n Limit number of commits (-n=256)                         |
  q/esc Quit/Close                                                               |
-styles_hash: 5877b9adb59fe24d
+styles_hash: c3ce2be766716a22

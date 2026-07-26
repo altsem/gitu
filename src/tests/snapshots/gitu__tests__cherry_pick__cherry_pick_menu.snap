@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  c     Continue                -n Don't commit (--no-commit)                    |
  A     Cherry-pick commit(s)   -s Add Signed-off-by lines (--signoff)           |
  q/esc Quit/Close                                                               |
-styles_hash: a7abbd2adaf32d30
+styles_hash: 5c7ec187d6f8e88d

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Pop stash (default 0): › █                                                    |
-styles_hash: f9d1a1a4d6ebc785
+styles_hash: d4ee762d695afc2

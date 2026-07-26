@@ -22,7 +22,7 @@ expression: out
   seven                                                                         |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply                                                                     |
-styles_hash: 2a88314975ff98fc
+styles_hash: fa66b8d655c43403
 
 [files before]
 --- file1.txt ---

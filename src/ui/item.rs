@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use ratatui::style::Style;
+use crate::style::Style;
 
 use crate::config::Config;
 use crate::gitu_diff::Status;

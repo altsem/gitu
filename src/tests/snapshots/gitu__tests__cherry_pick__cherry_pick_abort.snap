@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git cherry-pick --abort                                                       |
-styles_hash: 5869d9403f787304
+styles_hash: b757c2512bb1402b

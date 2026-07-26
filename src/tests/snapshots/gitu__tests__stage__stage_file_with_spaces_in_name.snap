@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add file with space.txt                                                   |
-styles_hash: 5372e7d632c4cf90
+styles_hash: b5589f2e5b138e2b

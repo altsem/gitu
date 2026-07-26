@@ -1,3 +1,4 @@
+use crate::style::{Color, Modifier, Style};
 use crate::{Res, config::Config, error::Error};
 use crossterm::{
     QueueableCommand,
@@ -9,7 +10,6 @@ use crossterm::{
         enable_raw_mode,
     },
 };
-use ratatui::style::{Color, Modifier, Style};
 use std::io::{self, Stdout, Write, stdout};
 use std::time::Duration;
 use unicode_segmentation::UnicodeSegmentation;
@@ -35,7 +35,6 @@ pub struct TestCell {
     pub symbol: String,
     pub fg: Color,
     pub bg: Color,
-    pub underline_color: Color,
     pub modifier: Modifier,
 }
 
@@ -45,7 +44,6 @@ impl Default for TestCell {
             symbol: " ".to_string(),
             fg: Color::Reset,
             bg: Color::Reset,
-            underline_color: Color::Reset,
             modifier: Modifier::empty(),
         }
     }
@@ -62,10 +60,6 @@ impl TestCell {
         if let Some(bg) = style.bg {
             self.bg = bg;
         }
-        if let Some(underline_color) = style.underline_color {
-            self.underline_color = underline_color;
-        }
-
         self.modifier.insert(style.add_modifier);
         self.modifier.remove(style.sub_modifier);
     }

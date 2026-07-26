@@ -22,4 +22,4 @@ hint: Fix them up in the work tree, and then use 'git add/rm <file>'            
 hint: as appropriate to mark resolution and make a commit.                      |
 fatal: Exiting because of an unresolved conflict.                               |
 ! 'git cherry-pick--continue' exited with code: 128                             |
-styles_hash: fac6f201096c5cdc
+styles_hash: d1efaefa69a22e79

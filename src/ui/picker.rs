@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use ratatui::style::Style;
+use crate::style::Style;
 use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
 

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git checkout feature-a                                                        |
 Switched to branch 'feature-a'                                                  |
-styles_hash: ed07bb3ef72d6e56
+styles_hash: 2f476764ee015367

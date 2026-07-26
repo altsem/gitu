@@ -22,7 +22,7 @@ expression: out
   seven                                                                         |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --recount                                                           |
-styles_hash: 6bd2811f25dca59d
+styles_hash: 404713b599d6187d
 
 [files before]
 --- file1.txt ---

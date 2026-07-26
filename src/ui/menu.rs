@@ -1,12 +1,12 @@
 use std::borrow::Cow;
 
 use crate::menu::arg::Arg;
+use crate::style::Style;
 use crate::ui::item::layout_item;
 use crate::ui::layout::OPTS;
 use crate::ui::{self, UiTree, layout_line, layout_span, repeat_chars};
 use crate::{app::State, config::Config, ops::Op};
 use itertools::Itertools;
-use ratatui::style::Style;
 use unicode_width::UnicodeWidthStr;
 
 /// The value column of a keybind table row.

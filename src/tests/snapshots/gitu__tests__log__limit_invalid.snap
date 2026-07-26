@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Value must be a number greater than 0                                         |
-styles_hash: bd845daabc6ec344
+styles_hash: 7eab8669eff1a2e4

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  u     to origin/main             -F Force (--force)                            |
  e     to elsewhere               -f Force with lease (--force-with-lease)      |
  q/esc Quit/Close                 -h Disable hooks (--no-verify)                |
-styles_hash: 423a5e46d8d37364
+styles_hash: 7526b958731867e9

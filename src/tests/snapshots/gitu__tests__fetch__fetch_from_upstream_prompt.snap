@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Set upstream then fetch: › █                                                  |
-styles_hash: a9ce1b225e9e7e38
+styles_hash: c82b1e41e00ab83d
