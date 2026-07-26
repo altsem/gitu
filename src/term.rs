@@ -7,11 +7,10 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    Terminal,
     backend::{Backend, CrosstermBackend, TestBackend},
     buffer::Cell,
     layout::Size,
-    prelude::{Position, backend::WindowSize},
+    prelude::Position,
     style::{Color, Style},
 };
 use std::io::{self, Stdout, stdout};
@@ -19,7 +18,7 @@ use std::time::Duration;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-pub type Term = Terminal<TermBackend>;
+pub type Term = TermBackend;
 
 pub fn backend() -> TermBackend {
     TermBackend::Crossterm(CrosstermBackend::new(stdout()))
@@ -121,67 +120,22 @@ fn print_test_span(text: &str, style: &Style, backend: &mut TestBackend) -> io::
     backend.set_cursor_position(Position::new(cx, y))
 }
 
-impl Backend for TermBackend {
-    fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
-    where
-        I: Iterator<Item = (u16, u16, &'a Cell)>,
-    {
-        match self {
-            TermBackend::Crossterm(t) => t.draw(content),
-            TermBackend::Test { backend, .. } => backend.draw(content),
-        }
-    }
-
-    fn hide_cursor(&mut self) -> io::Result<()> {
-        match self {
-            TermBackend::Crossterm(t) => t.hide_cursor(),
-            TermBackend::Test { backend, .. } => backend.hide_cursor(),
-        }
-    }
-
-    fn show_cursor(&mut self) -> io::Result<()> {
-        match self {
-            TermBackend::Crossterm(t) => t.show_cursor(),
-            TermBackend::Test { backend, .. } => backend.show_cursor(),
-        }
-    }
-
-    fn get_cursor_position(&mut self) -> io::Result<Position> {
-        match self {
-            TermBackend::Crossterm(t) => t.get_cursor_position(),
-            TermBackend::Test { backend, .. } => backend.get_cursor_position(),
-        }
-    }
-
-    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
-        match self {
-            TermBackend::Crossterm(t) => t.set_cursor_position(position),
-            TermBackend::Test { backend, .. } => backend.set_cursor_position(position),
-        }
-    }
-
-    fn clear(&mut self) -> io::Result<()> {
-        match self {
-            TermBackend::Crossterm(t) => t.clear(),
-            TermBackend::Test { backend, .. } => backend.clear(),
-        }
-    }
-
-    fn size(&self) -> io::Result<Size> {
+impl TermBackend {
+    pub(crate) fn size(&self) -> io::Result<Size> {
         match self {
             TermBackend::Crossterm(t) => t.size(),
             TermBackend::Test { backend, .. } => backend.size(),
         }
     }
 
-    fn window_size(&mut self) -> io::Result<WindowSize> {
+    pub(crate) fn clear(&mut self) -> io::Result<()> {
         match self {
-            TermBackend::Crossterm(t) => t.window_size(),
-            TermBackend::Test { backend, .. } => backend.window_size(),
+            TermBackend::Crossterm(t) => t.clear(),
+            TermBackend::Test { backend, .. } => backend.clear(),
         }
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    pub(crate) fn flush(&mut self) -> io::Result<()> {
         match self {
             TermBackend::Crossterm(t) => Backend::flush(t),
             TermBackend::Test { backend, .. } => backend.flush(),

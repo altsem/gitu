@@ -9,7 +9,7 @@ use crate::{
 };
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
-use ratatui::{Terminal, backend::TestBackend, layout::Size};
+use ratatui::{backend::TestBackend, layout::Size};
 use regex::Regex;
 use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
 
@@ -44,11 +44,10 @@ macro_rules! setup_clone {
 impl TestContext {
     pub fn setup_clone(test_name: &str) -> Self {
         let size = Size::new(80, 20);
-        let term = Terminal::new(TermBackend::Test {
+        let term = TermBackend::Test {
             backend: TestBackend::new(size.width, size.height),
             events: vec![],
-        })
-        .unwrap();
+        };
         let repo_ctx = RepoTestContext::setup_clone(test_name);
         Self {
             term,
@@ -82,7 +81,7 @@ impl TestContext {
     }
 
     pub fn update(&mut self, app: &mut App, new_events: Vec<Event>) {
-        let TermBackend::Test { events, .. } = self.term.backend_mut() else {
+        let TermBackend::Test { events, .. } = &mut self.term else {
             unreachable!();
         };
 
@@ -93,7 +92,7 @@ impl TestContext {
     }
 
     pub fn redact_buffer(&self) -> String {
-        let TermBackend::Test { backend, .. } = self.term.backend() else {
+        let TermBackend::Test { backend, .. } = &self.term else {
             unreachable!();
         };
         let mut debug_output = format!("{:?}", TestBuffer(backend.buffer()));

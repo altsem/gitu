@@ -94,11 +94,7 @@ impl OpTrait for RemoveRemote {
     }
 }
 
-fn remove_remote(
-    app: &mut App,
-    term: &mut ratatui::Terminal<crate::term::TermBackend>,
-    remote_name: &str,
-) -> Res<()> {
+fn remove_remote(app: &mut App, term: &mut crate::term::Term, remote_name: &str) -> Res<()> {
     let mut cmd = Command::new("git");
     cmd.args(["remote", "remove", remote_name]);
 
@@ -108,7 +104,7 @@ fn remove_remote(
 
 fn rename_remote(
     app: &mut App,
-    term: &mut ratatui::Terminal<crate::term::TermBackend>,
+    term: &mut crate::term::Term,
     remote_name: &str,
     new_remote_name: &str,
 ) -> Res<()> {

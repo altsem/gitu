@@ -7,7 +7,6 @@ use gitu::{
     term::{self, Term},
 };
 use log::LevelFilter;
-use ratatui::Terminal;
 use std::{backtrace::Backtrace, fmt::Display, panic, sync::Arc};
 
 pub fn main() -> Res<()> {
@@ -35,18 +34,14 @@ pub fn main() -> Res<()> {
     }));
 
     log::debug!("Initializing terminal backend");
-    let mut term = Terminal::new(term::backend()).map_err(Error::Term)?;
+    let mut term = term::backend();
 
     if !args.print {
-        term.backend_mut()
-            .setup_term(&config_ref)
-            .map_err(Error::Term)?;
+        term.setup_term(&config_ref).map_err(Error::Term)?;
     }
 
     let result = setup_term_and_run(&mut term, config_ref.clone(), &args);
-    term.backend_mut()
-        .reset_term(&config_ref)
-        .map_err(Error::Term)?;
+    term.reset_term(&config_ref).map_err(Error::Term)?;
     result
 }
 

@@ -9,7 +9,6 @@ use crate::ui::layout::LayoutItem;
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::OPTS;
-use ratatui::backend::Backend;
 use ratatui::layout::Size;
 use ratatui::style::Style;
 use tui_prompts::State as _;
