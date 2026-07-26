@@ -3,7 +3,7 @@ use crate::ui::layout::{LayoutTree, OPTS};
 use crate::ui::{UiItem, UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
 use itertools::Itertools;
-use ratatui::{layout::Size, style::Style};
+use ratatui::style::Style;
 
 use crate::{Res, config::Config, items::hash};
 
@@ -29,7 +29,7 @@ pub(crate) enum NavMode {
 }
 
 pub(crate) struct Screen {
-    pub(crate) size: Size,
+    pub(crate) size: (u16, u16),
     cursor: usize,
     scroll: usize,
     config: Arc<Config>,
@@ -48,7 +48,7 @@ pub(crate) struct Screen {
 impl Screen {
     pub(crate) fn new(
         config: Arc<Config>,
-        size: Size,
+        size: (u16, u16),
         refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     ) -> Res<Self> {
         let collapsed = config
@@ -143,7 +143,7 @@ impl Screen {
 
         let last = BOTTOM_CONTEXT_LINES + last_item_line;
 
-        let end_line = self.size.height.saturating_sub(1) as usize;
+        let end_line = self.size.1.saturating_sub(1) as usize;
         if last > end_line + self.scroll {
             self.scroll = last - end_line;
         }
@@ -189,12 +189,12 @@ impl Screen {
     }
 
     pub(crate) fn scroll_view_half_page_up(&mut self) {
-        let half_screen = self.size.height as usize / 2;
+        let half_screen = self.size.1 as usize / 2;
         self.scroll_view_up(half_screen);
     }
 
     pub(crate) fn scroll_view_half_page_down(&mut self) {
-        let half_screen = self.size.height as usize / 2;
+        let half_screen = self.size.1 as usize / 2;
         self.scroll_view_down(half_screen);
     }
 
@@ -231,7 +231,7 @@ impl Screen {
     }
 
     pub(crate) fn resize(&mut self, w: u16, h: u16) -> Res<()> {
-        self.size = Size::new(w, h);
+        self.size = (w, h);
         self.update_indices()?;
         self.update_cursor();
         Ok(())
@@ -308,7 +308,7 @@ impl Screen {
                     highlighted: false,
                 };
                 layout_item(&mut layout, self, false, view);
-                layout.compute([self.size.width, self.size.height]);
+                layout.compute([self.size.0, self.size.1]);
 
                 layout
                     .iter()
@@ -348,7 +348,7 @@ impl Screen {
     }
 
     fn move_cursor_to_screen_center(&mut self) {
-        let half_screen = self.size.height as usize / 2;
+        let half_screen = self.size.1 as usize / 2;
         self.cursor = self.line_index[self.scroll + half_screen];
     }
 
@@ -371,7 +371,7 @@ impl Screen {
             return 0;
         }
 
-        let max_scroll = len.saturating_sub(self.size.height as usize);
+        let max_scroll = len.saturating_sub(self.size.1 as usize);
         let max_scroll = max_scroll.saturating_add(BOTTOM_CONTEXT_LINES);
         max_scroll.min(len.saturating_sub(1))
     }
@@ -439,7 +439,7 @@ impl Screen {
     pub(crate) fn select_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
         if let Some(item_i) = self.find_item(|item| !item.unselectable && predicate(&item.data)) {
             self.cursor = item_i;
-            let half_screen = self.size.height as usize / 2;
+            let half_screen = self.size.1 as usize / 2;
             let Some(line_of_item) = self.line_of_item(self.cursor) else {
                 return false;
             };
@@ -460,7 +460,7 @@ impl Screen {
     pub(crate) fn select_last_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
         if let Some(item_i) = self.rfind_item(|item| !item.unselectable && predicate(&item.data)) {
             self.cursor = item_i;
-            let half_screen = self.size.height as usize / 2;
+            let half_screen = self.size.1 as usize / 2;
             let Some(line_of_item) = self.line_of_item(self.cursor) else {
                 return false;
             };
@@ -505,7 +505,7 @@ impl Screen {
             .map(|(&line_i, _)| line_i)
     }
 
-    fn item_views(&'_ self, area: Size) -> impl Iterator<Item = ItemView> {
+    fn item_views(&'_ self, area: (u16, u16)) -> impl Iterator<Item = ItemView> {
         let first_visible_item = self
             .line_index
             .get(self.scroll)
@@ -513,7 +513,7 @@ impl Screen {
             .unwrap_or(self.items.len().saturating_sub(1));
 
         let scan_start_item = first_visible_item.min(self.cursor);
-        let scan_end_line = (self.scroll + area.height as usize).min(self.line_index.len());
+        let scan_end_line = (self.scroll + area.1 as usize).min(self.line_index.len());
         let scan_end_item = self
             .line_index
             .get(scan_end_line)

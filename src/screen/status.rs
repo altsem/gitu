@@ -8,7 +8,6 @@ use crate::{
     items::{self, Item, hash},
 };
 use git2::Repository;
-use ratatui::prelude::Size;
 use std::{hash::Hash, path::PathBuf, rc::Rc, sync::Arc};
 
 enum SectionID {
@@ -43,7 +42,7 @@ impl Hash for SectionID {
     }
 }
 
-pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
+pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: (u16, u16)) -> Res<Screen> {
     Screen::new(
         Arc::clone(&config),
         size,

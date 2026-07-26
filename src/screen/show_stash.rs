@@ -8,14 +8,13 @@ use crate::{
     items::{self, Item, hash},
 };
 use git2::Repository;
-use ratatui::layout::Size;
 
 use super::Screen;
 
 pub(crate) fn create(
     config: Arc<Config>,
     repo: Rc<Repository>,
-    size: Size,
+    size: (u16, u16),
     stash_ref: String,
 ) -> Res<Screen> {
     Screen::new(

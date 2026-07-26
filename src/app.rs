@@ -19,7 +19,6 @@ use crossterm::event::MouseButton;
 use crossterm::event::MouseEvent;
 use crossterm::event::MouseEventKind;
 use git2::Repository;
-use ratatui::layout::Size;
 use tui_prompts::State as _;
 
 use crate::cli;
@@ -67,7 +66,7 @@ pub struct App {
 impl App {
     pub fn create(
         repo: Rc<Repository>,
-        size: Size,
+        size: (u16, u16),
         args: &cli::Args,
         config: Arc<Config>,
         enable_async_cmds: bool,
