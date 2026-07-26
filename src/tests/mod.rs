@@ -327,7 +327,7 @@ fn new_commit() {
 
 #[test]
 fn fetch_all() {
-    let ctx = setup_clone!();
+    let ctx = setup_clone_wide!();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
     snapshot!(ctx, "fa");
 }

@@ -2,24 +2,24 @@
 source: src/tests/pull.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
-                                                                                |
- Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-────────────────────────────────────────────────────────────────────────────────|
-$ git pull origin refs/heads/main                                               |
-From file://                                                                     
- * branch            main       -> FETCH_HEAD                                   |
-Already up to date.                                                             |
+▌On branch main                                                                                                         |
+▌Your branch is up to date with 'origin/main'.                                                                          |
+                                                                                                                        |
+ Recent commits                                                                                                         |
+ b66a0bf main origin/main add initial-file                                                                              |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────|
+$ git pull origin refs/heads/main                                                                                       |
+From file://                                                                                                             
+ * branch            main       -> FETCH_HEAD                                                                           |
+Already up to date.                                                                                                     |
 styles_hash: cd9783096eb47a06

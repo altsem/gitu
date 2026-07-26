@@ -19,7 +19,7 @@ fn push_menu_existing_push_remote_and_upstream() {
 
 #[test]
 fn push_upstream() {
-    let ctx = setup_clone!();
+    let ctx = setup_clone_wide!();
     commit(&ctx.dir, "new-file", "");
     snapshot!(ctx, "Pu");
 }
@@ -73,7 +73,7 @@ fn push_setup_push_remote() {
 
 #[test]
 fn force_push() {
-    let ctx = setup_clone!();
+    let ctx = setup_clone_wide!();
     commit(&ctx.dir, "new-file", "");
     snapshot!(ctx, "P-fu");
 }

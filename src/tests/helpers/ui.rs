@@ -40,9 +40,24 @@ macro_rules! setup_clone {
     () => {{ TestContext::setup_clone(function_name!()) }};
 }
 
+#[macro_export]
+macro_rules! setup_clone_wide {
+    () => {{ TestContext::setup_clone_wide(function_name!()) }};
+}
+
 impl TestContext {
     pub fn setup_clone(test_name: &str) -> Self {
-        let size = (80, 20);
+        Self::setup_clone_sized(test_name, (80, 20))
+    }
+
+    /// For tests whose output carries the remote's path. At 80 columns that
+    /// wraps on a longer checkout, which shifts every row of the frame and
+    /// leaves the path visible past what [`Self::redact_buffer`] blanks.
+    pub fn setup_clone_wide(test_name: &str) -> Self {
+        Self::setup_clone_sized(test_name, (120, 20))
+    }
+
+    fn setup_clone_sized(test_name: &str, size: (u16, u16)) -> Self {
         let term = TermBackend::Test {
             buffer: TestBuffer::new(size.0, size.1),
             events: vec![],
