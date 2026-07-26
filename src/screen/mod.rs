@@ -1,9 +1,9 @@
 use crate::config::StyleConfig;
+use crate::style::Style;
 use crate::ui::layout::{LayoutTree, OPTS};
 use crate::ui::{UiItem, UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
 use itertools::Itertools;
-use ratatui::style::Style;
 
 use crate::{Res, config::Config, items::hash};
 

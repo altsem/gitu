@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git cherry-pick --no-commit Aother-branch                                     |
 fatal: bad revision 'Aother-branch'                                             |
 ! 'git cherry-pick--no-commitAother-branch' exited with code: 128               |
-styles_hash: 909239aa67e66107
+styles_hash: ae8ffd321649ca3f

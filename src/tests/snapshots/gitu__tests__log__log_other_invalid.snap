@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 ! Couldn't find git revision: failed to parse revision specifier - Invalid      |
 pattern ' '; class=Invalid (3); code=InvalidSpec (-12)                          |
-styles_hash: db8d105d97033047
+styles_hash: 9fcf3c3e448ea67b

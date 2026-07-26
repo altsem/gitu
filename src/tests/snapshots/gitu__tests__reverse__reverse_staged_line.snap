@@ -22,7 +22,7 @@ expression: out
   BAZ                                                                           |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: d8e20f905aae1d59
+styles_hash: 773df6bbbcd5f5ab
 
 [file before]
 blahonga

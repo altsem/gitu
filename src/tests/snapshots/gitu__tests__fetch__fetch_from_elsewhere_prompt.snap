@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Select remote: › █                                                            |
-styles_hash: d4bf27d871c90729
+styles_hash: 27b62992ccb47712

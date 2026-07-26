@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git merge feature-a                                                           |
-styles_hash: 994114f03d7a9c3c
+styles_hash: 6d38fe575fb2440d

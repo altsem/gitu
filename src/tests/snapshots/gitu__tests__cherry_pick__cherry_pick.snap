@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git cherry-pick other-branch                                                  |
-styles_hash: 1386c91c12bf9893
+styles_hash: f3a37ee58f76a6c1

@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached                                                            |
-styles_hash: 188769995793700
+styles_hash: 7b6225633ca64544

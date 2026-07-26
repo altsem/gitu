@@ -22,7 +22,7 @@ expression: out
 ▌-ten                                                                           |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash apply -q stash@{0}                                                  |
-styles_hash: ac8c9cc328d84585
+styles_hash: 43893a5c0c24829d
 
 [files before]
 --- file1.txt ---

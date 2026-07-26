@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Revert commit (default main): › █                                             |
-styles_hash: 9f368d3eb37a4f1f
+styles_hash: 9a9a7b67c0681857

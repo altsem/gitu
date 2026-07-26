@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  K     Delete branch                                                            |
  m     Rename branch                                                            |
  q/esc Quit/Close                                                               |
-styles_hash: cdf143286ee83a68
+styles_hash: f3500db39944be2f

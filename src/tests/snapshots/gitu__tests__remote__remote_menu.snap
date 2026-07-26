@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  K     remove remote                                                            |
  r     rename remote                                                            |
  q/esc Quit/Close                                                               |
-styles_hash: f68bba68cc2d8ad6
+styles_hash: bda3f6303d72b6b4

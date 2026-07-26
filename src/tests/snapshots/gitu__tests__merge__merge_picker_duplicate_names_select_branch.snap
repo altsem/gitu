@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git merge v1.0.0                                                              |
 warning: refname 'v1.0.0' is ambiguous.                                         |
 warning: refname 'v1.0.0' is ambiguous.                                         |
-styles_hash: 96ba88c230adae56
+styles_hash: 18b35e057dbb09a6

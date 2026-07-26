@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git merge b66a0bf82020d6a386e94d0fceedec1f817d20c7                            |
-styles_hash: 1913e3f30ba0cc1b
+styles_hash: 73e9fdd5d2c4fca5

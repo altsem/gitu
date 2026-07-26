@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  q/esc Quit/Close                                                               |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Limit number of commits (default 256): › █                                    |
-styles_hash: 99ca458c7c196a27
+styles_hash: 62cf3084d4145092

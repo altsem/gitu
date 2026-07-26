@@ -22,7 +22,7 @@ expression: out
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse                                                           |
-styles_hash: 127ac9ef0aee93e
+styles_hash: e2df43c3a6393f68
 
 [file before]
 blahonga

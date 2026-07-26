@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
+use crate::style::{Color, Modifier, Style};
 use crate::{Bindings, Res, error::Error, key_parser, menu::Menu, ops::Op};
 use crossterm::event::{KeyCode, KeyModifiers};
 use etcetera::{BaseStrategy, choose_base_strategy};
@@ -7,7 +8,6 @@ use figment::{
     Figment,
     providers::{Format, Toml},
 };
-use ratatui::style::{Color, Modifier, Style};
 use serde::Deserialize;
 
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
@@ -245,7 +245,6 @@ impl From<&StyleConfigEntry> for Style {
         Style {
             fg: val.fg,
             bg: val.bg,
-            underline_color: None,
             add_modifier: val.mods.unwrap_or(Modifier::empty()),
             sub_modifier: Modifier::empty(),
         }
@@ -257,7 +256,6 @@ impl From<&SymbolStyleConfigEntry> for Style {
         Style {
             fg: val.fg,
             bg: val.bg,
-            underline_color: None,
             add_modifier: val.mods.unwrap_or(Modifier::empty()),
             sub_modifier: Modifier::empty(),
         }
@@ -377,11 +375,11 @@ pub(crate) fn init_test_config() -> Res<Config> {
 
 #[cfg(test)]
 mod tests {
+    use crate::style::Color;
     use figment::{
         Figment,
         providers::{Format, Toml},
     };
-    use ratatui::style::Color;
 
     use super::{DEFAULT_CONFIG, FigmentConfig};
 
