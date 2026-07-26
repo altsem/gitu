@@ -60,8 +60,8 @@ pub(crate) struct State {
     inhibit_close_menu: bool,
 }
 
-pub(crate) struct App {
-    pub state: State,
+pub struct App {
+    pub(crate) state: State,
 }
 
 impl App {
@@ -381,11 +381,11 @@ impl App {
         self.state.inhibit_close_menu = true;
     }
 
-    pub fn screen_mut(&mut self) -> &mut Screen {
+    pub(crate) fn screen_mut(&mut self) -> &mut Screen {
         self.state.screens.last_mut().expect("No screen")
     }
 
-    pub fn screen(&self) -> &Screen {
+    pub(crate) fn screen(&self) -> &Screen {
         self.state.screens.last().expect("No screen")
     }
 
@@ -559,11 +559,11 @@ impl App {
         }
     }
 
-    pub fn selected_rev(&self) -> Option<Rev> {
+    pub(crate) fn selected_rev(&self) -> Option<Rev> {
         self.screen().get_selected_item().data.rev()
     }
 
-    pub fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
+    pub(crate) fn prompt(&mut self, term: &mut Term, params: &PromptParams) -> Res<String> {
         let prompt_text = if let Some(default) = (params.create_default_value)(self) {
             format!("{} (default {}):", params.prompt, default).into()
         } else {
