@@ -21,6 +21,7 @@ mod syntax_parser;
 pub mod term;
 #[cfg(test)]
 mod tests;
+mod text_input;
 mod ui;
 
 use bindings::Bindings;

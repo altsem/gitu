@@ -1,5 +1,5 @@
+use crate::text_input::TextInput;
 use std::borrow::Cow;
-use tui_prompts::{State, TextState};
 
 pub(crate) struct PromptData {
     pub(crate) prompt_text: Cow<'static, str>,
@@ -7,24 +7,24 @@ pub(crate) struct PromptData {
 
 pub(crate) struct Prompt {
     pub(crate) data: Option<PromptData>,
-    pub(crate) state: TextState<'static>,
+    pub(crate) state: TextInput,
 }
 
 impl Prompt {
     pub(crate) fn new() -> Self {
         Prompt {
             data: None,
-            state: TextState::new(),
+            state: TextInput::default(),
         }
     }
 
     pub(crate) fn set(&mut self, data: PromptData) {
         self.data = Some(data);
-        self.state.focus();
+        self.state.focused = true;
     }
 
     pub(crate) fn reset(&mut self) {
         self.data = None;
-        self.state = TextState::new();
+        self.state = TextInput::default();
     }
 }
