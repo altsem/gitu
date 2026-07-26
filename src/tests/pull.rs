@@ -19,14 +19,14 @@ fn pull_menu_existing_push_remote_and_upstream() {
 
 #[test]
 fn pull_upstream() {
-    let ctx = setup_clone!();
+    let ctx = setup_clone_wide!();
     clone_and_commit(&ctx.remote_dir, "remote-file", "hello");
     snapshot!(ctx, "Fu");
 }
 
 #[test]
 fn pull_push_remote() {
-    let ctx = setup_clone!();
+    let ctx = setup_clone_wide!();
     run(
         &ctx.dir,
         &["git", "config", "branch.main.pushRemote", "origin"],

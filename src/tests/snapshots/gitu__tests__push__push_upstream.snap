@@ -2,24 +2,24 @@
 source: src/tests/push.rs
 expression: ctx.redact_buffer()
 ---
-▌On branch main                                                                 |
-▌Your branch is up to date with 'origin/main'.                                  |
-                                                                                |
- Recent commits                                                                 |
- e7eb2bd main origin/main add new-file                                          |
- b66a0bf add initial-file                                                       |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-────────────────────────────────────────────────────────────────────────────────|
-$ git push origin refs/heads/main:refs/heads/main                               |
-To file://                                                                       
-   b66a0bf..e7eb2bd  main -> main                                               |
+▌On branch main                                                                                                         |
+▌Your branch is up to date with 'origin/main'.                                                                          |
+                                                                                                                        |
+ Recent commits                                                                                                         |
+ e7eb2bd main origin/main add new-file                                                                                  |
+ b66a0bf add initial-file                                                                                               |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+                                                                                                                        |
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────|
+$ git push origin refs/heads/main:refs/heads/main                                                                       |
+To file://                                                                                                               
+   b66a0bf..e7eb2bd  main -> main                                                                                       |
 styles_hash: 86d7176114348d55
