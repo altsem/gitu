@@ -2,15 +2,14 @@ use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use gitu::{cli::Commands, config, term::TermBackend};
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui::backend::TestBackend;
 
 fn show(c: &mut Criterion) {
     c.bench_function("show", |b| {
-        let mut terminal = Terminal::new(TermBackend::Test {
+        let mut terminal = TermBackend::Test {
             backend: TestBackend::new(80, 1000),
             events: vec![],
-        })
-        .unwrap();
+        };
 
         let args = gitu::cli::Args {
             command: Some(Commands::Show {

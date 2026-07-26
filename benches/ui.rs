@@ -7,7 +7,7 @@ use gitu::app::App;
 use gitu::cli::{Args, Commands};
 use gitu::config;
 use gitu::term::TermBackend;
-use ratatui::{Terminal, backend::TestBackend, layout::Size};
+use ratatui::{backend::TestBackend, layout::Size};
 
 const REFERENCE: &str = "f4de01c0a12794d7b42a77b2138aa64119b90ea5";
 
@@ -15,11 +15,10 @@ const REFERENCE: &str = "f4de01c0a12794d7b42a77b2138aa64119b90ea5";
 /// parsing and item creation out of the measurement.
 fn bench_redraw(c: &mut Criterion, name: &str, size: Size) {
     c.bench_function(name, |b| {
-        let mut term = Terminal::new(TermBackend::Test {
+        let mut term = TermBackend::Test {
             backend: TestBackend::new(size.width, size.height),
             events: vec![],
-        })
-        .unwrap();
+        };
 
         let args = Args {
             command: Some(Commands::Show {

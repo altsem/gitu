@@ -160,8 +160,8 @@ impl App {
 
     pub fn run(&mut self, term: &mut Term, max_tick_delay: Duration) -> Res<()> {
         while !self.state.quit {
-            let event = if term.backend_mut().poll_event(max_tick_delay)? {
-                Some(term.backend_mut().read_event()?)
+            let event = if term.poll_event(max_tick_delay)? {
+                Some(term.read_event()?)
             } else {
                 None
             };
@@ -250,7 +250,7 @@ impl App {
 
     pub fn redraw_now(&mut self, term: &mut Term) -> Res<()> {
         if self.state.screens.last_mut().is_some() {
-            ui::ui(term.backend_mut(), &mut self.state)?;
+            ui::ui(term, &mut self.state)?;
             self.state.needs_redraw = false;
         };
 
@@ -429,7 +429,7 @@ impl App {
 
         let log_entry = self.state.current_cmd_log.push_cmd(&cmd);
 
-        ui::ui(term.backend_mut(), &mut self.state)?;
+        ui::ui(term, &mut self.state)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
 
@@ -496,8 +496,7 @@ impl App {
         // Redirect stderr so we can capture it via `Child::wait_with_output()`
         cmd.stderr(Stdio::piped());
 
-        term.backend_mut()
-            .reset_term_stay_on_alt_screeen(&self.state.config)
+        term.reset_term_stay_on_alt_screeen(&self.state.config)
             .map_err(Error::Term)?;
 
         let mut child = cmd.spawn().map_err(Error::SpawnCmd)?;
@@ -515,9 +514,7 @@ impl App {
 
         let status = child.wait().map_err(Error::CouldntAwaitCmd)?;
 
-        term.backend_mut()
-            .setup_term(&self.state.config)
-            .map_err(Error::Term)?;
+        term.setup_term(&self.state.config).map_err(Error::Term)?;
 
         let out_utf8 = String::from_utf8(strip_ansi_escapes::strip(stderr.clone()))
             .expect("Error turning command output to String")
@@ -578,7 +575,7 @@ impl App {
         let result = self.handle_prompt(term, params);
 
         self.unhide_menu();
-        self.state.prompt.reset(term)?;
+        self.state.prompt.reset();
 
         result
     }
@@ -587,7 +584,7 @@ impl App {
         self.redraw_now(term)?;
 
         loop {
-            let event = term.backend_mut().read_event()?;
+            let event = term.read_event()?;
             self.handle_event(term, event)?;
 
             if self.state.prompt.state.status().is_done() {
@@ -609,7 +606,7 @@ impl App {
         let result = self.handle_confirm(term);
 
         self.unhide_menu();
-        self.state.prompt.reset(term)?;
+        self.state.prompt.reset();
 
         result
     }
@@ -617,7 +614,7 @@ impl App {
     fn handle_confirm(&mut self, term: &mut Term) -> Res<()> {
         self.redraw_now(term)?;
         loop {
-            let event = term.backend_mut().read_event()?;
+            let event = term.read_event()?;
             self.handle_event(term, event)?;
 
             match self.state.prompt.state.value() {
@@ -676,7 +673,7 @@ impl App {
         self.redraw_now(term)?;
 
         loop {
-            let event = term.backend_mut().read_event()?;
+            let event = term.read_event()?;
             self.handle_event(term, event)?;
 
             if let Some(ref picker) = self.state.picker {
