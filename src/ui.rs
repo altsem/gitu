@@ -16,6 +16,8 @@ use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+mod cmd_log;
+pub(crate) mod item;
 pub(crate) mod layout;
 mod menu;
 pub mod picker;
@@ -43,7 +45,12 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
 
         layout.vertical(None, OPTS, |layout| {
             menu::layout_menu(layout, state, size.width as usize);
-            layout_command_log(layout, state, size.width as usize);
+            cmd_log::layout_cmd_log(
+                layout,
+                &state.current_cmd_log,
+                &state.config,
+                size.width as usize,
+            );
             layout_prompt(layout, state, size.width as usize);
             layout_picker(layout, state, size.width as usize);
             if !state.pending_keys.is_empty() {
@@ -71,23 +78,6 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
     state.screens.last_mut().unwrap().size = size;
 
     Ok(())
-}
-
-impl<'a> Widget for &UiItem<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        match self {
-            UiItem::Span(text, style) => buf.set_string(area.x, area.y, text, *style),
-            UiItem::Style(style) => buf.set_style(area, *style),
-        }
-    }
-}
-
-fn layout_command_log<'a>(layout: &mut UiTree<'a>, state: &State, width: usize) {
-    if !state.current_cmd_log.is_empty() {
-        let separator_style = Style::from(&state.config.style.separator);
-        repeat_chars(layout, width, DASHES, separator_style);
-        layout_text(layout, state.current_cmd_log.format_log(&state.config));
-    }
 }
 
 fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
@@ -119,29 +109,17 @@ fn layout_picker<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
     }
 }
 
-pub(crate) fn layout_text<'a>(layout: &mut UiTree<'a>, text: Text<'a>) {
-    layout.vertical(None, OPTS, |layout| {
-        for line in text {
-            layout_line(layout, line);
-        }
-    });
-}
-
-pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, line: Line<'a>) {
-    let line_style = line.style;
+/// Lays out `content` as a single row of its own.
+pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, content: Cow<'a, str>, style: Style) {
     layout.horizontal(None, OPTS, |layout| {
-        for span in line {
-            // Merge line.style with span.style
-            let merged_style = line_style.patch(span.style);
-            layout_span(layout, (span.content, merged_style));
-        }
+        layout_span(layout, (content, style));
     });
 }
 
 pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Style)) {
     match span.0 {
         Cow::Borrowed(s) => {
-            for word in s.split_word_bounds() {
+            for word in words(s) {
                 layout.leaf_with_size(
                     UiItem::Span(Cow::Borrowed(word), span.1),
                     [UnicodeWidthStr::width(word) as u16, 1],
@@ -149,7 +127,7 @@ pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Styl
             }
         }
         Cow::Owned(s) => {
-            for word in s.split_word_bounds() {
+            for word in words(&s) {
                 layout.leaf_with_size(
                     UiItem::Span(Cow::Owned(word.into()), span.1),
                     [UnicodeWidthStr::width(word) as u16, 1],
@@ -157,6 +135,14 @@ pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Styl
             }
         }
     }
+}
+
+/// Splits into the words to wrap on, dropping line breaks. A span occupies a
+/// single row, so a line break would otherwise be printed as-is and shift the
+/// rest of the frame.
+fn words(text: &str) -> impl Iterator<Item = &str> {
+    text.split_word_bounds()
+        .filter(|word| !word.bytes().all(|byte| byte == b'\n' || byte == b'\r'))
 }
 
 pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static str, style: Style) {
