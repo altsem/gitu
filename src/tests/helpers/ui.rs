@@ -9,7 +9,7 @@ use crate::{
 };
 use crossterm::event::{Event, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use git2::Repository;
-use ratatui::{backend::TestBackend, layout::Size};
+use ratatui::backend::TestBackend;
 use regex::Regex;
 use std::{path::PathBuf, rc::Rc, sync::Arc, time::Duration};
 
@@ -32,7 +32,7 @@ pub struct TestContext {
     pub term: Term,
     pub dir: PathBuf,
     pub remote_dir: PathBuf,
-    pub size: Size,
+    pub size: (u16, u16),
     config: Arc<Config>,
 }
 
@@ -43,9 +43,9 @@ macro_rules! setup_clone {
 
 impl TestContext {
     pub fn setup_clone(test_name: &str) -> Self {
-        let size = Size::new(80, 20);
+        let size = (80, 20);
         let term = TermBackend::Test {
-            backend: TestBackend::new(size.width, size.height),
+            backend: TestBackend::new(size.0, size.1),
             events: vec![],
         };
         let repo_ctx = RepoTestContext::setup_clone(test_name);

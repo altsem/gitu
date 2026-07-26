@@ -9,7 +9,6 @@ use crate::ui::layout::LayoutItem;
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::OPTS;
-use ratatui::layout::Size;
 use ratatui::style::Style;
 use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
@@ -43,15 +42,15 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
         });
 
         layout.vertical(None, OPTS, |layout| {
-            menu::layout_menu(layout, state, size.width as usize);
+            menu::layout_menu(layout, state, size.0 as usize);
             cmd_log::layout_cmd_log(
                 layout,
                 &state.current_cmd_log,
                 &state.config,
-                size.width as usize,
+                size.0 as usize,
             );
-            layout_prompt(layout, state, size.width as usize);
-            layout_picker(layout, state, size.width as usize);
+            layout_prompt(layout, state, size.0 as usize);
+            layout_picker(layout, state, size.0 as usize);
             if !state.pending_keys.is_empty() {
                 let keys = &state
                     .pending_keys
@@ -64,7 +63,7 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
         });
     });
 
-    layout.compute([size.width, size.height]);
+    layout.compute([size.0, size.1]);
 
     let mut items = layout.iter().collect::<Vec<_>>();
     items.sort_by_key(|item| [item.pos[1], item.pos[0]]);
@@ -170,7 +169,7 @@ pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static st
 
 fn clear_blanks(
     term: &mut TermBackend,
-    size: Size,
+    size: (u16, u16),
     items: Vec<LayoutItem<&UiItem<'_>>>,
 ) -> Result<(), Error> {
     let mut at = [0, 0];
@@ -183,11 +182,11 @@ fn clear_blanks(
             size: item_size,
         } = item;
 
-        blank_until(term, &mut at, [0, pos[1]], size.width, bg, bg_end)?;
+        blank_until(term, &mut at, [0, pos[1]], size.0, bg, bg_end)?;
 
         match data {
             UiItem::Span(text, style) => {
-                blank_until(term, &mut at, pos, size.width, bg, bg_end)?;
+                blank_until(term, &mut at, pos, size.0, bg, bg_end)?;
                 term.queue_move_cursor(pos[0], pos[1])?;
                 term.queue_print(text, style)?;
 
@@ -199,7 +198,7 @@ fn clear_blanks(
             }
         }
     }
-    blank_until(term, &mut at, [0, size.height], size.width, bg, bg_end)?;
+    blank_until(term, &mut at, [0, size.1], size.0, bg, bg_end)?;
     Ok(())
 }
 

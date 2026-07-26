@@ -9,7 +9,6 @@ use crossterm::{
 use ratatui::{
     backend::{Backend, CrosstermBackend, TestBackend},
     buffer::Cell,
-    layout::Size,
     prelude::Position,
     style::{Color, Style},
 };
@@ -121,10 +120,13 @@ fn print_test_span(text: &str, style: &Style, backend: &mut TestBackend) -> io::
 }
 
 impl TermBackend {
-    pub(crate) fn size(&self) -> io::Result<Size> {
+    pub(crate) fn size(&self) -> io::Result<(u16, u16)> {
         match self {
-            TermBackend::Crossterm(t) => t.size(),
-            TermBackend::Test { backend, .. } => backend.size(),
+            TermBackend::Crossterm(_) => crossterm::terminal::size(),
+            TermBackend::Test { backend, .. } => {
+                let size = backend.size()?;
+                Ok((size.width, size.height))
+            }
         }
     }
 

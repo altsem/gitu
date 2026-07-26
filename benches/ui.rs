@@ -7,16 +7,16 @@ use gitu::app::App;
 use gitu::cli::{Args, Commands};
 use gitu::config;
 use gitu::term::TermBackend;
-use ratatui::{backend::TestBackend, layout::Size};
+use ratatui::backend::TestBackend;
 
 const REFERENCE: &str = "f4de01c0a12794d7b42a77b2138aa64119b90ea5";
 
 /// Times a redraw of an already-built screen, leaving repo access, diff
 /// parsing and item creation out of the measurement.
-fn bench_redraw(c: &mut Criterion, name: &str, size: Size) {
+fn bench_redraw(c: &mut Criterion, name: &str, size: (u16, u16)) {
     c.bench_function(name, |b| {
         let mut term = TermBackend::Test {
-            backend: TestBackend::new(size.width, size.height),
+            backend: TestBackend::new(size.0, size.1),
             events: vec![],
         };
 
@@ -37,7 +37,7 @@ fn bench_redraw(c: &mut Criterion, name: &str, size: Size) {
 
 fn ui(c: &mut Criterion) {
     // The whole diff at once, so that per-row costs dominate.
-    bench_redraw(c, "ui/40x1000", Size::new(40, 1000));
+    bench_redraw(c, "ui/40x1000", (40, 1000));
 }
 
 criterion_group!(benches, ui);

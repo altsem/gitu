@@ -14,9 +14,8 @@ use crate::{
     items::{self, Item, hash},
 };
 use git2::{Reference, Repository};
-use ratatui::layout::Size;
 
-pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: Size) -> Res<Screen> {
+pub(crate) fn create(config: Arc<Config>, repo: Rc<Repository>, size: (u16, u16)) -> Res<Screen> {
     Screen::new(
         Arc::clone(&config),
         size,
