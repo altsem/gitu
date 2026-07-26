@@ -574,14 +574,10 @@ fn layout_item<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: boo
 
         layout_span(layout, gutter_char);
 
-        let item_line = screen.items[line.item_index].to_line(&screen.config);
-        item_line.spans.into_iter().for_each(|span| {
-            let style = bg.patch(item_line.style).patch(span.style);
-            ui::layout_span(layout, (span.content, style));
-        });
+        let item = &screen.items[line.item_index];
+        ui::item::layout_item(layout, item, &screen.config, bg);
 
         // Add ellipsis indicator for collapsed sections
-        let item = &screen.items[line.item_index];
         if screen.is_collapsed(item) {
             layout_span(layout, ("…".into(), bg));
         }
