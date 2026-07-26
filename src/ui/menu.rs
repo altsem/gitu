@@ -1,13 +1,19 @@
-use std::sync::Arc;
+use std::borrow::Cow;
 
+use crate::menu::arg::Arg;
+use crate::ui::item::layout_item;
 use crate::ui::layout::OPTS;
-use crate::ui::{self, UiTree, repeat_chars};
-use crate::{app::State, ops::Op, ui::layout_line};
+use crate::ui::{self, UiTree, layout_line, layout_span, repeat_chars};
+use crate::{app::State, config::Config, ops::Op};
 use itertools::Itertools;
-use ratatui::{
-    style::Style,
-    text::{Line, Span},
-};
+use ratatui::style::Style;
+use unicode_width::UnicodeWidthStr;
+
+/// The value column of a keybind table row.
+enum MenuValue<'a> {
+    Text(Cow<'a, str>),
+    Arg(&'a Arg),
+}
 
 pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
     let Some(ref pending) = state.pending_menu else {
@@ -22,7 +28,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
         return;
     }
 
-    let config = Arc::clone(&state.config);
+    let config = &state.config;
     let item = state.screens.last().unwrap().get_selected_item();
     let style = &config.style;
 
@@ -52,7 +58,6 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
         })
         .partition(|(op, _binds)| matches!(op, Op::OpenMenu(_)));
 
-    let line = item.to_line(&config);
     let separator_style = Style::from(&style.separator);
 
     layout.vertical(None, OPTS, |layout| {
@@ -64,20 +69,21 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                 layout.vertical(None, OPTS, |layout| {
                     layout_line(
                         layout,
-                        Line::styled(format!("{}", pending.menu), &style.menu.heading),
+                        pending.menu.to_string().into(),
+                        Style::from(&style.menu.heading),
                     );
 
                     layout_keybinds_table(
                         layout,
+                        config,
                         non_menu_binds
                             .into_iter()
                             .map(|(op, binds)| {
                                 (
-                                    Line::styled(
-                                        binds.iter().map(|bind| bind.raw.as_str()).join("/"),
-                                        &style.menu.key,
+                                    binds.iter().map(|bind| bind.raw.as_str()).join("/").into(),
+                                    MenuValue::Text(
+                                        op.clone().implementation().display(state).into(),
                                     ),
-                                    Line::raw(op.clone().implementation().display(state)),
                                 )
                             })
                             .collect(),
@@ -88,22 +94,21 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
             // Column 2: Submenus
             if !menu_binds.is_empty() {
                 layout.vertical(None, OPTS, |layout| {
-                    layout_line(layout, Line::styled("Submenu", &style.menu.heading));
+                    layout_line(layout, "Submenu".into(), Style::from(&style.menu.heading));
 
                     layout_keybinds_table(
                         layout,
+                        config,
                         menu_binds
                             .into_iter()
                             .map(|(op, binds)| {
                                 let Op::OpenMenu(menu) = op else {
                                     unreachable!();
                                 };
+
                                 (
-                                    Line::styled(
-                                        binds.iter().map(|bind| bind.raw.as_str()).join("/"),
-                                        &style.menu.key,
-                                    ),
-                                    Line::raw(menu.to_string()),
+                                    binds.iter().map(|bind| bind.raw.as_str()).join("/").into(),
+                                    MenuValue::Text(menu.to_string().into()),
                                 )
                             })
                             .collect(),
@@ -114,16 +119,21 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
             // Column 3: Target commands and arguments
             layout.vertical(None, OPTS, |layout| {
                 if !target_binds.is_empty() {
-                    layout_line(layout, line);
+                    layout.horizontal(None, OPTS, |layout| {
+                        layout_item(layout, item, config, Style::new());
+                    });
 
                     layout_keybinds_table(
                         layout,
+                        config,
                         target_binds
                             .into_iter()
                             .map(|bind| {
                                 (
-                                    Line::styled(bind.raw.clone(), &style.menu.key),
-                                    Line::raw(bind.op.clone().implementation().display(state)),
+                                    bind.raw.as_str().into(),
+                                    MenuValue::Text(
+                                        bind.op.clone().implementation().display(state).into(),
+                                    ),
                                 )
                             })
                             .collect(),
@@ -131,10 +141,11 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
                 }
 
                 if !arg_binds.is_empty() {
-                    layout_line(layout, Line::styled("Arguments", &style.menu.heading));
+                    layout_line(layout, "Arguments".into(), Style::from(&style.menu.heading));
 
                     layout_keybinds_table(
                         layout,
+                        config,
                         arg_binds
                             .into_iter()
                             .map(|bind| {
@@ -144,22 +155,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
 
                                 let arg = pending.args.get(name.as_str()).unwrap();
 
-                                (
-                                    Line::styled(bind.raw.clone(), &style.menu.key),
-                                    Line::from(vec![
-                                        Span::raw(arg.display),
-                                        Span::raw(" ("),
-                                        Span::styled(
-                                            arg.get_cli_token().to_string(),
-                                            if arg.is_active() {
-                                                Style::from(&style.menu.active_arg)
-                                            } else {
-                                                Style::from(&style.menu.inactive_arg)
-                                            },
-                                        ),
-                                        Span::raw(")"),
-                                    ]),
-                                )
+                                (bind.raw.as_str().into(), MenuValue::Arg(arg))
                             })
                             .collect(),
                     );
@@ -169,16 +165,47 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
     });
 }
 
-fn layout_keybinds_table<'a>(layout: &mut UiTree<'a>, items: Vec<(Line<'a>, Line<'a>)>) {
+fn layout_keybinds_table<'a>(
+    layout: &mut UiTree<'a>,
+    config: &Config,
+    rows: Vec<(Cow<'a, str>, MenuValue<'a>)>,
+) {
     const SPACES: &str = "                                                                ";
-    let max_width = items.iter().fold(0, |acc, (x, _)| acc.max(x.width())) + 1;
+    let key_style = Style::from(&config.style.menu.key);
+    let max_width = rows
+        .iter()
+        .map(|(key, _)| UnicodeWidthStr::width(key.as_ref()))
+        .max()
+        .unwrap_or(0)
+        + 1;
 
     layout.vertical(None, OPTS, |layout| {
-        for (key, value) in items.iter() {
+        for (key, value) in rows {
+            let padding = max_width - UnicodeWidthStr::width(key.as_ref());
+
             layout.horizontal(None, OPTS, |layout| {
-                layout_line(layout, key.clone());
-                repeat_chars(layout, max_width - key.width(), SPACES, Style::new());
-                layout_line(layout, value.clone());
+                layout_line(layout, key, key_style);
+                repeat_chars(layout, padding, SPACES, Style::new());
+
+                layout.horizontal(None, OPTS, |layout| match value {
+                    MenuValue::Text(text) => layout_span(layout, (text, Style::new())),
+                    MenuValue::Arg(arg) => {
+                        layout_span(layout, (arg.display.into(), Style::new()));
+                        layout_span(layout, (" (".into(), Style::new()));
+                        layout_span(
+                            layout,
+                            (
+                                arg.get_cli_token().into(),
+                                if arg.is_active() {
+                                    Style::from(&config.style.menu.active_arg)
+                                } else {
+                                    Style::from(&config.style.menu.inactive_arg)
+                                },
+                            ),
+                        );
+                        layout_span(layout, (")".into(), Style::new()));
+                    }
+                });
             });
         }
     });

@@ -1,7 +1,4 @@
-use crate::config::Config;
 use itertools::Itertools;
-use ratatui::text::Text;
-use ratatui::text::{Line, Span};
 use std::borrow::Cow;
 use std::iter;
 use std::process::Command;
@@ -52,15 +49,6 @@ impl CmdLog {
     pub(crate) fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
-
-    pub(crate) fn format_log(&self, config: &Config) -> Text<'static> {
-        Text::from(
-            self.entries
-                .iter()
-                .flat_map(|cmd| format_log_entry(config, cmd))
-                .collect::<Vec<_>>(),
-        )
-    }
 }
 
 pub(crate) fn command_args(cmd: &Command) -> Cow<'static, str> {
@@ -68,36 +56,6 @@ pub(crate) fn command_args(cmd: &Command) -> Cow<'static, str> {
         .chain(cmd.get_args().map(|arg| arg.to_string_lossy()))
         .join(" ")
         .into()
-}
-
-pub(crate) fn format_log_entry<'a>(
-    config: &Config,
-    log: &Arc<RwLock<CmdLogEntry>>,
-) -> Vec<Line<'a>> {
-    match &*log.read().unwrap() {
-        CmdLogEntry::Cmd { args, out } => [Line::from(vec![
-            Span::styled(
-                if out.is_some() { "$ " } else { "Running: " },
-                &config.style.info_msg,
-            ),
-            Span::styled(args.to_string(), &config.style.command),
-        ])]
-        .into_iter()
-        .chain(out.iter().flat_map(|out| {
-            if out.is_empty() {
-                vec![]
-            } else {
-                Text::raw(out.to_string()).lines
-            }
-        }))
-        .collect::<Vec<_>>(),
-        CmdLogEntry::Error(err) => {
-            vec![Line::styled(format!("! {err}"), &config.style.error_msg)]
-        }
-        CmdLogEntry::Info(msg) => {
-            vec![Line::styled(format!("> {msg}"), &config.style.info_msg)]
-        }
-    }
 }
 
 pub(crate) enum CmdLogEntry {
