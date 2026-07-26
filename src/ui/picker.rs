@@ -1,13 +1,12 @@
 use std::borrow::Cow;
 
 use crate::style::Style;
-use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::Config;
 use crate::picker::PickerState;
 use crate::ui::layout::OPTS;
-use crate::ui::{CARET, DASHES, UiTree, layout_span, repeat_chars};
+use crate::ui::{DASHES, UiTree, layout_cursor, layout_span, repeat_chars};
 
 const MAX_ITEMS_DISPLAY: usize = 10;
 
@@ -31,8 +30,10 @@ pub(crate) fn layout_picker<'a>(
         // Prompt with separator (like regular prompt)
         layout_span(layout, (state.prompt_text.as_ref().into(), prompt_style));
         layout_span(layout, (" › ".into(), prompt_style));
-        layout_span(layout, (state.input_state.value().into(), Style::new()));
-        layout_span(layout, (CARET.into(), Style::new()));
+        let (before, at_cursor, after) = state.input_state.split_at_cursor();
+        layout_span(layout, (before.into(), Style::new()));
+        layout_cursor(layout, at_cursor);
+        layout_span(layout, (after.into(), Style::new()));
     });
 
     // Calculate visible items range (scroll window)

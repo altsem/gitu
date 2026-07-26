@@ -1,11 +1,10 @@
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use std::borrow::Cow;
-use tui_prompts::State as _;
-use tui_prompts::TextState;
 
 use crate::item_data::Ref;
 use crate::item_data::Rev;
+use crate::text_input::TextInput;
 
 /// Data that can be selected in a picker
 #[derive(Debug, Clone, PartialEq)]
@@ -69,7 +68,7 @@ pub struct PickerState {
     /// Current cursor position in filtered results
     cursor: usize,
     /// Current input pattern
-    pub input_state: TextState<'static>,
+    pub(crate) input_state: TextInput,
     /// Fuzzy matcher
     matcher: SkimMatcherV2,
     /// Prompt text to display
@@ -101,7 +100,7 @@ impl PickerState {
             items: items.clone(),
             filtered_indices: Vec::new(),
             cursor: 0,
-            input_state: TextState::default(),
+            input_state: TextInput::default(),
             matcher: SkimMatcherV2::default(),
             prompt_text: prompt.into(),
             status: PickerStatus::Active,
@@ -179,7 +178,7 @@ impl PickerState {
 
     /// Get current input pattern
     pub fn pattern(&self) -> &str {
-        self.input_state.value()
+        &self.input_state.value
     }
 
     /// Update the filter based on current input pattern

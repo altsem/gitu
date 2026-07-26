@@ -33,18 +33,6 @@ impl Style {
     }
 }
 
-/// The prompt symbols come out of tui-prompts as ratatui spans.
-impl From<ratatui::style::Style> for Style {
-    fn from(style: ratatui::style::Style) -> Self {
-        Style {
-            fg: style.fg.map(Color::from),
-            bg: style.bg.map(Color::from),
-            add_modifier: Modifier(style.add_modifier.bits()),
-            sub_modifier: Modifier(style.sub_modifier.bits()),
-        }
-    }
-}
-
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
     #[default]
@@ -91,34 +79,6 @@ impl From<Color> for crossterm::style::Color {
             Color::White => Self::White,
             Color::Rgb(r, g, b) => Self::Rgb { r, g, b },
             Color::Indexed(i) => Self::AnsiValue(i),
-        }
-    }
-}
-
-impl From<ratatui::style::Color> for Color {
-    fn from(color: ratatui::style::Color) -> Self {
-        use ratatui::style::Color as R;
-
-        match color {
-            R::Reset => Self::Reset,
-            R::Black => Self::Black,
-            R::Red => Self::Red,
-            R::Green => Self::Green,
-            R::Yellow => Self::Yellow,
-            R::Blue => Self::Blue,
-            R::Magenta => Self::Magenta,
-            R::Cyan => Self::Cyan,
-            R::Gray => Self::Gray,
-            R::DarkGray => Self::DarkGray,
-            R::LightRed => Self::LightRed,
-            R::LightGreen => Self::LightGreen,
-            R::LightYellow => Self::LightYellow,
-            R::LightBlue => Self::LightBlue,
-            R::LightMagenta => Self::LightMagenta,
-            R::LightCyan => Self::LightCyan,
-            R::White => Self::White,
-            R::Rgb(r, g, b) => Self::Rgb(r, g, b),
-            R::Indexed(i) => Self::Indexed(i),
         }
     }
 }

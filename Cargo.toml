@@ -46,10 +46,8 @@ log = "0.4.28"
 nom = "8.0.0"
 notify = "8.0.0"
 serde = { version = "1.0.225", features = ["derive"] }
-ratatui = "0.29.0"
 simple-logging = "2.0.2"
 toml = "0.8.23"
-tui-prompts = "0.5.2"
 tree-sitter = "=0.25.6"
 tree-sitter-highlight = "=0.25.6"
 tree-sitter-rust = "=0.24.0"
@@ -75,7 +73,7 @@ regex = "1.12.2"
 strip-ansi-escapes = "0.2.1"
 unicode-segmentation = "1.12.0"
 cached = "0.56.0"
-strum = { version = "0.26.3", features = ["strum_macros"] }
+strum = { version = "0.26.3", features = ["derive"] }
 tinyvec = "1.10.0"
 smashquote = "0.1.2"
 imara-diff = { version = "0.2.0", default-features = false }

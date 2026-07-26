@@ -4,13 +4,13 @@ use crate::Res;
 use crate::app::State;
 use crate::error::Error;
 use crate::screen;
-use crate::style::Style;
+use crate::style::{Color, Modifier, Style};
 use crate::term::TermBackend;
+use crate::text_input::Status;
 use crate::ui::layout::LayoutItem;
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::OPTS;
-use tui_prompts::State as _;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -83,22 +83,57 @@ fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
         return;
     };
 
-    let prompt_symbol = state.prompt.state.status().symbol();
+    let (symbol, symbol_color) = match state.prompt.state.status {
+        Status::Pending => ("?", Color::Cyan),
+        Status::Aborted => ("✘", Color::Red),
+        Status::Done => ("✔", Color::Green),
+    };
+
     let separator_style = Style::from(&state.config.style.separator);
     let prompt_style = Style::from(&state.config.style.prompt);
 
     repeat_chars(layout, width, DASHES, separator_style);
     layout.horizontal(None, OPTS, |layout| {
-        layout_span(layout, (prompt_symbol.content, prompt_symbol.style.into()));
+        layout_span(
+            layout,
+            (
+                symbol.into(),
+                Style {
+                    fg: Some(symbol_color),
+                    ..Style::new()
+                },
+            ),
+        );
         layout_span(layout, (" ".into(), Style::new()));
         layout_span(
             layout,
             (prompt_data.prompt_text.as_ref().into(), prompt_style),
         );
         layout_span(layout, (" › ".into(), prompt_style));
-        layout_span(layout, (state.prompt.state.value().into(), Style::new()));
-        layout_span(layout, (CARET.into(), Style::new()));
+        let (before, at_cursor, after) = state.prompt.state.split_at_cursor();
+        layout_span(layout, (before.into(), Style::new()));
+        layout_cursor(layout, at_cursor);
+        layout_span(layout, (after.into(), Style::new()));
     });
+}
+
+/// Draws the cursor over the char it's on, so that it takes up no width of its
+/// own. Past the end of the value there's nothing to draw it over.
+pub(crate) fn layout_cursor<'a>(layout: &mut UiTree<'a>, at_cursor: &'a str) {
+    if at_cursor.is_empty() {
+        layout_span(layout, (CARET.into(), Style::new()));
+    } else {
+        layout_span(
+            layout,
+            (
+                at_cursor.into(),
+                Style {
+                    add_modifier: Modifier::REVERSED,
+                    ..Style::new()
+                },
+            ),
+        );
+    }
 }
 
 fn layout_picker<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {

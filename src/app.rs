@@ -19,7 +19,6 @@ use crossterm::event::MouseButton;
 use crossterm::event::MouseEvent;
 use crossterm::event::MouseEventKind;
 use git2::Repository;
-use tui_prompts::State as _;
 
 use crate::cli;
 use crate::cmd_log::CmdLog;
@@ -37,6 +36,7 @@ use crate::prompt;
 use crate::screen;
 use crate::screen::Screen;
 use crate::term::Term;
+use crate::text_input;
 use crate::ui;
 
 use super::Res;
@@ -234,7 +234,7 @@ impl App {
 
                 if self.state.picker.is_some() {
                     self.handle_picker_input(key);
-                } else if self.state.prompt.state.is_focused() {
+                } else if self.state.prompt.state.focused {
                     self.state.prompt.state.handle_key_event(key);
                 } else {
                     self.handle_key_input(term, key)?;
@@ -586,9 +586,9 @@ impl App {
             let event = term.read_event()?;
             self.handle_event(term, event)?;
 
-            if self.state.prompt.state.status().is_done() {
+            if self.state.prompt.state.status == text_input::Status::Done {
                 return get_prompt_result(params, self);
-            } else if self.state.prompt.state.status().is_aborted() {
+            } else if self.state.prompt.state.status == text_input::Status::Aborted {
                 return Err(Error::PromptAborted);
             }
 
@@ -616,7 +616,7 @@ impl App {
             let event = term.read_event()?;
             self.handle_event(term, event)?;
 
-            match self.state.prompt.state.value() {
+            match self.state.prompt.state.value.as_str() {
                 "y" => {
                     return Ok(());
                 }
@@ -716,7 +716,7 @@ impl App {
 }
 
 fn get_prompt_result(params: &PromptParams, app: &mut App) -> Res<String> {
-    let input = app.state.prompt.state.value();
+    let input = app.state.prompt.state.value.as_str();
     let default_value = (params.create_default_value)(app);
 
     let value = match (input, &default_value) {
