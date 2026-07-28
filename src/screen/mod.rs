@@ -349,7 +349,8 @@ impl Screen {
 
     fn move_cursor_to_screen_center(&mut self) {
         let half_screen = self.size.1 as usize / 2;
-        self.cursor = self.line_index[self.scroll + half_screen];
+        let center = (self.scroll + half_screen).min(self.line_index.len().saturating_sub(1));
+        self.cursor = self.line_index[center];
     }
 
     fn clamp_cursor(&mut self) {
@@ -611,5 +612,42 @@ fn area_selection_highlight(style: &StyleConfig, line: &ItemView) -> Style {
         Style::from(&style.selection_area)
     } else {
         Style::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::init_test_config;
+
+    fn screen_of(item_count: usize, size: (u16, u16)) -> Screen {
+        let config = Arc::new(init_test_config().unwrap());
+
+        Screen::new(
+            config,
+            size,
+            Box::new(move || {
+                Ok((0..item_count)
+                    .map(|i| Item {
+                        id: i as u64,
+                        data: ItemData::Raw(format!("item {i}")),
+                        ..Default::default()
+                    })
+                    .collect())
+            }),
+        )
+        .unwrap()
+    }
+
+    /// Scrolling is allowed a couple of lines past the content, so on a screen
+    /// the content doesn't fill, its center lands past the last line.
+    #[test]
+    fn recenter_cursor_on_a_screen_the_content_doesnt_fill() {
+        let mut screen = screen_of(3, (80, 20));
+
+        screen.scroll_view_down(2);
+        screen.refresh().unwrap();
+
+        assert_eq!(2, screen.cursor);
     }
 }
