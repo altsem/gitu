@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  a       abort        -n No fast-forward (--no-ff)                              |
  c       continue                                                               |
  q/<esc> Quit/Close                                                             |
-styles_hash: 6076d7c1a8622919
+styles_hash: a71c84f554de9671

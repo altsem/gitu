@@ -9,9 +9,9 @@ expression: ctx.redact_buffer()
 ▌deleted    script.sh…                                                          |
                                                                                 |
  Recent commits                                                                 |
- af83421 main add executable script                                             |
- 289f1e5 add script.sh                                                          |
- b66a0bf origin/main add initial-file                                           |
+ af83421 main add executable script                              Author Name __ |
+ 289f1e5 add script.sh                                           Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git restore --staged script.sh                                                |
-styles_hash: 6c24691ba5576b20
+styles_hash: 679d9dc1c1d743d2

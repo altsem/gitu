@@ -2,8 +2,8 @@
 source: src/tests/reset.rs
 expression: ctx.redact_buffer()
 ---
- ba1a85d main add unwanted-file                                                 |
-▌b66a0bf origin/main add initial-file                                           |
+ ba1a85d main add unwanted-file                                  Author Name __ |
+▌b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Soft reset to (default origin/main): › q█                                     |
-styles_hash: a45602c82423cd02
+styles_hash: 4a9ab12ee0605e66

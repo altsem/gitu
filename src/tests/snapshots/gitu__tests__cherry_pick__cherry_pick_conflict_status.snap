@@ -11,9 +11,9 @@ expression: ctx.redact_buffer()
  unmerged   conflict-file…                                                      |
                                                                                 |
  Recent commits                                                                 |
- 487ec57 main modify conflict-file                                              |
- 415b98a add conflict-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 487ec57 main modify conflict-file                               Author Name __ |
+ 415b98a add conflict-file                                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 48a7724d7616702c
+styles_hash: 7af2b19ecff6e61c

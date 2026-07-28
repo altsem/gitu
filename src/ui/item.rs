@@ -7,6 +7,7 @@ use crate::gitu_diff::Status;
 use crate::highlight;
 use crate::item_data::{ItemData, Ref, SectionHeader};
 use crate::items::Item;
+use crate::ui::layout::opts;
 use crate::ui::{UiTree, layout_span};
 
 /// Lays out an [`Item`] as spans in the caller's container, which is expected to
@@ -63,6 +64,8 @@ pub(crate) fn layout_item<'a>(
             short_id,
             associated_references,
             summary,
+            author,
+            age,
             ..
         } => {
             layout_span(
@@ -73,13 +76,30 @@ pub(crate) fn layout_item<'a>(
                 ),
             );
 
-            for reference in associated_references {
+            layout.horizontal(None, opts().fill_x(), |layout| {
+                for reference in associated_references {
+                    layout_span(layout, (" ".into(), base));
+                    layout_reference(layout, reference, config, base);
+                }
+
                 layout_span(layout, (" ".into(), base));
-                layout_reference(layout, reference, config, base);
-            }
+                layout_span(layout, (summary.as_str().into(), base));
+            });
 
             layout_span(layout, (" ".into(), base));
-            layout_span(layout, (summary.as_str().into(), base));
+            layout_span(
+                layout,
+                (
+                    author.as_str().into(),
+                    base.patch(Style::from(&style.author)),
+                ),
+            );
+            layout_span(layout, (" ".into(), base));
+            layout_span(
+                layout,
+                (age.as_str().into(), base.patch(Style::from(&style.age))),
+            );
+            layout_span(layout, (" ".into(), base));
         }
         ItemData::Untracked(path) => {
             layout_span(

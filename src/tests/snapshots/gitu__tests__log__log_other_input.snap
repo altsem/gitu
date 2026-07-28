@@ -2,9 +2,9 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-▌6c08cf7 add second commit                                                      |
- 79e63f1 add third commit                                                       |
- b66a0bf origin/main add initial-file                                           |
+▌6c08cf7 add second commit                                       Author Name __ |
+ 79e63f1 add third commit                                        Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 289a0cd5847e04b0
+styles_hash: a3e9d5b6c2c0bec8

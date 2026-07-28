@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌No branch                                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file                        |
+ b66a0bf main v1.0.0 v2.0.0 origin/main add initial-file         Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ Or undo this operation with:                                                    
   git switch -                                                                  |
 Turn off this advice by setting config variable advice.detachedHead to false    |
 HEAD is now at b66a0bf add initial-file                                         |
-styles_hash: d9a7a96bb61e275e
+styles_hash: c397223f348cda2a

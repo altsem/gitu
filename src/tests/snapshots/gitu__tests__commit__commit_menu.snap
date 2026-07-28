@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  added      new_file.txt…                                                       |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  q/esc Quit/Close   -R Claim authorship and reset author date (--reset-author)  |
                     -s Add Signed-off-by line (--signoff)                       |
                     -v Show diff of changes to be committed (--verbose)         |
-styles_hash: 178efd168e126b3e
+styles_hash: 65376678f1c47587

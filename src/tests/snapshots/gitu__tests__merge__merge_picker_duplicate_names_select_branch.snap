@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 46369c5 main other v1.0.0 add other commit                                     |
- b66a0bf origin/main add initial-file                                           |
+ 46369c5 main other v1.0.0 add other commit                      Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git merge v1.0.0                                                              |
 warning: refname 'v1.0.0' is ambiguous.                                         |
 warning: refname 'v1.0.0' is ambiguous.                                         |
-styles_hash: 18b35e057dbb09a6
+styles_hash: f27598170d3d1208

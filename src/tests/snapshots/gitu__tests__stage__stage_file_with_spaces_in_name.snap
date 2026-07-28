@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
 ▌added      file with space.txt                                                 |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add file with space.txt                                                   |
-styles_hash: b5589f2e5b138e2b
+styles_hash: 64956c9840a901b0

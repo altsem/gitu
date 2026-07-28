@@ -6,9 +6,9 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 7294ba4 main modify new-file                                                   |
- 57409cb add new-file                                                           |
- b66a0bf origin/main add initial-file                                           |
+ 7294ba4 main modify new-file                                    Author Name __ |
+ 57409cb add new-file                                            Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git revert --abort                                                            |
-styles_hash: 487a1d3b5b030afc
+styles_hash: e6f959d90ee0bb3b

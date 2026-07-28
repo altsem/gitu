@@ -112,6 +112,8 @@ pub struct StyleConfig {
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
     pub tag: StyleConfigEntry,
+    pub author: StyleConfigEntry,
+    pub age: StyleConfigEntry,
 
     #[serde(default)]
     pub blame: BlameStyleConfig,

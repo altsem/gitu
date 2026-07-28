@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌No branch                                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Head is not a branch                                                          |
-styles_hash: d260d25f0d19e8e
+styles_hash: 2d9118b5dc6c867b

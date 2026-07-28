@@ -12,7 +12,7 @@ expression: ctx.redact_buffer()
  stash@0 On main: test                                                          |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash push --keep-index --include-untracked --message test                |
 Saved working directory and index state On main: test                           |
-styles_hash: 62b29f66c7e857c7
+styles_hash: 4114b5a3e057615f

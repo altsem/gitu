@@ -99,6 +99,8 @@ hash = { fg = "yellow" }
 branch = { fg = "green" }
 remote = { fg = "red" }
 tag = { fg = "yellow" }
+author = { fg = "magenta" }
+age = { mods = "DIM" }
 
 blame.line_num = { mods = "DIM" }
 blame.code_line = { mods = "DIM" }

@@ -7,7 +7,7 @@ expression: ctx.redact_buffer()
 each, respectively.                                                             |
                                                                                 |
  Recent commits                                                                 |
- 5dfe782 main add initial-file                                                  |
+ 5dfe782 main add initial-file                                   Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ each, respectively.                                                             
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git commit --amend --no-edit                                                  |
-styles_hash: 5ae7f274843081cb
+styles_hash: 8471c865337c63cd

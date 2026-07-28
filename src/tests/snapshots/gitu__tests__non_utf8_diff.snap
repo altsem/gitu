@@ -13,8 +13,8 @@ expression: ctx.redact_buffer()
  +FileFile with invalid UTF-8: ��                                               |
                                                                                 |
  Recent commits                                                                 |
- 7c3d61a main add non_utf8.txt                                                  |
- b66a0bf origin/main add initial-file                                           |
+ 7c3d61a main add non_utf8.txt                                   Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: dfa2cd7993ecbc65
+styles_hash: 30aa89db154a524c

@@ -13,8 +13,8 @@ expression: ctx.redact_buffer()
  +changed                                                                       |
                                                                                 |
  Recent commits                                                                 |
- 13d662a main add crlf.txt                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 13d662a main add crlf.txt                                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 11bdd1533d7fbfb7
+styles_hash: a4404453dbbfb78e

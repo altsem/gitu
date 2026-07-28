@@ -14,12 +14,12 @@ expression: ctx.redact_buffer()
 ▌ }                                                                             |
                                                                                 |
  Recent commits                                                                 |
- 5d25264 main add syntax-highlighted.rs                                         |
- b66a0bf origin/main add initial-file                                           |
+ 5d25264 main add syntax-highlighted.rs                          Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 6cb9c3325337796e
+styles_hash: def2eb78b7d62cb

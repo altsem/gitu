@@ -16,10 +16,10 @@ expression: ctx.redact_buffer()
  +staged                                                                        |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 875d69d553a5f62a
+styles_hash: 9e15de10235efbcb
