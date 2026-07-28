@@ -5,7 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::config::Config;
 use crate::picker::PickerState;
-use crate::ui::layout::OPTS;
+use crate::ui::layout::opts;
 use crate::ui::{DASHES, UiTree, layout_cursor, layout_span, repeat_chars};
 
 const MAX_ITEMS_DISPLAY: usize = 10;
@@ -23,7 +23,7 @@ pub(crate) fn layout_picker<'a>(
 
     let prompt_style: Style = (&config.style.picker.prompt).into();
     let info_style: Style = (&config.style.picker.info).into();
-    layout.horizontal(None, OPTS, |layout| {
+    layout.horizontal(None, opts(), |layout| {
         let status_text = format!(" {}/{}   ", state.filtered_count(), state.total_items());
         layout_span(layout, (status_text.into(), info_style));
 
@@ -57,7 +57,7 @@ pub(crate) fn layout_picker<'a>(
             Style::new()
         };
 
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             // Selection indicator (cursor bar like status screen)
             if is_selected {
                 let cursor_style: Style = (&config.style.cursor).into();
@@ -79,7 +79,7 @@ pub(crate) fn layout_picker<'a>(
 
     // Fill remaining rows with empty lines to maintain fixed height
     for _ in rendered_count..MAX_ITEMS_DISPLAY {
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             layout_span(layout, (" ".into(), Style::new()));
         });
     }
@@ -201,7 +201,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -229,7 +229,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -249,7 +249,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -278,7 +278,7 @@ mod tests {
         }
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -307,7 +307,7 @@ mod tests {
         }
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -338,7 +338,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -363,7 +363,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -391,7 +391,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
         layout.compute([40, 15]);
@@ -406,7 +406,7 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::OPTS, |layout| {
+        layout.vertical(None, crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 20);
         });
         layout.compute([20, 15]);

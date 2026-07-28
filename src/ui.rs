@@ -10,7 +10,7 @@ use crate::text_input::Status;
 use crate::ui::layout::{LayoutItem, Measure};
 use itertools::Itertools;
 use layout::LayoutTree;
-use layout::OPTS;
+use layout::opts;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -32,6 +32,8 @@ pub(crate) enum UiItem<'a> {
 pub(crate) type UiTree<'a> = LayoutTree<UiItem<'a>>;
 
 impl Measure for UiItem<'_> {
+    type Unit = u16;
+
     fn measure(&self) -> [u16; 2] {
         match self {
             UiItem::Span(text, _style) => [UnicodeWidthStr::width(text.as_ref()) as u16, 1],
@@ -46,13 +48,13 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
     let size = term.size().unwrap();
     let mut layout = UiTree::new();
 
-    layout.vertical(None, OPTS, |layout| {
-        layout.vertical(None, OPTS.fill_xy(), |layout| {
+    layout.vertical(None, opts(), |layout| {
+        layout.vertical(None, opts().fill_xy(), |layout| {
             let hide_cursor = state.picker.is_some();
             screen::layout_screen(layout, state.screens.last().unwrap(), hide_cursor);
         });
 
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             menu::layout_menu(layout, state, size.0 as usize);
             cmd_log::layout_cmd_log(
                 layout,
@@ -104,7 +106,7 @@ fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
     let prompt_style = Style::from(&state.config.style.prompt);
 
     repeat_chars(layout, width, DASHES, separator_style);
-    layout.horizontal(None, OPTS, |layout| {
+    layout.horizontal(None, opts(), |layout| {
         layout_span(
             layout,
             (
@@ -155,7 +157,7 @@ fn layout_picker<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
 
 /// Lays out `content` as a single row of its own.
 pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, content: Cow<'a, str>, style: Style) {
-    layout.horizontal(None, OPTS, |layout| {
+    layout.horizontal(None, opts(), |layout| {
         layout_span(layout, (content, style));
     });
 }
@@ -188,7 +190,7 @@ pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static st
     let full = count / grapheme_count;
     let partial = count % grapheme_count;
 
-    layout.horizontal(None, OPTS, |layout| {
+    layout.horizontal(None, opts(), |layout| {
         for _ in 0..full {
             layout_span(layout, (chars.into(), style));
         }
@@ -210,7 +212,7 @@ pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static st
 fn clear_blanks(
     term: &mut TermBackend,
     size: (u16, u16),
-    items: Vec<LayoutItem<&UiItem<'_>>>,
+    items: Vec<LayoutItem<&UiItem<'_>, u16>>,
 ) -> Result<(), Error> {
     let mut at = [0, 0];
     let mut bg = Style::new();

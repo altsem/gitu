@@ -8,18 +8,22 @@ use direction::Direction;
 use node::*;
 use vec2::Vec2;
 
-pub use node::OPTS;
+pub use node::{Opts, opts};
+pub use vec2::Scalar;
 
 const ROOT_INDEX: usize = usize::MAX;
 
-/// Sizes an item as it is added to the tree.
+/// Sizes an item as it is added to the tree, in whichever unit the layout is
+/// measured in.
 pub trait Measure {
-    fn measure(&self) -> [u16; 2];
+    type Unit: Scalar;
+
+    fn measure(&self) -> [Self::Unit; 2];
 }
 
 #[derive(Debug)]
-pub struct LayoutTree<T> {
-    data: Vec<Node<T>>,
+pub struct LayoutTree<T: Measure> {
+    data: Vec<Node<T, T::Unit>>,
     index: TreeIndex,
 }
 
@@ -90,7 +94,7 @@ pub enum Pass {
     Fill,
 }
 
-impl<T> LayoutTree<T> {
+impl<T: Measure> LayoutTree<T> {
     pub fn new() -> Self {
         LayoutTree {
             data: Vec::new(),
@@ -104,12 +108,16 @@ impl<T> LayoutTree<T> {
         self.index.current_parent = ROOT_INDEX;
     }
 
-    pub(crate) fn add(&mut self, data: Node<T>) {
+    pub(crate) fn add(&mut self, data: Node<T, T::Unit>) {
         self.data.push(data);
         self.index.parents.push(self.index.current_parent);
     }
 
-    pub(crate) fn add_with_children<F: FnOnce(&mut Self)>(&mut self, data: Node<T>, insert_fn: F) {
+    pub(crate) fn add_with_children<F: FnOnce(&mut Self)>(
+        &mut self,
+        data: Node<T, T::Unit>,
+        insert_fn: F,
+    ) {
         self.add(data);
         let our_parent = self.index.current_parent;
         self.index.current_parent = self.index.parents.len() - 1;
@@ -120,7 +128,7 @@ impl<T> LayoutTree<T> {
     }
 }
 
-impl<T> Default for LayoutTree<T> {
+impl<T: Measure> Default for LayoutTree<T> {
     fn default() -> Self {
         Self::new()
     }
@@ -130,7 +138,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
     pub fn horizontal<F: FnOnce(&mut LayoutTree<T>)>(
         &mut self,
         data: Option<T>,
-        opts: Opts,
+        opts: Opts<T::Unit>,
         layout_fn: F,
     ) -> &mut Self {
         {
@@ -140,8 +148,8 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
                     dir: Direction::Horizontal,
                     ..opts
                 },
-                size: Vec2(0, 0),
-                content: Vec2(0, 0),
+                size: Vec2::zero(),
+                content: Vec2::zero(),
                 pos: None,
             };
 
@@ -153,7 +161,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
     pub fn vertical<F: FnOnce(&mut LayoutTree<T>)>(
         &mut self,
         data: Option<T>,
-        opts: Opts,
+        opts: Opts<T::Unit>,
         layout_fn: F,
     ) -> &mut Self {
         {
@@ -163,8 +171,8 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
                     dir: Direction::Vertical,
                     ..opts
                 },
-                size: Vec2(0, 0),
-                content: Vec2(0, 0),
+                size: Vec2::zero(),
+                content: Vec2::zero(),
                 pos: None,
             };
 
@@ -178,7 +186,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
 
         self.add(node::Node {
             data: Some(data),
-            opts: OPTS,
+            opts: opts(),
             size: size.into(),
             content: size.into(),
             pos: None,
@@ -187,16 +195,16 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
         self
     }
 
-    pub fn compute(&mut self, avail_size: [u16; 2]) {
+    pub fn compute(&mut self, avail_size: [T::Unit; 2]) {
         let Some(root) = self.index.iter_roots().next() else {
             panic!("no root");
         };
 
         let size = Vec2::from(avail_size);
-        self.data[root].pos = Some(Vec2(0, 0));
+        self.data[root].pos = Some(Vec2::zero());
 
         for pass in [Pass::Fit, Pass::Fill] {
-            if let Some(root_size) = self.compute_subtree(root, Vec2(0, 0), size, pass) {
+            if let Some(root_size) = self.compute_subtree(root, Vec2::zero(), size, pass) {
                 self.data[root].size = root_size;
             }
         }
@@ -205,28 +213,28 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
     fn compute_subtree(
         &mut self,
         parent: usize,
-        outer_start: Vec2,
-        outer_avail_size: Vec2,
+        outer_start: Vec2<T::Unit>,
+        outer_avail_size: Vec2<T::Unit>,
         pass: Pass,
-    ) -> Option<Vec2> {
+    ) -> Option<Vec2<T::Unit>> {
         let child = self.index.iter_children(parent).next()?;
         let parent_opts = self.data[parent].opts;
         let main_axis = parent_opts.dir.axis();
         let cross_axis = main_axis.flip();
-        let padding = Vec2(parent_opts.pad, parent_opts.pad) * main_axis;
+        let padding = Vec2::splat(parent_opts.pad) * main_axis;
         let avail_size = outer_avail_size
             .saturating_sub(padding)
             .saturating_sub(padding);
 
         let mut current_child = Some(child);
-        let mut cursor = Vec2(0, 0);
-        let mut size = Vec2(0, 0);
+        let mut cursor = Vec2::zero();
+        let mut size = Vec2::zero();
         // Intrinsic extent, accumulated independently of any fill shrinking.
-        let mut content_cursor = Vec2(0, 0);
-        let mut content = Vec2(0, 0);
+        let mut content_cursor = Vec2::zero();
+        let mut content = Vec2::zero();
 
         let fill_avail = match pass {
-            Pass::Fit => Vec2(0, 0),
+            Pass::Fit => Vec2::zero(),
             Pass::Fill => avail_size.saturating_sub(self.data[parent].size),
         };
 
@@ -252,13 +260,12 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
 
                     self.data[child].content = child_content;
                     content = content.max(content_cursor + child_content);
-                    content_cursor +=
-                        main_axis * (Vec2(parent_opts.gap, parent_opts.gap) + child_content);
+                    content_cursor += main_axis * (Vec2::splat(parent_opts.gap) + child_content);
 
                     // On an axis this child fills it may shrink, so take the flow
                     // extent. On an axis it does not fill, its size is its content.
                     let fill_mask = self.data[child].opts.fill;
-                    let content_mask = Vec2(1, 1).saturating_sub(fill_mask);
+                    let content_mask = Vec2::one().saturating_sub(fill_mask);
                     let resolved = flow * fill_mask + child_content * content_mask;
 
                     if is_main_fill {
@@ -271,7 +278,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
                 }
                 Pass::Fill => {
                     let fill = {
-                        let mut sum = Vec2(0, 0);
+                        let mut sum = Vec2::zero();
                         if is_main_fill {
                             sum += main_fill_iter.next().unwrap()
                         }
@@ -308,7 +315,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
                     // Fits completely on next line
                     cursor = next_line;
                     child_pos = Some(outer_start + padding + cursor);
-                } else if (cursor + Vec2(1, 1)).fits(avail_size) {
+                } else if (cursor + Vec2::one()).fits(avail_size) {
                     // Can't wrap, but we can fit at least one cell where the cursor currently is
                     child_pos = Some(outer_start + padding + cursor);
                     child_size = child_size.min(avail_size.saturating_sub(cursor));
@@ -317,7 +324,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
 
             if child_pos.is_some() {
                 size = size.max(cursor + child_size);
-                cursor += main_axis * (Vec2(parent_opts.gap, parent_opts.gap) + child_size);
+                cursor += main_axis * (Vec2::splat(parent_opts.gap) + child_size);
             }
 
             self.data[child].pos = child_pos;
@@ -340,8 +347,8 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
     fn dist_main_fill(
         &self,
         parent: usize,
-        size_to_distribute: Vec2,
-    ) -> impl Iterator<Item = Vec2> + use<T> {
+        size_to_distribute: Vec2<T::Unit>,
+    ) -> impl Iterator<Item = Vec2<T::Unit>> + use<T> {
         let axis = self.data[parent].opts.dir.axis();
         let along_axis = size_to_distribute * axis;
         let count = self
@@ -351,11 +358,12 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
             .count() as u16;
 
         let (quot, rem) = if count > 0 {
-            let quot = along_axis / Vec2(count, count);
-            let rem = along_axis % Vec2(count, count);
+            let count = Vec2::splat(count.into());
+            let quot = along_axis / count;
+            let rem = along_axis - quot * count;
             (quot, rem)
         } else {
-            (Vec2(0, 0), Vec2(0, 0))
+            (Vec2::zero(), Vec2::zero())
         };
 
         iter::once(quot + rem)
@@ -363,7 +371,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
             .take(count as usize)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = LayoutItem<&T>> {
+    pub fn iter(&self) -> impl Iterator<Item = LayoutItem<&T, T::Unit>> {
         self.index.iter().filter_map(|index| {
             let Node {
                 data: Some(data),
@@ -376,7 +384,7 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
                 return None;
             };
 
-            if size.0 == 0 || size.1 == 0 {
+            if size.0 == T::Unit::ZERO || size.1 == T::Unit::ZERO {
                 return None;
             }
 
@@ -390,10 +398,10 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
 }
 
 #[derive(Debug)]
-pub struct LayoutItem<T> {
+pub struct LayoutItem<T, U> {
     pub data: T,
-    pub pos: [u16; 2],
-    pub size: [u16; 2],
+    pub pos: [U; 2],
+    pub size: [U; 2],
 }
 
 #[cfg(test)]
@@ -404,9 +412,61 @@ mod tests {
     use super::*;
 
     impl Measure for &str {
+        type Unit = u16;
+
         fn measure(&self) -> [u16; 2] {
             [UnicodeWidthStr::width(*self) as u16, 1]
         }
+    }
+
+    /// An item measured in a non-integer unit. Sizes are chosen as binary
+    /// fractions so that the arithmetic below is exact.
+    #[derive(Debug, Clone)]
+    struct Fractional(f32, f32);
+
+    impl Measure for Fractional {
+        type Unit = f32;
+
+        fn measure(&self) -> [f32; 2] {
+            [self.0, self.1]
+        }
+    }
+
+    #[test]
+    fn float_units_are_placed_at_fractional_offsets() {
+        let mut layout = LayoutTree::new();
+
+        layout.horizontal(None, opts(), |layout| {
+            layout.leaf(Fractional(2.5, 1.0));
+            layout.leaf(Fractional(2.5, 1.0));
+        });
+
+        layout.compute([5.0, 1.0]);
+        let mut iter = layout.iter().map(|item| (item.pos, item.size));
+        assert_eq!(Some(([0.0, 0.0], [2.5, 1.0])), iter.next());
+        assert_eq!(Some(([2.5, 0.0], [2.5, 1.0])), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn float_fill_distributes_the_whole_extent() {
+        let mut layout = LayoutTree::new();
+
+        layout.vertical(None, opts(), |layout| {
+            for _ in 0..3 {
+                layout.horizontal(None, opts().fill_y(), |layout| {
+                    layout.leaf(Fractional(1.0, 1.0));
+                });
+            }
+        });
+
+        // 10 does not divide evenly by 3, which is where a `%`-derived
+        // remainder would hand the first filler space already shared out.
+        let shares = layout.dist_main_fill(0, Vec2(0.0, 10.0)).collect_vec();
+        assert_eq!(3, shares.len());
+
+        let total: f32 = shares.iter().map(|share| share.1).sum();
+        assert!((total - 10.0).abs() < 1e-4, "distributed {total} of 10.0");
     }
 
     /// Render the layout to a string for testing purposes.
@@ -440,7 +500,7 @@ mod tests {
     #[test]
     fn test_iter_distribute_size_no_flex() {
         let mut layout = LayoutTree::new();
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             // Neither should grow
             layout.leaf("Hello");
             layout.leaf("Hello");
@@ -453,12 +513,12 @@ mod tests {
     #[test]
     fn test_iter_distribute_size_one_flex() {
         let mut layout = LayoutTree::new();
-        layout.vertical(None, OPTS, |layout| {
-            layout.horizontal(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.horizontal(None, opts(), |layout| {
                 layout.leaf("One");
             });
             // This should shrink to 0 vertically and then grow to 3
-            layout.horizontal(None, OPTS.fill_y(), |layout| {
+            layout.horizontal(None, opts().fill_y(), |layout| {
                 layout.leaf("Two");
             });
         });
@@ -471,12 +531,12 @@ mod tests {
     #[test]
     fn test_iter_distribute_size_all_flex() {
         let mut layout = LayoutTree::new();
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             // Both should grow, favoring the first
-            layout.horizontal(None, OPTS.fill_y(), |layout| {
+            layout.horizontal(None, opts().fill_y(), |layout| {
                 layout.leaf("One");
             });
-            layout.horizontal(None, OPTS.fill_y(), |layout| {
+            layout.horizontal(None, opts().fill_y(), |layout| {
                 layout.leaf("Two");
             });
         });
@@ -490,7 +550,7 @@ mod tests {
     fn single_text() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             layout.leaf("Hello");
             layout.leaf("lol");
         });
@@ -503,7 +563,7 @@ mod tests {
     fn horizontal_layout() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             layout.leaf("A");
             layout.leaf("BB");
             layout.leaf("CCC");
@@ -517,7 +577,7 @@ mod tests {
     fn vertical_layout() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             layout.leaf("First");
             layout.leaf("Second");
             layout.leaf("Third");
@@ -531,14 +591,14 @@ mod tests {
     fn nested_layouts() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             // 0
-            layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, opts(), |layout| {
                 // 1
                 layout.leaf("A"); // 2
                 layout.leaf("B"); // 3
             });
-            layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, opts(), |layout| {
                 // 4
                 layout.leaf("C"); // 5
                 layout.leaf("D"); // 6
@@ -563,12 +623,12 @@ mod tests {
     fn out_of_bounds_horizontal() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
-            layout.horizontal(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.horizontal(None, opts(), |layout| {
                 layout.leaf("12345");
                 layout.leaf("The very start of this will be visible (a T)");
             });
-            layout.horizontal(None, OPTS, |layout| {
+            layout.horizontal(None, opts(), |layout| {
                 layout.leaf("123456");
                 layout.leaf("This is completely outside of the layout and ignored");
             });
@@ -582,7 +642,7 @@ mod tests {
     fn test_horizontal_wrap() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             layout.leaf("AAA");
             layout.leaf("BBB");
             layout.leaf("CCC");
@@ -599,7 +659,7 @@ mod tests {
     fn test_wrap_before_truncate() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             layout.leaf("AAAA");
             layout.leaf("BBBB");
         });
@@ -617,9 +677,9 @@ mod tests {
     fn nested_grow_wrap() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.fill_y(), |layout| {
-                layout.horizontal(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.vertical(None, opts().fill_y(), |layout| {
+                layout.horizontal(None, opts(), |layout| {
                     layout.leaf("word1");
                     layout.leaf("word2");
                     layout.leaf("word3");
@@ -639,7 +699,7 @@ mod tests {
     fn test_no_trailing_newline() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             layout.leaf("Line 1");
             layout.leaf("Line 2");
         });
@@ -657,12 +717,12 @@ mod tests {
     fn out_of_bounds_vertical() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS, |layout| {
-            layout.vertical(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
+            layout.vertical(None, opts(), |layout| {
                 layout.leaf("1");
                 layout.leaf("2");
             });
-            layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, opts(), |layout| {
                 layout.leaf("1");
                 layout.leaf("2");
                 layout.leaf("X");
@@ -677,7 +737,7 @@ mod tests {
     fn unicode_text_width() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS, |layout| {
+        layout.horizontal(None, opts(), |layout| {
             layout.leaf("café").leaf("naïve");
         });
 
@@ -690,7 +750,7 @@ mod tests {
     fn horizontal_gap() {
         let mut layout = LayoutTree::new();
 
-        layout.horizontal(None, OPTS.gap(2), |layout| {
+        layout.horizontal(None, opts().gap(2), |layout| {
             layout.leaf("one");
             layout.leaf("two");
         });
@@ -703,7 +763,7 @@ mod tests {
     fn vertical_gap() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS.gap(1), |layout| {
+        layout.vertical(None, opts().gap(1), |layout| {
             layout.leaf("one");
             layout.leaf("two");
         });
@@ -716,8 +776,8 @@ mod tests {
     fn grow() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.fill_y(), |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.vertical(None, opts().fill_y(), |layout| {
                 layout.leaf("flex");
             });
             layout.leaf("actual");
@@ -731,8 +791,8 @@ mod tests {
     fn nested_grow_preserves_cross_axis() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(Some("root"), OPTS, |layout| {
-            layout.horizontal(Some("grow"), OPTS.fill_xy(), |layout| {
+        layout.vertical(Some("root"), opts(), |layout| {
+            layout.horizontal(Some("grow"), opts().fill_xy(), |layout| {
                 layout.leaf("hello");
             });
         });
@@ -751,7 +811,7 @@ mod tests {
     fn overflow() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             layout.leaf("one");
             layout.leaf("twoooo");
             layout.leaf("three");
@@ -765,8 +825,8 @@ mod tests {
     fn shrink() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.fill_y(), |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.vertical(None, opts().fill_y(), |layout| {
                 layout.leaf("flex 1");
                 layout.leaf("flex 2");
             });
@@ -781,14 +841,14 @@ mod tests {
     fn shrinks_nested() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.fill_y(), |layout| {
-                layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.vertical(None, opts().fill_y(), |layout| {
+                layout.vertical(None, opts(), |layout| {
                     layout.leaf("This should not be visible'");
                 });
             });
 
-            layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, opts(), |layout| {
                 layout.leaf("WEEEEE");
             });
         });
@@ -803,13 +863,13 @@ mod tests {
     fn nested_horizontal_fill_does_not_hide_siblings() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
+        layout.vertical(None, opts(), |layout| {
             // 0,0 -> 0,5
-            layout.vertical(None, OPTS.fill_y(), |layout| {
+            layout.vertical(None, opts().fill_y(), |layout| {
                 // 0,1 -> 0,1
-                layout.horizontal(None, OPTS.fill_x(), |layout| {
+                layout.horizontal(None, opts().fill_x(), |layout| {
                     // 0,1 -> 0,1
-                    layout.horizontal(None, OPTS.fill_x(), |layout| {
+                    layout.horizontal(None, opts().fill_x(), |layout| {
                         layout.leaf("visible");
                     });
                 });
@@ -828,11 +888,11 @@ mod tests {
     fn gitu_mockup() {
         let mut layout = LayoutTree::new();
 
-        layout.vertical(None, OPTS, |layout| {
-            layout.vertical(None, OPTS.fill_xy(), |layout| {
+        layout.vertical(None, opts(), |layout| {
+            layout.vertical(None, opts().fill_xy(), |layout| {
                 // Screen
-                layout.vertical(None, OPTS.fill_x(), |layout| {
-                    layout.horizontal(Some(""), OPTS.fill_x(), |layout| {
+                layout.vertical(None, opts().fill_x(), |layout| {
+                    layout.horizontal(Some(""), opts().fill_x(), |layout| {
                         layout.leaf("On branch master");
                     });
                     layout.leaf("Your branch is up to date with 'origin/master'");
@@ -855,12 +915,12 @@ mod tests {
                 );
             });
 
-            layout.vertical(None, OPTS, |layout| {
+            layout.vertical(None, opts(), |layout| {
                 // Menu
                 layout.leaf("───────────────────────────────────────────────────────────────");
 
-                layout.horizontal(None, OPTS.gap(2), |layout| {
-                    layout.vertical(None, OPTS, |layout| {
+                layout.horizontal(None, opts().gap(2), |layout| {
+                    layout.vertical(None, opts(), |layout| {
                         layout.leaf("Help");
                         layout.leaf("Y Show Refs");
                         layout.leaf("<tab> Toggle section");
@@ -876,7 +936,7 @@ mod tests {
                         layout.leaf("g+r Refresh");
                         layout.leaf("q/<esc> Quit/Close");
                     });
-                    layout.vertical(None, OPTS, |layout| {
+                    layout.vertical(None, opts(), |layout| {
                         layout.leaf("Submenu");
                         layout.leaf("b Branch");
                         layout.leaf("c Commit");
@@ -892,7 +952,7 @@ mod tests {
                         layout.leaf("z Stash");
                         layout.leaf("");
                     });
-                    layout.vertical(None, OPTS, |layout| {
+                    layout.vertical(None, opts(), |layout| {
                         layout.leaf("@@ -271,7 +271,7");
                         layout.leaf("s Stage");
                         layout.leaf("u Unstage");

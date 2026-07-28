@@ -1,27 +1,75 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct Vec2(pub(crate) u16, pub(crate) u16);
+/// The unit a layout is measured in, e.g. terminal cells or pixels.
+///
+/// `PartialOrd` rather than `Ord` so that floats qualify; `From<u16>` is what
+/// lets the engine turn a child count into a unit when distributing fill space.
+pub trait Scalar:
+    Copy
+    + PartialOrd
+    + std::fmt::Debug
+    + From<u16>
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + Rem<Output = Self>
+{
+    const ZERO: Self;
+    const ONE: Self;
+}
 
-impl std::fmt::Debug for Vec2 {
+macro_rules! impl_scalar {
+    ($($ty:ty => $zero:expr, $one:expr);* $(;)?) => {
+        $(
+            impl Scalar for $ty {
+                const ZERO: Self = $zero;
+                const ONE: Self = $one;
+            }
+        )*
+    };
+}
+
+impl_scalar! {
+    u16 => 0, 1;
+    u32 => 0, 1;
+    u64 => 0, 1;
+    usize => 0, 1;
+    f32 => 0.0, 1.0;
+    f64 => 0.0, 1.0;
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct Vec2<U>(pub(crate) U, pub(crate) U);
+
+/// Comparisons go through `PartialOrd`, so a NaN operand yields `rhs`.
+fn max<U: Scalar>(lhs: U, rhs: U) -> U {
+    if lhs > rhs { lhs } else { rhs }
+}
+
+fn min<U: Scalar>(lhs: U, rhs: U) -> U {
+    if lhs < rhs { lhs } else { rhs }
+}
+
+impl<U: std::fmt::Debug> std::fmt::Debug for Vec2<U> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("Vec2({}, {})", self.0, self.1))
+        f.write_fmt(format_args!("Vec2({:?}, {:?})", self.0, self.1))
     }
 }
 
-impl From<[u16; 2]> for Vec2 {
-    fn from([x, y]: [u16; 2]) -> Self {
+impl<U> From<[U; 2]> for Vec2<U> {
+    fn from([x, y]: [U; 2]) -> Self {
         Self(x, y)
     }
 }
 
-impl From<Vec2> for [u16; 2] {
-    fn from(Vec2(x, y): Vec2) -> Self {
+impl<U> From<Vec2<U>> for [U; 2] {
+    fn from(Vec2(x, y): Vec2<U>) -> Self {
         [x, y]
     }
 }
 
-impl Add for Vec2 {
+impl<U: Scalar> Add for Vec2<U> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -29,7 +77,7 @@ impl Add for Vec2 {
     }
 }
 
-impl Sub for Vec2 {
+impl<U: Scalar> Sub for Vec2<U> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -37,7 +85,7 @@ impl Sub for Vec2 {
     }
 }
 
-impl Mul for Vec2 {
+impl<U: Scalar> Mul for Vec2<U> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -45,7 +93,7 @@ impl Mul for Vec2 {
     }
 }
 
-impl Div for Vec2 {
+impl<U: Scalar> Div for Vec2<U> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
@@ -53,7 +101,7 @@ impl Div for Vec2 {
     }
 }
 
-impl Rem for Vec2 {
+impl<U: Scalar> Rem for Vec2<U> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
@@ -61,48 +109,55 @@ impl Rem for Vec2 {
     }
 }
 
-impl AddAssign for Vec2 {
+impl<U: Scalar> AddAssign for Vec2<U> {
     fn add_assign(&mut self, rhs: Self) {
-        self.0 += rhs.0;
-        self.1 += rhs.1;
+        *self = *self + rhs;
     }
 }
 
-impl SubAssign for Vec2 {
+impl<U: Scalar> SubAssign for Vec2<U> {
     fn sub_assign(&mut self, rhs: Self) {
-        self.0 -= rhs.0;
-        self.1 -= rhs.1;
+        *self = *self - rhs;
     }
 }
 
-impl MulAssign for Vec2 {
+impl<U: Scalar> MulAssign for Vec2<U> {
     fn mul_assign(&mut self, rhs: Self) {
-        self.0 *= rhs.0;
-        self.1 *= rhs.1;
+        *self = *self * rhs;
     }
 }
 
-impl DivAssign for Vec2 {
+impl<U: Scalar> DivAssign for Vec2<U> {
     fn div_assign(&mut self, rhs: Self) {
-        self.0 /= rhs.0;
-        self.1 /= rhs.1;
+        *self = *self / rhs;
     }
 }
 
-impl RemAssign for Vec2 {
+impl<U: Scalar> RemAssign for Vec2<U> {
     fn rem_assign(&mut self, rhs: Self) {
-        self.0 %= rhs.0;
-        self.1 %= rhs.1;
+        *self = *self % rhs;
     }
 }
 
-impl Vec2 {
+impl<U: Scalar> Vec2<U> {
+    pub(crate) fn zero() -> Self {
+        Self(U::ZERO, U::ZERO)
+    }
+
+    pub(crate) fn one() -> Self {
+        Self(U::ONE, U::ONE)
+    }
+
+    pub(crate) fn splat(value: U) -> Self {
+        Self(value, value)
+    }
+
     pub(crate) fn max(self, rhs: Self) -> Self {
-        Self(self.0.max(rhs.0), self.1.max(rhs.1))
+        Self(max(self.0, rhs.0), max(self.1, rhs.1))
     }
 
     pub(crate) fn min(self, rhs: Self) -> Self {
-        Self(self.0.min(rhs.0), self.1.min(rhs.1))
+        Self(min(self.0, rhs.0), min(self.1, rhs.1))
     }
 
     pub(crate) fn fits(&self, other: Self) -> bool {
@@ -113,7 +168,7 @@ impl Vec2 {
         Self(self.1, self.0)
     }
 
-    pub(crate) fn saturating_sub(&self, other: Vec2) -> Vec2 {
+    pub(crate) fn saturating_sub(&self, other: Vec2<U>) -> Vec2<U> {
         *self - self.min(other)
     }
 }

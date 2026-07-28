@@ -4,7 +4,7 @@ use crate::style::Style;
 
 use crate::cmd_log::{CmdLog, CmdLogEntry};
 use crate::config::Config;
-use crate::ui::layout::OPTS;
+use crate::ui::layout::opts;
 use crate::ui::{DASHES, UiTree, layout_line, layout_span, repeat_chars};
 
 pub(crate) fn layout_cmd_log<'a>(
@@ -19,7 +19,7 @@ pub(crate) fn layout_cmd_log<'a>(
 
     repeat_chars(layout, width, DASHES, Style::from(&config.style.separator));
 
-    layout.vertical(None, OPTS, |layout| {
+    layout.vertical(None, opts(), |layout| {
         for entry in &log.entries {
             layout_entry(layout, entry, config);
         }
@@ -30,7 +30,7 @@ pub(crate) fn layout_cmd_log<'a>(
 fn layout_entry<'a>(layout: &mut UiTree<'a>, entry: &Arc<RwLock<CmdLogEntry>>, config: &Config) {
     match &*entry.read().unwrap() {
         CmdLogEntry::Cmd { args, out } => {
-            layout.horizontal(None, OPTS, |layout| {
+            layout.horizontal(None, opts(), |layout| {
                 layout_span(
                     layout,
                     (
