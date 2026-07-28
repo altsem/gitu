@@ -9,6 +9,12 @@ use crate::item_data::{ItemData, Ref, SectionHeader};
 use crate::items::Item;
 use crate::ui::layout::opts;
 use crate::ui::{UiTree, layout_span};
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
+
+/// What an author name is cut down to, so that a long one doesn't crowd out the
+/// summary.
+const AUTHOR_WIDTH: usize = 15;
 
 /// Lays out an [`Item`] as spans in the caller's container, which is expected to
 /// be a single row.
@@ -90,7 +96,7 @@ pub(crate) fn layout_item<'a>(
             layout_span(
                 layout,
                 (
-                    author.as_str().into(),
+                    truncate(author, AUTHOR_WIDTH),
                     base.patch(Style::from(&style.author)),
                 ),
             );
@@ -271,6 +277,28 @@ pub(crate) fn layout_item<'a>(
             }
         }
     }
+}
+
+/// Cuts `text` down to `width` columns, the last of which is an ellipsis.
+fn truncate(text: &str, width: usize) -> Cow<'_, str> {
+    if text.width() <= width {
+        return Cow::Borrowed(text);
+    }
+
+    let mut truncated = String::new();
+    let mut taken = 0;
+
+    for grapheme in text.graphemes(true) {
+        if taken + grapheme.width() > width - 1 {
+            break;
+        }
+
+        truncated.push_str(grapheme);
+        taken += grapheme.width();
+    }
+
+    truncated.push('…');
+    Cow::Owned(truncated)
 }
 
 fn layout_reference<'a>(layout: &mut UiTree<'a>, reference: &'a Ref, config: &Config, base: Style) {
