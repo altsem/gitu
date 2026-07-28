@@ -7,7 +7,7 @@ use crate::screen;
 use crate::style::{Color, Modifier, Style};
 use crate::term::TermBackend;
 use crate::text_input::Status;
-use crate::ui::layout::LayoutItem;
+use crate::ui::layout::{LayoutItem, Measure};
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::OPTS;
@@ -30,6 +30,17 @@ pub(crate) enum UiItem<'a> {
     Style(Style),
 }
 pub(crate) type UiTree<'a> = LayoutTree<UiItem<'a>>;
+
+impl Measure for UiItem<'_> {
+    fn measure(&self) -> [u16; 2] {
+        match self {
+            UiItem::Span(text, _style) => [UnicodeWidthStr::width(text.as_ref()) as u16, 1],
+            // Styles are only ever attached to containers, which are sized by
+            // their children, so this is never the size of anything drawn.
+            UiItem::Style(_style) => [1, 1],
+        }
+    }
+}
 
 pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
     let size = term.size().unwrap();
@@ -153,18 +164,12 @@ pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Styl
     match span.0 {
         Cow::Borrowed(s) => {
             for word in words(s) {
-                layout.leaf_with_size(
-                    UiItem::Span(Cow::Borrowed(word), span.1),
-                    [UnicodeWidthStr::width(word) as u16, 1],
-                );
+                layout.leaf(UiItem::Span(Cow::Borrowed(word), span.1));
             }
         }
         Cow::Owned(s) => {
             for word in words(&s) {
-                layout.leaf_with_size(
-                    UiItem::Span(Cow::Owned(word.into()), span.1),
-                    [UnicodeWidthStr::width(word) as u16, 1],
-                );
+                layout.leaf(UiItem::Span(Cow::Owned(word.into()), span.1));
             }
         }
     }

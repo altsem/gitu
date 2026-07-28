@@ -6,12 +6,16 @@ use std::iter;
 
 use direction::Direction;
 use node::*;
-use unicode_width::UnicodeWidthStr;
 use vec2::Vec2;
 
 pub use node::OPTS;
 
 const ROOT_INDEX: usize = usize::MAX;
+
+/// Sizes an item as it is added to the tree.
+pub trait Measure {
+    fn measure(&self) -> [u16; 2];
+}
 
 #[derive(Debug)]
 pub struct LayoutTree<T> {
@@ -122,16 +126,7 @@ impl<T> Default for LayoutTree<T> {
     }
 }
 
-impl LayoutTree<&'static str> {
-    /// Add a text leaf, calculating size based on string length
-    #[allow(dead_code)]
-    pub fn text(&mut self, text: &'static str) -> &mut Self {
-        self.leaf_with_size(text, [UnicodeWidthStr::width(text) as u16, 1]);
-        self
-    }
-}
-
-impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
+impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
     pub fn horizontal<F: FnOnce(&mut LayoutTree<T>)>(
         &mut self,
         data: Option<T>,
@@ -178,12 +173,9 @@ impl<T: std::fmt::Debug + Clone> LayoutTree<T> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn leaf(&mut self, data: T) -> &mut Self {
-        self.leaf_with_size(data, [1, 1])
-    }
+        let size = data.measure();
 
-    pub fn leaf_with_size(&mut self, data: T, size: [u16; 2]) -> &mut Self {
         self.add(node::Node {
             data: Some(data),
             opts: OPTS,
@@ -407,8 +399,15 @@ pub struct LayoutItem<T> {
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
+    use unicode_width::UnicodeWidthStr;
 
     use super::*;
+
+    impl Measure for &str {
+        fn measure(&self) -> [u16; 2] {
+            [UnicodeWidthStr::width(*self) as u16, 1]
+        }
+    }
 
     /// Render the layout to a string for testing purposes.
     /// Note: ASCII only — does not support Unicode beyond single-byte chars.
@@ -443,8 +442,8 @@ mod tests {
         let mut layout = LayoutTree::new();
         layout.vertical(None, OPTS, |layout| {
             // Neither should grow
-            layout.text("Hello");
-            layout.text("Hello");
+            layout.leaf("Hello");
+            layout.leaf("Hello");
         });
 
         let mut iter = layout.dist_main_fill(0, Vec2(10, 3));
@@ -456,11 +455,11 @@ mod tests {
         let mut layout = LayoutTree::new();
         layout.vertical(None, OPTS, |layout| {
             layout.horizontal(None, OPTS, |layout| {
-                layout.text("One");
+                layout.leaf("One");
             });
             // This should shrink to 0 vertically and then grow to 3
             layout.horizontal(None, OPTS.fill_y(), |layout| {
-                layout.text("Two");
+                layout.leaf("Two");
             });
         });
 
@@ -475,10 +474,10 @@ mod tests {
         layout.vertical(None, OPTS, |layout| {
             // Both should grow, favoring the first
             layout.horizontal(None, OPTS.fill_y(), |layout| {
-                layout.text("One");
+                layout.leaf("One");
             });
             layout.horizontal(None, OPTS.fill_y(), |layout| {
-                layout.text("Two");
+                layout.leaf("Two");
             });
         });
 
@@ -492,8 +491,8 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.text("Hello");
-            layout.text("lol");
+            layout.leaf("Hello");
+            layout.leaf("lol");
         });
 
         layout.compute([5, 2]);
@@ -505,9 +504,9 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.horizontal(None, OPTS, |layout| {
-            layout.text("A");
-            layout.text("BB");
-            layout.text("CCC");
+            layout.leaf("A");
+            layout.leaf("BB");
+            layout.leaf("CCC");
         });
 
         layout.compute([6, 1]);
@@ -519,9 +518,9 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.text("First");
-            layout.text("Second");
-            layout.text("Third");
+            layout.leaf("First");
+            layout.leaf("Second");
+            layout.leaf("Third");
         });
 
         layout.compute([6, 3]);
@@ -536,13 +535,13 @@ mod tests {
             // 0
             layout.vertical(None, OPTS, |layout| {
                 // 1
-                layout.text("A"); // 2
-                layout.text("B"); // 3
+                layout.leaf("A"); // 2
+                layout.leaf("B"); // 3
             });
             layout.vertical(None, OPTS, |layout| {
                 // 4
-                layout.text("C"); // 5
-                layout.text("D"); // 6
+                layout.leaf("C"); // 5
+                layout.leaf("D"); // 6
             });
         });
 
@@ -554,7 +553,7 @@ mod tests {
     fn clear_layout() {
         let mut layout = LayoutTree::new();
 
-        layout.text("Test");
+        layout.leaf("Test");
 
         layout.clear();
         assert_eq!(layout.iter().count(), 0);
@@ -566,12 +565,12 @@ mod tests {
 
         layout.vertical(None, OPTS, |layout| {
             layout.horizontal(None, OPTS, |layout| {
-                layout.text("12345");
-                layout.text("The very start of this will be visible (a T)");
+                layout.leaf("12345");
+                layout.leaf("The very start of this will be visible (a T)");
             });
             layout.horizontal(None, OPTS, |layout| {
-                layout.text("123456");
-                layout.text("This is completely outside of the layout and ignored");
+                layout.leaf("123456");
+                layout.leaf("This is completely outside of the layout and ignored");
             });
         });
 
@@ -584,9 +583,9 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.horizontal(None, OPTS, |layout| {
-            layout.text("AAA");
-            layout.text("BBB");
-            layout.text("CCC");
+            layout.leaf("AAA");
+            layout.leaf("BBB");
+            layout.leaf("CCC");
         });
 
         layout.compute([6, 2]);
@@ -601,8 +600,8 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.horizontal(None, OPTS, |layout| {
-            layout.text("AAAA");
-            layout.text("BBBB");
+            layout.leaf("AAAA");
+            layout.leaf("BBBB");
         });
 
         layout.compute([6, 2]);
@@ -621,9 +620,9 @@ mod tests {
         layout.vertical(None, OPTS, |layout| {
             layout.vertical(None, OPTS.fill_y(), |layout| {
                 layout.horizontal(None, OPTS, |layout| {
-                    layout.text("word1");
-                    layout.text("word2");
-                    layout.text("word3");
+                    layout.leaf("word1");
+                    layout.leaf("word2");
+                    layout.leaf("word3");
                 });
             });
         });
@@ -641,8 +640,8 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.text("Line 1");
-            layout.text("Line 2");
+            layout.leaf("Line 1");
+            layout.leaf("Line 2");
         });
 
         layout.compute([10, 2]);
@@ -660,13 +659,13 @@ mod tests {
 
         layout.horizontal(None, OPTS, |layout| {
             layout.vertical(None, OPTS, |layout| {
-                layout.text("1");
-                layout.text("2");
+                layout.leaf("1");
+                layout.leaf("2");
             });
             layout.vertical(None, OPTS, |layout| {
-                layout.text("1");
-                layout.text("2");
-                layout.text("X");
+                layout.leaf("1");
+                layout.leaf("2");
+                layout.leaf("X");
             });
         });
 
@@ -679,7 +678,7 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.horizontal(None, OPTS, |layout| {
-            layout.text("café").text("naïve");
+            layout.leaf("café").leaf("naïve");
         });
 
         layout.compute([10, 1]);
@@ -692,8 +691,8 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.horizontal(None, OPTS.gap(2), |layout| {
-            layout.text("one");
-            layout.text("two");
+            layout.leaf("one");
+            layout.leaf("two");
         });
 
         layout.compute([8, 1]);
@@ -705,8 +704,8 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS.gap(1), |layout| {
-            layout.text("one");
-            layout.text("two");
+            layout.leaf("one");
+            layout.leaf("two");
         });
 
         layout.compute([3, 3]);
@@ -719,9 +718,9 @@ mod tests {
 
         layout.vertical(None, OPTS, |layout| {
             layout.vertical(None, OPTS.fill_y(), |layout| {
-                layout.text("flex");
+                layout.leaf("flex");
             });
-            layout.text("actual");
+            layout.leaf("actual");
         });
 
         layout.compute([8, 3]);
@@ -734,7 +733,7 @@ mod tests {
 
         layout.vertical(Some("root"), OPTS, |layout| {
             layout.horizontal(Some("grow"), OPTS.fill_xy(), |layout| {
-                layout.text("hello");
+                layout.leaf("hello");
             });
         });
 
@@ -753,9 +752,9 @@ mod tests {
         let mut layout = LayoutTree::new();
 
         layout.vertical(None, OPTS, |layout| {
-            layout.text("one");
-            layout.text("twoooo");
-            layout.text("three");
+            layout.leaf("one");
+            layout.leaf("twoooo");
+            layout.leaf("three");
         });
 
         layout.compute([6, 1]);
@@ -768,10 +767,10 @@ mod tests {
 
         layout.vertical(None, OPTS, |layout| {
             layout.vertical(None, OPTS.fill_y(), |layout| {
-                layout.text("flex 1");
-                layout.text("flex 2");
+                layout.leaf("flex 1");
+                layout.leaf("flex 2");
             });
-            layout.text("actual");
+            layout.leaf("actual");
         });
 
         layout.compute([6, 2]);
@@ -785,12 +784,12 @@ mod tests {
         layout.vertical(None, OPTS, |layout| {
             layout.vertical(None, OPTS.fill_y(), |layout| {
                 layout.vertical(None, OPTS, |layout| {
-                    layout.text("This should not be visible'");
+                    layout.leaf("This should not be visible'");
                 });
             });
 
             layout.vertical(None, OPTS, |layout| {
-                layout.text("WEEEEE");
+                layout.leaf("WEEEEE");
             });
         });
 
@@ -811,7 +810,7 @@ mod tests {
                 layout.horizontal(None, OPTS.fill_x(), |layout| {
                     // 0,1 -> 0,1
                     layout.horizontal(None, OPTS.fill_x(), |layout| {
-                        layout.text("visible");
+                        layout.leaf("visible");
                     });
                 });
             });
@@ -834,80 +833,80 @@ mod tests {
                 // Screen
                 layout.vertical(None, OPTS.fill_x(), |layout| {
                     layout.horizontal(Some(""), OPTS.fill_x(), |layout| {
-                        layout.text("On branch master");
+                        layout.leaf("On branch master");
                     });
-                    layout.text("Your branch is up to date with 'origin/master'");
+                    layout.leaf("Your branch is up to date with 'origin/master'");
                 });
 
-                layout.text("");
-                layout.text("Recent commits");
-                layout.text("9eb6a63 refactor/ui origin/refactor/ui fix more rendering issues");
-                layout.text("b5fffd4 fix styling issues in Screen");
-                layout.text("61e6c1b refactor: extract type of LayoutTree");
-                layout.text("df3bcb5 get rid of frequent clone() in LayoutTree");
-                layout.text("9864859 refactor(ui): less allocs");
-                layout.text("aa2811e refactor: new LayoutTree module to improve on ui headaches");
-                layout.text(
+                layout.leaf("");
+                layout.leaf("Recent commits");
+                layout.leaf("9eb6a63 refactor/ui origin/refactor/ui fix more rendering issues");
+                layout.leaf("b5fffd4 fix styling issues in Screen");
+                layout.leaf("61e6c1b refactor: extract type of LayoutTree");
+                layout.leaf("df3bcb5 get rid of frequent clone() in LayoutTree");
+                layout.leaf("9864859 refactor(ui): less allocs");
+                layout.leaf("aa2811e refactor: new LayoutTree module to improve on ui headaches");
+                layout.leaf(
                     "5374ab3 master origin/master test: add file:// in clone_and_commit fn as well",
                 );
-                layout.text("7a66235 test: get rid of setup_init, and try fix test-repo assertion");
-                layout.text(
+                layout.leaf("7a66235 test: get rid of setup_init, and try fix test-repo assertion");
+                layout.leaf(
                     "75463c8 test/fix-ci test: forgot to create testfiles/ when running tests",
                 );
             });
 
             layout.vertical(None, OPTS, |layout| {
                 // Menu
-                layout.text("───────────────────────────────────────────────────────────────");
+                layout.leaf("───────────────────────────────────────────────────────────────");
 
                 layout.horizontal(None, OPTS.gap(2), |layout| {
                     layout.vertical(None, OPTS, |layout| {
-                        layout.text("Help");
-                        layout.text("Y Show Refs");
-                        layout.text("<tab> Toggle section");
-                        layout.text("k/<up> Up ");
-                        layout.text("j/<down> Down");
-                        layout.text("<ctrl+k>/<ctrl+up> Up line");
-                        layout.text("<ctrl+j>/<ctrl+down> Down line");
-                        layout.text("<alt+k>/<alt+up> Prev section");
-                        layout.text("<alt+j>/<alt+down> Next section");
-                        layout.text("<alt+h>/<alt+left> Parent section");
-                        layout.text("<ctrl+u> Half page up");
-                        layout.text("<ctrl+d> Half page down");
-                        layout.text("g+r Refresh");
-                        layout.text("q/<esc> Quit/Close");
+                        layout.leaf("Help");
+                        layout.leaf("Y Show Refs");
+                        layout.leaf("<tab> Toggle section");
+                        layout.leaf("k/<up> Up ");
+                        layout.leaf("j/<down> Down");
+                        layout.leaf("<ctrl+k>/<ctrl+up> Up line");
+                        layout.leaf("<ctrl+j>/<ctrl+down> Down line");
+                        layout.leaf("<alt+k>/<alt+up> Prev section");
+                        layout.leaf("<alt+j>/<alt+down> Next section");
+                        layout.leaf("<alt+h>/<alt+left> Parent section");
+                        layout.leaf("<ctrl+u> Half page up");
+                        layout.leaf("<ctrl+d> Half page down");
+                        layout.leaf("g+r Refresh");
+                        layout.leaf("q/<esc> Quit/Close");
                     });
                     layout.vertical(None, OPTS, |layout| {
-                        layout.text("Submenu");
-                        layout.text("b Branch");
-                        layout.text("c Commit");
-                        layout.text("f Fetch");
-                        layout.text("h/? Help");
-                        layout.text("l Log");
-                        layout.text("M Remote");
-                        layout.text("F Pull");
-                        layout.text("P Push");
-                        layout.text("r Rebase");
-                        layout.text("X Reset");
-                        layout.text("V Revert");
-                        layout.text("z Stash");
-                        layout.text("");
+                        layout.leaf("Submenu");
+                        layout.leaf("b Branch");
+                        layout.leaf("c Commit");
+                        layout.leaf("f Fetch");
+                        layout.leaf("h/? Help");
+                        layout.leaf("l Log");
+                        layout.leaf("M Remote");
+                        layout.leaf("F Pull");
+                        layout.leaf("P Push");
+                        layout.leaf("r Rebase");
+                        layout.leaf("X Reset");
+                        layout.leaf("V Revert");
+                        layout.leaf("z Stash");
+                        layout.leaf("");
                     });
                     layout.vertical(None, OPTS, |layout| {
-                        layout.text("@@ -271,7 +271,7");
-                        layout.text("s Stage");
-                        layout.text("u Unstage");
-                        layout.text("<enter> Show");
-                        layout.text("K Discard");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
-                        layout.text("");
+                        layout.leaf("@@ -271,7 +271,7");
+                        layout.leaf("s Stage");
+                        layout.leaf("u Unstage");
+                        layout.leaf("<enter> Show");
+                        layout.leaf("K Discard");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
+                        layout.leaf("");
                     });
                 });
             });
