@@ -10,7 +10,7 @@ expression: ctx.redact_buffer()
  stash@1 On main: secondstash                                                   |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: e6394d1f97d1c740
+styles_hash: b8f553b632f83f2a

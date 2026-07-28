@@ -12,8 +12,8 @@ expression: ctx.redact_buffer()
  +    this has a tab prefixed                                                   |
                                                                                 |
  Recent commits                                                                 |
- 0295453 main add tab.txt                                                       |
- b66a0bf origin/main add initial-file                                           |
+ 0295453 main add tab.txt                                        Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 8e07e0435805fafd
+styles_hash: 9ceed5bf09b4f615

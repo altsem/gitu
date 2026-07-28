@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch main                                                                 |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  u     from upstream, setting that                                              |
  e     from elsewhere                                                           |
  q/esc Quit/Close                                                               |
-styles_hash: 440a2e96e23b3a85
+styles_hash: c6fa14e930b4b5cb

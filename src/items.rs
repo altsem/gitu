@@ -12,6 +12,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::iter;
 use std::rc::Rc;
+use std::time::SystemTime;
 
 pub type ItemId = u64;
 
@@ -144,6 +145,36 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
         .collect::<Vec<_>>())
 }
 
+fn short_age(time: git2::Time) -> String {
+    const MINUTE: i64 = 60;
+    const HOUR: i64 = 60 * MINUTE;
+    const DAY: i64 = 24 * HOUR;
+    const WEEK: i64 = 7 * DAY;
+    const MONTH: i64 = 30 * DAY;
+    const YEAR: i64 = 365 * DAY;
+
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map_or(0, |since_epoch| since_epoch.as_secs() as i64);
+
+    // A commit dated in the future reads as brand new, rather than as a negative age.
+    let age = (now - time.seconds()).max(0);
+
+    if age < HOUR {
+        format!("{}m", age / MINUTE)
+    } else if age < DAY {
+        format!("{}h", age / HOUR)
+    } else if age < WEEK {
+        format!("{}d", age / DAY)
+    } else if age < MONTH {
+        format!("{}w", age / WEEK)
+    } else if age < YEAR {
+        format!("{}M", age / MONTH)
+    } else {
+        format!("{}y", age / YEAR)
+    }
+}
+
 pub(crate) fn log(
     repo: &Repository,
     limit: usize,
@@ -210,6 +241,8 @@ pub(crate) fn log(
                 short_id,
                 associated_references,
                 summary: commit.summary().unwrap_or("").to_string(),
+                author: commit.author().name().unwrap_or("").to_string(),
+                age: short_age(commit.author().when()),
             };
 
             Ok(Some(Item {

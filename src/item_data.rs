@@ -17,6 +17,8 @@ pub(crate) enum ItemData {
         short_id: String,
         associated_references: Vec<Ref>,
         summary: String,
+        author: String,
+        age: String,
     },
     Untracked(PathBuf),
     Delta {

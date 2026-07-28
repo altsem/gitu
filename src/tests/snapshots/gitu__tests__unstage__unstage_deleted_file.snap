@@ -9,8 +9,8 @@ expression: ctx.redact_buffer()
 ▌deleted    to-delete…                                                          |
                                                                                 |
  Recent commits                                                                 |
- 0341425 main add to-delete                                                     |
- b66a0bf origin/main add initial-file                                           |
+ 0341425 main add to-delete                                      Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git restore --staged to-delete                                                |
-styles_hash: f7c0e5a57ae9043f
+styles_hash: 9ebc3e96897ceb0e

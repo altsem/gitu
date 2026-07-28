@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 3b23a7d feature-a main v1.0.0 add feature-a commit                             |
- b66a0bf origin/main add initial-file                                           |
+ 3b23a7d feature-a main v1.0.0 add feature-a commit              Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git merge feature-a                                                           |
-styles_hash: 6d38fe575fb2440d
+styles_hash: d2bed94dbb249409

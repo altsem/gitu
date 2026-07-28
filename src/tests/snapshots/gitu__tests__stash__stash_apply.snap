@@ -15,11 +15,11 @@ expression: ctx.redact_buffer()
  stash@1 On main: file-one                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash apply -q 1                                                          |
-styles_hash: 200cabb23831b52c
+styles_hash: a8ac27ce0e3246df

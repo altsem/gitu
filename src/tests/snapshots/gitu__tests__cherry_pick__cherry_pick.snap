@@ -2,8 +2,8 @@
 source: src/tests/cherry_pick.rs
 expression: ctx.redact_buffer()
 ---
-▌b9ef0d7 main other-branch add cherry-file                                      |
- b66a0bf origin/main add initial-file                                           |
+▌b9ef0d7 main other-branch add cherry-file                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git cherry-pick other-branch                                                  |
-styles_hash: f3a37ee58f76a6c1
+styles_hash: e9f10e1b677b521d

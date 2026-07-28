@@ -288,17 +288,16 @@ impl<T: std::fmt::Debug + Clone + Measure> LayoutTree<T> {
                         sum
                     };
 
-                    let child_avail_size = avail_size
-                        .saturating_sub(cursor)
-                        .min(self.data[child].size + fill);
+                    let fill_mask = self.data[child].opts.fill;
+                    let content_mask = Vec2::one().saturating_sub(fill_mask);
 
-                    if self
-                        .compute_subtree(child, child_start, child_avail_size, pass)
-                        .is_some()
-                    {
-                        child_avail_size
-                    } else {
-                        self.data[child].size
+                    let remaining = avail_size.saturating_sub(cursor);
+                    let granted = remaining.min(self.data[child].size + fill);
+                    let child_avail_size = granted * fill_mask + remaining * content_mask;
+
+                    match self.compute_subtree(child, child_start, child_avail_size, pass) {
+                        Some(placed) => granted * fill_mask + placed * content_mask,
+                        None => self.data[child].size,
                     }
                 }
             };
@@ -556,6 +555,24 @@ mod tests {
         });
 
         layout.compute([5, 2]);
+        insta::assert_snapshot!(render_to_string(layout));
+    }
+
+    #[test]
+    fn fill_node_wraps_within_the_extent_it_gets() {
+        let mut layout = LayoutTree::new();
+
+        layout.horizontal(None, opts(), |layout| {
+            // Measures as one row at the full width, but only gets 6 columns.
+            layout.horizontal(None, opts().fill_x(), |layout| {
+                layout.leaf("hello");
+                layout.leaf(" ");
+                layout.leaf("world");
+            });
+            layout.leaf("author");
+        });
+
+        layout.compute([12, 2]);
         insta::assert_snapshot!(render_to_string(layout));
     }
 

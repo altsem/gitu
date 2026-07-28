@@ -5,8 +5,8 @@ expression: ctx.redact_buffer()
 ▌On branch other-branch                                                         |
                                                                                 |
  Recent commits                                                                 |
- 46c81ca main other-branch add new-file                                         |
- b66a0bf origin/main add initial-file                                           |
+ 46c81ca main other-branch add new-file                          Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git rebase --autostash main                                                   |
 Successfully rebased and updated refs/heads/other-branch.                       |
-styles_hash: 20cf77cd40a6d649
+styles_hash: c7f6f763e3f91901

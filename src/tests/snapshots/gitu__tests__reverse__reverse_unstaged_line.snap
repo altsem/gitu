@@ -14,15 +14,15 @@ expression: out
 ▌ BAZ                                                                           |
                                                                                 |
  Recent commits                                                                 |
- 9f4a45e main add file-one                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 9f4a45e main add file-one                                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: d8eeebb35b94d8e3
+styles_hash: bbb095bbf9ae88ac
 
 [file before]
 blahonga

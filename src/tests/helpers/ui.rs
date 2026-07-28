@@ -113,6 +113,9 @@ impl TestContext {
 
         redact(&mut debug_output, "From file://(.*)\n");
         redact(&mut debug_output, "To file://(/.*)\n");
+        // The fixtures' commit dates are fixed, so their age grows as time
+        // passes. Only its width, which the layout depends on, is kept.
+        redact_all(&mut debug_output, r"(\d+[mhdwMy]) \|");
 
         debug_output
     }
@@ -123,6 +126,20 @@ fn redact(debug_output: &mut String, regex: &str) {
     if let Some(caps) = re.captures(debug_output) {
         let c = caps.get(1).unwrap();
         debug_output.replace_range(c.range(), &" ".repeat(c.len()));
+    }
+}
+
+/// Replaces every capture with `_`, so that what was redacted stays visible.
+fn redact_all(debug_output: &mut String, regex: &str) {
+    let re = Regex::new(regex).unwrap();
+    let ranges = re
+        .captures_iter(debug_output)
+        .map(|caps| caps.get(1).unwrap().range())
+        .collect::<Vec<_>>();
+
+    for range in ranges.into_iter().rev() {
+        let placeholder = "_".repeat(range.len());
+        debug_output.replace_range(range, &placeholder);
     }
 }
 

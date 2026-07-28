@@ -6,7 +6,7 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
  u     to origin/main   -F Force (--force)                                      |
  e     to elsewhere     -f Force with lease (--force-with-lease)                |
  q/esc Quit/Close       -h Disable hooks (--no-verify)                          |
-styles_hash: 7d2fbf4f1a23e447
+styles_hash: efce8527ddf6e007

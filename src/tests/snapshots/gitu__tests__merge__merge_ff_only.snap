@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 46c81ca main other-branch add new-file                                         |
- b66a0bf origin/main add initial-file                                           |
+ 46c81ca main other-branch add new-file                          Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git merge --ff-only other-branch                                              |
-styles_hash: fca97718c66f94c4
+styles_hash: e56af6906782eac8

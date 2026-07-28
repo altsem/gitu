@@ -2,7 +2,7 @@
 source: src/tests/cherry_pick.rs
 expression: ctx.redact_buffer()
 ---
-▌b66a0bf main origin/main add initial-file                                      |
+▌b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git cherry-pick --no-commit Aother-branch                                     |
 fatal: bad revision 'Aother-branch'                                             |
 ! 'git cherry-pick--no-commitAother-branch' exited with code: 128               |
-styles_hash: ae8ffd321649ca3f
+styles_hash: 3519610333b8eb28

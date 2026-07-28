@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is up to date with 'origin/main'.                                                                          |
                                                                                                                         |
  Recent commits                                                                                                         |
- d07f2d3 main origin/main add remote-file                                                                               |
- b66a0bf add initial-file                                                                                               |
+ d07f2d3 main origin/main add remote-file                                                                Author Name __ |
+ b66a0bf add initial-file                                                                                Author Name __ |
                                                                                                                         |
                                                                                                                         |
                                                                                                                         |
@@ -22,4 +22,4 @@ Fast-forward                                                                    
  remote-file | 1 +                                                                                                      |
  1 file changed, 1 insertion(+)                                                                                         |
  create mode 100644 remote-file                                                                                         |
-styles_hash: b6ce47a26557253d
+styles_hash: 777dffb6900c18bd

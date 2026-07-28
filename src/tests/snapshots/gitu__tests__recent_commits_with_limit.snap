@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 3 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 421fbe4 main add thirdfile                                                     |
- 0c2c6c3 add secondfile                                                         |
+ 421fbe4 main add thirdfile                                      Author Name __ |
+ 0c2c6c3 add secondfile                                          Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 571c653ad285c374
+styles_hash: 1c6aea3a56e79bf7

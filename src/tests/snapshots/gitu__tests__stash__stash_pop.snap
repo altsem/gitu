@@ -14,7 +14,7 @@ expression: ctx.redact_buffer()
  stash@0 On main: file-two                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash pop -q 1                                                            |
-styles_hash: 4e1df32c020cfc7
+styles_hash: d7747e2fe3281794

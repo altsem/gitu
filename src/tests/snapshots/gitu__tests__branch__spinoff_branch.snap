@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
 ▌On branch new                                                                  |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main new v1.0.0 v2.0.0 origin/main add initial-file                    |
+ b66a0bf main new v1.0.0 v2.0.0 origin/main add initial-file     Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 $ git checkout -b new                                                           |
 Switched to a new branch 'new'                                                  |
 > Branch main not changed                                                       |
-styles_hash: 24d0651b7748f079
+styles_hash: eee8af3391ff9252

@@ -9,7 +9,7 @@ expression: ctx.redact_buffer()
  new-file                                                                       |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 5a2305acc18d235e
+styles_hash: 8f382da2d4e8bde7

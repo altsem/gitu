@@ -2,10 +2,10 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
- 8bb5532 main add first commit                                                  |
-▌6c08cf7 add second commit                                                      |
- 79e63f1 add third commit                                                       |
- b66a0bf origin/main add initial-file                                           |
+ 8bb5532 main add first commit                                   Author Name __ |
+▌6c08cf7 add second commit                                       Author Name __ |
+ 79e63f1 add third commit                                        Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Log rev (default 6c08cf78a4544ae4dda8e6161a61070867c60246): › █               |
-styles_hash: 179fa0488686d01b
+styles_hash: 548691784d636073

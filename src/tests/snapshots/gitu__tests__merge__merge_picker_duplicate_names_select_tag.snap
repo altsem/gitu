@@ -6,8 +6,8 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 46369c5 main other v1.0.0 add other commit                                     |
- b66a0bf origin/main add initial-file                                           |
+ 46369c5 main other v1.0.0 add other commit                      Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git merge refs/tags/v1.0.0                                                    |
-styles_hash: 8f456f85cedc4d7c
+styles_hash: 81167356eacbf6e1

@@ -17,12 +17,12 @@ expression: out
  modified   file-one…                                                           |
                                                                                 |
  Recent commits                                                                 |
- 9f4a45e main add file-one                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 9f4a45e main add file-one                                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse                                                           |
-styles_hash: feb0752ac6cf0f53
+styles_hash: 1a57c2df7157bd8d
 
 [file before]
 blahonga

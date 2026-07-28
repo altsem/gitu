@@ -12,7 +12,7 @@ expression: ctx.redact_buffer()
 ▌+blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                                      |
+ b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 ! Cannot stash: working tree is empty                                           |
-styles_hash: afd809f8df8f4679
+styles_hash: cef1b68b62a4b57

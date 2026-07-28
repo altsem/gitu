@@ -6,9 +6,9 @@ expression: ctx.redact_buffer()
 ▌Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
  Recent commits                                                                 |
- 487ec57 main modify conflict-file                                              |
- 415b98a add conflict-file                                                      |
- b66a0bf origin/main add initial-file                                           |
+ 487ec57 main modify conflict-file                               Author Name __ |
+ 415b98a add conflict-file                                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git cherry-pick --abort                                                       |
-styles_hash: b757c2512bb1402b
+styles_hash: 101bd38f6a1f8188
