@@ -12,10 +12,6 @@ use crate::ui::{UiTree, layout_span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-/// What an author name is cut down to, so that a long one doesn't crowd out the
-/// summary.
-const AUTHOR_WIDTH: usize = 15;
-
 /// Lays out an [`Item`] as spans in the caller's container, which is expected to
 /// be a single row.
 ///
@@ -96,7 +92,7 @@ pub(crate) fn layout_item<'a>(
             layout_span(
                 layout,
                 (
-                    truncate(author, AUTHOR_WIDTH),
+                    truncate(author, config.general.log_author_width),
                     base.patch(Style::from(&style.author)),
                 ),
             );
@@ -283,6 +279,11 @@ pub(crate) fn layout_item<'a>(
 fn truncate(text: &str, width: usize) -> Cow<'_, str> {
     if text.width() <= width {
         return Cow::Borrowed(text);
+    }
+
+    // The ellipsis takes a column of its own, leaving nothing to show at width 0.
+    if width == 0 {
+        return Cow::Borrowed("");
     }
 
     let mut truncated = String::new();

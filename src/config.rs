@@ -57,6 +57,7 @@ pub struct GeneralConfig {
     pub collapsed_sections: Vec<String>,
     pub stash_list_limit: usize,
     pub recent_commits_limit: usize,
+    pub log_author_width: usize,
     pub mouse_support: bool,
     pub mouse_scroll_lines: usize,
 }
