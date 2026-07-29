@@ -1,7 +1,7 @@
 use crate::config::StyleConfig;
 use crate::style::Style;
 use crate::ui::layout::{LayoutTree, opts};
-use crate::ui::{UiItem, UiTree, layout_span};
+use crate::ui::{UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
 use itertools::Itertools;
 
@@ -308,9 +308,9 @@ impl Screen {
                     highlighted: false,
                 };
                 layout_item(&mut layout, self, false, view);
-                layout.compute([self.size.0, self.size.1]);
 
                 layout
+                    .compute([self.size.0, self.size.1])
                     .iter()
                     .map(|item| item.pos[1] + item.size[1])
                     .max()
@@ -551,7 +551,7 @@ struct ItemView {
 }
 
 pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: bool) {
-    layout.vertical(None, opts().fill_x(), |layout| {
+    layout.col(opts().fill_x(), |layout| {
         for view in screen.item_views(screen.size) {
             layout_item(layout, screen, hide_cursor, view);
         }
@@ -566,7 +566,7 @@ fn layout_item<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: boo
     let line_sel = line_selection_highlight(style, &line, is_line_sel);
     let bg = area_sel.patch(line_sel);
 
-    layout.horizontal(Some(UiItem::Style(bg)), opts().fill_x(), |layout| {
+    layout.row_with(bg, opts().fill_x(), |layout| {
         let gutter_char = if !hide_cursor && line.highlighted {
             gutter_char(style, is_line_sel, bg)
         } else {

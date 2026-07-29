@@ -15,4 +15,11 @@ impl Direction {
             Direction::Vertical => Vec2(U::ZERO, U::ONE),
         }
     }
+
+    pub(crate) fn flip(&self) -> Self {
+        match self {
+            Direction::Horizontal => Direction::Vertical,
+            Direction::Vertical => Direction::Horizontal,
+        }
+    }
 }

@@ -1,19 +1,14 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 /// The unit a layout is measured in, e.g. terminal cells or pixels.
-///
-/// `PartialOrd` rather than `Ord` so that floats qualify; `From<u16>` is what
-/// lets the engine turn a child count into a unit when distributing fill space.
 pub trait Scalar:
     Copy
     + PartialOrd
     + std::fmt::Debug
-    + From<u16>
     + Add<Output = Self>
     + Sub<Output = Self>
     + Mul<Output = Self>
     + Div<Output = Self>
-    + Rem<Output = Self>
 {
     const ZERO: Self;
     const ONE: Self;
@@ -101,41 +96,9 @@ impl<U: Scalar> Div for Vec2<U> {
     }
 }
 
-impl<U: Scalar> Rem for Vec2<U> {
-    type Output = Self;
-
-    fn rem(self, rhs: Self) -> Self::Output {
-        Self(self.0 % rhs.0, self.1 % rhs.1)
-    }
-}
-
 impl<U: Scalar> AddAssign for Vec2<U> {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
-    }
-}
-
-impl<U: Scalar> SubAssign for Vec2<U> {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs;
-    }
-}
-
-impl<U: Scalar> MulAssign for Vec2<U> {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = *self * rhs;
-    }
-}
-
-impl<U: Scalar> DivAssign for Vec2<U> {
-    fn div_assign(&mut self, rhs: Self) {
-        *self = *self / rhs;
-    }
-}
-
-impl<U: Scalar> RemAssign for Vec2<U> {
-    fn rem_assign(&mut self, rhs: Self) {
-        *self = *self % rhs;
     }
 }
 

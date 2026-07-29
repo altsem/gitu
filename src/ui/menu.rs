@@ -60,13 +60,13 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
 
     let separator_style = Style::from(&style.separator);
 
-    layout.vertical(None, opts(), |layout| {
+    layout.col(opts(), |layout| {
         ui::repeat_chars(layout, width, ui::DASHES, separator_style);
 
-        layout.horizontal(None, opts().gap(3).pad(1), |layout| {
+        layout.row(opts().gap(3).pad(1), |layout| {
             // Column 1: Main menu commands
             if !non_menu_binds.is_empty() {
-                layout.vertical(None, opts(), |layout| {
+                layout.col(opts(), |layout| {
                     layout_line(
                         layout,
                         pending.menu.to_string().into(),
@@ -93,7 +93,7 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
 
             // Column 2: Submenus
             if !menu_binds.is_empty() {
-                layout.vertical(None, opts(), |layout| {
+                layout.col(opts(), |layout| {
                     layout_line(layout, "Submenu".into(), Style::from(&style.menu.heading));
 
                     layout_keybinds_table(
@@ -117,9 +117,9 @@ pub(crate) fn layout_menu<'a>(layout: &mut UiTree<'a>, state: &'a State, width: 
             }
 
             // Column 3: Target commands and arguments
-            layout.vertical(None, opts(), |layout| {
+            layout.col(opts(), |layout| {
                 if !target_binds.is_empty() {
-                    layout.horizontal(None, opts(), |layout| {
+                    layout.row(opts(), |layout| {
                         layout_item(layout, item, config, Style::new());
                     });
 
@@ -179,15 +179,15 @@ fn layout_keybinds_table<'a>(
         .unwrap_or(0)
         + 1;
 
-    layout.vertical(None, opts(), |layout| {
+    layout.col(opts(), |layout| {
         for (key, value) in rows {
             let padding = max_width - UnicodeWidthStr::width(key.as_ref());
 
-            layout.horizontal(None, opts(), |layout| {
+            layout.row(opts(), |layout| {
                 layout_line(layout, key, key_style);
                 repeat_chars(layout, padding, SPACES, Style::new());
 
-                layout.horizontal(None, opts(), |layout| match value {
+                layout.row(opts(), |layout| match value {
                     MenuValue::Text(text) => layout_span(layout, (text, Style::new())),
                     MenuValue::Arg(arg) => {
                         layout_span(layout, (arg.display.into(), Style::new()));

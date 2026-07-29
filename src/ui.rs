@@ -7,7 +7,7 @@ use crate::screen;
 use crate::style::{Color, Modifier, Style};
 use crate::term::TermBackend;
 use crate::text_input::Status;
-use crate::ui::layout::{LayoutItem, Measure};
+use crate::ui::layout::{LayoutItem, Measure, Payload};
 use itertools::Itertools;
 use layout::LayoutTree;
 use layout::opts;
@@ -25,22 +25,14 @@ const DASHES: &str = "───────────────────�
 const BLANKS: &str = "                                                                ";
 
 #[derive(Debug, Clone)]
-pub(crate) enum UiItem<'a> {
-    Span(Cow<'a, str>, Style),
-    Style(Style),
-}
-pub(crate) type UiTree<'a> = LayoutTree<UiItem<'a>>;
+pub(crate) struct Span<'a>(pub(crate) Cow<'a, str>, pub(crate) Style);
+pub(crate) type UiTree<'a> = LayoutTree<Span<'a>, Style>;
 
-impl Measure for UiItem<'_> {
+impl Measure for Span<'_> {
     type Unit = u16;
 
     fn measure(&self) -> [u16; 2] {
-        match self {
-            UiItem::Span(text, _style) => [UnicodeWidthStr::width(text.as_ref()) as u16, 1],
-            // Styles are only ever attached to containers, which are sized by
-            // their children, so this is never the size of anything drawn.
-            UiItem::Style(_style) => [1, 1],
-        }
+        [UnicodeWidthStr::width(self.0.as_ref()) as u16, 1]
     }
 }
 
@@ -48,13 +40,13 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
     let size = term.size().unwrap();
     let mut layout = UiTree::new();
 
-    layout.vertical(None, opts(), |layout| {
-        layout.vertical(None, opts().fill_xy(), |layout| {
+    layout.col(opts(), |layout| {
+        layout.col(opts().fill_xy(), |layout| {
             let hide_cursor = state.picker.is_some();
             screen::layout_screen(layout, state.screens.last().unwrap(), hide_cursor);
         });
 
-        layout.vertical(None, opts(), |layout| {
+        layout.col(opts(), |layout| {
             menu::layout_menu(layout, state, size.0 as usize);
             cmd_log::layout_cmd_log(
                 layout,
@@ -76,15 +68,14 @@ pub(crate) fn ui(term: &mut TermBackend, state: &mut State) -> Res<()> {
         });
     });
 
-    layout.compute([size.0, size.1]);
+    let computed = layout.compute([size.0, size.1]);
 
-    let mut items = layout.iter().collect::<Vec<_>>();
+    let mut items = computed.iter().collect::<Vec<_>>();
     items.sort_by_key(|item| [item.pos[1], item.pos[0]]);
 
     clear_blanks(term, size, items)?;
 
     term.flush().map_err(Error::Term)?;
-    layout.clear();
 
     state.screens.last_mut().unwrap().size = size;
 
@@ -106,7 +97,7 @@ fn layout_prompt<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
     let prompt_style = Style::from(&state.config.style.prompt);
 
     repeat_chars(layout, width, DASHES, separator_style);
-    layout.horizontal(None, opts(), |layout| {
+    layout.row(opts(), |layout| {
         layout_span(
             layout,
             (
@@ -157,7 +148,7 @@ fn layout_picker<'a>(layout: &mut UiTree<'a>, state: &'a State, width: usize) {
 
 /// Lays out `content` as a single row of its own.
 pub(crate) fn layout_line<'a>(layout: &mut UiTree<'a>, content: Cow<'a, str>, style: Style) {
-    layout.horizontal(None, opts(), |layout| {
+    layout.row(opts(), |layout| {
         layout_span(layout, (content, style));
     });
 }
@@ -166,12 +157,12 @@ pub(crate) fn layout_span<'a>(layout: &mut UiTree<'a>, span: (Cow<'a, str>, Styl
     match span.0 {
         Cow::Borrowed(s) => {
             for word in words(s) {
-                layout.leaf(UiItem::Span(Cow::Borrowed(word), span.1));
+                layout.leaf(Span(Cow::Borrowed(word), span.1));
             }
         }
         Cow::Owned(s) => {
             for word in words(&s) {
-                layout.leaf(UiItem::Span(Cow::Owned(word.into()), span.1));
+                layout.leaf(Span(Cow::Owned(word.into()), span.1));
             }
         }
     }
@@ -190,7 +181,7 @@ pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static st
     let full = count / grapheme_count;
     let partial = count % grapheme_count;
 
-    layout.horizontal(None, opts(), |layout| {
+    layout.row(opts(), |layout| {
         for _ in 0..full {
             layout_span(layout, (chars.into(), style));
         }
@@ -212,7 +203,7 @@ pub(crate) fn repeat_chars(layout: &mut UiTree, count: usize, chars: &'static st
 fn clear_blanks(
     term: &mut TermBackend,
     size: (u16, u16),
-    items: Vec<LayoutItem<&UiItem<'_>, u16>>,
+    items: Vec<LayoutItem<Payload<'_, Span<'_>, Style>, u16>>,
 ) -> Result<(), Error> {
     let mut at = [0, 0];
     let mut bg = Style::new();
@@ -227,14 +218,14 @@ fn clear_blanks(
         blank_until(term, &mut at, [0, pos[1]], size.0, bg, bg_end)?;
 
         match data {
-            UiItem::Span(text, style) => {
+            Payload::Leaf(Span(text, style)) => {
                 blank_until(term, &mut at, pos, size.0, bg, bg_end)?;
                 term.queue_move_cursor(pos[0], pos[1])?;
                 term.queue_print(text, style)?;
 
                 at[0] = pos[0].saturating_add(item_size[0]);
             }
-            UiItem::Style(style) => {
+            Payload::Container(style) => {
                 bg = *style;
                 bg_end = pos[1].saturating_add(item_size[1]);
             }

@@ -7,6 +7,11 @@ expression: ctx.redact_buffer()
  Recent commits                                                                 |
  b66a0bf other-branch origin/main add initial-file               Author Name __ |
                                                                                 |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
  Rebase                 Arguments                                               |
  a     abort            -a Autosquash (--autosquash)                            |
@@ -17,9 +22,4 @@ expression: ctx.redact_buffer()
                         -k Keep empty commits (--keep-empty)                    |
                         -h Disable hooks (--no-verify)                          |
                         -p Preserve merges (--preserve-merges)                  |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 814db1ed750863dd
+styles_hash: 448a0978f1550760
