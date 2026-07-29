@@ -23,7 +23,7 @@ pub(crate) fn layout_picker<'a>(
 
     let prompt_style: Style = (&config.style.picker.prompt).into();
     let info_style: Style = (&config.style.picker.info).into();
-    layout.horizontal(None, opts(), |layout| {
+    layout.row(opts(), |layout| {
         let status_text = format!(" {}/{}   ", state.filtered_count(), state.total_items());
         layout_span(layout, (status_text.into(), info_style));
 
@@ -57,7 +57,7 @@ pub(crate) fn layout_picker<'a>(
             Style::new()
         };
 
-        layout.horizontal(None, opts(), |layout| {
+        layout.row(opts(), |layout| {
             // Selection indicator (cursor bar like status screen)
             if is_selected {
                 let cursor_style: Style = (&config.style.cursor).into();
@@ -79,7 +79,7 @@ pub(crate) fn layout_picker<'a>(
 
     // Fill remaining rows with empty lines to maintain fixed height
     for _ in rendered_count..MAX_ITEMS_DISPLAY {
-        layout.horizontal(None, opts(), |layout| {
+        layout.row(opts(), |layout| {
             layout_span(layout, (" ".into(), Style::new()));
         });
     }
@@ -170,16 +170,20 @@ mod tests {
 
     /// Render the picker layout to a string for testing purposes.
     /// Note: ASCII only — does not support Unicode beyond single-byte chars.
-    fn render_to_string(layout: UiTree, width: usize, height: usize) -> String {
+    fn render_to_string(
+        computed: crate::ui::layout::Computed<'_, crate::ui::Span<'_>, Style>,
+        width: usize,
+        height: usize,
+    ) -> String {
         let mut grid = vec![' '; height * width];
 
-        for item in layout.iter() {
+        for item in computed.iter() {
             let x0 = item.pos[0] as usize;
             let y0 = item.pos[1] as usize;
             let item_width = item.size[0] as usize;
             let text = match item.data {
-                crate::ui::UiItem::Span(cow, _) => cow,
-                crate::ui::UiItem::Style(_) => "",
+                crate::ui::layout::Payload::Leaf(crate::ui::Span(cow, _)) => cow.as_ref(),
+                crate::ui::layout::Payload::Container(_style) => "",
             };
 
             for (i, c) in text.chars().take(item_width).enumerate() {
@@ -201,12 +205,10 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -229,12 +231,10 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -249,12 +249,10 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -278,12 +276,10 @@ mod tests {
         }
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -307,12 +303,10 @@ mod tests {
         }
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -338,12 +332,10 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -363,12 +355,10 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -391,12 +381,10 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 40);
         });
-        layout.compute([40, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 40, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([40, 15]), 40, 15));
     }
 
     #[test]
@@ -406,11 +394,9 @@ mod tests {
         let config = test_config();
 
         let mut layout = LayoutTree::new();
-        layout.vertical(None, crate::ui::layout::opts(), |layout| {
+        layout.col(crate::ui::layout::opts(), |layout| {
             layout_picker(layout, &state, &config, 20);
         });
-        layout.compute([20, 15]);
-
-        insta::assert_snapshot!(render_to_string(layout, 20, 15));
+        insta::assert_snapshot!(render_to_string(layout.compute([20, 15]), 20, 15));
     }
 }

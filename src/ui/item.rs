@@ -78,7 +78,7 @@ pub(crate) fn layout_item<'a>(
                 ),
             );
 
-            layout.horizontal(None, opts().fill_x(), |layout| {
+            layout.row(opts().fill_x(), |layout| {
                 for reference in associated_references {
                     layout_span(layout, (" ".into(), base));
                     layout_reference(layout, reference, config, base);
