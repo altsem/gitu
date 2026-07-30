@@ -3,13 +3,13 @@ use crate::style::Style;
 use crate::ui::layout::{LayoutTree, opts};
 use crate::ui::{UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
-use itertools::Itertools;
 
 use crate::{Res, config::Config, items::hash};
 
 use super::Item;
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::cell::RefCell;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 pub(crate) mod blame;
@@ -35,13 +35,8 @@ pub(crate) struct Screen {
     config: Arc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
-    /// Set of item (by their index in `items`) that are not collapsed
-    expanded_items: BTreeSet<usize>,
-    /// Maps line -> item, items spanning multiple lines appear as duplicates
-    line_index: Vec<usize>,
-    /// Maps line -> item, but only their first line
-    unique_line_index: BTreeMap<usize, usize>,
-    item_heights: Vec<u16>,
+    /// Memoized `item_height`, indexed like `items`. Dropped by `invalidate`.
+    item_heights: RefCell<Vec<Option<u16>>>,
     collapsed: HashSet<u64>,
 }
 
@@ -66,10 +61,7 @@ impl Screen {
             config,
             refresh_items,
             items: vec![],
-            expanded_items: BTreeSet::new(),
-            line_index: vec![],
-            unique_line_index: BTreeMap::new(),
-            item_heights: vec![],
+            item_heights: RefCell::new(vec![]),
             collapsed,
         };
 
@@ -83,7 +75,7 @@ impl Screen {
             .for_each(|item| {
                 screen.collapsed.insert(item.id);
             });
-        screen.update_indices()?;
+        screen.invalidate();
 
         screen.cursor = screen
             .find_first_hunk()
@@ -97,10 +89,6 @@ impl Screen {
         self.find_item(|item| !item.unselectable && matches!(item.data, ItemData::Hunk { .. }))
     }
 
-    fn at_line(&self, line_i: usize) -> &Item {
-        &self.items[self.line_index[line_i]]
-    }
-
     pub(crate) fn select_next(&mut self, nav_mode: NavMode) {
         self.cursor = self.find_next(nav_mode);
         self.scroll_fit_end();
@@ -108,9 +96,6 @@ impl Screen {
     }
 
     fn scroll_fit_start(&mut self) {
-        if self.line_index.is_empty() {
-            return;
-        }
         let Some(line_of_item) = self.line_of_item(self.cursor) else {
             return;
         };
@@ -121,23 +106,20 @@ impl Screen {
     }
 
     fn scroll_fit_end(&mut self) {
-        if self.line_index.is_empty() {
-            return;
-        }
-
-        let depth = self.get_selected_item().depth;
-        let current_item_i = self.cursor;
-
         let Some(line_of_item) = self.line_of_item(self.cursor) else {
             return;
         };
 
-        let Some(last_item_line) = (line_of_item..self.line_index.len())
-            .take_while(|&line_i| {
-                self.line_index[line_i] == current_item_i || depth < self.at_line(line_i).depth
-            })
-            .last()
-        else {
+        let depth = self.items[self.cursor].depth;
+
+        let selection_height = self
+            .visible_items()
+            .skip_while(|&item_i| item_i < self.cursor)
+            .take_while(|&item_i| item_i == self.cursor || depth < self.items[item_i].depth)
+            .map(|item_i| self.item_height(item_i))
+            .sum::<usize>();
+
+        let Some(last_item_line) = (line_of_item + selection_height).checked_sub(1) else {
             return;
         };
 
@@ -150,17 +132,15 @@ impl Screen {
     }
 
     pub(crate) fn find_next(&mut self, nav_mode: NavMode) -> usize {
-        (self.cursor..self.items.len())
-            .skip(1)
+        self.visible_items()
+            .skip_while(|&item_i| item_i <= self.cursor)
             .find(|&item_i| self.nav_filter(item_i, nav_mode))
             .unwrap_or(self.cursor)
     }
 
+    /// Whether `item_i` may be selected, disregarding whether it is hidden by
+    /// a collapsed ancestor.
     fn nav_filter(&self, item_i: usize, nav_mode: NavMode) -> bool {
-        if !self.expanded_items.contains(&item_i) {
-            return false;
-        }
-
         let item = &self.items[item_i];
         match nav_mode {
             NavMode::Normal => {
@@ -177,14 +157,20 @@ impl Screen {
         }
     }
 
+    fn is_selectable(&self, item_i: usize, nav_mode: NavMode) -> bool {
+        self.is_visible(item_i) && self.nav_filter(item_i, nav_mode)
+    }
+
     pub(crate) fn select_previous(&mut self, nav_mode: NavMode) {
         self.cursor = self.find_previous(nav_mode);
         self.scroll_fit_start();
     }
 
     fn find_previous(&mut self, nav_mode: NavMode) -> usize {
-        (0..self.cursor)
-            .rfind(|&item_i| self.nav_filter(item_i, nav_mode))
+        self.visible_items()
+            .take_while(|&item_i| item_i < self.cursor)
+            .filter(|&item_i| self.nav_filter(item_i, nav_mode))
+            .last()
             .unwrap_or(self.cursor)
     }
 
@@ -217,22 +203,27 @@ impl Screen {
             } else {
                 self.collapsed.insert(selected.id);
             }
+
+            // Only the toggled section's own height changes, by gaining or
+            // losing its `…`. Everything else lays out from its own content at
+            // an unchanged width, so those memoized heights still hold.
+            self.item_heights.get_mut()[self.cursor] = None;
         }
 
-        self.update_indices()?;
+        self.clamp_scroll();
         Ok(())
     }
 
     pub(crate) fn refresh(&mut self) -> Res<()> {
         self.items = (self.refresh_items)()?;
-        self.update_indices()?;
+        self.invalidate();
         self.update_cursor();
         Ok(())
     }
 
     pub(crate) fn resize(&mut self, w: u16, h: u16) -> Res<()> {
         self.size = (w, h);
-        self.update_indices()?;
+        self.invalidate();
         self.update_cursor();
         Ok(())
     }
@@ -240,8 +231,8 @@ impl Screen {
     fn update_cursor(&mut self) {
         // Nothing is selectable (e.g. the log of a branch with no commits).
         // Reset the cursor to a valid sentinel rather than positioning it,
-        // which would index into an empty `line_index` and panic (#262).
-        if self.line_index.is_empty() {
+        // which would index into a screen with no lines and panic (#262).
+        if self.is_empty() {
             self.cursor = 0;
             return;
         }
@@ -268,63 +259,20 @@ impl Screen {
         }
     }
 
-    pub(crate) fn update_indices(&mut self) -> Res<()> {
-        self.update_item_heights();
-
-        debug_assert_eq!(
-            self.items.len(),
-            self.item_heights.len(),
-            "items and item_heights should have equal len"
-        );
-
-        self.line_index = self
-            .filter_collapsed_items(&self.items)
-            .flat_map(|(i, _item)| [i].repeat(self.item_heights[i] as usize))
-            .collect();
-
-        self.unique_line_index = self
-            .line_index
-            .iter()
-            .cloned()
-            .enumerate()
-            .unique_by(|&(_, v)| v)
-            .collect();
-
-        self.expanded_items = self
-            .filter_collapsed_items(&self.items)
-            .map(|(i, _)| i)
-            .collect();
+    /// Drops everything derived from `items`, `collapsed` and `size`.
+    /// The accessors below recompute what they need, when they need it.
+    fn invalidate(&mut self) {
+        let item_heights = self.item_heights.get_mut();
+        item_heights.clear();
+        item_heights.resize(self.items.len(), None);
 
         self.clamp_scroll();
-        Ok(())
     }
 
-    fn update_item_heights(&mut self) {
-        self.item_heights = (0..self.items.len())
-            .map(|item_index| {
-                let mut layout = LayoutTree::new();
-                let view = ItemView {
-                    item_index,
-                    highlighted: false,
-                };
-                layout_item(&mut layout, self, false, view);
-
-                layout
-                    .compute([self.size.0, self.size.1])
-                    .iter()
-                    .map(|item| item.pos[1] + item.size[1])
-                    .max()
-                    .unwrap_or(0)
-            })
-            .collect()
-    }
-
-    // FIXME Need to consider this when navigating
-    fn filter_collapsed_items<'a>(
-        &'a self,
-        items: &'a [Item],
-    ) -> impl Iterator<Item = (usize, &'a Item)> {
-        items
+    // TODO This scan is not optimal, should save an index of it somehow
+    /// Items in order, skipping those hidden by a collapsed ancestor.
+    fn visible_items(&self) -> impl Iterator<Item = usize> {
+        self.items
             .iter()
             .enumerate()
             .scan(None, |collapse_depth, (i, next)| {
@@ -338,9 +286,104 @@ impl Screen {
                     None
                 };
 
-                Some(Some((i, next)))
+                Some(Some(i))
             })
             .flatten()
+    }
+
+    fn is_visible(&self, item_i: usize) -> bool {
+        self.visible_items()
+            .take_while(|&i| i <= item_i)
+            .last()
+            .is_some_and(|i| i == item_i)
+    }
+
+    /// How many lines `item_i` occupies once laid out at the current width.
+    fn item_height(&self, item_i: usize) -> usize {
+        if let Some(height) = self.item_heights.borrow()[item_i] {
+            return height as usize;
+        }
+
+        // TODO A new allocation per measured item seems wasteful
+        let mut layout = LayoutTree::new();
+        let view = ItemView {
+            item_index: item_i,
+            highlighted: false,
+        };
+        layout_item(&mut layout, self, false, view);
+
+        let height = layout
+            .compute([self.size.0, self.size.1])
+            .iter()
+            .map(|item| item.pos[1] + item.size[1])
+            .max()
+            .unwrap_or(0);
+
+        self.item_heights.borrow_mut()[item_i] = Some(height);
+        height as usize
+    }
+
+    /// The item rendered at `line`, counting from the top of the content
+    /// (not the top of the screen). `None` once past the last line.
+    fn item_at_line(&self, line: usize) -> Option<usize> {
+        let mut remaining = line;
+
+        self.visible_items().find(|&item_i| {
+            let height = self.item_height(item_i);
+            if remaining < height {
+                return true;
+            }
+
+            remaining -= height;
+            false
+        })
+    }
+
+    /// The first line of `item_i`, or `None` if it isn't rendered at all.
+    fn line_of_item(&self, item_i: usize) -> Option<usize> {
+        if item_i >= self.items.len() {
+            return None;
+        }
+
+        let mut line = 0;
+
+        self.visible_items()
+            .find(|&i| {
+                if i == item_i {
+                    return true;
+                }
+
+                line += self.item_height(i);
+                false
+            })
+            .map(|_| line)
+    }
+
+    /// Total number of lines, but gives up counting at `limit`. Callers only
+    /// ever need to compare the total against something near the bottom of the
+    /// viewport, and this way the items below it are never laid out.
+    ///
+    /// The result is exact when below `limit`, and at least `limit` otherwise.
+    fn lines_up_to(&self, limit: usize) -> usize {
+        let mut lines = 0;
+
+        for item_i in self.visible_items() {
+            if lines >= limit {
+                break;
+            }
+
+            lines += self.item_height(item_i);
+        }
+
+        lines
+    }
+
+    /// Whether the screen renders no lines at all, e.g. the log of a branch
+    /// with no commits.
+    fn is_empty(&self) -> bool {
+        !self
+            .visible_items()
+            .any(|item_i| self.item_height(item_i) > 0)
     }
 
     fn is_cursor_off_screen(&self) -> bool {
@@ -349,8 +392,12 @@ impl Screen {
 
     fn move_cursor_to_screen_center(&mut self) {
         let half_screen = self.size.1 as usize / 2;
-        let center = (self.scroll + half_screen).min(self.line_index.len().saturating_sub(1));
-        self.cursor = self.line_index[center];
+        let center = self.scroll + half_screen;
+        let center = center.min(self.lines_up_to(center + 1).saturating_sub(1));
+
+        if let Some(item_i) = self.item_at_line(center) {
+            self.cursor = item_i;
+        }
     }
 
     fn clamp_cursor(&mut self) {
@@ -358,16 +405,18 @@ impl Screen {
     }
 
     fn clamp_scroll(&mut self) {
-        if self.line_index.is_empty() {
-            self.scroll = 0;
-            return;
-        }
+        // The line count is only needed to tell whether `scroll` is too far
+        // down, so count no further than the point that settles it.
+        let enough = (self.scroll + self.size.1 as usize)
+            .saturating_sub(BOTTOM_CONTEXT_LINES)
+            .max(self.scroll + 1);
 
-        self.scroll = self.scroll.min(self.max_scroll_with_context());
+        let len = self.lines_up_to(enough);
+        self.scroll = self.scroll.min(self.max_scroll_with_context(len));
     }
 
-    fn max_scroll_with_context(&self) -> usize {
-        let len = self.line_index.len();
+    /// Given `len` lines of content, the furthest down the screen may scroll.
+    fn max_scroll_with_context(&self, len: usize) -> usize {
         if len == 0 {
             return 0;
         }
@@ -378,16 +427,16 @@ impl Screen {
     }
 
     fn move_from_unselectable(&mut self, nav_mode: NavMode) {
-        if !self.nav_filter(self.cursor, nav_mode) {
+        if !self.is_selectable(self.cursor, nav_mode) {
             self.select_previous(nav_mode);
         }
-        if !self.nav_filter(self.cursor, nav_mode) {
+        if !self.is_selectable(self.cursor, nav_mode) {
             self.select_next(nav_mode);
         }
     }
 
     pub(crate) fn move_cursor_to_screen_line(&mut self, screen_line: usize) {
-        let Some(&new_cursor) = self.line_index.get(screen_line + self.scroll) else {
+        let Some(new_cursor) = self.item_at_line(screen_line + self.scroll) else {
             return;
         };
         if self.cursor == new_cursor {
@@ -400,7 +449,7 @@ impl Screen {
         let nav_mode = self.selected_item_nav_mode();
         self.move_from_unselectable(nav_mode);
 
-        if !self.nav_filter(self.cursor, nav_mode) {
+        if !self.is_selectable(self.cursor, nav_mode) {
             // There was no selectable item, put the cursor back.
             self.cursor = old_cursor;
         } else {
@@ -410,9 +459,6 @@ impl Screen {
     }
 
     pub(crate) fn move_cursor_to_top(&mut self) {
-        if self.unique_line_index.is_empty() {
-            return;
-        }
         if let Some(first) = self.find_item(|item| !item.unselectable) {
             self.cursor = first;
             self.scroll = 0;
@@ -420,9 +466,6 @@ impl Screen {
     }
 
     pub(crate) fn move_cursor_to_bottom(&mut self) {
-        if self.unique_line_index.is_empty() {
-            return;
-        }
         if let Some(last) = self.rfind_item(|item| !item.unselectable) {
             self.cursor = last;
             self.scroll_fit_end();
@@ -479,57 +522,47 @@ impl Screen {
     }
 
     fn find_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
-        self.unique_line_index
-            .iter()
-            .find(|&(_, &item_i)| predicate(&self.items[item_i]))
-            .map(|(_, &item_i)| item_i)
+        self.visible_items()
+            .find(|&item_i| predicate(&self.items[item_i]))
     }
 
     fn rfind_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
-        self.unique_line_index
-            .iter()
-            .rfind(|&(_, &item_i)| predicate(&self.items[item_i]))
-            .map(|(_, &item_i)| item_i)
+        self.visible_items()
+            .filter(|&item_i| predicate(&self.items[item_i]))
+            .last()
     }
 
     pub(crate) fn is_valid_screen_line(&self, screen_line: usize) -> bool {
-        let Some(target_item_i) = self.line_of_item(screen_line + self.scroll) else {
+        let Some(target_item_i) = self.item_at_line(screen_line + self.scroll) else {
             return false;
         };
         self.nav_filter(target_item_i, NavMode::IncludeSubLines)
     }
 
-    fn line_of_item(&self, item_i: usize) -> Option<usize> {
-        self.unique_line_index
-            .iter()
-            .find(|&(_, &i)| item_i == i)
-            .map(|(&line_i, _)| line_i)
-    }
-
-    fn item_views(&'_ self, area: (u16, u16)) -> impl Iterator<Item = ItemView> {
+    fn item_views(&self, area: (u16, u16)) -> impl Iterator<Item = ItemView> {
         let first_visible_item = self
-            .line_index
-            .get(self.scroll)
-            .cloned()
+            .item_at_line(self.scroll)
             .unwrap_or(self.items.len().saturating_sub(1));
 
+        // Scanning starts at the cursor when it is above the viewport, so that
+        // the highlight of an item whose children reach into view is known.
+        // Those extra items are dropped again by `context_offset`.
         let scan_start_item = first_visible_item.min(self.cursor);
-        let scan_end_line = (self.scroll + area.1 as usize).min(self.line_index.len());
         let scan_end_item = self
-            .line_index
-            .get(scan_end_line)
-            .cloned()
+            .item_at_line(self.scroll + area.1 as usize)
             .unwrap_or(self.items.len());
 
-        let scan_highlight_range = scan_start_item..(scan_end_item);
         let context_offset = self
-            .expanded_items
-            .range(scan_start_item..first_visible_item)
+            .visible_items()
+            .take_while(|&item_i| item_i < first_visible_item)
+            .filter(|&item_i| item_i >= scan_start_item)
             .count();
 
-        self.filter_collapsed_items(&self.items[scan_highlight_range])
-            .scan(None, move |highlight_depth, (offset_item_index, item)| {
-                let item_index = scan_start_item + offset_item_index;
+        self.visible_items()
+            .skip_while(move |&item_i| item_i < scan_start_item)
+            .take_while(move |&item_i| item_i < scan_end_item)
+            .scan(None, move |highlight_depth, item_index| {
+                let item = &self.items[item_index];
                 if self.cursor == item_index {
                     *highlight_depth = Some(item.depth);
                 } else if highlight_depth.is_some_and(|s| s >= item.depth) {
@@ -637,6 +670,26 @@ mod tests {
             }),
         )
         .unwrap()
+    }
+
+    fn laid_out_count(screen: &Screen) -> usize {
+        screen
+            .item_heights
+            .borrow()
+            .iter()
+            .filter(|height| height.is_some())
+            .count()
+    }
+
+    /// Items are laid out on demand, so a long list costs no more than a short
+    /// one until something actually scrolls down to it.
+    #[test]
+    fn only_lays_out_what_it_reaches() {
+        let mut screen = screen_of(10_000, (80, 20));
+        assert!(laid_out_count(&screen) < 50, "{}", laid_out_count(&screen));
+
+        screen.scroll_view_down(100);
+        assert!(laid_out_count(&screen) < 150, "{}", laid_out_count(&screen));
     }
 
     /// Scrolling is allowed a couple of lines past the content, so on a screen
