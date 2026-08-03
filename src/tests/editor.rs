@@ -23,14 +23,17 @@ fn setup_scroll(mut ctx: TestContext) -> (TestContext, crate::app::App) {
 #[test]
 fn scroll_down() {
     let (mut ctx, mut app) = setup_scroll(setup_clone!());
-    ctx.update(&mut app, keys("<ctrl+d>"));
+    ctx.update(&mut app, keys(HALF_PAGE_DOWN));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
 #[test]
 fn scroll_past_selection() {
     let (mut ctx, mut app) = setup_scroll(setup_clone!());
-    ctx.update(&mut app, keys("<ctrl+d><ctrl+d><ctrl+d>"));
+    ctx.update(
+        &mut app,
+        keys(&format!("{HALF_PAGE_DOWN}{HALF_PAGE_DOWN}{HALF_PAGE_DOWN}")),
+    );
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 

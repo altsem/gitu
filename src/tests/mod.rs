@@ -21,6 +21,7 @@ mod commit;
 mod discard;
 mod editor;
 mod fetch;
+mod keys;
 mod log;
 mod merge;
 mod pull;
@@ -34,6 +35,8 @@ mod stage;
 mod stash;
 mod unstage;
 
+pub use keys::*;
+
 use crossterm::event::MouseButton;
 use helpers::{TestContext, clone_and_commit, commit, keys, mouse_event, mouse_scroll_event, run};
 use stdext::function_name;
@@ -46,7 +49,7 @@ fn help_menu() {
     let mut ctx = setup_clone!();
 
     let mut app = ctx.init_app();
-    ctx.update(&mut app, keys("h"));
+    ctx.update(&mut app, keys(HELP));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -312,7 +315,7 @@ fn hide_untracked() {
     // Git expects "no|normal|all" here; "off" can error on some versions and break `git status`.
     config.set_str("status.showUntrackedFiles", "no").unwrap();
 
-    ctx.update(&mut app, keys("gr"));
+    ctx.update(&mut app, keys(REFRESH));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -366,7 +369,7 @@ fn updated_externally() {
 
     fs::write(ctx.dir.join("a"), "test\n").unwrap();
 
-    ctx.update(&mut app, keys("gr"));
+    ctx.update(&mut app, keys(REFRESH));
     insta::assert_snapshot!(ctx.redact_buffer());
 }
 
@@ -443,7 +446,7 @@ fn crlf_diff() {
 
     commit(&ctx.dir, "crlf.txt", "unchanged\r\nunchanged\r\n");
     fs::write(ctx.dir.join("crlf.txt"), "unchanged\r\nchanged\r\n").unwrap();
-    ctx.update(&mut app, keys("gr"));
+    ctx.update(&mut app, keys(REFRESH));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -455,7 +458,7 @@ fn tab_diff() {
 
     commit(&ctx.dir, "tab.txt", "this has no tab prefixed\n");
     fs::write(ctx.dir.join("tab.txt"), "\tthis has a tab prefixed\n").unwrap();
-    ctx.update(&mut app, keys("gr"));
+    ctx.update(&mut app, keys(REFRESH));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -471,7 +474,7 @@ fn non_utf8_diff() {
         b"File with invalid UTF-8: \xff\xfe\n",
     )
     .unwrap();
-    ctx.update(&mut app, keys("gr"));
+    ctx.update(&mut app, keys(REFRESH));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -486,7 +489,7 @@ fn ext_diff() {
     run(&ctx.dir, &["git", "add", "-N", "unstaged.txt"]);
     run(&ctx.dir, &["git", "add", "staged.txt"]);
     run(&ctx.dir, &["git", "config", "diff.external", "/dev/null"]);
-    ctx.update(&mut app, keys("gr"));
+    ctx.update(&mut app, keys(REFRESH));
 
     insta::assert_snapshot!(ctx.redact_buffer());
 }
@@ -671,7 +674,7 @@ fn mouse_wheel_scroll_up() {
     let mut app = ctx.init_app();
 
     // Scroll down a bit to be able to scroll up.
-    ctx.update(&mut app, keys("<ctrl+d><ctrl+d>"));
+    ctx.update(&mut app, keys(&format!("{HALF_PAGE_DOWN}{HALF_PAGE_DOWN}")));
 
     ctx.update(
         &mut app,
