@@ -10,6 +10,7 @@ use super::Item;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashSet;
+use std::iter::successors;
 use std::sync::Arc;
 
 pub(crate) mod blame;
@@ -28,10 +29,16 @@ pub(crate) enum NavMode {
     IncludeSubLines,
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+struct Scroll {
+    item_anchor: usize,
+    offset: usize,
+}
+
 pub(crate) struct Screen {
     pub(crate) size: (u16, u16),
     cursor: usize,
-    scroll: usize,
+    scroll: Scroll,
     config: Arc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
     items: Vec<Item>,
@@ -56,7 +63,7 @@ impl Screen {
 
         let mut screen = Self {
             cursor: 0,
-            scroll: 0,
+            scroll: Scroll::default(),
             size,
             config,
             refresh_items,
@@ -65,17 +72,19 @@ impl Screen {
             collapsed,
         };
 
-        screen.refresh()?;
+        screen.items = (screen.refresh_items)()?;
 
         // TODO Maybe this should be done on update. Better keep track of toggled sections rather than collapsed then.
-        screen
-            .items
-            .iter()
-            .filter(|item| item.default_collapsed)
-            .for_each(|item| {
-                screen.collapsed.insert(item.id);
-            });
+        screen.collapsed.extend(
+            screen
+                .items
+                .iter()
+                .filter(|item| item.default_collapsed)
+                .map(|item| item.id),
+        );
+
         screen.invalidate();
+        screen.update_cursor();
 
         screen.cursor = screen
             .find_first_hunk()
@@ -95,45 +104,62 @@ impl Screen {
         self.scroll_fit_start();
     }
 
+    /// Scrolls up until the cursor is on screen, keeping as many lines above it
+    /// as it is deep, so that the headers it sits under stay in view.
     fn scroll_fit_start(&mut self) {
-        let Some(line_of_item) = self.line_of_item(self.cursor) else {
+        if self.items.is_empty() {
             return;
-        };
-        let top = line_of_item.saturating_sub(self.get_selected_item().depth);
-        if top < self.scroll {
-            self.scroll = top;
         }
+
+        let at_cursor = Scroll {
+            item_anchor: self.cursor,
+            offset: 0,
+        };
+
+        let top = self.retreated(at_cursor, self.items[self.cursor].depth);
+        self.scroll = self.scroll.min(top);
     }
 
+    /// Scrolls down until the selection ends on screen, keeping
+    /// `BOTTOM_CONTEXT_LINES` below it.
     fn scroll_fit_end(&mut self) {
-        let Some(line_of_item) = self.line_of_item(self.cursor) else {
+        if self.items.is_empty() {
             return;
+        }
+
+        let last = self.last_selected();
+        let at_last_line = Scroll {
+            item_anchor: last,
+            offset: self.item_height(last).saturating_sub(1),
         };
 
+        let bottom = self.retreated(at_last_line, self.rows_above_context());
+        self.scroll = self.scroll.max(bottom);
+    }
+
+    /// The last row the content may occupy before running into the bottom
+    /// context lines.
+    fn rows_above_context(&self) -> usize {
+        (self.size.1 as usize).saturating_sub(BOTTOM_CONTEXT_LINES + 1)
+    }
+
+    /// The last item of the selection: the cursor, or the end of the subtree
+    /// it heads.
+    fn last_selected(&self) -> usize {
         let depth = self.items[self.cursor].depth;
 
-        let selection_height = self
-            .visible_items()
-            .skip_while(|&item_i| item_i < self.cursor)
-            .take_while(|&item_i| item_i == self.cursor || depth < self.items[item_i].depth)
-            .map(|item_i| self.item_height(item_i))
-            .sum::<usize>();
+        let last = self.items[self.cursor + 1..]
+            .iter()
+            .position(|item| item.depth <= depth)
+            .map_or(self.items.len() - 1, |offset| self.cursor + offset);
 
-        let Some(last_item_line) = (line_of_item + selection_height).checked_sub(1) else {
-            return;
-        };
-
-        let last = BOTTOM_CONTEXT_LINES + last_item_line;
-
-        let end_line = self.size.1.saturating_sub(1) as usize;
-        if last > end_line + self.scroll {
-            self.scroll = last - end_line;
-        }
+        // A collapsed section within the selection stands in for its contents.
+        self.hidden_by(last, depth).unwrap_or(last)
     }
 
     pub(crate) fn find_next(&mut self, nav_mode: NavMode) -> usize {
-        self.visible_items()
-            .skip_while(|&item_i| item_i <= self.cursor)
+        self.visible_from(self.cursor)
+            .skip(1)
             .find(|&item_i| self.nav_filter(item_i, nav_mode))
             .unwrap_or(self.cursor)
     }
@@ -167,10 +193,8 @@ impl Screen {
     }
 
     fn find_previous(&mut self, nav_mode: NavMode) -> usize {
-        self.visible_items()
-            .take_while(|&item_i| item_i < self.cursor)
-            .filter(|&item_i| self.nav_filter(item_i, nav_mode))
-            .last()
+        self.visible_before(self.cursor)
+            .find(|&item_i| self.nav_filter(item_i, nav_mode))
             .unwrap_or(self.cursor)
     }
 
@@ -185,12 +209,11 @@ impl Screen {
     }
 
     pub(crate) fn scroll_view_up(&mut self, lines: usize) {
-        self.scroll = self.scroll.saturating_sub(lines);
-        self.clamp_scroll();
+        self.retreat(lines);
     }
 
     pub(crate) fn scroll_view_down(&mut self, lines: usize) {
-        self.scroll = self.scroll.saturating_add(lines);
+        self.advance(lines);
         self.clamp_scroll();
     }
 
@@ -198,16 +221,18 @@ impl Screen {
         let selected = &self.items[self.cursor];
 
         if selected.data.is_section() {
-            if self.collapsed.contains(&selected.id) {
-                self.collapsed.remove(&selected.id);
-            } else {
-                self.collapsed.insert(selected.id);
+            let id = selected.id;
+            if !self.collapsed.remove(&id) {
+                self.collapsed.insert(id);
             }
 
             // Only the toggled section's own height changes, by gaining or
             // losing its `…`. Everything else lays out from its own content at
             // an unchanged width, so those memoized heights still hold.
             self.item_heights.get_mut()[self.cursor] = None;
+
+            // Collapsing the section the viewport sits in takes it along.
+            self.fit_anchor();
         }
 
         self.clamp_scroll();
@@ -259,43 +284,120 @@ impl Screen {
         }
     }
 
-    /// Drops everything derived from `items`, `collapsed` and `size`.
-    /// The accessors below recompute what they need, when they need it.
+    /// Drops everything derived from `items` and `size`. The accessors below
+    /// recompute what they need, when they need it.
     fn invalidate(&mut self) {
         let item_heights = self.item_heights.get_mut();
         item_heights.clear();
         item_heights.resize(self.items.len(), None);
 
+        self.fit_anchor();
         self.clamp_scroll();
     }
 
-    // TODO This scan is not optimal, should save an index of it somehow
-    /// Items in order, skipping those hidden by a collapsed ancestor.
-    fn visible_items(&self) -> impl Iterator<Item = usize> {
-        self.items
+    /// Puts the viewport back on an item that exists and is visible, after the
+    /// items changed underneath it.
+    fn fit_anchor(&mut self) {
+        if self.items.is_empty() {
+            self.scroll = Scroll::default();
+            return;
+        }
+
+        self.scroll.item_anchor = self.scroll.item_anchor.min(self.items.len() - 1);
+
+        if let Some(section) = self.hidden_by(self.scroll.item_anchor, 0) {
+            self.scroll = Scroll {
+                item_anchor: section,
+                offset: 0,
+            };
+        }
+    }
+
+    /// The visible item after `item_i`, which only `item_i` itself can hide.
+    fn next_visible(&self, item_i: usize) -> Option<usize> {
+        let item = &self.items[item_i];
+        let next = item_i + 1;
+
+        if !item.data.is_section() || !self.is_collapsed(item) {
+            return (next < self.items.len()).then_some(next);
+        }
+
+        // Step over the subtree it holds shut.
+        let shut = self.items[next..]
             .iter()
-            .enumerate()
-            .scan(None, |collapse_depth, (i, next)| {
-                if collapse_depth.is_some_and(|depth| depth < next.depth) {
-                    return Some(None);
-                }
+            .position(|below| below.depth <= item.depth)?;
 
-                *collapse_depth = if next.data.is_section() && self.is_collapsed(next) {
-                    Some(next.depth)
-                } else {
-                    None
-                };
+        Some(next + shut)
+    }
 
-                Some(Some(i))
-            })
-            .flatten()
+    /// The visible item before `item_i`.
+    fn prev_visible(&self, item_i: usize) -> Option<usize> {
+        let prev = item_i.checked_sub(1)?;
+
+        // In case prev is collapsed, we need to find the item that hides it.
+        let depth = self.items[item_i].depth;
+        Some(self.hidden_by(prev, depth).unwrap_or(prev))
+    }
+
+    /// The outermost collapsed section hiding `item_i`, looking no further out
+    /// than `floor`.
+    fn hidden_by(&self, item_i: usize, floor: usize) -> Option<usize> {
+        let mut depth = self.items[item_i].depth;
+        if depth <= floor {
+            return None;
+        }
+
+        let mut hidden_by = None;
+
+        for (i, ancestor) in self.items[..item_i].iter().enumerate().rev() {
+            if ancestor.depth >= depth {
+                continue;
+            }
+
+            depth = ancestor.depth;
+            if ancestor.data.is_section() && self.is_collapsed(ancestor) {
+                hidden_by = Some(i);
+            }
+
+            if depth <= floor {
+                break;
+            }
+        }
+
+        hidden_by
+    }
+
+    /// Visible items at or after `item_i`, in order.
+    fn visible_from(&self, item_i: usize) -> impl Iterator<Item = usize> {
+        let start = (item_i < self.items.len()).then_some(item_i);
+        successors(start, |&item_i| self.next_visible(item_i))
+    }
+
+    /// Visible items before `item_i`, in reverse order.
+    fn visible_before(&self, item_i: usize) -> impl Iterator<Item = usize> {
+        successors(self.prev_visible(item_i), |&item_i| {
+            self.prev_visible(item_i)
+        })
+    }
+
+    /// Every visible item, from the top of the content down.
+    fn visible_items(&self) -> impl Iterator<Item = usize> {
+        self.visible_from(0)
+    }
+
+    /// Every visible item, from the bottom of the content up.
+    fn visible_items_rev(&self) -> impl Iterator<Item = usize> {
+        let last = self
+            .items
+            .len()
+            .checked_sub(1)
+            .map(|last| self.hidden_by(last, 0).unwrap_or(last));
+
+        successors(last, |&item_i| self.prev_visible(item_i))
     }
 
     fn is_visible(&self, item_i: usize) -> bool {
-        self.visible_items()
-            .take_while(|&i| i <= item_i)
-            .last()
-            .is_some_and(|i| i == item_i)
+        self.hidden_by(item_i, 0).is_none()
     }
 
     /// How many lines `item_i` occupies once laid out at the current width.
@@ -323,51 +425,109 @@ impl Screen {
         height as usize
     }
 
-    /// The item rendered at `line`, counting from the top of the content
-    /// (not the top of the screen). `None` once past the last line.
-    fn item_at_line(&self, line: usize) -> Option<usize> {
-        let mut remaining = line;
-
-        self.visible_items().find(|&item_i| {
-            let height = self.item_height(item_i);
-            if remaining < height {
-                return true;
-            }
-
-            remaining -= height;
-            false
-        })
+    /// The visible items from the top of the viewport down.
+    fn items_from_anchor(&self) -> impl Iterator<Item = usize> {
+        self.visible_from(self.scroll.item_anchor)
     }
 
-    /// The first line of `item_i`, or `None` if it isn't rendered at all.
-    fn line_of_item(&self, item_i: usize) -> Option<usize> {
-        if item_i >= self.items.len() {
-            return None;
+    fn screen_rows(&self) -> impl Iterator<Item = (usize, usize)> {
+        self.items_from_anchor()
+            .scan(0, move |row, item_i| {
+                let at = *row;
+                *row += self.item_height(item_i);
+                Some((item_i, at))
+            })
+            .take_while(move |&(item_i, at)| at + self.item_height(item_i) <= self.size.1 as usize)
+    }
+
+    /// The item drawn at `row` of the viewport, if the content reaches it.
+    fn item_at_row(&self, row: usize) -> Option<usize> {
+        self.screen_rows()
+            .take_while(|&(_, at)| at <= row)
+            .last()
+            .filter(|&(item_i, at)| row < at + self.item_height(item_i))
+            .map(|(item_i, _)| item_i)
+    }
+
+    /// Moves the top of the viewport `lines` further down the content, coming
+    /// to rest on the last line there is.
+    fn advance(&mut self, mut lines: usize) {
+        if self.items.is_empty() {
+            return;
         }
 
-        let mut line = 0;
+        while lines > 0 {
+            let height = self.item_height(self.scroll.item_anchor);
+            let left = height.saturating_sub(self.scroll.offset);
 
-        self.visible_items()
-            .find(|&i| {
-                if i == item_i {
-                    return true;
-                }
+            if lines < left {
+                self.scroll.offset += lines;
+                return;
+            }
 
-                line += self.item_height(i);
-                false
-            })
-            .map(|_| line)
+            let Some(next) = self.next_visible(self.scroll.item_anchor) else {
+                self.scroll.offset = height.saturating_sub(1);
+                return;
+            };
+
+            lines -= left;
+            self.scroll = Scroll {
+                item_anchor: next,
+                offset: 0,
+            };
+        }
     }
 
-    /// Total number of lines, but gives up counting at `limit`. Callers only
-    /// ever need to compare the total against something near the bottom of the
-    /// viewport, and this way the items below it are never laid out.
-    ///
-    /// The result is exact when below `limit`, and at least `limit` otherwise.
-    fn lines_up_to(&self, limit: usize) -> usize {
-        let mut lines = 0;
+    /// Moves the top of the viewport `lines` back up the content, coming to
+    /// rest at the top of it.
+    fn retreat(&mut self, lines: usize) {
+        self.scroll = self.retreated(self.scroll, lines);
+    }
 
-        for item_i in self.visible_items() {
+    /// `scroll` taken `lines` back up the content, coming to rest at the top
+    /// of it.
+    fn retreated(&self, mut scroll: Scroll, mut lines: usize) -> Scroll {
+        if lines <= scroll.offset {
+            scroll.offset -= lines;
+            return scroll;
+        }
+
+        lines -= scroll.offset;
+        scroll.offset = 0;
+
+        while lines > 0 {
+            let Some(prev) = self.prev_visible(scroll.item_anchor) else {
+                break;
+            };
+
+            let height = self.item_height(prev);
+            scroll = Scroll {
+                item_anchor: prev,
+                offset: height.saturating_sub(lines),
+            };
+
+            if lines <= height {
+                break;
+            }
+
+            lines -= height;
+        }
+
+        scroll
+    }
+
+    /// Lines of content from the top of the viewport down, counting no further
+    /// than `limit` so that nothing below the viewport is laid out.
+    fn lines_below_anchor(&self, limit: usize) -> usize {
+        if self.items.is_empty() {
+            return 0;
+        }
+
+        let mut lines = self
+            .item_height(self.scroll.item_anchor)
+            .saturating_sub(self.scroll.offset);
+
+        for item_i in self.items_from_anchor().skip(1) {
             if lines >= limit {
                 break;
             }
@@ -376,6 +536,24 @@ impl Screen {
         }
 
         lines
+    }
+
+    /// Lines of content above the top of the viewport, counting no further
+    /// than `limit`.
+    fn lines_above_anchor(&self, limit: usize) -> usize {
+        let mut lines = self.scroll.offset;
+        let mut item_i = self.scroll.item_anchor;
+
+        while lines < limit {
+            let Some(prev) = self.prev_visible(item_i) else {
+                break;
+            };
+
+            lines += self.item_height(prev);
+            item_i = prev;
+        }
+
+        lines.min(limit)
     }
 
     /// Whether the screen renders no lines at all, e.g. the log of a branch
@@ -387,15 +565,19 @@ impl Screen {
     }
 
     fn is_cursor_off_screen(&self) -> bool {
-        !self.item_views(self.size).any(|item| item.highlighted)
+        !self.item_views().any(|item| item.highlighted)
     }
 
     fn move_cursor_to_screen_center(&mut self) {
         let half_screen = self.size.1 as usize / 2;
-        let center = self.scroll + half_screen;
-        let center = center.min(self.lines_up_to(center + 1).saturating_sub(1));
 
-        if let Some(item_i) = self.item_at_line(center) {
+        // Scrolling is allowed to run past the content, so the middle of the
+        // screen may hold no item at all. Fall back to the last one drawn.
+        let center = self
+            .item_at_row(half_screen)
+            .or_else(|| self.screen_rows().last().map(|(item_i, _)| item_i));
+
+        if let Some(item_i) = center {
             self.cursor = item_i;
         }
     }
@@ -404,26 +586,18 @@ impl Screen {
         self.cursor = self.cursor.clamp(0, self.items.len().saturating_sub(1));
     }
 
+    /// Pulls the viewport back up if it has scrolled further than the content
+    /// allows.
     fn clamp_scroll(&mut self) {
-        // The line count is only needed to tell whether `scroll` is too far
-        // down, so count no further than the point that settles it.
-        let enough = (self.scroll + self.size.1 as usize)
-            .saturating_sub(BOTTOM_CONTEXT_LINES)
-            .max(self.scroll + 1);
-
-        let len = self.lines_up_to(enough);
-        self.scroll = self.scroll.min(self.max_scroll_with_context(len));
-    }
-
-    /// Given `len` lines of content, the furthest down the screen may scroll.
-    fn max_scroll_with_context(&self, len: usize) -> usize {
-        if len == 0 {
-            return 0;
+        let wanted = (self.size.1 as usize).saturating_sub(BOTTOM_CONTEXT_LINES);
+        let below = self.lines_below_anchor(wanted);
+        if below >= wanted {
+            return;
         }
 
-        let max_scroll = len.saturating_sub(self.size.1 as usize);
-        let max_scroll = max_scroll.saturating_add(BOTTOM_CONTEXT_LINES);
-        max_scroll.min(len.saturating_sub(1))
+        let over = wanted - below;
+        let above = self.lines_above_anchor(over + BOTTOM_CONTEXT_LINES);
+        self.retreat(over.min(above.saturating_sub(BOTTOM_CONTEXT_LINES)));
     }
 
     fn move_from_unselectable(&mut self, nav_mode: NavMode) {
@@ -436,7 +610,7 @@ impl Screen {
     }
 
     pub(crate) fn move_cursor_to_screen_line(&mut self, screen_line: usize) {
-        let Some(new_cursor) = self.item_at_line(screen_line + self.scroll) else {
+        let Some(new_cursor) = self.item_at_row(screen_line) else {
             return;
         };
         if self.cursor == new_cursor {
@@ -461,7 +635,7 @@ impl Screen {
     pub(crate) fn move_cursor_to_top(&mut self) {
         if let Some(first) = self.find_item(|item| !item.unselectable) {
             self.cursor = first;
-            self.scroll = 0;
+            self.scroll = Scroll::default();
         }
     }
 
@@ -481,44 +655,42 @@ impl Screen {
     }
 
     pub(crate) fn select_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
-        if let Some(item_i) = self.find_item(|item| !item.unselectable && predicate(&item.data)) {
-            self.cursor = item_i;
-            let half_screen = self.size.1 as usize / 2;
-            let Some(line_of_item) = self.line_of_item(self.cursor) else {
-                return false;
-            };
+        let Some(item_i) = self.find_item(|item| !item.unselectable && predicate(&item.data))
+        else {
+            return false;
+        };
 
-            if line_of_item >= half_screen {
-                self.scroll = line_of_item - half_screen;
-            }
+        self.cursor = item_i;
+        self.center_on_cursor();
+        self.scroll_fit_end();
+        self.scroll_fit_start();
 
-            self.scroll_fit_end();
-            self.scroll_fit_start();
-
-            true
-        } else {
-            false
-        }
+        true
     }
 
     pub(crate) fn select_last_matching<F: Fn(&ItemData) -> bool>(&mut self, predicate: F) -> bool {
-        if let Some(item_i) = self.rfind_item(|item| !item.unselectable && predicate(&item.data)) {
-            self.cursor = item_i;
-            let half_screen = self.size.1 as usize / 2;
-            let Some(line_of_item) = self.line_of_item(self.cursor) else {
-                return false;
-            };
+        let Some(item_i) = self.rfind_item(|item| !item.unselectable && predicate(&item.data))
+        else {
+            return false;
+        };
 
-            if line_of_item >= half_screen {
-                self.scroll = line_of_item - half_screen;
-            } else {
-                self.scroll_fit_start();
-            }
+        self.cursor = item_i;
+        self.center_on_cursor();
+        self.scroll_fit_start();
 
-            true
-        } else {
-            false
-        }
+        true
+    }
+
+    /// Draws the cursor halfway down the screen, or as near to it as the
+    /// content above reaches.
+    fn center_on_cursor(&mut self) {
+        self.scroll = Scroll {
+            item_anchor: self.cursor,
+            offset: 0,
+        };
+
+        self.retreat(self.size.1 as usize / 2);
+        self.clamp_scroll();
     }
 
     fn find_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
@@ -527,54 +699,53 @@ impl Screen {
     }
 
     fn rfind_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
-        self.visible_items()
-            .filter(|&item_i| predicate(&self.items[item_i]))
-            .last()
+        self.visible_items_rev()
+            .find(|&item_i| predicate(&self.items[item_i]))
     }
 
     pub(crate) fn is_valid_screen_line(&self, screen_line: usize) -> bool {
-        let Some(target_item_i) = self.item_at_line(screen_line + self.scroll) else {
+        let Some(target_item_i) = self.item_at_row(screen_line) else {
             return false;
         };
         self.nav_filter(target_item_i, NavMode::IncludeSubLines)
     }
 
-    fn item_views(&self, area: (u16, u16)) -> impl Iterator<Item = ItemView> {
-        let first_visible_item = self
-            .item_at_line(self.scroll)
-            .unwrap_or(self.items.len().saturating_sub(1));
+    /// Whether `item_i` is the cursor or sits within the subtree it heads, and
+    /// so draws highlighted.
+    fn is_selected(&self, item_i: usize) -> bool {
+        let Some(depth) = self.items.get(self.cursor).map(|item| item.depth) else {
+            return false;
+        };
 
-        // Scanning starts at the cursor when it is above the viewport, so that
-        // the highlight of an item whose children reach into view is known.
-        // Those extra items are dropped again by `context_offset`.
-        let scan_start_item = first_visible_item.min(self.cursor);
-        let scan_end_item = self
-            .item_at_line(self.scroll + area.1 as usize)
-            .unwrap_or(self.items.len());
+        item_i == self.cursor
+            || (item_i > self.cursor
+                && self.items[self.cursor + 1..=item_i]
+                    .iter()
+                    .rev()
+                    .all(|item| item.depth > depth))
+    }
 
-        let context_offset = self
-            .visible_items()
-            .take_while(|&item_i| item_i < first_visible_item)
-            .filter(|&item_i| item_i >= scan_start_item)
-            .count();
+    fn item_views(&self) -> impl Iterator<Item = ItemView> {
+        let cursor_depth = self.items.get(self.cursor).map(|item| item.depth);
 
-        self.visible_items()
-            .skip_while(move |&item_i| item_i < scan_start_item)
-            .take_while(move |&item_i| item_i < scan_end_item)
-            .scan(None, move |highlight_depth, item_index| {
-                let item = &self.items[item_index];
-                if self.cursor == item_index {
-                    *highlight_depth = Some(item.depth);
-                } else if highlight_depth.is_some_and(|s| s >= item.depth) {
-                    *highlight_depth = None;
-                };
+        // The cursor may be above the viewport with the subtree it highlights
+        // reaching into it, so the first item on screen has to say for itself
+        // whether it is selected. The rest follow from it.
+        self.screen_rows().scan(
+            self.is_selected(self.scroll.item_anchor),
+            move |highlighted, (item_index, _)| {
+                if item_index == self.cursor {
+                    *highlighted = true;
+                } else if cursor_depth.is_some_and(|depth| self.items[item_index].depth <= depth) {
+                    *highlighted = false;
+                }
 
                 Some(ItemView {
                     item_index,
-                    highlighted: highlight_depth.is_some(),
+                    highlighted: *highlighted,
                 })
-            })
-            .skip(context_offset)
+            },
+        )
     }
 }
 
@@ -585,7 +756,7 @@ struct ItemView {
 
 pub(crate) fn layout_screen<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: bool) {
     layout.col(opts().fill_x(), |layout| {
-        for view in screen.item_views(screen.size) {
+        for view in screen.item_views() {
             layout_item(layout, screen, hide_cursor, view);
         }
     });
@@ -652,6 +823,7 @@ fn area_selection_highlight(style: &StyleConfig, line: &ItemView) -> Style {
 mod tests {
     use super::*;
     use crate::config::init_test_config;
+    use crate::item_data::SectionHeader;
 
     fn screen_of(item_count: usize, size: (u16, u16)) -> Screen {
         let config = Arc::new(init_test_config().unwrap());
@@ -672,6 +844,100 @@ mod tests {
         .unwrap()
     }
 
+    /// A screen of `(depth, is_section)` items, so that collapsing can be
+    /// exercised without building a whole diff.
+    fn tree_screen(spec: &[(usize, bool)], size: (u16, u16)) -> Screen {
+        let config = Arc::new(init_test_config().unwrap());
+        let spec = spec.to_vec();
+
+        Screen::new(
+            config,
+            size,
+            Box::new(move || {
+                Ok(spec
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &(depth, is_section))| Item {
+                        id: i as u64,
+                        depth,
+                        data: if is_section {
+                            ItemData::Header(SectionHeader::Tags)
+                        } else {
+                            ItemData::Raw(format!("item {i}"))
+                        },
+                        ..Default::default()
+                    })
+                    .collect())
+            }),
+        )
+        .unwrap()
+    }
+
+    /// section 0
+    ///   leaf 1
+    ///   section 2
+    ///     leaf 3
+    ///     leaf 4
+    ///   leaf 5
+    /// section 6
+    ///   leaf 7
+    const TREE: &[(usize, bool)] = &[
+        (0, true),
+        (1, false),
+        (1, true),
+        (2, false),
+        (2, false),
+        (1, false),
+        (0, true),
+        (1, false),
+    ];
+
+    fn visible(screen: &Screen) -> (Vec<usize>, Vec<usize>) {
+        let down = screen.visible_items().collect::<Vec<_>>();
+        let mut up = screen.visible_items_rev().collect::<Vec<_>>();
+        up.reverse();
+        (down, up)
+    }
+
+    /// Walking up is as lazy as walking down, and has to reach the same items.
+    #[test]
+    fn walks_the_tree_both_ways() {
+        let mut screen = tree_screen(TREE, (80, 20));
+        assert_eq!(visible(&screen), ((0..8).collect(), (0..8).collect()));
+
+        // An inner section shuts, and is stepped over from either side.
+        screen.collapsed.insert(2);
+        assert_eq!(
+            visible(&screen),
+            (vec![0, 1, 2, 5, 6, 7], vec![0, 1, 2, 5, 6, 7])
+        );
+        assert_eq!(Some(2), screen.prev_visible(5));
+        assert_eq!(Some(5), screen.next_visible(2));
+        assert!(!screen.is_visible(3));
+
+        // Its outer section shuts over it: the outermost stands in for both.
+        screen.collapsed.insert(0);
+        assert_eq!(visible(&screen), (vec![0, 6, 7], vec![0, 6, 7]));
+        assert_eq!(Some(0), screen.prev_visible(6));
+        assert_eq!(Some(6), screen.next_visible(0));
+        assert!(!screen.is_visible(2));
+    }
+
+    /// Scrolling down over a collapsed section and back up again lands where
+    /// it started.
+    #[test]
+    fn scrolls_back_over_a_collapsed_section() {
+        let mut screen = tree_screen(TREE, (80, 4));
+        screen.collapsed.insert(2);
+
+        screen.scroll_view_down(3);
+        assert_eq!(5, screen.scroll.item_anchor);
+
+        screen.scroll_view_up(3);
+        assert_eq!(0, screen.scroll.item_anchor);
+        assert_eq!(0, screen.scroll.offset);
+    }
+
     fn laid_out_count(screen: &Screen) -> usize {
         screen
             .item_heights
@@ -690,6 +956,18 @@ mod tests {
 
         screen.scroll_view_down(100);
         assert!(laid_out_count(&screen) < 150, "{}", laid_out_count(&screen));
+    }
+
+    /// The viewport is anchored to an item, so jumping to the bottom lays out
+    /// what it lands on rather than everything it skipped over.
+    #[test]
+    fn jumping_to_the_bottom_skips_the_middle() {
+        let mut screen = screen_of(10_000, (80, 20));
+
+        screen.move_cursor_to_bottom();
+
+        assert_eq!(9_999, screen.cursor);
+        assert!(laid_out_count(&screen) < 50, "{}", laid_out_count(&screen));
     }
 
     /// Scrolling is allowed a couple of lines past the content, so on a screen
