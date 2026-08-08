@@ -1,7 +1,7 @@
 use crate::{
     app::App,
     cli::Args,
-    config::{self, Config},
+    config::{self, Config, TEST_SEARCH_HIGHLIGHT_BG},
     error::Error,
     key_parser::parse_test_keys,
     term::{Term, TermBackend, TestBuffer},
@@ -103,6 +103,33 @@ impl TestContext {
 
         let result = app.run(&mut self.term, Duration::ZERO);
         assert!(app.state.quit || matches!(result, Err(Error::NoMoreEvents)));
+    }
+
+    /// The text of every search match marked on screen, in reading order.
+    pub fn highlighted(&self) -> Vec<String> {
+        let TermBackend::Test { buffer, .. } = &self.term else {
+            unreachable!();
+        };
+
+        let mut marked: Vec<String> = vec![];
+        let mut last = None;
+
+        for (i, cell) in buffer.cells.iter().enumerate() {
+            if cell.bg != TEST_SEARCH_HIGHLIGHT_BG {
+                continue;
+            }
+
+            match last {
+                Some(before) if before + 1 == i && i % buffer.width as usize != 0 => {
+                    marked.last_mut().unwrap().push_str(&cell.symbol)
+                }
+                _ => marked.push(cell.symbol.clone()),
+            }
+
+            last = Some(i);
+        }
+
+        marked
     }
 
     pub fn redact_buffer(&self) -> String {

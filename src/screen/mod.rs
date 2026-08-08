@@ -1,4 +1,6 @@
 use crate::config::StyleConfig;
+use crate::error::Error;
+use crate::search::RunText;
 use crate::style::Style;
 use crate::ui::layout::{LayoutTree, opts};
 use crate::ui::{UiTree, layout_span};
@@ -7,6 +9,7 @@ use crate::{item_data::ItemData, ui};
 use crate::{Res, config::Config, items::hash};
 
 use super::Item;
+use regex::{Regex, RegexBuilder};
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashSet;
@@ -35,6 +38,52 @@ struct Scroll {
     offset: usize,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum SearchDirection {
+    Forward,
+    Backward,
+}
+
+impl SearchDirection {
+    fn reverse(self) -> Self {
+        match self {
+            SearchDirection::Forward => SearchDirection::Backward,
+            SearchDirection::Backward => SearchDirection::Forward,
+        }
+    }
+}
+
+/// The search to repeat, as `n` and `N` do in vim.
+struct Search {
+    query: String,
+    matcher: Regex,
+    direction: SearchDirection,
+}
+
+/// Compiles `query` as a regex, ignoring case unless the query has uppercase in
+/// it.
+pub(crate) fn matcher(query: &str) -> Res<Regex> {
+    RegexBuilder::new(query)
+        .case_insensitive(!has_uppercase(query))
+        .build()
+        .map_err(Error::InvalidSearchRegex)
+}
+
+/// Whether the query asks for a case of its own. Skips e.g. `\W`, `\S`.
+fn has_uppercase(query: &str) -> bool {
+    let mut chars = query.chars();
+
+    while let Some(char) = chars.next() {
+        match char {
+            '\\' => _ = chars.next(),
+            _ if char.is_uppercase() => return true,
+            _ => (),
+        }
+    }
+
+    false
+}
+
 pub(crate) struct Screen {
     pub(crate) size: (u16, u16),
     cursor: usize,
@@ -45,6 +94,7 @@ pub(crate) struct Screen {
     /// Memoized `item_height`, indexed like `items`. Dropped by `invalidate`.
     item_heights: RefCell<Vec<Option<u16>>>,
     collapsed: HashSet<u64>,
+    search: Option<Search>,
 }
 
 impl Screen {
@@ -70,6 +120,7 @@ impl Screen {
             items: vec![],
             item_heights: RefCell::new(vec![]),
             collapsed,
+            search: None,
         };
 
         screen.items = (screen.refresh_items)()?;
@@ -691,6 +742,125 @@ impl Screen {
 
         self.retreat(self.size.1 as usize / 2);
         self.clamp_scroll();
+    }
+
+    /// Moves the cursor to the nearest item whose text `query` matches, looking
+    /// in `direction` and wrapping around the ends. `query` is a regex, matched
+    /// ignoring case unless it has uppercase in it.
+    pub(crate) fn search(&mut self, query: &str, direction: SearchDirection) -> Res<()> {
+        debug_assert!(!query.is_empty());
+
+        let matcher = matcher(query)?;
+        let found = self.move_to_match(&matcher, direction);
+
+        // Remembered even when nothing matched, so that `n` retries it.
+        self.search = Some(Search {
+            query: query.to_string(),
+            matcher,
+            direction,
+        });
+
+        if found {
+            Ok(())
+        } else {
+            Err(Error::NoSearchMatch(query.to_string()))
+        }
+    }
+
+    /// Repeats the last search. `reverse` flips its direction, as `N` does in vim.
+    pub(crate) fn search_repeat(&mut self, reverse: bool) -> Res<()> {
+        let Some(search) = &self.search else {
+            return Err(Error::NoPreviousSearch);
+        };
+
+        let query = search.query.clone();
+        let matcher = search.matcher.clone();
+        let direction = if reverse {
+            search.direction.reverse()
+        } else {
+            search.direction
+        };
+
+        if self.move_to_match(&matcher, direction) {
+            Ok(())
+        } else {
+            Err(Error::NoSearchMatch(query))
+        }
+    }
+
+    /// Whether a match was found, in which case the cursor is on it.
+    fn move_to_match(&mut self, matcher: &Regex, direction: SearchDirection) -> bool {
+        let Some(item_i) = self.find_match(matcher, direction) else {
+            return false;
+        };
+
+        self.reveal(item_i);
+        self.cursor = item_i;
+        self.scroll_to_cursor();
+        true
+    }
+
+    fn reveal(&mut self, item_i: usize) {
+        while let Some(section) = self.hidden_by(item_i, 0) {
+            self.collapsed.remove(&self.items[section].id);
+
+            // Only the opened section's own height changes, by losing its `…`.
+            self.item_heights.get_mut()[section] = None;
+        }
+
+        self.clamp_scroll();
+    }
+
+    /// The nearest match from the cursor, wrapping around the ends.
+    fn find_match(&self, matcher: &Regex, direction: SearchDirection) -> Option<usize> {
+        match direction {
+            SearchDirection::Forward => self
+                .matching_items(matcher)
+                .find(|&item_i| item_i > self.cursor)
+                .or_else(|| self.matching_items(matcher).next()),
+            SearchDirection::Backward => self
+                .matching_items(matcher)
+                .take_while(|&item_i| item_i < self.cursor)
+                .last()
+                .or_else(|| self.matching_items(matcher).last()),
+        }
+    }
+
+    /// The items `matcher` finds something in.
+    fn matching_items<'a>(&'a self, matcher: &'a Regex) -> impl Iterator<Item = usize> + 'a {
+        (0..self.items.len()).filter(move |&item_i| self.item_matches(item_i, matcher))
+    }
+
+    fn item_matches(&self, item_i: usize, matcher: &Regex) -> bool {
+        let mut layout = UiTree::new();
+        let view = ItemView {
+            item_index: item_i,
+            highlighted: false,
+        };
+        layout_item(&mut layout, self, false, view);
+
+        let mut run_text = RunText::default();
+
+        layout
+            .leaf_runs()
+            .any(|run| matcher.is_match(run_text.read(run.map(|(leaf, span)| (leaf, span.text())))))
+    }
+
+    pub(crate) fn clear_search(&mut self) {
+        self.search = None;
+    }
+
+    pub(crate) fn get_search_matcher(&self) -> Option<&Regex> {
+        self.search.as_ref().map(|search| &search.matcher)
+    }
+
+    fn scroll_to_cursor(&mut self) {
+        if self.is_cursor_off_screen() {
+            self.center_on_cursor();
+        }
+
+        self.scroll_fit_end();
+        self.scroll_fit_start();
     }
 
     fn find_item<P: Fn(&Item) -> bool>(&self, predicate: P) -> Option<usize> {
