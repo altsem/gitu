@@ -27,6 +27,7 @@ pub(crate) mod remote;
 pub(crate) mod reset;
 pub(crate) mod reverse;
 pub(crate) mod revert;
+pub(crate) mod search;
 pub(crate) mod show;
 pub(crate) mod show_refs;
 pub(crate) mod stage;
@@ -128,6 +129,11 @@ pub(crate) enum Op {
     ScrollViewUp,
     ScrollViewDown,
 
+    Search,
+    SearchBackward,
+    SearchNext,
+    SearchPrevious,
+
     Refresh,
     Quit,
 
@@ -161,6 +167,10 @@ impl Op {
             Op::MoveBottom => Box::new(editor::MoveBottom),
             Op::ScrollViewUp => Box::new(editor::ScrollViewUp),
             Op::ScrollViewDown => Box::new(editor::ScrollViewDown),
+            Op::Search => Box::new(search::Search),
+            Op::SearchBackward => Box::new(search::SearchBackward),
+            Op::SearchNext => Box::new(search::SearchNext),
+            Op::SearchPrevious => Box::new(search::SearchPrevious),
             Op::Checkout => Box::new(branch::Checkout),
             Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
             Op::Spinoff => Box::new(branch::Spinoff),
