@@ -1,15 +1,15 @@
 use clap::Parser;
 use gitu::{
-    Res,
     cli::Args,
     config::{self, Config},
     error::Error,
     term::{self, Term},
+    Res,
 };
 use log::LevelFilter;
 use std::{backtrace::Backtrace, fmt::Display, panic, sync::Arc};
 
-fn main() -> std::process::ExitCode  {
+fn main() -> std::process::ExitCode {
     let result = start();
     if let Err(e) = &result {
         eprintln!("{e}");
