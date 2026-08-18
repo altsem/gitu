@@ -78,6 +78,7 @@ pub(crate) enum Op {
     RemoveRemote,
     Rename,
     RenameRemote,
+    ShowRemote,
     ShowRefs,
     Stash,
     StashApply,
@@ -218,6 +219,7 @@ impl Op {
             Op::AddRemote => Box::new(remote::AddRemote),
             Op::RemoveRemote => Box::new(remote::RemoveRemote),
             Op::RenameRemote => Box::new(remote::RenameRemote),
+            Op::ShowRemote => Box::new(remote::ShowRemote),
 
             Op::Merge => Box::new(merge::Merge),
             Op::MergeAbort => Box::new(merge::MergeAbort),
