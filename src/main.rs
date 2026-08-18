@@ -9,7 +9,17 @@ use gitu::{
 use log::LevelFilter;
 use std::{backtrace::Backtrace, fmt::Display, panic, sync::Arc};
 
-pub fn main() -> Res<()> {
+fn main() -> std::process::ExitCode  {
+    let result = start();
+    if let Err(e) = &result {
+        eprintln!("{e}");
+        std::process::ExitCode::FAILURE
+    } else {
+        std::process::ExitCode::SUCCESS
+    }
+}
+
+fn start() -> Res<()> {
     let args = Args::parse();
     if args.version {
         // Setting cargo_suffix enables falling back to Cargo.toml for version
