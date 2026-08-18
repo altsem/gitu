@@ -1,7 +1,7 @@
 use clap::Parser;
 use gitu::{
     Res,
-    cli::Args,
+    cli::{self, Args, Commands},
     config::{self, Config},
     error::Error,
     term::{self, Term},
@@ -15,6 +15,13 @@ pub fn main() -> Res<()> {
         // Setting cargo_suffix enables falling back to Cargo.toml for version
         // `cargo install --locked gitu` would fail otherwise, as there's no git repo
         println!("gitu {}", git_version::git_version!(cargo_suffix = ""));
+        return Ok(());
+    }
+
+    // Generating completions doesn't need a git repository or the terminal,
+    // so handle it before any of that setup happens.
+    if let Some(Commands::Completion { shell }) = args.command {
+        cli::completions(shell, &mut std::io::stdout());
         return Ok(());
     }
 

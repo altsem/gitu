@@ -18,6 +18,7 @@ mod blame;
 mod branch;
 mod cherry_pick;
 mod commit;
+mod completion;
 mod discard;
 mod editor;
 mod fetch;
