@@ -45,6 +45,8 @@ Or install from your package manager:
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/gitu.svg)](https://repology.org/project/gitu/versions)
 
+Shell completions can be generated with `gitu completion <shell>`, see [Shell completions](docs/installing.md#shell-completions).
+
 ### Contributing
 PRs are welcome!
 This may help to get you started: [Development & Tooling](docs/dev-tooling.md)

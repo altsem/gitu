@@ -62,4 +62,24 @@ nix.settings = {
 }
 ```
 
+## Shell completions
+Gitu can print a completion script for your shell to stdout via the
+`completion` subcommand. Supported shells are `bash`, `elvish`, `fish`,
+`powershell` and `zsh`.
+
+Bash:
+```shell
+gitu completion bash > ~/.local/share/bash-completion/completions/gitu
+```
+
+Zsh (the target directory must be on your `$fpath`):
+```shell
+gitu completion zsh > ~/.zfunc/_gitu
+```
+
+Fish:
+```shell
+gitu completion fish > ~/.config/fish/completions/gitu.fish
+```
+
 
