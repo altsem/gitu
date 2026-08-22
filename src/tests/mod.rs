@@ -32,6 +32,7 @@ mod rebase;
 mod remote;
 mod reset;
 mod reverse;
+mod search;
 mod stage;
 mod stash;
 mod unstage;

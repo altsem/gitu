@@ -181,6 +181,49 @@ impl<L: Measure, C> LayoutTree<L, C> {
         });
     }
 
+    /// The leaves grouped into runs of siblings, broken wherever a nested
+    /// container comes between two of them.
+    ///
+    /// Leaves are added in reading order, so a run is what reads as one
+    /// uninterrupted piece, while what separate runs hold is only adjacent by
+    /// coincidence of where the layout put them.
+    ///
+    /// Each leaf comes with the index that identifies it, which is what
+    /// [`LayoutItem`] carries once a layout has been computed and its items
+    /// have been reordered.
+    pub fn leaf_runs(&self) -> impl Iterator<Item = impl Iterator<Item = (usize, &L)>> {
+        let mut at = 0;
+
+        iter::from_fn(move || {
+            while !self.data.get(at)?.is_leaf() {
+                at += 1;
+            }
+
+            let start = at;
+            let parent = self.index.parents[start];
+
+            while self.data.get(at).is_some_and(Node::is_leaf) && self.index.parents[at] == parent {
+                at += 1;
+            }
+
+            Some(
+                self.data[start..at]
+                    .iter()
+                    .enumerate()
+                    .filter_map(move |(i, node)| Some((start + i, node.as_leaf()?))),
+            )
+        })
+    }
+
+    // TODO I dislike this and would rather remove it, but it serves to allow search highlighting for
+    // the moment. There must be a better way...
+    //
+    /// How many nodes have been added, for marking off the ones some part of
+    /// the tree went on to lay out.
+    pub fn node_count(&self) -> usize {
+        self.data.len()
+    }
+
     /// Places every node within `avail_size`, handing back the result to read
     /// positions off.
     pub fn compute(&mut self, avail_size: [L::Unit; 2]) -> Computed<'_, L, C> {
@@ -365,6 +408,7 @@ impl<L: Measure, C> Computed<'_, L, C> {
             }
 
             Some(LayoutItem {
+                index,
                 data,
                 pos: node.pos?.into(),
                 size: node.size.into(),
@@ -388,6 +432,9 @@ pub enum Payload<'a, L, C> {
 
 #[derive(Debug)]
 pub struct LayoutItem<T, U> {
+    /// Identifies the node this was laid out from, which survives the items
+    /// being reordered. Pairs with what [`LayoutTree::leaf_runs`] hands out.
+    pub index: usize,
     pub data: T,
     pub pos: [U; 2],
     pub size: [U; 2],
@@ -472,7 +519,10 @@ mod tests {
 
         let mut grid = vec![' '; height * width];
 
-        for LayoutItem { data, pos, size } in computed.iter() {
+        for LayoutItem {
+            data, pos, size, ..
+        } in computed.iter()
+        {
             let x0 = pos[0] as usize;
             let y0 = pos[1] as usize;
             let item_width = size[0] as usize;
@@ -485,6 +535,59 @@ mod tests {
         grid.chunks(width)
             .map(|row| row.iter().collect::<String>().trim_end().to_string())
             .join("\n")
+    }
+
+    /// Renders the runs as their leaves joined, which is what a caller reading
+    /// text off the tree gets.
+    fn runs_of(layout: &TestTree) -> Vec<String> {
+        layout
+            .leaf_runs()
+            .map(|run| run.map(|(_, leaf)| *leaf).collect::<String>())
+            .collect()
+    }
+
+    #[test]
+    fn siblings_are_one_run() {
+        let mut layout = TestTree::new();
+
+        layout.row(opts(), |layout| {
+            layout.leaf("add ");
+            layout.leaf("thirdfile");
+        });
+
+        assert_eq!(vec!["add thirdfile"], runs_of(&layout));
+    }
+
+    #[test]
+    fn a_nested_container_breaks_a_run() {
+        let mut layout = TestTree::new();
+
+        layout.row(opts(), |layout| {
+            layout.leaf("1e81efc");
+
+            layout.row(opts().fill_x(), |layout| {
+                layout.leaf(" main");
+            });
+
+            layout.leaf("Author Name");
+        });
+
+        assert_eq!(
+            vec!["1e81efc", " main", "Author Name"],
+            runs_of(&layout),
+            "the leaves either side of the nested row are not one piece of text"
+        );
+    }
+
+    #[test]
+    fn rows_are_runs_of_their_own() {
+        let mut layout = TestTree::new();
+
+        for text in ["first", "second"] {
+            layout.row(opts(), |layout| layout.leaf(text));
+        }
+
+        assert_eq!(vec!["first", "second"], runs_of(&layout));
     }
 
     #[test]

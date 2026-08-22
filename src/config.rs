@@ -109,6 +109,9 @@ pub struct StyleConfig {
     pub selection_line: StyleConfigEntry,
     pub selection_area: StyleConfigEntry,
 
+    #[serde(default)]
+    pub search_match: StyleConfigEntry,
+
     pub hash: StyleConfigEntry,
     pub branch: StyleConfigEntry,
     pub remote: StyleConfigEntry,
@@ -354,10 +357,13 @@ pub fn config_path() -> PathBuf {
 }
 
 #[cfg(test)]
+pub(crate) const TEST_SEARCH_HIGHLIGHT_BG: Color = Color::LightYellow;
+
+#[cfg(test)]
 pub(crate) fn init_test_config() -> Res<Config> {
     let FigmentConfig {
         mut general,
-        style,
+        mut style,
         bindings: bindings_config,
     } = Figment::new()
         .merge(Toml::string(DEFAULT_CONFIG))
@@ -367,6 +373,12 @@ pub(crate) fn init_test_config() -> Res<Config> {
 
     general.always_show_help.enabled = false;
     general.refresh_on_file_change.enabled = false;
+
+    style.search_match = StyleConfigEntry {
+        fg: None,
+        bg: Some(TEST_SEARCH_HIGHLIGHT_BG),
+        mods: None,
+    };
 
     Ok(Config {
         general,

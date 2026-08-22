@@ -16,6 +16,7 @@ mod ops;
 pub mod picker;
 mod prompt;
 mod screen;
+mod search;
 pub mod style;
 mod syntax_parser;
 pub mod term;
