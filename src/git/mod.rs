@@ -576,6 +576,16 @@ pub(crate) fn branches(repo: &git2::Repository, filter: Option<git2::BranchType>
         .collect())
 }
 
+pub(crate) fn remotes(repo: &git2::Repository) -> Res<Vec<Ref>> {
+    Ok(repo
+        .remotes()
+        .map_err(Error::ListGitReferences)?
+        .into_iter()
+        .flatten()
+        .map(|remote_name| Ref::Remote(remote_name.to_string()))
+        .collect())
+}
+
 pub(crate) fn tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
     Ok(repo
         .tag_names(None)
