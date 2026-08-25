@@ -359,6 +359,21 @@ mod show_refs {
         run(&ctx.dir, &["git", "tag", "v1.0"]);
         snapshot!(ctx, "Yjjjjjjbb<enter>Y");
     }
+
+    #[test]
+    fn show_refs_with_remote_tracking_ref_without_remote() {
+        let ctx = setup_clone!();
+        run(
+            &ctx.dir,
+            &[
+                "git",
+                "update-ref",
+                "refs/remotes/conflict-upstream/main",
+                "HEAD",
+            ],
+        );
+        snapshot!(ctx, "Y");
+    }
 }
 
 #[test]
