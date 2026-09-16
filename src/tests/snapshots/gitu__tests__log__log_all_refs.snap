@@ -1,0 +1,25 @@
+---
+source: src/tests/log.rs
+expression: ctx.redact_buffer()
+---
+▌*   debe96e stash WIP on side: 9295151 third commit             Author Name __ |
+ |\                                                                             |
+ | * 7f6dd15 index on side: 9295151 third commit                 Author Name __ |
+ |/                                                                             |
+ * 9295151 side third commit                                     Author Name __ |
+ | * 16c9409 main v1 second commit                               Author Name __ |
+ |/                                                                             |
+ * 98de714 first commit                                          Author Name __ |
+ * b66a0bf origin/main add initial-file                          Author Name __ |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 3a1b6f35d1a81966

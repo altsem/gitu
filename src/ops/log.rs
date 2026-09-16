@@ -3,6 +3,7 @@ use crate::{
     Res,
     app::{App, PromptParams, State},
     error::Error,
+    git::tree,
     item_data::{ItemData, Rev},
     menu::arg::{Arg, any_regex, positive_number},
     screen,
@@ -29,7 +30,7 @@ pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, _term: &mut Term| {
-            goto_log_screen(app, None);
+            goto_log_screen(app, Vec::new());
             Ok(())
         }))
     }
@@ -67,6 +68,51 @@ impl OpTrait for LogOther {
     }
 }
 
+pub(crate) struct LogLocalBranches;
+impl OpTrait for LogLocalBranches {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, _term: &mut Term| {
+            let roots = tree::local_branch_roots(&app.state.repo);
+            goto_log_screen(app, roots);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "local branches".into()
+    }
+}
+
+pub(crate) struct LogAllBranches;
+impl OpTrait for LogAllBranches {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, _term: &mut Term| {
+            let roots = tree::all_branch_roots(&app.state.repo);
+            goto_log_screen(app, roots);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "all branches".into()
+    }
+}
+
+pub(crate) struct LogAllRefs;
+impl OpTrait for LogAllRefs {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, _term: &mut Term| {
+            let roots = tree::all_ref_roots(&app.state.repo);
+            goto_log_screen(app, roots);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "all refs".into()
+    }
+}
+
 fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
     let oid_result = match app.state.repo.revparse_single(result) {
         Ok(rev) => Ok(rev.id()),
@@ -75,11 +121,11 @@ fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
 
     let oid = oid_result?;
 
-    goto_log_screen(app, Some(oid));
+    goto_log_screen(app, vec![oid]);
     Ok(())
 }
 
-fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
+fn goto_log_screen(app: &mut App, revs: Vec<Oid>) {
     app.state.screens.drain(1..);
     let size = app.state.screens.last().unwrap().size;
     let limit = *app
@@ -104,7 +150,7 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
             Rc::clone(&app.state.repo),
             size,
             limit as usize,
-            rev,
+            revs,
             msg_regex,
         )
         .expect("Couldn't create screen"),
