@@ -12,14 +12,14 @@ expression: ctx.redact_buffer()
  b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
- Log                Arguments                                                   |
- l     current      -F Search messages (--grep)                                 |
- o     other        -n Limit number of commits (-n)                             |
+ Log                    Arguments                                               |
+ l     current          -F Search messages (--grep)                             |
+ o     other            -n Limit number of commits (-n)                         |
+ L     local branches                                                           |
+ b     all branches                                                             |
+ a     all refs                                                                 |
  q/esc Quit/Close                                                               |
 ────────────────────────────────────────────────────────────────────────────────|
 ? Limit number of commits (default 256): › █                                    |
-styles_hash: 15e73bd9294d10
+styles_hash: 39a543d959c0929d

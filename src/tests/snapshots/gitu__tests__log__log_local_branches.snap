@@ -1,0 +1,25 @@
+---
+source: src/tests/log.rs
+expression: ctx.redact_buffer()
+---
+▌*   92d66bb main Merge branch 'sub'                             Author Name __ |
+ |\                                                                             |
+ * | a34b764 more main work                                      Author Name __ |
+ | * 89dba4b sub add to feature                                  Author Name __ |
+ | * 5b70804 feature start feature                               Author Name __ |
+ |/                                                                             |
+ * 98de714 first commit                                          Author Name __ |
+ * b66a0bf origin/main add initial-file                          Author Name __ |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: b9392395880a5114

@@ -63,6 +63,7 @@ pub(crate) fn layout_item<'a>(
             layout_reference(layout, kind, config, base);
         }
         ItemData::Commit {
+            graph,
             short_id,
             associated_references,
             summary,
@@ -70,6 +71,10 @@ pub(crate) fn layout_item<'a>(
             age,
             ..
         } => {
+            if !graph.is_empty() {
+                layout_span(layout, (graph.as_str().into(), base));
+            }
+
             layout_span(
                 layout,
                 (
@@ -304,13 +309,16 @@ fn truncate(text: &str, width: usize) -> Cow<'_, str> {
 
 fn layout_reference<'a>(layout: &mut UiTree<'a>, reference: &'a Ref, config: &Config, base: Style) {
     let (name, style) = match reference {
-        Ref::Tag(tag) => (tag, &config.style.tag),
-        Ref::Head(branch) => (branch, &config.style.branch),
-        Ref::Remote(remote) => (remote, &config.style.remote),
+        Ref::Tag(tag) => (tag.as_str(), Some(&config.style.tag)),
+        Ref::Head(branch) => (branch.as_str(), Some(&config.style.branch)),
+        Ref::Remote(remote) => (remote.as_str(), Some(&config.style.remote)),
+        // Other refs (e.g. stashes) have no dedicated style.
+        Ref::Other(other) => (other.as_str(), None),
     };
 
-    layout_span(
-        layout,
-        (name.as_str().into(), base.patch(Style::from(style))),
-    );
+    if let Some(style) = style {
+        layout_span(layout, (name.into(), base.patch(Style::from(style))));
+    } else {
+        layout_span(layout, (name.into(), base));
+    }
 }
