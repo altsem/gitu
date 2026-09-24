@@ -60,6 +60,7 @@ pub struct GeneralConfig {
     pub log_author_width: usize,
     pub mouse_support: bool,
     pub mouse_scroll_lines: usize,
+    pub wrap_lines: bool,
 }
 
 #[derive(Default, Debug, Deserialize)]
