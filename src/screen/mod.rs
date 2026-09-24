@@ -940,7 +940,7 @@ fn layout_item<'a>(layout: &mut UiTree<'a>, screen: &'a Screen, hide_cursor: boo
     let line_sel = line_selection_highlight(style, &line, is_line_sel);
     let bg = area_sel.patch(line_sel);
 
-    layout.row_with(bg, opts().fill_x(), |layout| {
+    layout.row_with(bg, ui::item::row_opts(&screen.config), |layout| {
         let gutter_char = if !hide_cursor && line.highlighted {
             gutter_char(style, is_line_sel, bg)
         } else {

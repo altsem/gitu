@@ -7,10 +7,19 @@ use crate::gitu_diff::Status;
 use crate::highlight;
 use crate::item_data::{ItemData, Ref, SectionHeader};
 use crate::items::Item;
-use crate::ui::layout::opts;
+use crate::ui::layout::{Opts, opts};
 use crate::ui::{UiTree, layout_span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
+
+/// Options for a row holding an item, honouring `general.wrap_lines`.
+pub(crate) fn row_opts(config: &Config) -> Opts<u16> {
+    if config.general.wrap_lines {
+        opts().fill_x()
+    } else {
+        opts().fill_x().no_wrap()
+    }
+}
 
 /// Lays out an [`Item`] as spans in the caller's container, which is expected to
 /// be a single row.
@@ -78,7 +87,7 @@ pub(crate) fn layout_item<'a>(
                 ),
             );
 
-            layout.row(opts().fill_x(), |layout| {
+            layout.row(row_opts(config), |layout| {
                 for reference in associated_references {
                     layout_span(layout, (" ".into(), base));
                     layout_reference(layout, reference, config, base);

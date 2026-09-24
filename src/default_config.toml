@@ -14,6 +14,9 @@ recent_commits_limit = 10
 log_author_width = 15
 mouse_support = false
 mouse_scroll_lines = 3
+# Wrap lines that are wider than the screen. When disabled, they are cut off
+# at the right edge instead.
+wrap_lines = true
 
 # When to prompt for discard confirmation. Options:
 # "line"  - always prompt even for individual lines (default),

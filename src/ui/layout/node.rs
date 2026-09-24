@@ -67,7 +67,8 @@ impl<U: Scalar> Opts<U> {
         }
     }
 
-    #[allow(dead_code)]
+    /// Cuts a child that doesn't fit off at the edge, rather than starting a
+    /// new line.
     pub fn no_wrap(self) -> Self {
         Self {
             wrap: Some(false),

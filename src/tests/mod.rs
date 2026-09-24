@@ -158,6 +158,24 @@ fn recent_commits_with_limit() {
     snapshot!(ctx, "");
 }
 
+const LONG_SUMMARY: &str =
+    "a commit summary that is far too wide to fit within eighty columns of terminal";
+
+#[test]
+fn long_lines_wrap_by_default() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, LONG_SUMMARY, "testing\n");
+    snapshot!(ctx, "");
+}
+
+#[test]
+fn long_lines_are_cut_off_with_wrap_lines_disabled() {
+    let mut ctx = setup_clone!();
+    ctx.config().general.wrap_lines = false;
+    commit(&ctx.dir, LONG_SUMMARY, "testing\n");
+    snapshot!(ctx, "");
+}
+
 #[test]
 fn log() {
     let ctx = setup_clone!();
