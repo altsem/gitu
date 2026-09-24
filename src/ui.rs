@@ -23,6 +23,7 @@ mod menu;
 pub mod picker;
 
 const CARET: &str = "\u{2588}";
+const ELLIPSIS: &str = "…";
 const DASHES: &str = "────────────────────────────────────────────────────────────────";
 const BLANKS: &str = "                                                                ";
 
@@ -293,7 +294,13 @@ fn print_spans(
             Payload::Leaf(span) => {
                 blank_until(term, &mut at, pos, size.0, bg, bg_end)?;
                 term.queue_move_cursor(pos[0], pos[1])?;
-                print_span(term, span, highlight.within(index), highlight.style)?;
+                print_span(
+                    term,
+                    span,
+                    item_size[0],
+                    highlight.within(index),
+                    highlight.style,
+                )?;
 
                 at[0] = pos[0].saturating_add(item_size[0]);
             }
@@ -307,15 +314,27 @@ fn print_spans(
     Ok(())
 }
 
+/// Prints at most `width` columns of the span, which is less than its text
+/// when the layout cut it off at an edge. A cut-off span ends in an ellipsis
+/// in place of its last column.
 fn print_span(
     term: &mut TermBackend,
     Span(text, style): &Span,
+    width: u16,
     matches: impl Iterator<Item = Range<usize>>,
     match_style: Style,
 ) -> Result<(), Error> {
+    let is_cut_off = clip(text, width as usize).len() < text.len();
+    let text = if is_cut_off {
+        clip(text, (width as usize).saturating_sub(1))
+    } else {
+        text
+    };
     let mut at = 0;
 
     for matched in matches {
+        let matched = matched.start.min(text.len())..matched.end.min(text.len());
+
         if at < matched.start {
             term.queue_print(&text[at..matched.start], style)?;
         }
@@ -328,7 +347,26 @@ fn print_span(
         term.queue_print(&text[at..], style)?;
     }
 
+    if is_cut_off {
+        term.queue_print(ELLIPSIS, style)?;
+    }
+
     Ok(())
+}
+
+/// The longest prefix of `text` that fits in `width` columns.
+fn clip(text: &str, width: usize) -> &str {
+    let mut used = 0;
+
+    for (i, grapheme) in text.grapheme_indices(true) {
+        used += UnicodeWidthStr::width(grapheme);
+
+        if used > width {
+            return &text[..i];
+        }
+    }
+
+    text
 }
 
 fn blank_until(
@@ -402,6 +440,15 @@ mod tests {
                     .collect::<Vec<_>>()
             })
             .collect()
+    }
+
+    #[test]
+    fn clip_stops_before_a_grapheme_that_does_not_fit() {
+        assert_eq!("abc", clip("abcdef", 3));
+        assert_eq!("abcdef", clip("abcdef", 10));
+        // A double-width char that only half fits is left out entirely.
+        assert_eq!("a", clip("a漢", 2));
+        assert_eq!("", clip("漢", 1));
     }
 
     #[test]
