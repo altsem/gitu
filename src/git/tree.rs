@@ -9,6 +9,7 @@
 
 use crate::{Res, error::Error, item_data::Ref, items::short_age};
 use git2::{Oid, Repository};
+use regex::Regex;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -75,10 +76,16 @@ fn branch_roots<'repo>(
         .map(|commit| commit.id())
 }
 
-/// Collect the commits reachable from any of `roots`, up to `limit` of them,
-/// and lay them out as a tree. An oid reachable from more than one root is
-/// included only once.
-pub(crate) fn tree_roots(repo: &Repository, limit: usize, roots: &[Oid]) -> Res<Vec<TreeRow>> {
+/// Collect the commits reachable from any of `roots` and lay them out as a
+/// tree. An oid reachable from more than one root is included only once.
+/// Commits whose message does not match `msg_regex` are dropped before the
+/// `limit` is applied, like `git log --grep -n`.
+pub(crate) fn tree_roots(
+    repo: &Repository,
+    limit: usize,
+    roots: &[Oid],
+    msg_regex: Option<Regex>,
+) -> Res<Vec<TreeRow>> {
     if roots.is_empty() {
         return Ok(vec![]);
     }
@@ -98,8 +105,22 @@ pub(crate) fn tree_roots(repo: &Repository, limit: usize, roots: &[Oid]) -> Res<
         revwalk.push(*root).map_err(Error::ReadLog)?;
     }
 
+    // The limit is applied to the displayed (i.e. message-matching) commits,
+    // like `git log -n N --grep`: walk, filter, then take.
     let oids: Vec<Oid> = revwalk
-        .map(|oid| oid.map_err(Error::ReadLog))
+        .map(|oid_result| -> Res<Option<Oid>> {
+            let oid = oid_result.map_err(Error::ReadLog)?;
+            let commit = repo.find_commit(oid).map_err(Error::ReadLog)?;
+            let matches = msg_regex
+                .as_ref()
+                .is_none_or(|re| re.is_match(commit.message().unwrap_or_default()));
+            Ok(matches.then_some(oid))
+        })
+        .filter_map(|result| match result {
+            Ok(Some(oid)) => Some(Ok(oid)),
+            Ok(None) => None,
+            Err(err) => Some(Err(err)),
+        })
         .take(limit)
         .collect::<Res<Vec<_>>>()?;
 

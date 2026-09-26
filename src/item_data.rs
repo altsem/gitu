@@ -14,7 +14,7 @@ pub(crate) enum ItemData {
     },
     Commit {
         /// `git log --graph` prefix, e.g. `"*   "`. Empty for logs without a
-        /// graph.
+        /// graph (e.g. the status screen's recent commits).
         graph: String,
         oid: String,
         short_id: String,

@@ -4,7 +4,7 @@ use crate::{
     config::Config,
     git::tree,
     item_data::ItemData,
-    items::{self, Item, log},
+    items::{self, Item},
 };
 use git2::{Oid, Repository};
 use regex::Regex;
@@ -21,17 +21,32 @@ pub(crate) fn create(
     Screen::new(
         Arc::clone(&config),
         size,
-        Box::new(move || match revs.as_slice() {
-            [] => log(&repo, limit, None, msg_regex.clone()),
-            [rev] => log(&repo, limit, Some(*rev), msg_regex.clone()),
-            _ => {
-                let rows = tree::tree_roots(&repo, limit, &revs)?;
-
-                if rows.is_empty() {
-                    Ok(vec![])
-                } else {
-                    Ok(rows.into_iter().enumerate().map(row_to_item).collect())
+        Box::new(move || {
+            // Without explicit roots the tree is rooted at HEAD.
+            let roots = if revs.is_empty() {
+                match repo.head().and_then(|reference| reference.peel_to_commit()) {
+                    Ok(commit) => vec![commit.id()],
+                    Err(_) => vec![],
                 }
+            } else {
+                revs.clone()
+            };
+
+            let rows = tree::tree_roots(&repo, limit, &roots, msg_regex.clone())?;
+
+            if rows.is_empty() {
+                // A message filter that matched nothing gets a hint; an
+                // empty repo (no HEAD) does not.
+                if msg_regex.is_some() {
+                    Ok(vec![Item {
+                        data: ItemData::Raw("No commits found".to_string()),
+                        ..Default::default()
+                    }])
+                } else {
+                    Ok(vec![])
+                }
+            } else {
+                Ok(rows.into_iter().enumerate().map(row_to_item).collect())
             }
         }),
     )
