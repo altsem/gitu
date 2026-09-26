@@ -2,7 +2,7 @@
 source: src/tests/cherry_pick.rs
 expression: ctx.redact_buffer()
 ---
-▌b66a0bf main origin/main add initial-file                       Author Name __ |
+▌* b66a0bf main origin/main add initial-file                     Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: 74136530bbac8274
+styles_hash: 95e4eeecdc3ae74f
