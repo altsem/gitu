@@ -36,6 +36,8 @@ use std::{
 
 use temp_dir::TempDir;
 
+use regex::Regex;
+
 use crate::git::tree;
 
 /// Commits of the spec, as parent-index lists.
@@ -364,11 +366,55 @@ fn assert_rows(dir: &Path, revs: &[&str], spec: &str, rows: &[tree::TreeRow]) {
     }
 }
 
+/// `tree_roots` drops commits whose message does not match `msg_regex`,
+/// and the surviving graph simply ends where a filtered commit used to
+/// continue it.
+#[test]
+fn tree_roots_message_filter() {
+    //     0
+    //    / \
+    //  1   2
+    //  |   |
+    //  3   4
+    const SPEC: &str = "1 2;3;4;4;";
+    let (_dir, repo, oids) = build_spec_repo(SPEC);
+
+    // Only commits 1 and 4 survive; both used to descend into 3, so the
+    // tree comes out as two disconnected lines.
+    let re = Regex::new("commit [14]").unwrap();
+    let head = git2::Oid::from_str(&oids[0]).unwrap();
+    let rows = tree::tree_roots(&repo, usize::MAX, &[head], Some(re)).unwrap();
+    let got: Vec<&str> = rows
+        .iter()
+        .filter_map(|row| row.commit.as_ref().map(|commit| commit.oid.as_str()))
+        .collect();
+    assert_eq!(got, vec![oids[1].as_str(), oids[4].as_str()]);
+}
+
+/// `limit` counts displayed commits, so it is applied after `msg_regex`
+/// filters, like `git log -n N --grep`.
+#[test]
+fn tree_roots_limit_after_filter() {
+    const SPEC: &str = "1;2;3;4;";
+    let (_dir, repo, oids) = build_spec_repo(SPEC);
+    let head = git2::Oid::from_str(&oids[0]).unwrap();
+
+    // Messages are "commit 0" through "commit 4"; keep only the odd ones
+    // and limit to two: both matching commits survive the limit.
+    let re = Regex::new("commit [13]").unwrap();
+    let rows = tree::tree_roots(&repo, 2, &[head], Some(re)).unwrap();
+    let got: Vec<&str> = rows
+        .iter()
+        .filter_map(|row| row.commit.as_ref().map(|commit| commit.oid.as_str()))
+        .collect();
+    assert_eq!(got, vec![oids[1].as_str(), oids[3].as_str()]);
+}
+
 /// The rows of `tree_roots` rooted at HEAD (the single-rev case the log
 /// screen starts from).
 fn assert_head_rows(dir: &Path, repo: &git2::Repository, spec: &str) {
     let head = repo.head().unwrap().peel_to_commit().unwrap().id();
-    let rows = tree::tree_roots(repo, usize::MAX, &[head]).unwrap();
+    let rows = tree::tree_roots(repo, usize::MAX, &[head], None).unwrap();
     assert_rows(dir, &["HEAD"], spec, &rows);
 }
 
@@ -424,7 +470,7 @@ fn tree_of_local_branches() {
         .iter()
         .map(|r| name_by_oid[r.to_string().as_str()])
         .collect();
-    let rows = tree::tree_roots(&repo, usize::MAX, &roots).unwrap();
+    let rows = tree::tree_roots(&repo, usize::MAX, &roots, None).unwrap();
     assert_rows(dir, &revs, SPEC, &rows);
 }
 
@@ -494,7 +540,7 @@ fn random_branch_trees() {
             .map(|r| name_by_oid.get(&r.to_string()).unwrap().clone())
             .collect();
         let rev_refs: Vec<&str> = revs.iter().map(String::as_str).collect();
-        let rows = tree::tree_roots(&repo, usize::MAX, &roots).unwrap();
+        let rows = tree::tree_roots(&repo, usize::MAX, &roots, None).unwrap();
         assert_rows(dir, &rev_refs, &spec, &rows);
     }
 }
@@ -522,7 +568,7 @@ fn collapse_row_with_nothing_to_the_left_is_a_space() {
     git(dir, None, &["git", "branch", "tip", &oids[2]]);
 
     let roots = tree::local_branch_roots(&repo);
-    let rows = tree::tree_roots(&repo, usize::MAX, &roots).unwrap();
+    let rows = tree::tree_roots(&repo, usize::MAX, &roots, None).unwrap();
     assert_rows(dir, &["main", "tip"], SPEC, &rows);
 
     assert!(
@@ -633,7 +679,7 @@ fn random_topologies_match_git_graph_exactly() {
             &["git", "log", "--graph", "--format=%H"],
         ));
         let head = repo.head().unwrap().peel_to_commit().unwrap().id();
-        let rows = tree::tree_roots(&repo, usize::MAX, &[head]).unwrap();
+        let rows = tree::tree_roots(&repo, usize::MAX, &[head], None).unwrap();
         let mine: Vec<(String, Option<String>)> = rows
             .iter()
             .map(|r| {

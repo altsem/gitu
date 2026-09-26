@@ -194,6 +194,52 @@ fn diverging_branches(ctx: &TestContext) {
 }
 
 #[test]
+fn log_local_branches_single_branch() {
+    let ctx = setup_clone!();
+    //          C4 (main)
+    //        /      \
+    //     C2        C3 (side)
+    //      |         |
+    //      C1 -------  (side merged back with --no-ff)
+    //      |
+    //     C0 (origin/main)
+    //
+    // With only one local branch, the tree view has a single root; it must
+    // still show the graph (a plain log would hide the merged branch).
+    commit_at(
+        &ctx,
+        "2024-03-01T10:00:00+00:00",
+        "one",
+        "1\n",
+        "first commit",
+    );
+    run(&ctx.dir, &["git", "checkout", "-q", "-b", "side"]);
+    commit_at(
+        &ctx,
+        "2024-03-02T10:00:00+00:00",
+        "two",
+        "2\n",
+        "second commit",
+    );
+    run(&ctx.dir, &["git", "checkout", "-q", "main"]);
+    commit_at(
+        &ctx,
+        "2024-03-03T10:00:00+00:00",
+        "three",
+        "3\n",
+        "third commit",
+    );
+    git_at(
+        &ctx,
+        "2024-03-04T10:00:00+00:00",
+        &["merge", "-q", "--no-ff", "side"],
+    );
+    run(&ctx.dir, &["git", "branch", "-d", "side"]);
+
+    snapshot!(ctx, "lL");
+}
+
+#[test]
 fn log_all_branches() {
     let ctx = setup_clone!();
     diverging_branches(&ctx);
