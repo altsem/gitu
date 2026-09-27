@@ -210,11 +210,7 @@ fn log_all_refs() {
     // neither a branch, tag, nor remote branch).
     run(&ctx.dir, &["git", "tag", "v1"]);
     run(&ctx.dir, &["git", "checkout", "-q", "side"]);
-    fs::write(
-        ctx.dir.join("initial-file"),
-        "hello\nmodified\n",
-    )
-    .expect("error writing file");
+    fs::write(ctx.dir.join("initial-file"), "hello\nmodified\n").expect("error writing file");
     git_at(&ctx, "2024-03-04T10:00:00+00:00", &["stash", "-q"]);
 
     // Roots are every reference.
