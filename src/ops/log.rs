@@ -13,12 +13,15 @@ use git2::Oid;
 use regex::Regex;
 use std::{rc::Rc, sync::Arc};
 
+/// Default for `-n`, like magit's default log buffer arguments.
+const DEFAULT_LIMIT: u32 = 256;
+
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         Arg::new_arg(
             "-n",
             "Limit number of commits",
-            Some(|| 256),
+            Some(|| DEFAULT_LIMIT),
             positive_number,
         ),
         Arg::new_arg("--grep", "Search messages", None, any_regex),
@@ -134,7 +137,7 @@ fn goto_log_screen(app: &mut App, revs: Vec<Oid>) {
         .as_ref()
         .and_then(|m| m.args.get("-n"))
         .and_then(|arg| arg.value_as::<u32>())
-        .unwrap_or(&u32::MAX);
+        .unwrap_or(&DEFAULT_LIMIT);
 
     let msg_regex_menu = app
         .state
