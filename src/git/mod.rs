@@ -25,6 +25,7 @@ mod parse;
 pub(crate) mod rebase_status;
 pub(crate) mod remote;
 pub(crate) mod status;
+pub(crate) mod tree;
 
 pub(crate) fn rebase_status(repo: &Repository) -> Res<Option<RebaseStatus>> {
     let dir = repo.workdir().expect("No workdir");

@@ -13,6 +13,9 @@ pub(crate) enum ItemData {
         kind: Ref,
     },
     Commit {
+        /// `git log --graph` prefix, e.g. `"*   "`. Empty for logs without a
+        /// graph (e.g. the status screen's recent commits).
+        graph: String,
         oid: String,
         short_id: String,
         associated_references: Vec<Ref>,
@@ -148,22 +151,44 @@ pub(crate) enum Ref {
     Tag(String),
     Head(String),
     Remote(String),
+    /// Anything else (e.g. a stash).
+    Other(String),
 }
 
 impl Ref {
+    /// Classify a reference, or `None` for ones we don't display (remote
+    /// `HEAD` symrefs and prefetch refs).
+    pub(crate) fn from_reference(reference: &git2::Reference) -> Option<Self> {
+        let name = reference.shorthand()?.to_string();
+        if name.ends_with("/HEAD") || name.starts_with("prefetch/remotes/") {
+            return None;
+        }
+
+        Some(if reference.is_remote() {
+            Ref::Remote(name)
+        } else if reference.is_tag() {
+            Ref::Tag(name)
+        } else if reference.is_branch() {
+            Ref::Head(name)
+        } else {
+            Ref::Other(name)
+        })
+    }
+
     /// Convert to fully qualified refname (e.g., "refs/heads/main", "refs/tags/v1.0.0")
     pub(crate) fn to_full_refname(&self) -> String {
         match self {
             Ref::Head(name) => format!("refs/heads/{}", name),
             Ref::Tag(name) => format!("refs/tags/{}", name),
             Ref::Remote(name) => format!("refs/remotes/{}", name),
+            Ref::Other(name) => format!("refs/{}", name),
         }
     }
 
     /// Get the shorthand name without refs/ prefix
     pub(crate) fn shorthand(&self) -> &str {
         match self {
-            Ref::Head(name) | Ref::Tag(name) | Ref::Remote(name) => name,
+            Ref::Head(name) | Ref::Tag(name) | Ref::Remote(name) | Ref::Other(name) => name,
         }
     }
 }

@@ -5,7 +5,7 @@ mod cmd_log;
 pub mod config;
 pub mod error;
 mod file_watcher;
-mod git;
+pub mod git;
 pub mod gitu_diff;
 mod highlight;
 mod item_data;

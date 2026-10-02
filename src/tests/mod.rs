@@ -35,6 +35,7 @@ mod reverse;
 mod search;
 mod stage;
 mod stash;
+mod tree;
 mod unstage;
 
 pub use keys::*;

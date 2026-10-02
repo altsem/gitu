@@ -2,8 +2,11 @@
 source: src/tests/log.rs
 expression: ctx.redact_buffer()
 ---
-▌* 8bb5532 main add first commit                                 Author Name __ |
- * 6c08cf7 add second commit                                     Author Name __ |
+▌* 9295151 side third commit                                     Author Name __ |
+ | * 16c9409 main second commit                                  Author Name __ |
+ |/                                                                             |
+ * 98de714 first commit                                          Author Name __ |
+ * b66a0bf origin/main add initial-file                          Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -19,7 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
-styles_hash: 4256947eac8c1a17
+styles_hash: 6e850698f252fe96
