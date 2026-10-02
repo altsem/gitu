@@ -38,9 +38,13 @@ fn create_remotes_sections<'a>(repo: &'a Repository) -> Res<impl Iterator<Item =
     let all_remotes = create_reference_items(repo, Reference::is_remote)?;
     let mut remotes = BTreeMap::new();
     for (name, remote) in all_remotes {
-        let name =
-            String::from_utf8_lossy(&repo.branch_remote_name(&name).map_err(Error::GetRemote)?)
-                .to_string();
+        // A remote-tracking ref can exist without a configured remote (for
+        // example a leftover ref from a conflicted rebase). Skip those instead
+        // of failing the whole screen.
+        let Ok(remote_name) = repo.branch_remote_name(&name) else {
+            continue;
+        };
+        let name = String::from_utf8_lossy(&remote_name).to_string();
 
         match remotes.entry(name) {
             Entry::Vacant(entry) => {
