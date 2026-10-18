@@ -48,5 +48,5 @@ Or install from your package manager:
 Shell completions can be generated with `gitu completion <shell>`, see [Shell completions](docs/installing.md#shell-completions).
 
 ### Contributing
-PRs are welcome!
-This may help to get you started: [Development & Tooling](docs/dev-tooling.md)
+While a part of me do with issues/PRs could be closed a lot sooner to respect the work of contributors, I've also coded/tested/reviewed this myself on my spare time. And therefore it needs to stay interesting for myself and not become a chore. There are a few rough edges and missing features in Gitu, it'll never become a full magit-clone. While I'm not against opening up pull-requests, I just wanted to be clear on the expectations.
+You are always free to fork/extend this project to your heart's desire.
