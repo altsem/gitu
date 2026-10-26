@@ -7,10 +7,19 @@ use crate::gitu_diff::Status;
 use crate::highlight;
 use crate::item_data::{ItemData, Ref, SectionHeader};
 use crate::items::Item;
-use crate::ui::layout::opts;
+use crate::ui::layout::{Opts, opts};
 use crate::ui::{UiTree, layout_span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
+
+/// Options for a row holding an item, honouring `general.wrap_lines`.
+pub(crate) fn row_opts(config: &Config) -> Opts<u16> {
+    if config.general.wrap_lines {
+        opts().fill_x()
+    } else {
+        opts().fill_x().no_wrap()
+    }
+}
 
 /// Lays out an [`Item`] as spans in the caller's container, which is expected to
 /// be a single row.
@@ -63,6 +72,7 @@ pub(crate) fn layout_item<'a>(
             layout_reference(layout, kind, config, base);
         }
         ItemData::Commit {
+            graph,
             short_id,
             associated_references,
             summary,
@@ -70,6 +80,10 @@ pub(crate) fn layout_item<'a>(
             age,
             ..
         } => {
+            if !graph.is_empty() {
+                layout_span(layout, (graph.as_str().into(), base));
+            }
+
             layout_span(
                 layout,
                 (
@@ -78,7 +92,7 @@ pub(crate) fn layout_item<'a>(
                 ),
             );
 
-            layout.row(opts().fill_x(), |layout| {
+            layout.row(row_opts(config), |layout| {
                 for reference in associated_references {
                     layout_span(layout, (" ".into(), base));
                     layout_reference(layout, reference, config, base);
@@ -304,13 +318,16 @@ fn truncate(text: &str, width: usize) -> Cow<'_, str> {
 
 fn layout_reference<'a>(layout: &mut UiTree<'a>, reference: &'a Ref, config: &Config, base: Style) {
     let (name, style) = match reference {
-        Ref::Tag(tag) => (tag, &config.style.tag),
-        Ref::Head(branch) => (branch, &config.style.branch),
-        Ref::Remote(remote) => (remote, &config.style.remote),
+        Ref::Tag(tag) => (tag.as_str(), Some(&config.style.tag)),
+        Ref::Head(branch) => (branch.as_str(), Some(&config.style.branch)),
+        Ref::Remote(remote) => (remote.as_str(), Some(&config.style.remote)),
+        // Other refs (e.g. stashes) have no dedicated style.
+        Ref::Other(other) => (other.as_str(), None),
     };
 
-    layout_span(
-        layout,
-        (name.as_str().into(), base.patch(Style::from(style))),
-    );
+    if let Some(style) = style {
+        layout_span(layout, (name.into(), base.patch(Style::from(style))));
+    } else {
+        layout_span(layout, (name.into(), base));
+    }
 }

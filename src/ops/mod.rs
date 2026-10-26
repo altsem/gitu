@@ -27,6 +27,7 @@ pub(crate) mod remote;
 pub(crate) mod reset;
 pub(crate) mod reverse;
 pub(crate) mod revert;
+pub(crate) mod search;
 pub(crate) mod show;
 pub(crate) mod show_refs;
 pub(crate) mod stage;
@@ -89,6 +90,9 @@ pub(crate) enum Op {
     CommitFixup,
     CommitInstantFixup,
     LogOther,
+    LogLocalBranches,
+    LogAllBranches,
+    LogAllRefs,
     RebaseAutosquash,
     RebaseInteractive,
     ResetSoft,
@@ -128,6 +132,11 @@ pub(crate) enum Op {
     ScrollViewUp,
     ScrollViewDown,
 
+    Search,
+    SearchBackward,
+    SearchNext,
+    SearchPrevious,
+
     Refresh,
     Quit,
 
@@ -161,6 +170,10 @@ impl Op {
             Op::MoveBottom => Box::new(editor::MoveBottom),
             Op::ScrollViewUp => Box::new(editor::ScrollViewUp),
             Op::ScrollViewDown => Box::new(editor::ScrollViewDown),
+            Op::Search => Box::new(search::Search),
+            Op::SearchBackward => Box::new(search::SearchBackward),
+            Op::SearchNext => Box::new(search::SearchNext),
+            Op::SearchPrevious => Box::new(search::SearchPrevious),
             Op::Checkout => Box::new(branch::Checkout),
             Op::CheckoutNewBranch => Box::new(branch::CheckoutNewBranch),
             Op::Spinoff => Box::new(branch::Spinoff),
@@ -174,6 +187,9 @@ impl Op {
             Op::FetchPushRemote => Box::new(fetch::FetchPushRemote),
             Op::FetchUpstream => Box::new(fetch::FetchUpstream),
             Op::LogCurrent => Box::new(log::LogCurrent),
+            Op::LogLocalBranches => Box::new(log::LogLocalBranches),
+            Op::LogAllBranches => Box::new(log::LogAllBranches),
+            Op::LogAllRefs => Box::new(log::LogAllRefs),
             Op::PullFromPushRemote => Box::new(pull::PullFromPushRemote),
             Op::PullFromUpstream => Box::new(pull::PullFromUpstream),
             Op::PullFromElsewhere => Box::new(pull::PullFromElsewhere),

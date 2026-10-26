@@ -91,6 +91,10 @@ impl App {
                     None,
                 )?]
             }
+            // `completion` prints its script and exits in `main`, before the app is ever built.
+            Some(cli::Commands::Completion { .. }) => {
+                unreachable!("completion is handled before the app starts")
+            }
             None => vec![screen::status::create(
                 Arc::clone(&config),
                 Rc::clone(&repo),

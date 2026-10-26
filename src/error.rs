@@ -59,6 +59,9 @@ pub enum Error {
     BaseCommitOid,
     UpstreamCommitOid,
     GitBlame(io::Error),
+    NoSearchMatch(String),
+    NoPreviousSearch,
+    InvalidSearchRegex(regex::Error),
 }
 
 impl std::error::Error for Error {}
@@ -166,6 +169,9 @@ impl Display for Error {
                 f.write_str("Could not resolve OID of upstream branch commit")
             }
             Error::GitBlame(e) => f.write_fmt(format_args!("Git blame error: {e}")),
+            Error::NoSearchMatch(query) => f.write_fmt(format_args!("No match: {query}")),
+            Error::NoPreviousSearch => f.write_str("No previous search"),
+            Error::InvalidSearchRegex(e) => f.write_fmt(format_args!("Invalid search: {e}")),
         }
     }
 }

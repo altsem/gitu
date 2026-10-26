@@ -1,0 +1,25 @@
+---
+source: src/tests/search.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 3 commit(s).                          |
+                                                                                |
+ Recent commits                                                                 |
+▌1e81efc main add thirdfile                                      Author Name __ |
+ eb81c40 add secondfile                                          Author Name __ |
+ 4c54307 add firstfile                                           Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+! No previous search                                                            |
+styles_hash: 485fe0f8bf08cacc

@@ -1,0 +1,25 @@
+---
+source: src/tests/search.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 1 commit(s).                          |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   testfile                                                            |
+ @@ -1,3 +1,3 @@                                                                |
+  one                                                                           |
+  two                                                                           |
+ -three                                                                         |
+▌+four                                                                          |
+                                                                                |
+ Recent commits                                                                 |
+ 1c4af61 main add testfile                                       Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+styles_hash: 7b32b6b5b7643770

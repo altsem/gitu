@@ -18,6 +18,7 @@ mod blame;
 mod branch;
 mod cherry_pick;
 mod commit;
+mod completion;
 mod discard;
 mod editor;
 mod fetch;
@@ -31,8 +32,10 @@ mod rebase;
 mod remote;
 mod reset;
 mod reverse;
+mod search;
 mod stage;
 mod stash;
+mod tree;
 mod unstage;
 
 pub use keys::*;
@@ -153,6 +156,24 @@ fn recent_commits_with_limit() {
     commit(&ctx.dir, "firstfile", "testing\ntesttest\n");
     commit(&ctx.dir, "secondfile", "testing\ntesttest\n");
     commit(&ctx.dir, "thirdfile", "testing\ntesttest\n");
+    snapshot!(ctx, "");
+}
+
+const LONG_SUMMARY: &str =
+    "a commit summary that is far too wide to fit within eighty columns of terminal";
+
+#[test]
+fn long_lines_wrap_by_default() {
+    let ctx = setup_clone!();
+    commit(&ctx.dir, LONG_SUMMARY, "testing\n");
+    snapshot!(ctx, "");
+}
+
+#[test]
+fn long_lines_are_cut_off_with_wrap_lines_disabled() {
+    let mut ctx = setup_clone!();
+    ctx.config().general.wrap_lines = false;
+    commit(&ctx.dir, LONG_SUMMARY, "testing\n");
     snapshot!(ctx, "");
 }
 

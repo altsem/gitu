@@ -67,7 +67,8 @@ impl<U: Scalar> Opts<U> {
         }
     }
 
-    #[allow(dead_code)]
+    /// Cuts a child that doesn't fit off at the edge, rather than starting a
+    /// new line.
     pub fn no_wrap(self) -> Self {
         Self {
             wrap: Some(false),
@@ -121,6 +122,17 @@ pub(crate) struct Node<L, C, U> {
 }
 
 impl<L, C, U> Node<L, C, U> {
+    pub(crate) fn as_leaf(&self) -> Option<&L> {
+        match &self.data {
+            NodeData::Leaf(leaf) => Some(leaf),
+            NodeData::Container(_) => None,
+        }
+    }
+
+    pub(crate) fn is_leaf(&self) -> bool {
+        matches!(self.data, NodeData::Leaf(_))
+    }
+
     pub(crate) fn is_wrapping(&self) -> bool {
         self.opts
             .wrap

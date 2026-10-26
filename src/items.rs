@@ -123,7 +123,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
                 id: hash(stash_id),
                 depth: 1,
                 data: ItemData::Stash {
-                    message: stash.message().unwrap_or("").to_string(),
+                    message: stash.message().ok().flatten().unwrap_or("").to_string(),
                     stash_ref,
                     id: i,
                 },
@@ -145,7 +145,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
         .collect::<Vec<_>>())
 }
 
-fn short_age(time: git2::Time) -> String {
+pub(crate) fn short_age(time: git2::Time) -> String {
     const MINUTE: i64 = 60;
     const HOUR: i64 = 60 * MINUTE;
     const DAY: i64 = 24 * HOUR;
@@ -192,28 +192,12 @@ pub(crate) fn log(
         .references()
         .map_err(Error::ReadLog)?
         .filter_map(Result::ok)
-        .filter_map(
-            |reference| match (reference.peel_to_commit(), reference.shorthand()) {
-                (Ok(target), Some(name)) => {
-                    if name.ends_with("/HEAD") || name.starts_with("prefetch/remotes/") {
-                        return None;
-                    }
-
-                    let name = name.to_owned();
-
-                    let ref_kind = if reference.is_remote() {
-                        Ref::Remote(name)
-                    } else if reference.is_tag() {
-                        Ref::Tag(name)
-                    } else {
-                        Ref::Head(name)
-                    };
-
-                    Some((target, ref_kind))
-                }
+        .filter_map(|reference| {
+            match (reference.peel_to_commit(), Ref::from_reference(&reference)) {
+                (Ok(target), Some(ref_kind)) => Some((target, ref_kind)),
                 _ => None,
-            },
-        )
+            }
+        })
         .collect();
 
     let items: Vec<Item> = revwalk
@@ -237,10 +221,11 @@ pub(crate) fn log(
                 .collect();
 
             let data = ItemData::Commit {
+                graph: String::new(),
                 oid: oid.to_string(),
                 short_id,
                 associated_references,
-                summary: commit.summary().unwrap_or("").to_string(),
+                summary: commit.summary().ok().flatten().unwrap_or("").to_string(),
                 author: commit.author().name().unwrap_or("").to_string(),
                 age: short_age(commit.author().when()),
             };

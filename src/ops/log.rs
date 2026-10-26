@@ -3,6 +3,7 @@ use crate::{
     Res,
     app::{App, PromptParams, State},
     error::Error,
+    git::tree,
     item_data::{ItemData, Rev},
     menu::arg::{Arg, any_regex, positive_number},
     screen,
@@ -12,12 +13,15 @@ use git2::Oid;
 use regex::Regex;
 use std::{rc::Rc, sync::Arc};
 
+/// Default for `-n`, like magit's default log buffer arguments.
+const DEFAULT_LIMIT: u32 = 256;
+
 pub(crate) fn init_args() -> Vec<Arg> {
     vec![
         Arg::new_arg(
             "-n",
             "Limit number of commits",
-            Some(|| 256),
+            Some(|| DEFAULT_LIMIT),
             positive_number,
         ),
         Arg::new_arg("--grep", "Search messages", None, any_regex),
@@ -29,7 +33,7 @@ pub(crate) struct LogCurrent;
 impl OpTrait for LogCurrent {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, _term: &mut Term| {
-            goto_log_screen(app, None);
+            goto_log_screen(app, Vec::new());
             Ok(())
         }))
     }
@@ -67,6 +71,51 @@ impl OpTrait for LogOther {
     }
 }
 
+pub(crate) struct LogLocalBranches;
+impl OpTrait for LogLocalBranches {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, _term: &mut Term| {
+            let roots = tree::local_branch_roots(&app.state.repo);
+            goto_log_screen(app, roots);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "local branches".into()
+    }
+}
+
+pub(crate) struct LogAllBranches;
+impl OpTrait for LogAllBranches {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, _term: &mut Term| {
+            let roots = tree::all_branch_roots(&app.state.repo);
+            goto_log_screen(app, roots);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "all branches".into()
+    }
+}
+
+pub(crate) struct LogAllRefs;
+impl OpTrait for LogAllRefs {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, _term: &mut Term| {
+            let roots = tree::all_ref_roots(&app.state.repo);
+            goto_log_screen(app, roots);
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "all refs".into()
+    }
+}
+
 fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
     let oid_result = match app.state.repo.revparse_single(result) {
         Ok(rev) => Ok(rev.id()),
@@ -75,11 +124,11 @@ fn log_other(app: &mut App, _term: &mut Term, result: &str) -> Res<()> {
 
     let oid = oid_result?;
 
-    goto_log_screen(app, Some(oid));
+    goto_log_screen(app, vec![oid]);
     Ok(())
 }
 
-fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
+fn goto_log_screen(app: &mut App, revs: Vec<Oid>) {
     app.state.screens.drain(1..);
     let size = app.state.screens.last().unwrap().size;
     let limit = *app
@@ -88,7 +137,7 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
         .as_ref()
         .and_then(|m| m.args.get("-n"))
         .and_then(|arg| arg.value_as::<u32>())
-        .unwrap_or(&u32::MAX);
+        .unwrap_or(&DEFAULT_LIMIT);
 
     let msg_regex_menu = app
         .state
@@ -104,7 +153,7 @@ fn goto_log_screen(app: &mut App, rev: Option<Oid>) {
             Rc::clone(&app.state.repo),
             size,
             limit as usize,
-            rev,
+            revs,
             msg_regex,
         )
         .expect("Couldn't create screen"),

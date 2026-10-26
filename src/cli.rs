@@ -1,6 +1,8 @@
+use std::io;
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::Shell;
 
 #[derive(Default, Debug, Parser)]
 #[command(name = "gitu")]
@@ -44,4 +46,18 @@ pub enum Commands {
         #[clap(short, long)]
         rev: Option<String>,
     },
+    /// Print a shell completion script to stdout.
+    ///
+    /// Example (bash): `gitu completion bash > ~/.local/share/bash-completion/completions/gitu`
+    Completion {
+        /// The shell to generate a completion script for
+        shell: Shell,
+    },
+}
+
+/// Write a shell completion script for `gitu` to the given writer.
+pub fn completions(shell: Shell, out: &mut impl io::Write) {
+    let mut cmd = Args::command();
+    let bin_name = cmd.get_name().to_string();
+    clap_complete::generate(shell, &mut cmd, bin_name, out);
 }
