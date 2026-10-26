@@ -128,7 +128,8 @@ fn create_prefix(repo: &Repository, reference: &Reference) -> &'static str {
         return "? ";
     }
 
-    let reference_names_match = reference.name() == head.as_ref().and_then(Reference::name);
+    let reference_names_match =
+        reference.name().ok() == head.as_ref().and_then(|head| head.name().ok());
 
     if reference_names_match {
         return "* ";

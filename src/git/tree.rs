@@ -138,7 +138,12 @@ pub(crate) fn tree_roots(
                 oid: oid.to_string(),
                 short_id: String::from_utf8_lossy(&short_id).to_string(),
                 associated_references: references.get(oid).cloned().unwrap_or_default(),
-                summary: commit.summary().unwrap_or_default().to_string(),
+                summary: commit
+                    .summary()
+                    .ok()
+                    .flatten()
+                    .unwrap_or_default()
+                    .to_string(),
                 author: commit.author().name().unwrap_or_default().to_string(),
                 age: short_age(commit.author().when()),
             },

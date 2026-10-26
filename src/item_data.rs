@@ -159,7 +159,7 @@ impl Ref {
     /// Classify a reference, or `None` for ones we don't display (remote
     /// `HEAD` symrefs and prefetch refs).
     pub(crate) fn from_reference(reference: &git2::Reference) -> Option<Self> {
-        let name = reference.shorthand()?.to_string();
+        let name = reference.shorthand().ok()?.to_string();
         if name.ends_with("/HEAD") || name.starts_with("prefetch/remotes/") {
             return None;
         }

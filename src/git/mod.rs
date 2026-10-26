@@ -582,7 +582,7 @@ pub(crate) fn tags(repo: &git2::Repository) -> Res<Vec<Ref>> {
         .tag_names(None)
         .map_err(Error::ListGitReferences)?
         .into_iter()
-        .flatten()
+        .filter_map(|tag_name| tag_name.ok().flatten())
         .map(|tag_name| Ref::Tag(tag_name.to_string()))
         .collect())
 }
