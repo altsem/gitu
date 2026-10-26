@@ -123,6 +123,9 @@ fn git_with_input(dir: &Path, date: Option<&str>, args: &[&str], input: &[u8]) -
         .env("GIT_COMMITTER_NAME", "CI")
         .env("GIT_COMMITTER_EMAIL", "ci@example.com")
         .env("LC_ALL", "C")
+        .env("GIT_CONFIG_COUNT", "1")
+        .env("GIT_CONFIG_KEY_0", "log.graphIndent")
+        .env("GIT_CONFIG_VALUE_0", "false")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped());
     if let Some(date) = date {
