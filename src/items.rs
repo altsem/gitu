@@ -123,7 +123,7 @@ pub(crate) fn stash_list(repo: &Repository, limit: usize) -> Res<Vec<Item>> {
                 id: hash(stash_id),
                 depth: 1,
                 data: ItemData::Stash {
-                    message: stash.message().unwrap_or("").to_string(),
+                    message: stash.message().ok().flatten().unwrap_or("").to_string(),
                     stash_ref,
                     id: i,
                 },
@@ -225,7 +225,7 @@ pub(crate) fn log(
                 oid: oid.to_string(),
                 short_id,
                 associated_references,
-                summary: commit.summary().unwrap_or("").to_string(),
+                summary: commit.summary().ok().flatten().unwrap_or("").to_string(),
                 author: commit.author().name().unwrap_or("").to_string(),
                 age: short_age(commit.author().when()),
             };
