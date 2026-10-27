@@ -354,11 +354,11 @@ impl<'a> Parser<'a> {
         }
 
         if self.consume("--- ").is_ok() {
-            old_file = self.diff_header_path(Self::newline_or_eof)?;
-            self.newline_or_eof()?;
+            old_file = self.diff_header_path(Self::newline_or_tab_or_eof)?;
+            self.consume_until_after(Self::newline_or_eof)?;
             self.consume("+++ ")?;
-            new_file = self.diff_header_path(Self::newline_or_eof)?;
-            self.newline_or_eof()?;
+            new_file = self.diff_header_path(Self::newline_or_tab_or_eof)?;
+            self.consume_until_after(Self::newline_or_eof)?;
         }
 
         Ok(DiffHeader {
@@ -665,6 +665,18 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn newline_or_tab_or_eof(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::newline_or_tab_or_eof\n{:?}", self);
+        self.newline()
+            .or_else(|_| self.tab())
+            .or_else(|_| self.eof())
+            .map_err(|_| {
+                array_vec![ThinParseError {
+                    expected: "<newline or tab or eof>",
+                }]
+            })
+    }
+
     fn newline(&mut self) -> ThinResult<Range<usize>> {
         log::trace!("Parser::newline\n{:?}", self);
         self.consume("\r\n")
@@ -674,6 +686,12 @@ impl<'a> Parser<'a> {
                     expected: "<newline>",
                 }]
             })
+    }
+
+    fn tab(&mut self) -> ThinResult<Range<usize>> {
+        log::trace!("Parser::tab\n{:?}", self);
+        self.consume("\t")
+            .map_err(|_| array_vec![ThinParseError { expected: "<tab>" }])
     }
 
     fn ascii_whitespace(&mut self) -> ThinResult<Range<usize>> {
