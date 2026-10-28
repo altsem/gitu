@@ -94,6 +94,11 @@ fn has_uppercase(query: &str) -> bool {
 pub(crate) struct Screen {
     pub(crate) size: (u16, u16),
     cursor: usize,
+    /// The cursor sits in the gap above `cursor`, selecting nothing, after a
+    /// reload took away the item it was on.
+    gap: bool,
+    /// What is selected while in the gap.
+    nothing: Item,
     scroll: Scroll,
     config: Arc<Config>,
     refresh_items: Box<dyn Fn() -> Res<Vec<Item>>>,
@@ -120,6 +125,8 @@ impl Screen {
 
         let mut screen = Self {
             cursor: 0,
+            gap: false,
+            nothing: Item::default(),
             scroll: Scroll::default(),
             size,
             config,
@@ -158,6 +165,7 @@ impl Screen {
 
     pub(crate) fn select_next(&mut self, nav_mode: NavMode) {
         self.cursor = self.find_next(nav_mode);
+        self.gap = false;
         self.scroll_fit_end();
         self.scroll_fit_start();
     }
@@ -217,7 +225,7 @@ impl Screen {
 
     pub(crate) fn find_next(&mut self, nav_mode: NavMode) -> usize {
         self.visible_from(self.cursor)
-            .skip(1)
+            .skip(usize::from(!self.gap))
             .find(|&item_i| self.nav_filter(item_i, nav_mode))
             .unwrap_or(self.cursor)
     }
@@ -247,6 +255,7 @@ impl Screen {
 
     pub(crate) fn select_previous(&mut self, nav_mode: NavMode) {
         self.cursor = self.find_previous(nav_mode);
+        self.gap = false;
         self.scroll_fit_start();
     }
 
@@ -276,7 +285,7 @@ impl Screen {
     }
 
     pub(crate) fn toggle_section(&mut self) -> Res<()> {
-        let selected = &self.items[self.cursor];
+        let selected = self.get_selected_item();
 
         if selected.data.is_section() {
             let id = selected.id;
@@ -297,13 +306,16 @@ impl Screen {
         Ok(())
     }
 
-    pub(crate) fn refresh(&mut self) -> Res<()> {
+    /// `acted` says whether the items changed by an action, which likely
+    /// took the selected item with it, rather than by a reload.
+    pub(crate) fn refresh(&mut self, acted: bool) -> Res<()> {
         let trail = self.trail();
         self.items = (self.refresh_items)()?;
         self.invalidate();
 
-        if let Some(cursor) = self.follow(&trail) {
+        if let Some((cursor, lost)) = self.follow(&trail) {
             self.cursor = cursor;
+            self.gap |= lost && !acted;
             self.scroll_to_cursor();
         }
 
@@ -360,13 +372,13 @@ impl Screen {
         trail
     }
 
-    /// Where the cursor ends up after a refresh. If its item was lost, it takes
-    /// the item below the fallback that survived, keeping to the same depth
-    /// unless there is none left there.
-    fn follow(&self, trail: &[(Key, usize)]) -> Option<usize> {
+    /// Where the cursor ends up after a refresh, and whether its item was
+    /// lost. When lost, the cursor takes the item below the fallback that
+    /// survived, keeping to the same depth unless there is none left there.
+    fn follow(&self, trail: &[(Key, usize)]) -> Option<(usize, bool)> {
         let ((key, _), anchors) = trail.split_first()?;
         if let Some(item_i) = self.find_key(*key) {
-            return Some(item_i);
+            return Some((item_i, false));
         }
 
         anchors.iter().find_map(|&(key, depth)| {
@@ -379,6 +391,7 @@ impl Screen {
                 .filter(|&item_i| self.items[item_i].depth <= depth)
                 .find(selectable)
                 .or(Some(anchor).filter(selectable))
+                .map(|item_i| (item_i, true))
         })
     }
 
@@ -701,7 +714,9 @@ impl Screen {
     }
 
     fn is_cursor_off_screen(&self) -> bool {
-        !self.item_views().any(|item| item.highlighted)
+        !self
+            .item_views()
+            .any(|item| item.highlighted || item.item_index == self.cursor)
     }
 
     fn move_cursor_to_screen_center(&mut self) {
@@ -755,6 +770,7 @@ impl Screen {
 
         let old_cursor = self.cursor;
         self.cursor = new_cursor;
+        self.gap = false;
 
         let nav_mode = self.selected_item_nav_mode();
         self.move_from_unselectable(nav_mode);
@@ -771,14 +787,16 @@ impl Screen {
     pub(crate) fn move_cursor_to_top(&mut self) {
         if let Some(first) = self.find_item(|item| !item.unselectable) {
             self.cursor = first;
-                self.scroll = Scroll::default();
+            self.gap = false;
+            self.scroll = Scroll::default();
         }
     }
 
     pub(crate) fn move_cursor_to_bottom(&mut self) {
         if let Some(last) = self.rfind_item(|item| !item.unselectable) {
             self.cursor = last;
-                self.scroll_fit_end();
+            self.gap = false;
+            self.scroll_fit_end();
         }
     }
 
@@ -787,6 +805,10 @@ impl Screen {
     }
 
     pub(crate) fn get_selected_item(&self) -> &Item {
+        if self.gap {
+            return &self.nothing;
+        }
+
         &self.items[self.cursor]
     }
 
@@ -797,6 +819,7 @@ impl Screen {
         };
 
         self.cursor = item_i;
+        self.gap = false;
         self.center_on_cursor();
         self.scroll_fit_end();
         self.scroll_fit_start();
@@ -811,6 +834,7 @@ impl Screen {
         };
 
         self.cursor = item_i;
+        self.gap = false;
         self.center_on_cursor();
         self.scroll_fit_start();
 
@@ -881,6 +905,7 @@ impl Screen {
 
         self.reveal(item_i);
         self.cursor = item_i;
+        self.gap = false;
         self.scroll_to_cursor();
         true
     }
@@ -972,6 +997,10 @@ impl Screen {
             return false;
         };
 
+        if self.gap {
+            return false;
+        }
+
         item_i == self.cursor
             || (item_i > self.cursor
                 && self.items[self.cursor + 1..=item_i]
@@ -990,7 +1019,7 @@ impl Screen {
             self.is_selected(self.scroll.item_anchor),
             move |highlighted, (item_index, _)| {
                 if item_index == self.cursor {
-                    *highlighted = true;
+                    *highlighted = !self.gap;
                 } else if cursor_depth.is_some_and(|depth| self.items[item_index].depth <= depth) {
                     *highlighted = false;
                 }
