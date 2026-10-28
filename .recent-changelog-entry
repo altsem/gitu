@@ -1,11 +1,29 @@
-## [0.43.0] - 2026-07-11
+## [0.44.0] - 2026-10-28
 
 ### 🚀 Features
 
-- Scroll view up/down ctrl+y, ctrl+e. Don't move cursor when scrolling
+- Pretty print top level errors (#553)
+- *(log)* Commit trees + local/all branches + all refs
+- *(config)* `general.wrap_lines` to cut long lines off instead of wrapping
+- *(cli)* Add completion subcommand for shell completion scripts (#555)
+- Search via `/`, `n` and `N`, backwards search (vim '?') still bound to help menu by default
+- *(log)* Show author and date for each commit
+- Port over config from Ratatui
+- Remove Ratatui dep. Rendering is now simpler, no double-buffering and diffing.
+- Word-wrapping
 
 ### 🐛 Bug Fixes
 
-- Parse file paths with spaces in diff header
-- *(log)* Avoid panic when showing log of a branch with no commits
+- *(ui)* Clip printed spans to the width the layout gave them
+- Copy to clipboard on wayland (enable arboard's "wayland-data-control" feature)
+- Calculate display width with unicode-width to handle emoji
+
+### 🔧 Configuration
+
+- *(log)* New general.log_author_width option (default 15)
+
+### ⚡ Performance
+
+- *(screen)* Scroll relative to items instead counting lines from the top
+- *(screen)* Lazy compute layout as view is navigated down
 
