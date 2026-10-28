@@ -47,16 +47,17 @@ pub(crate) fn create(
 
             let push_diff_section = |out: &mut Vec<Item>, header: SectionHeader, diff| {
                 let diff = Rc::new(diff);
+                let id = hash(["stash_diff_section", &commit.hash, &format!("{header:?}")]);
                 out.extend([
                     items::blank_line(),
                     Item {
-                        id: hash(["stash_diff_section", &commit.hash, &format!("{header:?}")]),
+                        id,
                         depth: 0,
                         data: ItemData::Header(header),
                         ..Default::default()
                     },
                 ]);
-                out.extend(items::create_diff_items(&diff, 1, false, None));
+                out.extend(items::create_diff_items(&diff, id, 1, false, None));
             };
 
             if !staged.file_diffs.is_empty() {

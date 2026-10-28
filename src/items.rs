@@ -27,6 +27,7 @@ pub(crate) struct Item {
 
 pub(crate) fn create_diff_items(
     diff: &Rc<Diff>,
+    parent: ItemId,
     depth: usize,
     default_collapsed: bool,
     commit: Option<String>,
@@ -35,8 +36,15 @@ pub(crate) fn create_diff_items(
         .iter()
         .enumerate()
         .flat_map(move |(file_i, file_diff)| {
+            let header = &file_diff.header;
+            let delta_id = hash((
+                parent,
+                header.old_file.fmt(&diff.text),
+                header.new_file.fmt(&diff.text),
+            ));
+
             iter::once(Item {
-                id: hash(diff.file_diff_header(file_i)),
+                id: delta_id,
                 default_collapsed,
                 depth,
                 data: ItemData::Delta {
@@ -48,7 +56,7 @@ pub(crate) fn create_diff_items(
             })
             .chain(file_diff.hunks.iter().cloned().enumerate().flat_map(
                 move |(hunk_i, _hunk)| {
-                    create_hunk_items(Rc::clone(diff), file_i, hunk_i, depth + 1)
+                    create_hunk_items(Rc::clone(diff), delta_id, file_i, hunk_i, depth + 1)
                 },
             ))
         })
@@ -56,13 +64,13 @@ pub(crate) fn create_diff_items(
 
 fn create_hunk_items(
     diff: Rc<Diff>,
+    delta_id: ItemId,
     file_i: usize,
     hunk_i: usize,
     depth: usize,
 ) -> impl Iterator<Item = Item> {
-    let hunk_hash = hash([diff.file_diff_header(file_i), diff.hunk(file_i, hunk_i)]);
     iter::once(Item {
-        id: hunk_hash,
+        id: hash((delta_id, diff.hunk_content(file_i, hunk_i))),
         depth,
         data: ItemData::Hunk {
             diff: Rc::clone(&diff),
@@ -76,7 +84,7 @@ fn create_hunk_items(
         file_i,
         hunk_i,
         depth + 1,
-        hunk_hash,
+        delta_id,
     ))
 }
 
@@ -85,7 +93,7 @@ fn format_diff_hunk_items(
     file_i: usize,
     hunk_i: usize,
     depth: usize,
-    hunk_hash: u64,
+    delta_id: ItemId,
 ) -> Vec<Item> {
     let hunk_content = diff.hunk_content(file_i, hunk_i);
 
@@ -93,7 +101,7 @@ fn format_diff_hunk_items(
         .enumerate()
         .map(|(line_index, (line_range, line))| {
             Item {
-                id: hunk_hash,
+                id: hash((delta_id, line)),
                 // line is marked unselectable if it starts with a space character
                 unselectable: line.starts_with(' '),
                 depth,

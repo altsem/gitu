@@ -26,8 +26,10 @@ pub(crate) fn create(
             let show = git::show(repo.as_ref(), &reference)?;
             let details = commit.details.lines();
 
+            let id = hash(["commit_section", &commit.hash]);
+
             Ok(iter::once(Item {
-                id: hash(["commit_section", &commit.hash]),
+                id,
                 depth: 0,
                 data: ItemData::Header(SectionHeader::Commit(commit.hash.clone())),
                 ..Default::default()
@@ -42,6 +44,7 @@ pub(crate) fn create(
             .chain([items::blank_line()])
             .chain(items::create_diff_items(
                 &Rc::new(show),
+                id,
                 0,
                 false,
                 Some(commit.hash.clone()),

@@ -3,6 +3,7 @@ use crate::config::DiffHighlightConfig;
 use crate::config::SyntaxHighlightConfig;
 use crate::git::diff::Diff;
 use crate::gitu_diff;
+use crate::items::hash;
 use crate::style::Style;
 use crate::syntax_parser;
 use crate::syntax_parser::SyntaxTag;
@@ -19,10 +20,9 @@ use unicode_segmentation::UnicodeSegmentation;
 #[cached(
     ty = "SizedCache<u64, Arc<HunkHighlights>>",
     create = "{ SizedCache::with_size(200) }",
-    convert = r#"{ _hunk_hash }"#
+    convert = r#"{ hash([diff.file_diff_header(file_index), diff.hunk(file_index, hunk_index)]) }"#
 )]
 pub(crate) fn highlight_hunk(
-    _hunk_hash: u64,
     config: &Config,
     diff: &Rc<Diff>,
     file_index: usize,

@@ -170,8 +170,7 @@ pub(crate) fn layout_item<'a>(
             line_range,
             line_i,
         } => {
-            let hunk_highlights =
-                highlight::highlight_hunk(item.id, config, diff, *file_i, *hunk_i);
+            let hunk_highlights = highlight::highlight_hunk(config, diff, *file_i, *hunk_i);
             let hunk_line = &diff.hunk_content(*file_i, *hunk_i)[line_range.clone()];
 
             for (highlight_range, highlight_style) in hunk_highlights.get_line_highlights(*line_i) {
