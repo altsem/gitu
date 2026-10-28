@@ -139,7 +139,7 @@ fn editor(file: &Path, maybe_line: Option<u32>) -> Option<Action> {
         };
 
         app.run_cmd_interactive(term, cmd)?;
-        app.update_screens()
+        app.update_screens(true)
     }))
 }
 

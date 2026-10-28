@@ -183,7 +183,7 @@ impl App {
         if let Some(file_watcher) = &mut self.state.file_watcher
             && file_watcher.pending_updates()
         {
-            self.update_screens()?;
+            self.update_screens(self.state.pending_cmd.is_some())?;
         }
 
         let handle_pending_cmd_result = self.handle_pending_cmd();
@@ -196,9 +196,13 @@ impl App {
         Ok(())
     }
 
-    pub fn update_screens(&mut self) -> Res<()> {
-        for screen in &mut self.state.screens {
-            screen.refresh()?;
+    /// `acted` says whether an action on the current screen changed things,
+    /// rather than something outside of gitu.
+    pub fn update_screens(&mut self, acted: bool) -> Res<()> {
+        let top = self.state.screens.len().saturating_sub(1);
+
+        for (i, screen) in self.state.screens.iter_mut().enumerate() {
+            screen.refresh(acted && i == top)?;
         }
 
         self.stage_redraw();
@@ -474,7 +478,7 @@ impl App {
 
         let result = write_child_output_to_log(log_rwlock, child, status);
         self.state.pending_cmd = None;
-        self.update_screens()?;
+        self.update_screens(true)?;
         result?;
 
         Ok(())
@@ -529,7 +533,7 @@ impl App {
             .push_cmd_with_output(&cmd, out_utf8);
 
         term.clear().map_err(Error::Term)?;
-        self.update_screens()?;
+        self.update_screens(true)?;
 
         if !status.success() {
             return Err(Error::CmdBadExit(
