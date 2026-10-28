@@ -6,7 +6,11 @@ use crate::ui::layout::{LayoutTree, opts};
 use crate::ui::{UiTree, layout_span};
 use crate::{item_data::ItemData, ui};
 
-use crate::{Res, config::Config, items::hash};
+use crate::{
+    Res,
+    config::Config,
+    items::{ItemId, hash},
+};
 
 use super::Item;
 use regex::{Regex, RegexBuilder};
@@ -37,6 +41,9 @@ struct Scroll {
     item_anchor: usize,
     offset: usize,
 }
+
+/// An item by its id, and which of the items sharing that id it is.
+type Key = (ItemId, usize);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum SearchDirection {
@@ -291,10 +298,88 @@ impl Screen {
     }
 
     pub(crate) fn refresh(&mut self) -> Res<()> {
+        let trail = self.trail();
         self.items = (self.refresh_items)()?;
         self.invalidate();
+
+        if let Some(cursor) = self.follow(&trail) {
+            self.cursor = cursor;
+            self.scroll_to_cursor();
+        }
+
         self.update_cursor();
         Ok(())
+    }
+
+    fn key(&self, item_i: usize) -> Key {
+        let id = self.items[item_i].id;
+        let nth = self.items[..item_i]
+            .iter()
+            .filter(|item| item.id == id)
+            .count();
+
+        (id, nth)
+    }
+
+    fn find_key(&self, (id, nth): Key) -> Option<usize> {
+        (0..self.items.len())
+            .filter(|&item_i| self.items[item_i].id == id)
+            .nth(nth)
+    }
+
+    /// The cursor's own key, then for it and each of its ancestors, the item
+    /// to fall back on: its previous sibling, or else its parent. Each with
+    /// the depth to look for a replacement at.
+    fn trail(&self) -> Vec<(Key, usize)> {
+        if self.items.is_empty() {
+            return vec![];
+        }
+
+        let mut trail = vec![(self.key(self.cursor), self.items[self.cursor].depth)];
+        let mut item_i = self.cursor;
+
+        loop {
+            let depth = self.items[item_i].depth;
+            let parent = (0..item_i).rev().find(|&i| self.items[i].depth < depth);
+
+            let prev_sibling = (parent.map_or(0, |parent| parent + 1)..item_i)
+                .rev()
+                .find(|&i| self.items[i].depth == depth && !self.items[i].unselectable);
+
+            if let Some(prev) = prev_sibling.or(parent) {
+                trail.push((self.key(prev), depth));
+            }
+
+            let Some(parent) = parent else {
+                break;
+            };
+
+            item_i = parent;
+        }
+
+        trail
+    }
+
+    /// Where the cursor ends up after a refresh. If its item was lost, it takes
+    /// the item below the fallback that survived, keeping to the same depth
+    /// unless there is none left there.
+    fn follow(&self, trail: &[(Key, usize)]) -> Option<usize> {
+        let ((key, _), anchors) = trail.split_first()?;
+        if let Some(item_i) = self.find_key(*key) {
+            return Some(item_i);
+        }
+
+        anchors.iter().find_map(|&(key, depth)| {
+            let anchor = self.find_key(key)?;
+            let selectable =
+                |&item_i: &usize| self.is_selectable(item_i, NavMode::IncludeSubLines);
+
+            self.visible_from(anchor)
+                .skip(1)
+                .filter(|&item_i| self.items[item_i].depth <= depth)
+                .find(selectable)
+                .or(Some(anchor).filter(selectable))
+        })
     }
 
     pub(crate) fn resize(&mut self, w: u16, h: u16) -> Res<()> {
@@ -686,14 +771,14 @@ impl Screen {
     pub(crate) fn move_cursor_to_top(&mut self) {
         if let Some(first) = self.find_item(|item| !item.unselectable) {
             self.cursor = first;
-            self.scroll = Scroll::default();
+                self.scroll = Scroll::default();
         }
     }
 
     pub(crate) fn move_cursor_to_bottom(&mut self) {
         if let Some(last) = self.rfind_item(|item| !item.unselectable) {
             self.cursor = last;
-            self.scroll_fit_end();
+                self.scroll_fit_end();
         }
     }
 
@@ -1147,7 +1232,7 @@ mod tests {
         let mut screen = screen_of(3, (80, 20));
 
         screen.scroll_view_down(2);
-        screen.refresh().unwrap();
+        screen.resize(80, 20).unwrap();
 
         assert_eq!(2, screen.cursor);
     }
