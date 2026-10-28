@@ -175,6 +175,8 @@ fn create_status_section_items<'a>(
     section: SectionID,
     diff: &'a Rc<Diff>,
 ) -> impl Iterator<Item = Item> + 'a {
+    let id = hash(&section);
+
     if diff.file_diffs.is_empty() {
         vec![]
     } else {
@@ -188,7 +190,7 @@ fn create_status_section_items<'a>(
         vec![
             items::blank_line(),
             Item {
-                id: hash(section),
+                id,
                 depth: 0,
                 data: item_data,
                 ..Default::default()
@@ -196,7 +198,7 @@ fn create_status_section_items<'a>(
         ]
     }
     .into_iter()
-    .chain(items::create_diff_items(diff, 1, true, None))
+    .chain(items::create_diff_items(diff, id, 1, true, None))
 }
 
 fn create_stash_list_section_items<'a>(
