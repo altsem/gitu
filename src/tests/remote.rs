@@ -27,7 +27,7 @@ fn add_remote() {
 
 #[test]
 fn rename_remote_name_prompt() {
-    snapshot!(setup_clone!(), "Mr");
+    snapshot!(setup_clone!(), "Mrorigin<enter>");
 }
 
 #[test]

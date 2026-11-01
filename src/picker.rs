@@ -111,6 +111,21 @@ impl PickerState {
         state
     }
 
+    pub(crate) fn with_remotes(params: PickerParams) -> Self {
+        let items = params
+            .refs
+            .iter()
+            .map(|name| {
+                PickerItem::new(
+                    name.shorthand().to_string(),
+                    PickerData::Item(name.shorthand().to_string().clone()),
+                )
+            })
+            .collect();
+
+        Self::new(params.prompt, items, params.allow_custom_input)
+    }
+
     /// Create a picker showing only local branches by shorthand name.
     /// The default branch (if any) is listed first. The exclude_ref is omitted.
     pub(crate) fn with_branches(params: PickerParams) -> Self {

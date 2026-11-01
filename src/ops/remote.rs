@@ -3,7 +3,9 @@ use std::{process::Command, rc::Rc};
 use crate::{
     Res,
     app::{App, PromptParams, State},
+    git,
     item_data::ItemData,
+    picker::{PickerParams, PickerState},
     term::Term,
 };
 
@@ -44,12 +46,15 @@ pub(crate) struct RenameRemote;
 impl OpTrait for RenameRemote {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
-            let remote_name = app.prompt(
+            let remote_name = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Rename remote",
-                    ..Default::default()
-                },
+                PickerState::with_remotes(PickerParams {
+                    prompt: "Choose remote to rename".into(),
+                    refs: &git::remotes(&app.state.repo)?,
+                    exclude_ref: None,
+                    default: None,
+                    allow_custom_input: false,
+                }),
             )?;
 
             let new_remote_name = app.prompt(
@@ -60,7 +65,10 @@ impl OpTrait for RenameRemote {
                 },
             )?;
 
-            rename_remote(app, term, &remote_name, &new_remote_name)?;
+            if let Some(result) = remote_name {
+                rename_remote(app, term, result.display(), &new_remote_name)?;
+            }
+
             Ok(())
         }))
     }
@@ -70,20 +78,52 @@ impl OpTrait for RenameRemote {
     }
 }
 
+pub(crate) struct ShowRemote;
+impl OpTrait for ShowRemote {
+    fn get_action(&self, _target: &ItemData) -> Option<Action> {
+        Some(Rc::new(|app: &mut App, term: &mut Term| {
+            let _ = app.pick(
+                term,
+                PickerState::with_remotes(PickerParams {
+                    prompt: "Remotes".into(),
+                    refs: &git::remotes(&app.state.repo)?,
+                    exclude_ref: None,
+                    default: None,
+                    allow_custom_input: false,
+                }),
+            )?;
+
+            Ok(())
+        }))
+    }
+
+    fn display(&self, _state: &State) -> String {
+        "show remotes".to_string()
+    }
+}
+
 pub(crate) struct RemoveRemote;
 impl OpTrait for RemoveRemote {
     fn get_action(&self, _target: &ItemData) -> Option<Action> {
         Some(Rc::new(|app: &mut App, term: &mut Term| {
-            let remote_name = app.prompt(
+            let result = app.pick(
                 term,
-                &PromptParams {
-                    prompt: "Delete remote",
-                    ..Default::default()
-                },
+                PickerState::with_remotes(PickerParams {
+                    prompt: "Remotes".into(),
+                    refs: &git::remotes(&app.state.repo)?,
+                    exclude_ref: None,
+                    default: None,
+                    allow_custom_input: false,
+                }),
             )?;
 
-            app.confirm(term, "Really delete remote (y or n)")?;
-            remove_remote(app, term, &remote_name)?;
+            if let Some(remote_name) = result {
+                // TODO: Would be nice to show which remote is acting upon.
+                // But app.confirm expects an 'static str which complicates things a bit.
+                app.confirm(term, "Really delete remote (y or n) >")?;
+                remove_remote(app, term, remote_name.display())?;
+                return Ok(());
+            }
 
             Ok(())
         }))
