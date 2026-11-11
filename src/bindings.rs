@@ -109,6 +109,9 @@ impl Binding {
     /// returned; the caller should report this to the user.
     pub fn parse(menu: Menu, raw_keys: &str, op: Op) -> Option<Self> {
         if let Ok(("", keys)) = key_parser::parse_config_keys(raw_keys) {
+            if keys.is_empty() {
+                return None;
+            }
             Some(Self {
                 menu,
                 raw: raw_keys.to_string(),
