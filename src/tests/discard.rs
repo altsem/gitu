@@ -104,6 +104,57 @@ pub(crate) fn discard_unstaged_delta() {
 }
 
 #[test]
+fn discard_unstaged_binary_file() {
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "binary-file", "\0original");
+    fs::write(ctx.dir.join("binary-file"), b"\0modified").unwrap();
+
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("jjKy"));
+
+    assert_eq!(
+        fs::read(ctx.dir.join("binary-file")).unwrap(),
+        b"\0original"
+    );
+}
+
+#[test]
+fn discard_staged_binary_file() {
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "binary-file", "\0original");
+    fs::write(ctx.dir.join("binary-file"), b"\0staged").unwrap();
+    run(&ctx.dir, &["git", "add", "binary-file"]);
+
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("jjKy"));
+
+    assert_eq!(
+        fs::read(ctx.dir.join("binary-file")).unwrap(),
+        b"\0original"
+    );
+    assert_eq!(run(&ctx.dir, &["git", "diff", "--cached"]), "");
+}
+
+#[test]
+fn discard_staged_binary_file_preserves_unstaged_changes() {
+    let mut ctx = setup_clone!();
+    commit(&ctx.dir, "binary-file", "\0original");
+    fs::write(ctx.dir.join("binary-file"), b"\0staged").unwrap();
+    run(&ctx.dir, &["git", "add", "binary-file"]);
+    fs::write(ctx.dir.join("binary-file"), b"\0unstaged").unwrap();
+
+    let mut app = ctx.init_app();
+    ctx.update(&mut app, keys("jjjjKy"));
+
+    assert_eq!(
+        fs::read(ctx.dir.join("binary-file")).unwrap(),
+        b"\0unstaged"
+    );
+    assert_eq!(run(&ctx.dir, &["git", "show", ":binary-file"]), "\0staged");
+    assert!(ctx.redact_buffer().contains("does not match index"));
+}
+
+#[test]
 pub(crate) fn discard_unstaged_hunk() {
     let ctx = setup_clone!();
     commit(&ctx.dir, "file-one", "FOO\nBAR\n");
