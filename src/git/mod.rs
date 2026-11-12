@@ -158,7 +158,7 @@ pub(crate) fn diff_unstaged(repo: &Repository) -> Res<Diff> {
     let text = String::from_utf8_lossy(
         &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--no-ext-diff"])
+            .args(["diff", "--no-ext-diff", "--full-index"])
             .output()
             .map_err(Error::GitDiff)?
             .stdout,
@@ -177,7 +177,7 @@ pub(crate) fn diff_staged(repo: &Repository) -> Res<Diff> {
     let text = String::from_utf8_lossy(
         &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["diff", "--no-ext-diff", "--staged"])
+            .args(["diff", "--no-ext-diff", "--full-index", "--staged"])
             .output()
             .map_err(Error::GitDiff)?
             .stdout,
@@ -210,7 +210,7 @@ pub(crate) fn show(repo: &Repository, reference: &str) -> Res<Diff> {
     let text = String::from_utf8_lossy(
         &Command::new("git")
             .current_dir(repo.workdir().expect("Bare repos unhandled"))
-            .args(["show", reference])
+            .args(["show", "--full-index", reference])
             .output()
             .map_err(Error::GitShow)?
             .stdout,
@@ -244,7 +244,7 @@ pub(crate) fn stash_diffs(repo: &Repository, stash_ref: &str) -> Res<StashDiffs>
     let diff = |from: &str, to: &str, paths: &[std::ffi::OsString]| -> Res<Diff> {
         let mut cmd = Command::new("git");
         cmd.current_dir(dir);
-        cmd.args(["diff", "--no-ext-diff"]);
+        cmd.args(["diff", "--no-ext-diff", "--full-index"]);
         cmd.args([from, to]);
         if !paths.is_empty() {
             cmd.arg("--");
@@ -266,7 +266,7 @@ pub(crate) fn stash_diffs(repo: &Repository, stash_ref: &str) -> Res<StashDiffs>
         let text = String::from_utf8_lossy(
             &Command::new("git")
                 .current_dir(dir)
-                .args(["stash", "show", "-p", stash_ref])
+                .args(["stash", "show", "-p", "--full-index", stash_ref])
                 .output()
                 .map_err(Error::GitShow)?
                 .stdout,
