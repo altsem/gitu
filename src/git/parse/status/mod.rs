@@ -108,7 +108,10 @@ fn parse_branch_status(input: &str) -> IResult<&str, BranchStatus> {
 fn parse_branch(input: &str) -> IResult<&str, &str> {
     // Parse branch name - take until we hit "...", space, or newline
     alt((
-        take_until("..."),
+        // Only stop at a "..." on this line, not one in a file path further down
+        verify(take_until("..."), |name: &str| {
+            !name.contains([' ', '\n', '\r'])
+        }),
         take_while1(|c: char| c != ' ' && c != '\n' && c != '\r'),
     ))
     .parse(input)
@@ -535,6 +538,29 @@ C  copied-staged -> copied-staged-target
         let result = Status::from_str(input).unwrap();
         assert_eq!(result.files[0].path, "old.file.name");
         assert_eq!(result.files[0].new_path, Some("new.file.name".to_string()));
+    }
+
+    #[test]
+    fn file_path_with_three_dots() {
+        let input = "## master...origin/master\nA  src/pages/[...slug].astro\n";
+        let result = Status::from_str(input).unwrap();
+        assert_eq!(result.branch_status.local, Some("master".to_string()));
+        assert_eq!(
+            result.branch_status.remote,
+            Some("origin/master".to_string())
+        );
+        assert_eq!(result.files.len(), 1);
+        assert_eq!(result.files[0].path, "src/pages/[...slug].astro");
+    }
+
+    #[test]
+    fn file_path_with_three_dots_no_remote() {
+        let input = "## master\n?? src/pages/[...slug].astro\n";
+        let result = Status::from_str(input).unwrap();
+        assert_eq!(result.branch_status.local, Some("master".to_string()));
+        assert_eq!(result.branch_status.remote, None);
+        assert_eq!(result.files.len(), 1);
+        assert_eq!(result.files[0].path, "src/pages/[...slug].astro");
     }
 
     #[test]
