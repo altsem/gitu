@@ -1,0 +1,25 @@
+---
+source: src/tests/discard.rs
+expression: ctx.redact_buffer()
+---
+ On branch main                                                                 |
+ Your branch is ahead of 'origin/main' by 1 commit(s).                          |
+                                                                                |
+ Unstaged changes (1)                                                           |
+ modified   binary-file…                                                        |
+                                                                                |
+ Staged changes (1)                                                             |
+▌modified   binary-file…                                                        |
+                                                                                |
+ Recent commits                                                                 |
+ beafba0 main add binary-file                                    Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
+                                                                                |
+                                                                                |
+                                                                                |
+                                                                                |
+────────────────────────────────────────────────────────────────────────────────|
+$ git apply --reverse --index --recount                                         |
+error: binary-file: does not match index                                        |
+! 'git apply --reverse --index --recount' exited with code: 1                   |
+styles_hash: fed75bff7bbf2afa
