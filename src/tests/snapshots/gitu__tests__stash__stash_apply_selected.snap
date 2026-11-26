@@ -2,27 +2,27 @@
 source: src/tests/stash.rs
 expression: out
 ---
- On branch main                                                                 |
- Your branch is ahead of 'origin/main' by 2 commit(s).                          |
+  eight                                                                         |
+  nine                                                                          |
+ -ten                                                                           |
+ +TEN                                                                           |
+ modified   file2.txt                                                           |
+ @@ -1,3 +1,4 @@                                                                |
+  alpha                                                                         |
+  beta                                                                          |
+  gamma                                                                         |
+ +delta                                                                         |
                                                                                 |
- Unstaged changes (2)                                                           |
-▌modified   file1.txt                                                           |
-▌@@ -1,5 +1,7 @@                                                                |
-▌ one                                                                           |
-▌ two                                                                           |
-▌+two-and-a-half                                                                |
-▌+two-and-three-quarters                                                        |
-▌ three                                                                         |
-▌ four                                                                          |
-▌ five                                                                          |
-▌@@ -7,4 +9,4 @@ six                                                            |
-▌ seven                                                                         |
-▌ eight                                                                         |
-▌ nine                                                                          |
-▌-ten                                                                           |
+ Stashes                                                                        |
+▌stash@0 On main: apply-stash                                                   |
+                                                                                |
+ Recent commits                                                                 |
+ a370438 main add file2.txt                                      Author Name __ |
+ dc54b2a add file1.txt                                           Author Name __ |
+ b66a0bf origin/main add initial-file                            Author Name __ |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git stash apply -q stash@{0}                                                  |
-styles_hash: 43893a5c0c24829d
+styles_hash: c49308d4cbd0e841
 
 [files before]
 --- file1.txt ---

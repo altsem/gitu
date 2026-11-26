@@ -5,8 +5,11 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
- Unstaged changes (1)                                                           |
-▌deleted    script.sh…                                                          |
+▌Unstaged changes (1)                                                           |
+▌deleted    script.sh                                                           |
+▌@@ -1,2 +0,0 @@                                                                |
+▌-#!/bin/bash                                                                   |
+▌-echo hello                                                                    |
                                                                                 |
  Recent commits                                                                 |
  af83421 main add executable script                              Author Name __ |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git restore --staged script.sh                                                |
-styles_hash: 679d9dc1c1d743d2
+styles_hash: 2fa5353935cb5cae

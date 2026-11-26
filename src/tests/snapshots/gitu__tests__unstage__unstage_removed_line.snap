@@ -8,18 +8,18 @@ expression: ctx.redact_buffer()
  Unstaged changes (1)                                                           |
  modified   firstfile                                                           |
  @@ -1,3 +1,2 @@                                                                |
-▌-testing                                                                       |
+ -testing                                                                       |
   weehooo                                                                       |
   blrergh                                                                       |
                                                                                 |
  Staged changes (1)                                                             |
  modified   firstfile                                                           |
- @@ -1,2 +1,3 @@                                                                |
-  testing                                                                       |
- -testtest                                                                      |
- +weehooo                                                                       |
- +blrergh                                                                       |
+▌@@ -1,2 +1,3 @@                                                                |
+▌ testing                                                                       |
+▌-testtest                                                                      |
+▌+weehooo                                                                       |
+▌+blrergh                                                                       |
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --cached --reverse --recount                                        |
-styles_hash: cc22c3496d9b7af1
+styles_hash: 1f34a389799958fe

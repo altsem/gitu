@@ -8,10 +8,10 @@ expression: ctx.redact_buffer()
  Untracked files                                                                |
  one                                                                            |
  two                                                                            |
-▌unaffected                                                                     |
+ unaffected                                                                     |
                                                                                 |
- Recent commits                                                                 |
- b66a0bf main origin/main add initial-file                       Author Name __ |
+▌Recent commits                                                                 |
+▌b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git reset HEAD --                                                             |
-styles_hash: e0692c6beb9dc87a
+styles_hash: 7c50809a744f6a15

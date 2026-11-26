@@ -7,13 +7,13 @@ expression: ctx.redact_buffer()
                                                                                 |
  Unstaged changes (1)                                                           |
  modified   file-one                                                            |
-▌@@ -1,2 +1 @@                                                                  |
-▌ FOO                                                                           |
-▌-BAR                                                                           |
+ @@ -1,2 +1 @@                                                                  |
+  FOO                                                                           |
+ -BAR                                                                           |
                                                                                 |
- Recent commits                                                                 |
- 4f3ed19 main add file-one                                       Author Name __ |
- b66a0bf origin/main add initial-file                            Author Name __ |
+▌Recent commits                                                                 |
+▌4f3ed19 main add file-one                                       Author Name __ |
+▌b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --recount                                                 |
-styles_hash: 2a85024c348cf828
+styles_hash: d78769872ef409a3

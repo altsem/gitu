@@ -5,8 +5,11 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
- Staged changes (1)                                                             |
-▌deleted    script.sh…                                                          |
+▌Staged changes (1)                                                             |
+▌deleted    script.sh                                                           |
+▌@@ -1,2 +0,0 @@                                                                |
+▌-#!/bin/bash                                                                   |
+▌-echo hello                                                                    |
                                                                                 |
  Recent commits                                                                 |
  af83421 main add executable script                              Author Name __ |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add script.sh                                                             |
-styles_hash: 883e7c52495cce64
+styles_hash: 4b4efa0d4fa4d766

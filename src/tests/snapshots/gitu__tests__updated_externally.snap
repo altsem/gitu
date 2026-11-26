@@ -6,12 +6,12 @@ expression: ctx.redact_buffer()
  Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
  Untracked files                                                                |
-▌a                                                                              |
+ a                                                                              |
                                                                                 |
  Staged changes (1)                                                             |
- added      b                                                                   |
- @@ -0,0 +1 @@                                                                  |
- +test                                                                          |
+▌added      b                                                                   |
+▌@@ -0,0 +1 @@                                                                  |
+▌+test                                                                          |
                                                                                 |
  Recent commits                                                                 |
  b66a0bf main origin/main add initial-file                       Author Name __ |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-styles_hash: ca57e8c71067697a
+styles_hash: eb822334e018c13f

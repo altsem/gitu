@@ -6,20 +6,20 @@ expression: ctx.redact_buffer()
  Your branch is ahead of 'origin/main' by 2 commit(s).                          |
                                                                                 |
 ▌Staged changes (2)                                                             |
-▌modified   firstfile…                                                          |
-▌modified   secondfile…                                                         |
+▌modified   firstfile                                                           |
+▌@@ -1,2 +1 @@                                                                  |
+▌-testing                                                                       |
+▌-testtest                                                                      |
+▌+blahonga                                                                      |
+▌modified   secondfile                                                          |
+▌@@ -1,2 +1 @@                                                                  |
+▌-testing                                                                       |
+▌-testtest                                                                      |
+▌+blahonga                                                                      |
                                                                                 |
  Recent commits                                                                 |
  0c2c6c3 main add secondfile                                     Author Name __ |
  223428c add firstfile                                           Author Name __ |
- b66a0bf origin/main add initial-file                            Author Name __ |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git add -u .                                                                  |
-styles_hash: f568615a9a389abe
+styles_hash: 3881b431e35c6759

@@ -5,8 +5,11 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
- Unstaged changes (1)                                                           |
-▌deleted    to-delete…                                                          |
+▌Unstaged changes (1)                                                           |
+▌deleted    to-delete                                                           |
+▌@@ -1,2 +0,0 @@                                                                |
+▌-testing                                                                       |
+▌-testtest                                                                      |
                                                                                 |
  Recent commits                                                                 |
  0341425 main add to-delete                                      Author Name __ |
@@ -17,9 +20,6 @@ expression: ctx.redact_buffer()
                                                                                 |
                                                                                 |
                                                                                 |
-                                                                                |
-                                                                                |
-                                                                                |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git restore --staged to-delete                                                |
-styles_hash: 9ebc3e96897ceb0e
+styles_hash: a9af218f904be285

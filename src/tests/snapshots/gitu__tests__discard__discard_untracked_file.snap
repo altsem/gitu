@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Recent commits                                                                 |
+▌Recent commits                                                                 |
 ▌b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
 ────────────────────────────────────────────────────────────────────────────────|
 $ git clean --force some-file                                                   |
 Removing some-file                                                              |
-styles_hash: bc3098aa85be7d49
+styles_hash: c8e5aced62071b89

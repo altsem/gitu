@@ -5,7 +5,7 @@ expression: ctx.redact_buffer()
  On branch main                                                                 |
  Your branch is up to date with 'origin/main'.                                  |
                                                                                 |
- Recent commits                                                                 |
+▌Recent commits                                                                 |
 ▌b66a0bf main origin/main add initial-file                       Author Name __ |
                                                                                 |
                                                                                 |
@@ -22,4 +22,4 @@ expression: ctx.redact_buffer()
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse --index --recount                                         |
-styles_hash: 57c221f81aa06fc5
+styles_hash: f23e808a97bf8468

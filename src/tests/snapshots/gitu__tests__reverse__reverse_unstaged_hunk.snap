@@ -5,8 +5,8 @@ expression: out
  On branch main                                                                 |
  Your branch is ahead of 'origin/main' by 1 commit(s).                          |
                                                                                 |
- Recent commits                                                                 |
- 9f4a45e main add file-one                                       Author Name __ |
+▌Recent commits                                                                 |
+▌9f4a45e main add file-one                                       Author Name __ |
 ▌b66a0bf origin/main add initial-file                            Author Name __ |
                                                                                 |
                                                                                 |
@@ -22,7 +22,7 @@ expression: out
                                                                                 |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply --reverse                                                           |
-styles_hash: 134b7062bc48884
+styles_hash: c35505d09d9c82fa
 
 [file before]
 blahonga

@@ -2,10 +2,6 @@
 source: src/tests/stash.rs
 expression: out
 ---
- stash@{0}                                                                      |
- Author: Author Name <author@email.com>                                         |
- Date:   Fri, 16 Feb 2024 11:11:00 +0100                                        |
-                                                                                |
      On main: apply-stash                                                       |
                                                                                 |
  Unstaged changes (2)                                                           |
@@ -20,9 +16,13 @@ expression: out
 ▌ five                                                                          |
 ▌@@ -7,4 +9,4 @@ six                                                            |
 ▌ seven                                                                         |
+▌ eight                                                                         |
+▌ nine                                                                          |
+▌-ten                                                                           |
+▌+TEN                                                                           |
 ────────────────────────────────────────────────────────────────────────────────|
 $ git apply                                                                     |
-styles_hash: f6bd41566dbaa80c
+styles_hash: 48efdc7efadde186
 
 [files before]
 --- file1.txt ---
